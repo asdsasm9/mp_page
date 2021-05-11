@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>PORTFÓLIO</title>
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/3.0.1/iconfont/material-icons.min.css"
+        integrity="sha256-x8PYmLKD83R9T/sYmJn1j3is/chhJdySyhet/JuHnfY="
+        crossorigin="anonymous"
+    />
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/1.4.0/tailwind.min.css"
+        integrity="sha256-CAI/7ThhltsmP2L2zKBYa7FknB3ZwFbD0nqL8FCdxdc="
+        crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-mygrey">
+    <main class="w-screen">
+        
+      <nav class="flex items-center p-3 flex-wrap bg-mybtn">
+        <button class="menu_icon nav-toggler"
+          data-target="#navigation"
+        ><i class="material-icons">menu</i>
+        </button>
+        
+        <div
+          class="hidden top-navbar w-full lg:inline-flex lg:flex-grow lg:w-auto"
+          id="navigation"
+        >
+          <div
+            class="text-black  lg:inline-flex lg:flex-row w-full lg:items-center items-start flex flex-col lg:h-auto justify-center"
+          >
+            <a href="index.html" class="menu_item">HLAVNÉ</a>
+            <a href="portfolio.html" class="menu_item">PORTFÓLIO</a>
+            <p1 class="font-sans text-5xl py-2 px-10 hidden lg:flex">MP</p1>
+            <a href="o_mne.html" class="menu_item">O MNE</a>
+            <a href="kontakt.html" class="menu_item">KONTAKT</a>
+            
+          </div>
+        </div>
+        </nav>
+        <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+        crossorigin="anonymous"
+        ></script>
+        <script src="./script.js"></script>
+    
+        <!--PORTFÓLIO main text
+        <section class="pt-8 pb-10">
+            <p class="w-full pt-5 text-2xl text-center">PORTFÓLIO</p>
+        </section>
+        -->
+
+        <!--SCROLL X
+        <section class="pt-5 pb-10">
+            <div class="flex flex-wrap mx-5 sm:mx-32 xl:mx-56 text-center justify-center bg-white rounded-lg">
+                <div class="w-full md:w-1/2 flex flex-wrap content-center justify-center">
+                    
+                </div>
+                
+                <div class="flex flex-wrap w-full md:w-1/2 content-center">
+                    <div class="rounded-md overflow-hidden m-7 max-h-96">
+                        <img class="object-cover w-full h-full" src="fotky_web/kontakt/kontakt.png">
+                    </div>
+                </div>
+            </div>
+        </section>
+        -->
+
+        <!--vyber-->
+        <section class="mt-8 py-4 sticky top-0 bg-mygrey">
+            <div class="flex flex-wrap justify-center">
+                <button onclick="portfolio_part(1)" id = "svadby_btn" class="mx-10 text-xl">SVATBY</button>
+                <button onclick="portfolio_part(2)" id = "portrety_btn" class="mx-10 text-xl">PORTRÉTY</button>
+                <button onclick="portfolio_part(3)" id = "produktovky_btn" class="mx-10 text-xl">PRODUKTY</button>
+            </div>
+        </section>
+
+        <section class="pt-6 pb-14 " id="svadby">
+            <div class="flex flex-wrap justify-center my-5 pb-10 mx-10 sm:mx-22 lg:mx-40  bg-white rounded-xl text-center">
+                <p class="w-full text-center text-2xl my-5">MARTIN A KAMČA</p>
+                <img class="img_w" src="fotky_web/svadby/Niekto/1.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/svadby/Niekto/2.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/svadby/Niekto/3.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/svadby/Niekto/4.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/svadby/Niekto/5.jpg" alt="">
+                <img class="img_w" src="fotky_web/svadby/Niekto/6.jpg" alt="">
+                <img class="img_w" src="fotky_web/svadby/Niekto/7.jpg" alt="">
+                <img class="img_w" src="fotky_web/svadby/Niekto/8.jpg" alt="">
+                <img class="img_w" src="fotky_web/svadby/Niekto/9.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/svadby/Niekto/10.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/svadby/Niekto/11.jpg" alt="">
+                <img class="img_w" src="fotky_web/svadby/Niekto/12.jpg" alt="">
+                <img class="img_w" src="fotky_web/svadby/Niekto/13.jpg" alt="">
+                <img class="img_w" src="fotky_web/svadby/Niekto/14.jpg" alt="">
+                <img class="img_w" src="fotky_web/svadby/Niekto/15.jpg" alt="">
+                <img class="img_w" src="fotky_web/svadby/Niekto/16.jpg" alt="">
+                
+            </div>
+        </section>
+
+        <section class="pt-6 pb-14" id="portrety">
+            <div class="flex flex-wrap justify-center my-5 pb-10 mx-10 sm:mx-22 lg:mx-40  bg-white rounded-xl text-center">
+                <p class="w-full text-center text-2xl my-5">LUKÁŠ</p>
+                <img class="img_w_h" src="fotky_web/portrety/lukas/1.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/portrety/lukas/2.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/portrety/lukas/3.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/portrety/lukas/4.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/portrety/lukas/5.jpg" alt="">
+                <img class="img_w_h" src="fotky_web/portrety/lukas/6.jpg" alt="">
+            </div>
+        </section>
+
+        <section class="pt-6 pb-14" id="produktovky">
+            <div class="flex flex-wrap justify-center my-5 pb-10 mx-10 sm:mx-22 lg:mx-40  bg-white rounded-xl text-center">
+                <p class="w-full text-center text-2xl my-5">PAERI</p>
+                <img class="img_w" src="fotky_web/produktovky/paeri/1.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/2.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/3.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/4.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/5.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/6.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/7.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/8.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/9.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/10.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/11.jpg" alt="">
+                <img class="img_w" src="fotky_web/produktovky/paeri/12.jpg" alt="">
+            </div>
+        </section>
+    
+      </main>
+    
+    
+    </body>
+</html>

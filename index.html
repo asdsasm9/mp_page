@@ -1,12 +1,164 @@
+<!--https://github.com/frontendfunn/tailwind-components-navigation-bar/blob/master/css/style.css-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>MULLNY PHOTOS</title>
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/3.0.1/iconfont/material-icons.min.css"
+        integrity="sha256-x8PYmLKD83R9T/sYmJn1j3is/chhJdySyhet/JuHnfY="
+        crossorigin="anonymous"
+    />
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/1.4.0/tailwind.min.css"
+        integrity="sha256-CAI/7ThhltsmP2L2zKBYa7FknB3ZwFbD0nqL8FCdxdc="
+        crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-    <h1>Konecneee</h1>
+<body class="bg-mygrey">
+    <main class="w-screen">
+
+        <!--
+            <section>
+                <img src="fotky_web/main_photo.png" class="w-full">
+                <div class="top-10 w-full absolute text-center text-white">
+                    <div>
+                        <a href="" class=" text-white hover:text-gray-50 font-sans text-xl py-2 px-10">HLAVNÉ</a>
+                        <a href="portfolio.html" class=" text-white hover:text-gray-50 font-sans text-xl py-2 px-10">PORTFÓLIO</a>
+                        <p1 class=" text-white hover:text-gray-50 font-sans text-5xl py-2 px-10">MP</p1>
+                        <a href="o_mne.html" class=" text-white hover:text-gray-50 font-sans text-xl py-2 px-10">O MNE</a>
+                        <a href="kontakt.html" class=" text-white hover:text-gray-50 font-sans text-xl py-2 px-10">KONTAKT</a>
+                    </div>
+                </div>
+              </section>
+        -->
+
+        <nav class="absolute w-full flex items-center p-3 flex-wrap">
+            <button class="menu_icon_white nav-toggler"
+              data-target="#navigation"
+            ><i class="material-icons">menu</i>
+            </button>
+            
+            <div
+              class="hidden top-navbar w-full lg:inline-flex lg:flex-grow lg:w-auto"
+              id="navigation"
+            >
+              <div
+                class="text-black  lg:inline-flex lg:flex-row w-full lg:items-center items-start flex flex-col lg:h-auto justify-center"
+              >
+                <a href="index.html" class="menu_item_white">HLAVNÉ</a>
+                <a href="portfolio.html" class="menu_item_white">PORTFÓLIO</a>
+                <p1 class="text-white font-sans text-5xl py-2 px-10 hidden lg:flex">MP</p1>
+                <a href="o_mne.html" class="menu_item_white">O MNE</a>
+                <a href="kontakt.html" class="menu_item_white">KONTAKT</a>
+                
+              </div>
+            </div>
+        </nav>
+        <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+        crossorigin="anonymous"
+        ></script>
+        <script src="./script.js"></script>
+
+        <div class="w-full">
+            <img class="w-full max-h-120 object-cover" src="fotky_web/main_photo.png" alt="">
+        </div>
+        
+        <!-- kategorie -->
+            <section class="mb-14 flex flex-wrap mx-10 justify-center">
+                <div class="flex-none flex-shrink-0 mt-10 mx-5">
+                    <a href="">
+                        <img class="object-cover h-80 w-60 xl:h-96 xl:w-72 rounded-xl" src="fotky_web/kategorie/svadby.png">
+                        <p class="w-full pt-3 text-center">SVATBY</p>
+                    </a>
+                </div>
+            
+            <div class="flex-none flex-shrink-0 mt-10 mx-5">
+                <a href="">
+                    <img class="object-cover h-80 w-60 xl:h-96 xl:w-72 rounded-xl" src="fotky_web/kategorie/portrety.png">
+                    <p class="w-full pt-3 text-center">PORTRÉTY</p>
+                </a>
+            </div>
+            <div class="flex-none flex-shrink-0 mt-10 mx-5">
+                <a href="">
+                    <img class="object-cover h-80 w-60 xl:h-96 xl:w-72 rounded-xl" src="fotky_web/kategorie/produkty.png">
+                    <p class="w-full pt-3 text-center">PRODUKTY</p>
+                </a>
+            </div>
+            </section>
+
+        <!-- fotografovanie -->
+        <section class="mb-10 sm:mb-20 mx-10">
+            <div class="flex flex-wrap mx-5 sm:mx-32 xl:mx-56 text-center justify-center bg-white rounded-lg">
+                <div class="w-full md:w-1/2 flex flex-wrap content-center justify-center">
+                    <h1 class="w-full pt-5 text-2xl">FOTOGRAFOVANIE</h1>
+                    <p class="mx-10 mt-5 font-sans text-sm text-sm_txt">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur porttitor dui sed lectus iaculis, eget maximus libero semper. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Curabitur et metus ante. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur porttitor dui sed lectus iaculis, eget maximus libero semper. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Curabitur et metus ante</p>
+                    <div class="my-5 flex-none w-24 h-9 bg-mybtn rounded-md flex justify-center">
+                        <a href = "o_mne.html" class="mb-auto mt-auto ">O MNE</a>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap w-full md:w-1/2 content-center">
+                    <div class="rounded-md overflow-hidden m-7">
+                        <img class="object-cover w-full h-full" src="fotky_web/fotografovanie.png">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- komentare -->
+        <section class="pb-14 mx-10 flex flex-wrap justify-center">
+            <div class="flex-none flex flex-wrap m-5 md:mx-12 bg-white rounded-xl w-full sm:w-96 ">
+                <div class="flex-none flex flex-wrap w-full sm:w-1/3 justify-center">
+                    <img class="flex-none object-scale-down m-2 w-20 h-20 sm:m-5 sm:w-28 sm:h-28" src="fotky_web/reviews/lukas.png" alt="">
+                </div>
+                <div class="flex-none w-full sm:w-2/3 text-center">
+                    <h1 class="w-full text-xl my-2 sm:my-4">LUKAS</h1>
+                    <p class=" w-full text-sm_txt px-5 pb-5">“Je to skvelé. S fotografiami som veľmi spokojný. Určite odporúčam”</p>
+                </div>
+            </div>
+
+            <div class="flex-none flex flex-wrap m-5 md:mx-12 bg-white rounded-xl w-full sm:w-96 ">
+                <div class="flex-none flex flex-wrap w-full sm:w-1/3 justify-center">
+                    <img class="flex-none object-scale-down m-2 w-20 h-20 sm:m-5 sm:w-28 sm:h-28" src="fotky_web/reviews/lukas.png" alt="">
+                </div>
+                <div class="flex-none w-full sm:w-2/3 text-center">
+                    <h1 class="w-full text-xl my-2 sm:my-4">LUKAS</h1>
+                    <p class=" w-full text-sm_txt px-5 pb-5">“Je to skvelé. S fotografiami som veľmi spokojný. Určite odporúčam”</p>
+                </div>
+            </div>
+
+            <div class="flex-none flex flex-wrap m-5 md:mx-12 bg-white rounded-xl w-full sm:w-96 ">
+                <div class="flex-none flex flex-wrap w-full sm:w-1/3 justify-center">
+                    <img class="flex-none object-scale-down m-2 w-20 h-20 sm:m-5 sm:w-28 sm:h-28" src="fotky_web/reviews/lukas.png" alt="">
+                </div>
+                <div class="flex-none w-full sm:w-2/3 text-center">
+                    <h1 class="w-full text-xl my-2 sm:my-4">LUKAS</h1>
+                    <p class=" w-full text-sm_txt px-5 pb-5">“Je to skvelé. S fotografiami som veľmi spokojný. Určite odporúčam”</p>
+                </div>
+            </div>
+
+            <div class="flex-none flex flex-wrap m-5 md:mx-12 bg-white rounded-xl w-full sm:w-96 ">
+                <div class="flex-none flex flex-wrap w-full sm:w-1/3 justify-center">
+                    <img class="flex-none object-scale-down m-2 w-20 h-20 sm:m-5 sm:w-28 sm:h-28" src="fotky_web/reviews/lukas.png" alt="">
+                </div>
+                <div class="flex-none w-full sm:w-2/3 text-center">
+                    <h1 class="w-full text-xl my-2 sm:my-4">LUKAS</h1>
+                    <p class=" w-full text-sm_txt px-5 pb-5">“Je to skvelé. S fotografiami som veľmi spokojný. Určite odporúčam”</p>
+                </div>
+            </div>
+
+        </section>
+        
+        
+    </main>
 </body>
 </html>

@@ -664,6 +664,11 @@ video {
   margin: 2.5rem;
 }
 
+.my-1 {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
 .my-2 {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
@@ -715,8 +720,8 @@ video {
   margin-bottom: 3.5rem;
 }
 
-.mt-32 {
-  margin-top: 8rem;
+.mt-28 {
+  margin-top: 7rem;
 }
 
 .mt-auto {
@@ -807,6 +812,14 @@ video {
   padding-bottom: 3.5rem;
 }
 
+.pt-20 {
+  padding-top: 5rem;
+}
+
+.pt-24 {
+  padding-top: 6rem;
+}
+
 .pt-32 {
   padding-top: 8rem;
 }
@@ -892,6 +905,14 @@ video {
 
 .w-screen {
   width: 100vw;
+}
+
+.z-0 {
+  z-index: 0;
+}
+
+.z-10 {
+  z-index: 10;
 }
 
 @-webkit-keyframes spin {
@@ -1115,11 +1136,11 @@ video {
 
 .move_up_btn{
   display: none;
-  height: 5rem;
+  height: 4rem;
   position: fixed;
   right: 2.5rem;
   bottom: 2.5rem;
-  width: 5rem;
+  width: 4rem;
 }
 
 @media (min-width: 640px) {

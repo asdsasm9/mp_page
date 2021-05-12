@@ -979,25 +979,7 @@ video {
 
 .menu_icon:hover{
   --tw-text-opacity: 1;
-  color: rgba(243, 244, 246, var(--tw-text-opacity));
-}
-
-.menu_item{
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  padding-left: 2.5rem;
-  padding-right: 2.5rem;
-  --tw-text-opacity: 1;
-  color: rgba(0, 0, 0, var(--tw-text-opacity));
-  width: 11rem;
-}
-
-.menu_item:hover{
-  --tw-text-opacity: 1;
-  color: rgba(243, 244, 246, var(--tw-text-opacity));
+  color: rgba(75, 85, 99, var(--tw-text-opacity));
 }
 
 .menu_icon_white{
@@ -1020,6 +1002,24 @@ video {
 .menu_icon_white:hover{
   --tw-text-opacity: 1;
   color: rgba(156, 163, 175, var(--tw-text-opacity));
+}
+
+.menu_item{
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+  --tw-text-opacity: 1;
+  color: rgba(0, 0, 0, var(--tw-text-opacity));
+  width: 11rem;
+}
+
+.menu_item:hover{
+  --tw-text-opacity: 1;
+  color: rgba(75, 85, 99, var(--tw-text-opacity));
 }
 
 .menu_item_white{
@@ -1046,8 +1046,8 @@ video {
   margin-bottom: 1.25rem;
   -o-object-fit: contain;
      object-fit: contain;
-  padding-left: 2.5rem;
-  padding-right: 2.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
   width: 100%;
 }
 
@@ -1071,9 +1071,16 @@ video {
   margin: 1.25rem;
   -o-object-fit: contain;
      object-fit: contain;
-  padding-left: 2.5rem;
-  padding-right: 2.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
   width: 24rem;
+}
+
+@media (min-width: 640px) {
+  .img_w_h {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
 }
 
 .event_div{
@@ -1083,12 +1090,18 @@ video {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  margin-left: 1rem;
+  margin-right: 1rem;
   margin-top: 1.25rem;
   margin-bottom: 1.25rem;
-  margin-left: 2.5rem;
-  margin-right: 2.5rem;
-  padding-bottom: 2.5rem;
   text-align: center;
+}
+
+@media (min-width: 640px) {
+  .event_div {
+    margin-left: 2.5rem;
+    margin-right: 2.5rem;
+  }
 }
 
 .event_txt{
@@ -1102,22 +1115,17 @@ video {
 
 .move_up_btn{
   display: none;
-  height: 4rem;
+  height: 5rem;
   position: fixed;
   right: 2.5rem;
   bottom: 2.5rem;
-  width: 4rem;
+  width: 5rem;
 }
 
 @media (min-width: 640px) {
   .event_div{
-    margin-left: 3.5rem;
-    margin-right: 3.5rem;
-  }
-
-  .move_up_btn{
-    height: 5rem;
-    width: 5rem;
+    margin-left: 5rem;
+    margin-right: 5rem;
   }
 }
 

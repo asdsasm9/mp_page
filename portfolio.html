@@ -26,14 +26,14 @@
             <img src="fotky_web/icons/arrow.png" alt="">
         </button>
         
-      <nav class="flex items-center p-3 flex-wrap bg-mybtn fixed top-0 w-full h-20">
+      <nav class="flex items-center p-3 flex-wrap bg-mybtn fixed top-0 w-full h-20 z-10">
         <button class="menu_icon nav-toggler"
           data-target="#navigation"
         ><i class="material-icons">menu</i>
         </button>
         
         <div
-          class="hidden top-navbar w-full lg:inline-flex lg:flex-grow lg:w-auto"
+          class="hidden top-navbar w-full lg:inline-flex lg:flex-grow lg:w-auto bg-mybtn rounded-md"
           id="navigation"
         >
           <div
@@ -56,7 +56,7 @@
         <script src="./script.js"></script>
     
         <!--vyber-->
-        <section class="mt-32 py-4 sticky top-20 bg-mygrey">
+        <section class="mt-32 py-4 sticky top-20 bg-mygrey z-0">
             <div class="flex flex-wrap justify-center">
                 <button onclick="portfolio_part('svadby')" id = "svadby_btn" class="mx-10 text-xl outline-none">SVATBY</button>
                 <button onclick="portfolio_part('portrety')" id = "portrety_btn" class="mx-10 text-xl outline-none">PORTRÉTY</button>

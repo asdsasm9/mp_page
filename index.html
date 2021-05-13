@@ -24,15 +24,21 @@
         <link rel="stylesheet" href="style.css" />
     </head>
 <body class="bg-mygrey">
-    <main class="w-screen">
+    <main class="w-full">
 
-        <button onclick="move_up()" class="move_up_btn">
+        <button onclick="move_up()" class="move_up_btn ">
             <img src="fotky_web/site/icons/arrow.png" alt="">
         </button>
 
         
         <nav class="flex items-center p-3 flex-wrap bg-mybtn fixed top-0 w-full h-20">
-            <button class="menu_icon nav-toggler"
+            <a href="index.html" class="main_title p-2 items-center">
+                <span class="text-xl font-semibold uppercase tracking-wide text-center ml-8"
+                  >MULLNY PHOTOS</span
+                >
+              </a>
+
+            <button class="menu_icon nav-toggler "
               data-target="#navigation"
             ><i class="material-icons">menu</i>
             </button>
@@ -46,7 +52,7 @@
               >
                 <a href="index.html" class="menu_item">HLAVNÉ</a>
                 <a href="portfolio.html" class="menu_item">PORTFÓLIO</a>
-                <p1 class="font-sans text-5xl py-2 px-10 hidden lg:flex">MP</p1>
+                <a href="index.html" class="font-sans text-5xl py-2 px-10 hidden lg:flex">MP</a>
                 <a href="o_mne.html" class="menu_item">O MNE</a>
                 <a href="kontakt.html" class="menu_item">KONTAKT</a>
                 
@@ -88,7 +94,7 @@
             </section>
 
         <!-- fotografovanie -->
-        <section class="mb-10 sm:mb-20 mx-10">
+        <section class="mb-10 sm:mb-20 mx-5">
             <div class="flex flex-wrap mx-5 sm:mx-32 xl:mx-56 text-center justify-center bg-white rounded-lg">
                 <div class="w-full md:w-1/2 flex flex-wrap content-center justify-center">
                     <h1 class="w-full pt-5 text-2xl">FOTOGRAFOVANIE</h1>

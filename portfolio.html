@@ -20,13 +20,19 @@
     <link rel="stylesheet" href="style.css" />
 </head>
 <body class="bg-mygrey">
-    <main class="w-screen">
+    <main class="w-full">
 
         <button onclick="move_up()" class="move_up_btn">
             <img src="fotky_web/site/icons/arrow.png" alt="">
         </button>
         
       <nav class="flex items-center p-3 flex-wrap bg-mybtn fixed top-0 w-full h-20 z-10">
+        <a href="index.html" class="main_title p-2 items-center">
+            <span class="text-xl font-semibold uppercase tracking-wide text-center ml-8"
+              >MULLNY PHOTOS</span
+            >
+          </a>
+
         <button class="menu_icon nav-toggler"
           data-target="#navigation"
         ><i class="material-icons">menu</i>
@@ -41,7 +47,7 @@
           >
             <a href="index.html" class="menu_item">HLAVNÉ</a>
             <a href="portfolio.html" class="menu_item">PORTFÓLIO</a>
-            <p1 class="font-sans text-5xl py-2 px-10 hidden lg:flex">MP</p1>
+            <a href="index.html" class="font-sans text-5xl py-2 px-10 hidden lg:flex">MP</a>
             <a href="o_mne.html" class="menu_item">O MNE</a>
             <a href="kontakt.html" class="menu_item">KONTAKT</a>
             
@@ -58,9 +64,9 @@
         <!--vyber-->
         <section class="mt-12 py-3 sticky top-20 bg-mygrey z-0">
             <div class="flex flex-wrap justify-center">
-                <button onclick="portfolio_part('svadby')" id = "svadby_btn" class="mx-10 text-xl outline-none my-2">SVATBY</button>
-                <button onclick="portfolio_part('portrety')" id = "portrety_btn" class="mx-10 text-xl outline-none my-2">PORTRÉTY</button>
-                <button onclick="portfolio_part('produkty')" id = "produkty_btn" class="mx-10 text-xl outline-none my-1">PRODUKTY</button>
+                <button onclick="portfolio_part('svadby')" id = "svadby_btn" class=" mx-10 text-xl my-2">SVATBY</button>
+                <button onclick="portfolio_part('portrety')" id = "portrety_btn" class=" mx-10 text-xl my-2">PORTRÉTY</button>
+                <button onclick="portfolio_part('produkty')" id = "produkty_btn" class=" mx-10 text-xl my-1">PRODUKTY</button>
             </div>
         </section>
 

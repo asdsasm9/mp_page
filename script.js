@@ -44,6 +44,7 @@ function move_up(){
 
 
 function portfolio_part(i) {
+  $(document).scrollTop(0);
   var x = document.getElementById("svadby");
   var y = document.getElementById("portrety");
   var z = document.getElementById("produkty");

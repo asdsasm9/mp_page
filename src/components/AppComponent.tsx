@@ -4,10 +4,12 @@ import Contact from "../pages/Contact";
 import Home from "../pages/Home";
 import NotFound from "../pages/NotFound";
 import Portforlio from "../pages/Portfolio";
+import NavMenu from "./NavMenu";
 
 const AppComponent = () => {
   return (
     <BrowserRouter>
+      <NavMenu></NavMenu>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/portfolio" element={<Portforlio />} />

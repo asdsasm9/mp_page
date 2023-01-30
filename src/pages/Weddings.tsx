@@ -1,26 +1,18 @@
 import WeddingView from "../components/weddings/WeddingView";
+import { getAllWeddings, getMainImagePath } from "../data/DataHandler";
 
 const Weddings = () => {
   return (
     <div className="pt-20">
-      <WeddingView
-        imgSrc={"fotky_web/site/weddingMain.jpeg"}
-        name={"TITO & JON"}
-        place={"The resort at Blue Sky"}
-        weddingUrl={"url"}
-      ></WeddingView>
-      <WeddingView
-        imgSrc={"fotky_web/site/weddingMain.jpeg"}
-        name={"TITO & JON"}
-        place={"The resort at Blue Sky"}
-        weddingUrl={"url"}
-      ></WeddingView>
-      <WeddingView
-        imgSrc={"fotky_web/site/weddingMain.jpeg"}
-        name={"TITO & JON"}
-        place={"The resort at Blue Sky"}
-        weddingUrl={"url"}
-      ></WeddingView>
+      {getAllWeddings().map((wedding) => (
+        <WeddingView
+          key={wedding.id}
+          imgSrc={getMainImagePath(wedding)}
+          name={wedding.nameOfGallery}
+          place={wedding.placeName}
+          weddingUrl={wedding.id}
+        ></WeddingView>
+      ))}
     </div>
   );
 };

@@ -6,7 +6,7 @@ const ExperienceView = () => {
   const leftPlace = "CHARLESTON, SC";
   const leftDescription =
     "S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z výsledků jsem vždy nadšená!. S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z výsledků jsem vždy nadšená!. S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z výsledků jsem vždy nadšená!. S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z výsledků jsem vždy nadšená!";
-  const leftImg = "fotky_web/reviews/experience1.jpeg";
+  const leftImg = "fotky_web/por";
 
   const rightName = "Rameez & Laurel";
   const rightPlace = "NAPA, CA";

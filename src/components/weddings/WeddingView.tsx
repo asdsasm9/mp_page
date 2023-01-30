@@ -21,7 +21,7 @@ const WeddingView = (props: {
                   className="learnMore"
                   onClick={() => navigate(props.weddingUrl)}
                 >
-                  LEARN MORE
+                  SHOW MORE
                 </button>
               </div>
             </div>

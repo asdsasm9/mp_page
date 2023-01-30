@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "./NavMenu.css";
 
 const NavMenu = () => {
   const navigate = useNavigate();
@@ -36,9 +37,30 @@ const NavMenu = () => {
         <button className="navText" onClick={() => navigate("/")}>
           Home
         </button>
-        <button className="navText" onClick={() => navigate("/portfolio")}>
-          Portfolio
-        </button>
+        <div className="dropdown">
+          <button className="navText">Portfolio</button>
+          <div className="dropdown-content">
+            <button
+              className="navDropdownText"
+              onClick={() => navigate("/weddings")}
+            >
+              Svadby
+            </button>
+            <button
+              className="navDropdownText"
+              onClick={() => navigate("/portraits")}
+            >
+              Portréty
+            </button>
+            <button
+              className="navDropdownText"
+              onClick={() => navigate("/couples")}
+            >
+              Párové focení
+            </button>
+          </div>
+        </div>
+
         <button className="navText" onClick={() => navigate("/about")}>
           About
         </button>

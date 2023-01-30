@@ -1,0 +1,22 @@
+.weddingViewName{
+    font-family: 'Derivia Regular', sans-serif;
+    font-size: 30px;
+    line-height: 40px;
+    font-weight: 100;
+    color: #464646;
+  }
+  
+  .weddingViewPlace{
+    font-family: 'Martel', sans-serif;
+    font-size: 12px;
+    line-height: 20px;
+    font-weight: 100;
+    color: #464646;
+  }
+
+  .weddingViewImg{
+    height:40vw;
+    width: 50vw;
+    margin: 5px;
+    object-fit:cover;
+  }

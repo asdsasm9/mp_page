@@ -150,6 +150,11 @@ code {
   object-fit:cover;
 }
 
+.helloViewImg{
+  width: 80%;
+  height: calc(50vw * 0.75);
+  object-fit: cover;
+}
 
 .bottomBarDiv{
   background-color: #F3F5F5;

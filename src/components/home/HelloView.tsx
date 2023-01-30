@@ -9,7 +9,7 @@ const HelloView = () => {
   return (
     <>
       <div className="flex">
-        <div className="w-2/3 p-4 px-20 py-10">
+        <div className="w-1/2 p-4 pl-20 py-10">
           <p className="textTitle">{title}</p>
           <p className="mt-4 textBasic">{description1}</p>
           <div className="spacer" />
@@ -18,11 +18,11 @@ const HelloView = () => {
             <button className="learnMore">LEARN MORE</button>
           </div>
         </div>
-        <div className="w-1/3 p-10">
+        <div className="w-1/2 p-10">
           <img
             src="fotky_web/site/main/helllo.jpeg"
             alt="Image"
-            className="w-full h-auto rounded p-4"
+            className="helloViewImg"
           />
         </div>
       </div>

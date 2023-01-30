@@ -15,7 +15,7 @@ const PhotosShowcase = (props: { category: Category }) => {
   let showingGalleries: Gallery[] = [];
 
   if (props.category == Category.WEDDING) {
-    const weddingId = params["wed"];
+    const weddingId = params["wedding_id"];
     showingGalleries = [getByGalleryId(weddingId!)];
   } else if (props.category === Category.PORTRAITS) {
     showingGalleries = getAllPortraits();
@@ -28,6 +28,7 @@ const PhotosShowcase = (props: { category: Category }) => {
       <div className="mt-12">
         {showingGalleries.map((gallery) => (
           <GalleryPhotos
+            key={gallery.id}
             imgUrls={getAllImagesPaths(gallery)}
             gallery={gallery}
           ></GalleryPhotos>

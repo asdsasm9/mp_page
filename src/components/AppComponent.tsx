@@ -20,11 +20,17 @@ const AppComponent = () => {
           <Route path="/" element={<Home />} />
           <Route path="/weddings" element={<Weddings />} />
           <Route
-            path="/wedding/wed"
+            path="/weddings/:wedding_id"
+            element={<PhotosShowcase category={Category.WEDDING} />}
+          />
+          <Route
+            path="/portraits"
+            element={<PhotosShowcase category={Category.PORTRAITS} />}
+          />
+          <Route
+            path="/couples"
             element={<PhotosShowcase category={Category.COUPLES} />}
           />
-          <Route path="/portraits" element={<Portraits />} />
-          <Route path="/couples" element={<Couples />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/*" element={<NotFound />} />

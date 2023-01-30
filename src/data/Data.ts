@@ -33,17 +33,17 @@ const lukas: Gallery = {
   mainImgNum: 1,
 };
 
-const pati: Gallery = {
-  id: "pati",
+export const paty: Gallery = {
+  id: "paty",
   placeName: "Brno",
-  nameOfGallery: "Lukáš",
+  nameOfGallery: "Paty",
   type: Category.PORTRAITS,
-  numOfImages: 6,
+  numOfImages: 3,
   mainImgNum: 1,
 };
 
 //COUPLES
-const roman_anicka: Gallery = {
+export const roman_anicka: Gallery = {
   id: "roman_anicka",
   placeName: "Brno",
   nameOfGallery: "Roman & Anička",
@@ -52,4 +52,9 @@ const roman_anicka: Gallery = {
   mainImgNum: 1,
 };
 
-export const allGalleries: Gallery[] = [roman_anicka, lukas, martin_kamca];
+export const allGalleries: Gallery[] = [
+  roman_anicka,
+  lukas,
+  paty,
+  martin_kamca,
+];

@@ -19,12 +19,12 @@ const GalleryPhotos = (props: { imgUrls: string[]; gallery: Gallery }) => {
       <div className="flex">
         <div className="w-1/2">
           {leftSide.map((imgSrc) => (
-            <ShowcasePhoto imgSrc={imgSrc}></ShowcasePhoto>
+            <ShowcasePhoto key={imgSrc} imgSrc={imgSrc}></ShowcasePhoto>
           ))}
         </div>
         <div className="w-1/2">
           {rightSide.map((imgSrc) => (
-            <ShowcasePhoto imgSrc={imgSrc}></ShowcasePhoto>
+            <ShowcasePhoto key={imgSrc} imgSrc={imgSrc}></ShowcasePhoto>
           ))}
         </div>
       </div>

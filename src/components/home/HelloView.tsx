@@ -11,9 +11,9 @@ const HelloView = () => {
       <div className="flex">
         <div className="w-2/3 p-4 px-20 py-10">
           <p className="textTitle">{title}</p>
-          <span className="mt-4 textBasic">{description1}</span>
+          <p className="mt-4 textBasic">{description1}</p>
           <div className="spacer" />
-          <span className="mt-4 textBasic">{description2}</span>
+          <p className="mt-4 textBasic">{description2}</p>
           <div className="py-3">
             <button className="learnMore">LEARN MORE</button>
           </div>

@@ -1,0 +1,20 @@
+.textAboutDescription{
+    font-family: 'Martel', sans-serif;
+    font-size: 13px;
+    line-height: 26px;
+    color: #000000;
+  }
+  
+  .textAboutTitle {
+    font-family: 'tenderness-regular', sans-serif;
+    font-size: 20px;
+    line-height: 27px;
+    font-weight: 300;
+    color: #464646;
+  }
+
+  .textAboutImg{
+    width: 80%;
+    height: calc(50vw * 0.60);
+    object-fit: cover;
+  }

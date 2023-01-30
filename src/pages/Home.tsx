@@ -1,13 +1,13 @@
-import CategoryView from "../components/CategoryView";
-import Experience from "../components/Experience";
-import HelloView from "../components/HelloView";
+import CategoryView from "../components/home/CategoryView";
+import Experience from "../components/home/Experience";
+import HelloView from "../components/home/HelloView";
 
 const Home = () => {
   return (
     <>
       <div className="w-full">
         <img
-          className="w-full max-h-120 object-cover"
+          className="w-full object-cover homeMainImg"
           src="fotky_web/site/main/main.jpeg"
           alt=""
         />

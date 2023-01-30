@@ -16,6 +16,11 @@ code {
 @tailwind components;
 @tailwind utilities;
 
+
+.homeMainImg{
+  max-height: 40rem;
+}
+
 .menu_icon{
   border-radius: 0.25rem;
   display: inline-flex;
@@ -57,7 +62,7 @@ code {
 .textBasic{
   font-family: 'Martel', sans-serif;
   font-size: 13px;
-  line-height: 20px;
+  line-height: 23px;
   color: #000000;
 }
 

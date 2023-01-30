@@ -1,13 +1,21 @@
 const ExperienceColumn = (props: {
+  absoluteTopTitle: string;
   imgSrc: string;
-  title: string;
+  name: string;
+  place: string;
   description: string;
 }) => {
   return (
-    <div className="left-side mx-20">
-      <img className="reviewImg w-100" src={props.imgSrc} alt={props.title} />
-      <p className="experiencesTitle">{props.title}</p>
-      <p className="textBasic">{props.description}</p>
+    <div className="left-side flex justify-center">
+      <div className="experienceColumn ">
+        <p className="textHardTitle" style={{ height: "80px" }}>
+          {props.absoluteTopTitle}
+        </p>
+        <img className="reviewImg w-100" src={props.imgSrc} alt={props.name} />
+        <p className="experiencesName">{props.name}</p>
+        <p className="experiencesPlace">{props.place}</p>
+        <p className="textExperience">{props.description}</p>
+      </div>
     </div>
   );
 };

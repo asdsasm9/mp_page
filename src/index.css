@@ -74,12 +74,11 @@ code {
 }
 
 .textHardTitle {
-  padding-top: 20px;;
+  padding-top: 20px;
   font-family: 'Tenderness', sans-serif;
   font-size: 27px;
   line-height: 35px;
   font-weight: 100;
-  margin-left: 60px;
   color: #464646;
 }
 
@@ -91,14 +90,31 @@ code {
   color: #464646;
 }
 
-.experiencesTitle{
-  font-family: 'Derivia Regular', sans-serif;
-  font-size: 25px;
-  line-height: 28px;
+.experiencesName{
+  font-family: 'Tenderness', sans-serif;
+  font-size: 30px;
+  line-height: 39px;
   font-weight: 100;
   padding-top: 20px;
   padding-bottom: 15px;
   color: #464646;
+}
+
+.experiencesPlace{
+  font-family: 'Derivia Regular', sans-serif;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight:100;
+  color: #464646;
+  padding-bottom: 20px;
+}
+
+.textExperience{
+  font-family: 'Martel', sans-serif;
+  font-size: 14px;
+  line-height: 28px;
+  font-weight: 300;
+  color: #000000;
 }
 
 
@@ -118,6 +134,10 @@ code {
 .right-side {
   width: 50%;
   padding: 20px;
+}
+
+.experienceColumn{
+  width: 60%;
 }
 
 .reviewImg{

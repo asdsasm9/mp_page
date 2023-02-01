@@ -6,14 +6,23 @@ const WeddingView = (props: {
   name: string;
   place: string;
   weddingUrl: string;
+  textIsOnRight: boolean;
 }) => {
   const navigate = useNavigate();
+
+  const imgDiv = (
+    <div className="w-1/2 p-10">
+      <img src={props.imgSrc} alt={props.name} className="weddingViewImg" />
+    </div>
+  );
+  const divStyle = props.textIsOnRight ? "end" : "start";
   return (
     <>
       <div className="flex">
+        {!props.textIsOnRight ? imgDiv : ""}
         <div className="w-1/2 py-10">
           <div className="relative right-0 ">
-            <div className="flex flex-col items-end">
+            <div className={"flex flex-col items-" + divStyle}>
               <h1 className="weddingViewName">{props.name}</h1>
               <p className="weddingViewPlace">{props.place}</p>
               <div className="py-3">
@@ -27,9 +36,7 @@ const WeddingView = (props: {
             </div>
           </div>
         </div>
-        <div className="w-1/2 p-10">
-          <img src={props.imgSrc} alt={props.name} className="weddingViewImg" />
-        </div>
+        {props.textIsOnRight ? imgDiv : ""}
       </div>
     </>
   );

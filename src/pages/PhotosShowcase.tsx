@@ -1,13 +1,11 @@
 import { useParams } from "react-router-dom";
 import GalleryPhotos from "../components/showcase/GalleryPhotos";
-import ShowcasePhoto from "../components/showcase/ShowcasePhoto";
 import { Category, Gallery } from "../data/Data";
 import {
   getAllCouples,
   getAllImagesPaths,
   getAllPortraits,
   getByGalleryId,
-  getMainImagePath,
 } from "../data/DataHandler";
 
 const PhotosShowcase = (props: { category: Category }) => {

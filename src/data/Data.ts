@@ -57,4 +57,5 @@ export const allGalleries: Gallery[] = [
   lukas,
   paty,
   martin_kamca,
+  martin_kamca,
 ];

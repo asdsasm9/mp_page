@@ -17,6 +17,11 @@ code {
 @tailwind utilities;
 
 
+.bg-mybtn {
+  --tw-bg-opacity: 1;
+  background-color: rgba(227, 204, 180, var(--tw-bg-opacity));
+}
+
 .homeMainImg{
   max-height: 40rem;
 }

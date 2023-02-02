@@ -1,6 +1,7 @@
 import CategoryView from "../components/home/CategoryView";
 import Experience from "../components/home/Experience";
 import HelloView from "../components/home/HelloView";
+import PhotoCollage from "../components/home/PhotoCollage";
 
 const Home = () => {
   return (
@@ -30,6 +31,7 @@ const Home = () => {
           imgSrc="fotky_web/site/main/produkty.png"
         ></CategoryView>
       </div>
+      <PhotoCollage></PhotoCollage>
 
       <Experience></Experience>
     </>

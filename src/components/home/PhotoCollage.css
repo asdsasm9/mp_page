@@ -1,0 +1,69 @@
+.collage {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .collageImg{
+    object-fit:contain;
+    width: 100%;
+    padding: 40px;
+  }
+
+
+@media (min-width: 640px) {
+    .collage {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        position: relative;
+        z-index: -1;
+        height: calc(50vw);
+        transform: translate();
+      }
+
+      .collageImg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 30%;
+      }
+
+      .img1{
+        transform: translate(180%, 25%);
+        z-index: 1;
+      }
+
+      .img2{
+        transform: translate(120%, 90%);
+      }
+
+      .img3{
+        transform: translate(220%, 00%);
+      }
+
+} 
+
+  .collageTitle{
+    position: absolute;
+    top: 10%;
+    left: 10%;
+    font-family: 'tenderness-regular', sans-serif;
+    font-size: 30px;
+    line-height: 33px;
+    font-weight: 300;
+  }
+
+  .collageText{
+    position: absolute;
+    top: 30%;
+    left: 10%;
+    width: 40%;
+    font-family: 'Martel', sans-serif;
+  font-size: 14px;
+  line-height: 28px;
+  font-weight: 300;
+  color: #000000;
+  }
+
+  

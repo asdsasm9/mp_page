@@ -15,14 +15,15 @@ const WeddingView = (props: {
       <img src={props.imgSrc} alt={props.name} className="weddingViewImg" />
     </div>
   );
-  const divStyle = props.textIsOnRight ? "end" : "start";
+  const divStyle = props.textIsOnRight ? "items-end" : "items-start";
+
   return (
     <>
       <div className="flex">
         {!props.textIsOnRight ? imgDiv : ""}
         <div className="w-1/2 py-10">
           <div className="relative right-0 ">
-            <div className={"flex flex-col items-" + divStyle}>
+            <div className={`flex flex-col ${divStyle}`}>
               <h1 className="weddingViewName">{props.name}</h1>
               <p className="weddingViewPlace">{props.place}</p>
               <div className="py-3">

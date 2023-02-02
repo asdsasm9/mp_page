@@ -6,7 +6,7 @@ const Weddings = () => {
     <div className="pt-20">
       {getAllWeddings().map((wedding, index) => (
         <WeddingView
-          key={wedding.id}
+          key={index}
           imgSrc={getMainImagePath(wedding)}
           name={wedding.nameOfGallery}
           place={wedding.placeName}

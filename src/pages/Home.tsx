@@ -16,8 +16,8 @@ const Home = () => {
 
       <HelloView></HelloView>
 
-      <p className="textHardTitle pl-14">KATEGORIE</p>
-      <div className="mb-14 flex flex-wrap mx-10 ">
+      <p className="textHardTitle pl-10 md:pl-14">KATEGORIE</p>
+      <div className="flex flex-wrap mx-10 md:mb-14">
         <CategoryView
           title="SVADBY"
           imgSrc="fotky_web/site/main/svadby.png"

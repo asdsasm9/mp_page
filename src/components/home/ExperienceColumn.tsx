@@ -8,13 +8,13 @@ const ExperienceColumn = (props: {
   const gallery = props.review.gallery;
   const description = props.review.description;
   return (
-    <div className="left-side flex justify-center">
-      <div className="experienceColumn ">
-        <p className="textHardTitle" style={{ height: "80px" }}>
+    <div className="w-full px-10 py-5 md:py-10 flex justify-center md:w-1/2">
+      <div className="experienceColumn w-50 ">
+        <p className="textHardTitle experienceTitle">
           {props.absoluteTopTitle}
         </p>
         <img
-          className="reviewImg w-100"
+          className="reviewImg w-50"
           src={getMainImagePath(gallery)}
           alt={gallery.nameOfGallery}
         />

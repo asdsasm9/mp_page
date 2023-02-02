@@ -8,17 +8,17 @@ const HelloView = () => {
     Please take a look around the website, and I hope we connect soon!";
   return (
     <>
-      <div className="flex">
-        <div className="w-1/2 p-4 pl-20 py-10">
-          <p className="textTitle">{title}</p>
-          <p className="mt-4 textBasic">{description1}</p>
+      <div className="md:flex">
+        <div className="w-100 p-4 pl-20 py-10 md:w-1/2 ">
+          <p className="textTitle w-100">{title}</p>
+          <p className="textBasic md:mt-4 ">{description1}</p>
           <div className="spacer" />
           <p className="mt-4 textBasic">{description2}</p>
           <div className="py-3">
             <button className="learnMore">LEARN MORE</button>
           </div>
         </div>
-        <div className="w-1/2 p-10">
+        <div className="w-100 p-10 md:w-1/2 flex align-middle text-center">
           <img
             src="fotky_web/site/main/helllo.jpeg"
             alt="Image"

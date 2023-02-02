@@ -6,7 +6,7 @@ const ExperienceView = () => {
 
   return (
     <>
-      <div className="flex pb-20 pt-20">
+      <div className="md:pb-20 md:pt-14 md:flex">
         <ExperienceColumn
           review={PatiReview}
           absoluteTopTitle={absoluteTopTitle}

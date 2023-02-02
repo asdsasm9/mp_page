@@ -16,9 +16,9 @@ const PhotoCollage = () => {
   const shuffledPhotos = photos; //photos.sort(() => Math.random() - 0.5);
   //${photo.xT}, ${photo.yT})
   return (
-    <div className="collage pl-14 pt-10">
-      <p className="textHardTitle w-full">THIS IS TITLE</p>
-      <p className="textExperience pt-5 h-full w-1/3">
+    <div className="collage pt-10 lg:pl-14">
+      <p className="textHardTitle px-10 w-full lg:px-0">THIS IS TITLE</p>
+      <p className="textExperience px-10 pt-5 h-full md:w-1/3 lg:px-0">
         S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší
         situace, takže z výsledků jsem vždy nadšená!. S Terkou je focení vždy
         přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z

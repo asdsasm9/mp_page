@@ -99,6 +99,13 @@ code {
   color: #464646;
 }
 
+@media (min-width: 640px) {
+  .experienceTitle{
+      height: 60px;
+      margin-bottom: 20px;
+  }
+}
+
 .experiencesName{
   font-family: 'tenderness-regular', sans-serif;
   font-size: 30px;
@@ -137,16 +144,6 @@ code {
   width: 1px;
   background-color: rgb(90, 90, 90);
   height: 100;
-}
-
-.left-side,
-.right-side {
-  width: 50%;
-  padding: 20px;
-}
-
-.experienceColumn{
-  width: 60%;
 }
 
 .reviewImg{

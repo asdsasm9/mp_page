@@ -1,4 +1,4 @@
-import { AnickaReview, PatiReview } from "../../data/DataTexts";
+import { AnezReview, PatiReview } from "../../data/DataTexts";
 import ExperienceColumn from "./ExperienceColumn";
 
 const ExperienceView = () => {
@@ -12,7 +12,7 @@ const ExperienceView = () => {
           absoluteTopTitle={absoluteTopTitle}
         />
         <div className="line"></div>
-        <ExperienceColumn review={AnickaReview} absoluteTopTitle={""} />
+        <ExperienceColumn review={AnezReview} absoluteTopTitle={""} />
       </div>
     </>
   );

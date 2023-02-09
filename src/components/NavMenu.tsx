@@ -8,8 +8,6 @@ const NavMenu = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleBackground = () => {
-    console.log("handleBackground", isMenuOpen);
-
     if (window.scrollY > 0 || isMenuOpen) {
       setBackgroundColor("#fAfAfA");
     } else {

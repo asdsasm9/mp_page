@@ -94,11 +94,8 @@ code {
   color: #464646;
 }
 
-@media (min-width: 640px) {
-  .experienceTitle{
-      height: 60px;
-      margin-bottom: 20px;
-  }
+.experienceTitle{
+  margin-bottom: 10px;
 }
 
 .experiencesName{
@@ -151,6 +148,9 @@ code {
   width: 80%;
   height: calc(50vw * 0.75);
   object-fit: cover;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .bottomBarDiv{

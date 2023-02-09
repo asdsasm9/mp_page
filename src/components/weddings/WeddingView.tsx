@@ -11,19 +11,23 @@ const WeddingView = (props: {
   const navigate = useNavigate();
 
   const imgDiv = (
-    <div className="w-1/2 p-10">
-      <img src={props.imgSrc} alt={props.name} className="weddingViewImg" />
-    </div>
+    <img src={props.imgSrc} alt={props.name} className="weddingViewImg" />
   );
   const divStyle = props.textIsOnRight ? "items-end" : "items-start";
 
   return (
     <>
-      <div className="flex">
-        {!props.textIsOnRight ? imgDiv : ""}
-        <div className="w-1/2 py-10">
-          <div className=" right-0 ">
-            <div className={`flex flex-col ${divStyle}`}>
+      <div className="sm:flex">
+        <div
+          className={`weddingViewImgDiv weddingViewImgDivFirst ${
+            props.textIsOnRight ? "hidden" : ""
+          }`}
+        >
+          {imgDiv}
+        </div>
+        <div className="w-100 py-10 sm:w-1/2 flex justify-center">
+          <div className="w-80">
+            <div className={`sm:flex flex-col ${divStyle}`}>
               <h1 className="weddingViewName">{props.name}</h1>
               <p className="weddingViewPlace">{props.place}</p>
               <div className="py-3">
@@ -37,7 +41,13 @@ const WeddingView = (props: {
             </div>
           </div>
         </div>
-        {props.textIsOnRight ? imgDiv : ""}
+        <div
+          className={`weddingViewImgDiv weddingViewImgDivSecond ${
+            !props.textIsOnRight ? "hidden" : ""
+          }`}
+        >
+          {imgDiv}
+        </div>
       </div>
     </>
   );

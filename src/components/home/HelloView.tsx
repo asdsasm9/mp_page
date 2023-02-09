@@ -9,7 +9,7 @@ const HelloView = () => {
   return (
     <>
       <div className="md:flex">
-        <div className="w-100 p-4 pl-20 py-10 md:w-1/2 ">
+        <div className="w-100 p-4 py-10  px-10 md:pl-20 md:px-0 md:w-1/2 ">
           <p className="textTitle w-100">{title}</p>
           <p className="textBasic md:mt-4 ">{description1}</p>
           <div className="spacer" />
@@ -18,7 +18,7 @@ const HelloView = () => {
             <button className="learnMore">LEARN MORE</button>
           </div>
         </div>
-        <div className="w-100 p-10 md:w-1/2 flex align-middle text-center">
+        <div className="w-100 p-5 pt-0 flex items-center md:w-1/2 md:pt-5">
           <img
             src="fotky_web/site/main/helllo.jpeg"
             alt="Image"

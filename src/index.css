@@ -152,7 +152,7 @@ code {
 .helloViewImg{
   width: 80%;
   height: calc(50vw * 0.75);
-  object-fit: cover;
+  object-fit:contain;
   display: block;
   margin-left: auto;
   margin-right: auto;

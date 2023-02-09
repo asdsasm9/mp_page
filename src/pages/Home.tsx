@@ -9,7 +9,7 @@ const Home = () => {
       <div className="w-full">
         <img
           className="w-full object-cover homeMainImg"
-          src="fotky_web/site/main/main.jpeg"
+          src="fotky_web/site/home/main.jpg"
           alt=""
         />
       </div>
@@ -19,16 +19,16 @@ const Home = () => {
       <p className="textHardTitle pl-10 md:pl-14">KATEGORIE</p>
       <div className="flex flex-wrap mx-10 md:mb-14">
         <CategoryView
-          title="SVADBY"
-          imgSrc="fotky_web/site/main/svadby.png"
+          title="SVATBY"
+          imgSrc="fotky_web/site/home/weddings.jpg"
         ></CategoryView>
         <CategoryView
           title="PORTRÉTY"
-          imgSrc="fotky_web/site/main/portrety.png"
+          imgSrc="fotky_web/site/home/portraits.jpg"
         ></CategoryView>
         <CategoryView
-          title="PRODUKTY"
-          imgSrc="fotky_web/site/main/produkty.png"
+          title="PÁROVÉ FOCENÍ"
+          imgSrc="fotky_web/site/home/couples.jpg"
         ></CategoryView>
       </div>
       <PhotoCollage></PhotoCollage>

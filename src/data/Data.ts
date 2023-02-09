@@ -17,7 +17,7 @@ export type Gallery = {
 export const frankovi: Gallery = {
   id: "frankovi",
   placeName: "",
-  nameOfGallery: "Michal & Rozárka Frankovi",
+  nameOfGallery: "Michal & Rozárka",
   type: Category.WEDDING,
   numOfImages: 5,
   mainImgNum: 1,
@@ -26,25 +26,25 @@ export const frankovi: Gallery = {
 export const hradsti: Gallery = {
   id: "hradsti",
   placeName: "",
-  nameOfGallery: "Hradští",
+  nameOfGallery: "Jitka & Tomáš",
   type: Category.WEDDING,
   numOfImages: 8,
-  mainImgNum: 1,
+  mainImgNum: 2,
 };
 
 export const sedlakovi: Gallery = {
   id: "sedlakovi",
   placeName: "",
-  nameOfGallery: "Sedlakovi",
+  nameOfGallery: "Adam & Eliška",
   type: Category.WEDDING,
   numOfImages: 10,
-  mainImgNum: 1,
+  mainImgNum: 4,
 };
 
 export const suranovi: Gallery = {
   id: "suranovi",
   placeName: "",
-  nameOfGallery: "Suranovi",
+  nameOfGallery: "Broňa a Prokop",
   type: Category.WEDDING,
   numOfImages: 5,
   mainImgNum: 1,
@@ -60,10 +60,10 @@ export const anez: Gallery = {
   mainImgNum: 1,
 };
 
-const jumping: Gallery = {
-  id: "jumping",
+const lucka: Gallery = {
+  id: "lucka",
   placeName: "",
-  nameOfGallery: "Jumping",
+  nameOfGallery: "Lucka",
   type: Category.PORTRAITS,
   numOfImages: 5,
   mainImgNum: 1,
@@ -114,18 +114,18 @@ const helis_tom: Gallery = {
   mainImgNum: 1,
 };
 
-const lucka: Gallery = {
-  id: "lucka",
+const lucka_filip: Gallery = {
+  id: "lucka_filip",
   placeName: "Brno",
-  nameOfGallery: "Lucka",
+  nameOfGallery: "Lucka & Filip",
   type: Category.COUPLES,
   numOfImages: 5,
   mainImgNum: 1,
 };
-const mentoring: Gallery = {
-  id: "mentoring",
+const pavla_rafael: Gallery = {
+  id: "pavla_rafael",
   placeName: "",
-  nameOfGallery: "Mentoring",
+  nameOfGallery: "Pavla & Rafael",
   type: Category.COUPLES,
   numOfImages: 11,
   mainImgNum: 1,
@@ -137,12 +137,12 @@ export const allGalleries: Gallery[] = [
   sedlakovi,
   suranovi,
   anez,
-  jumping,
+  lucka,
   lukas,
   mia,
   pati,
   pati2,
   helis_tom,
-  lucka,
-  mentoring,
+  lucka_filip,
+  pavla_rafael,
 ];

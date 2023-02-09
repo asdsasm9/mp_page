@@ -12,7 +12,7 @@ const HelloView = () => {
   const navigate = useNavigate();
   return (
     <>
-      <div className="md:flex">
+      <div className="mt-10 md:flex">
         <div className="w-100 p-4 py-7 px-10 md:pl-20 md:px-0 md:w-1/2 ">
           <p className="textHardTitle w-100 pb-3">{title}</p>
           <p className="textBasic md:mt-4 ">{description1}</p>
@@ -26,7 +26,7 @@ const HelloView = () => {
         </div>
         <div className="w-100 p-5 pt-0 flex items-center md:w-1/2 md:pt-5">
           <img
-            src="fotky_web/site/main/helllo.jpeg"
+            src="fotky_web/site/home/hello.jpg"
             alt="Image"
             className="helloViewImg"
           />

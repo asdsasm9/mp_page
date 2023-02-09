@@ -13,21 +13,34 @@ const GalleryPhotos = (props: { imgUrls: string[]; gallery: Gallery }) => {
     }
   }
 
+  let twoSides = (
+    <>
+      <div className="">
+        {leftSide.map((imgSrc) => (
+          <ShowcasePhoto key={imgSrc} imgSrc={imgSrc}></ShowcasePhoto>
+        ))}
+      </div>
+      <div className="">
+        {rightSide.map((imgSrc) => (
+          <ShowcasePhoto key={imgSrc} imgSrc={imgSrc}></ShowcasePhoto>
+        ))}
+      </div>
+    </>
+  );
+
+  let oneSide = (
+    <div className="">
+      {props.imgUrls.map((imgSrc) => (
+        <ShowcasePhoto key={imgSrc} imgSrc={imgSrc}></ShowcasePhoto>
+      ))}
+    </div>
+  );
+
   return (
     <>
-      <p className="textHardTitle ml-4 mt-12">{props.gallery.nameOfGallery}</p>
-      <div className="flex">
-        <div className="w-1/2">
-          {leftSide.map((imgSrc) => (
-            <ShowcasePhoto key={imgSrc} imgSrc={imgSrc}></ShowcasePhoto>
-          ))}
-        </div>
-        <div className="w-1/2">
-          {rightSide.map((imgSrc) => (
-            <ShowcasePhoto key={imgSrc} imgSrc={imgSrc}></ShowcasePhoto>
-          ))}
-        </div>
-      </div>
+      <p className="textHardTitle px-7 mt-12">{props.gallery.nameOfGallery}</p>
+      <div className="md:hidden px-5">{oneSide}</div>
+      <div className="hidden md:flex">{twoSides}</div>
     </>
   );
 };

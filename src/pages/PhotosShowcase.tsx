@@ -23,7 +23,7 @@ const PhotosShowcase = (props: { category: Category }) => {
 
   return (
     <>
-      <div className="mt-12">
+      <div className="mt-12 mb-10">
         {showingGalleries.map((gallery) => (
           <GalleryPhotos
             key={gallery.id}

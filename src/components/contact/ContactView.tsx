@@ -19,7 +19,6 @@ const ContactView = (props: {
       </a>
     </div>
   );
-
   const myImg = (
     <img src={props.imgSrc} alt="Image" className="textContactImg" />
   );

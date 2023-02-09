@@ -8,20 +8,29 @@ const AboutView = (props: {
   textOnRight: boolean;
 }) => {
   const myImg = (
-    <div className="w-full md:w-1/2 p-4 items-center flex">
-      <img src={props.imgSrc} alt="Image" className="textAboutImg" />
-    </div>
+    <img src={props.imgSrc} alt="Image" className="textContactImg" />
   );
   return (
-    <div className="md:flex mx-10 mb-10">
-      {props.textOnRight ? myImg : ""}
-      <div className="w-full p-4 md:1/2 md:px-10 md:p-10">
-        <p className="textAboutTitle md:pt-3">{props.title}</p>
-        <p className="textAboutDescription pt-4 md:pt-10">
-          {props.description}
-        </p>
+    <div className="mb-5 mx-3 sm:mx-10 sm:flex">
+      <div
+        className={`contactImgDiv contactImgDivFirst ${
+          props.textOnRight ? "hidden" : "flex"
+        }`}
+      >
+        {myImg}
       </div>
-      {!props.textOnRight ? myImg : ""}
+
+      <div className="w-100 px-10 p-10 sm:w-1/2">
+        <p className="textAboutTitle">{props.title}</p>
+        <p className="textAboutDescription pt-5">{props.description}</p>
+      </div>
+      <div
+        className={`contactImgDiv contactImgDivSecond ${
+          !props.textOnRight ? "hidden" : "flex"
+        }`}
+      >
+        {myImg}
+      </div>
     </div>
   );
 };

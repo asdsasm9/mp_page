@@ -8,11 +8,13 @@ import PhotosShowcase from "../pages/PhotosShowcase";
 import Weddings from "../pages/Weddings";
 import BottomBar from "./BottomBar";
 import NavMenu from "./NavMenu";
+import ScrollToTop from "./ScrollToTop";
 
 const AppComponent = () => {
   return (
     <>
       <BrowserRouter>
+        <ScrollToTop></ScrollToTop>
         <NavMenu></NavMenu>
         <Routes>
           <Route path="/" element={<Home />} />

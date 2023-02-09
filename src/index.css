@@ -73,8 +73,13 @@ code {
   color: #464646;
 }
 
+@media (min-width: 768px) {
 .spacer{
-  height: 20px;
+  height:15px;
+}
+.experienceTitle{
+  height: 70px;
+}
 }
 
 .textHardTitle {

@@ -103,13 +103,13 @@ const NavMenu = () => {
             >
               <li>
                 <button className="navText" onClick={() => navigate("/")}>
-                  Home
+                  Domov
                 </button>
               </li>
               {portfolioDropDown}
               <li>
                 <button className="navText" onClick={() => navigate("/about")}>
-                  About
+                  O mně
                 </button>
               </li>
               <li>
@@ -117,7 +117,7 @@ const NavMenu = () => {
                   className="navText"
                   onClick={() => navigate("/contact")}
                 >
-                  Contact
+                  Kontakt
                 </button>
               </li>
             </ul>

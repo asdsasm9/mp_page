@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { KnowMore } from "../../data/Translations";
 import "./WeddingView.css";
 
 const WeddingView = (props: {
@@ -35,7 +36,7 @@ const WeddingView = (props: {
                   className="learnMore"
                   onClick={() => navigate(props.weddingUrl)}
                 >
-                  SHOW MORE
+                  {KnowMore}
                 </button>
               </div>
             </div>

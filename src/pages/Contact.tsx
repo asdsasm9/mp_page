@@ -1,4 +1,5 @@
 import ContactView, { buttonInfo } from "../components/contact/ContactView";
+import { InstagramUrl, MailUrl } from "../data/Translations";
 import "./../components/contact/Contact.css";
 
 const Contact = () => {
@@ -16,17 +17,17 @@ Například fotografie přírody nebo zvířat. Pokud by vás něco zaujalo, mů
 
   const buttonContact: buttonInfo = {
     title: "mullnyphotos@gmail.com",
-    urlHref: "mailto: mullnyphotos@gmail.com",
+    urlHref: MailUrl,
   };
   const buttonInstagram: buttonInfo = {
     title: "@mullny_photos",
-    urlHref: "https://www.instagram.com/mullny_photos/?hl=cs",
+    urlHref: InstagramUrl,
   };
   return (
     <>
       <div className="w-full">
         <img
-          className="w-full object-cover contactMainImg mb-20"
+          className="w-full object-cover contactMainImg mb-10"
           src="fotky_web/site/aboutExperience.jpeg"
           alt=""
         />

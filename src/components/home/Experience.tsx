@@ -2,7 +2,7 @@ import { AnickaReview, PatiReview } from "../../data/DataTexts";
 import ExperienceColumn from "./ExperienceColumn";
 
 const ExperienceView = () => {
-  const absoluteTopTitle = "EXPERIENCES";
+  const absoluteTopTitle = "RECENZE";
 
   return (
     <>

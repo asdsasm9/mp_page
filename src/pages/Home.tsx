@@ -21,14 +21,17 @@ const Home = () => {
         <CategoryView
           title="SVATBY"
           imgSrc="fotky_web/site/home/weddings.jpg"
+          urlPath="weddings"
         ></CategoryView>
         <CategoryView
           title="PORTRÉTY"
           imgSrc="fotky_web/site/home/portraits.jpg"
+          urlPath="portraits"
         ></CategoryView>
         <CategoryView
           title="PÁROVÉ FOCENÍ"
           imgSrc="fotky_web/site/home/couples.jpg"
+          urlPath="couples"
         ></CategoryView>
       </div>
       <PhotoCollage></PhotoCollage>

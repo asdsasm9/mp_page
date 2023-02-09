@@ -27,17 +27,38 @@ const BottomBar = () => {
     </svg>
   );
 
+  let myWed = (
+    <div
+      className="mywed_badge"
+      style={{ display: "inline-block", margin: "0px", padding: "5px" }}
+    >
+      <a
+        title="Svatební fotograf Terezie Müllnerová (Brno, Česko) | MyWed"
+        href="https://mywed.com/cs/photographer/mullny/"
+        target="_blank"
+      >
+        <img
+          width="70px"
+          height="50px"
+          alt="Svatební fotograf Terezie Müllnerová (Brno, Česko) | MyWed"
+          src="https://mywed.com/images/mywed-logo/logo_mywed_gorizontal_black.svg"
+        />
+      </a>
+    </div>
+  );
+
   return (
     <div className="bottomBarDiv py-2 pl-7 sm:pl-20 flex justify-between">
       <div>
         <p className="logoFont mb-3">MULLNY</p>
         <p className="textBasic">Fotím v Jihomoravskom kraji</p>
       </div>
-      <div className="text-right pt-3 pr-4 flex">
+      <div className="text-right pt-5 pr-4 flex">
         <a href={InstagramUrl} target="_blank">
           {instagram}
         </a>
         <a href={MailUrl}>{email}</a>
+        {myWed}
       </div>
     </div>
   );

@@ -1,7 +1,11 @@
-const CategoryView = (props: { title: string; imgSrc: string }) => {
+const CategoryView = (props: {
+  title: string;
+  imgSrc: string;
+  urlPath: string;
+}) => {
   return (
     <div className="flex-none flex-shrink-0 mt-6 mx-5">
-      <a href="weddings">
+      <a href={props.urlPath}>
         <img
           className="object-cover h-80 w-60 xl:h-96 xl:w-72 "
           src={props.imgSrc}

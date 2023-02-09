@@ -17,13 +17,14 @@ const PhotoCollage = () => {
   //${photo.xT}, ${photo.yT})
   return (
     <div className="collage pt-10 lg:pl-14">
-      <p className="textHardTitle px-10 w-full lg:px-0">THIS IS TITLE</p>
+      <p className="textHardTitle px-10 w-full lg:px-0">
+        CHTĚLI BYSTE VYFOTIT?
+      </p>
       <p className="textExperience px-10 pt-5 h-full md:w-1/3 lg:px-0">
-        S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší
-        situace, takže z výsledků jsem vždy nadšená!. S Terkou je focení vždy
-        přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z
-        výsledků jsem vždy nadšená!. S Terkou je focení vždy přirozené a
-        zábavné. Dokáže zach
+        Možná by bylo dobré mít skvělou profilovku na sociálních sítích, nebo by
+        jste si chtěl rozšřit své portfolio. Nebo pokud je právě ten den kdy se
+        rozhodujete jako bude vypadat vaše svatba, neváhejte mě kontaktovat a
+        všechny detaily domyslíme.
       </p>
       {shuffledPhotos.map((photo, index) => (
         <img

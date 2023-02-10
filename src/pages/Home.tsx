@@ -17,21 +17,21 @@ const Home = () => {
       <HelloView></HelloView>
 
       <p className="textHardTitle pl-10 md:pl-14">KATEGORIE</p>
-      <div className="flex flex-wrap mx-10 md:mb-14">
+      <div className="flex flex-wrap mx-10 md:mb-14 justify-between">
         <CategoryView
           title="SVATBY"
           imgSrc="fotky_web/site/home/weddings.jpg"
-          urlPath="weddings"
+          urlPath="/weddings"
         ></CategoryView>
         <CategoryView
           title="PORTRÉTY"
           imgSrc="fotky_web/site/home/portraits.jpg"
-          urlPath="portraits"
+          urlPath="/portraits"
         ></CategoryView>
         <CategoryView
           title="PÁROVÉ FOCENÍ"
           imgSrc="fotky_web/site/home/couples.jpg"
-          urlPath="couples"
+          urlPath="/couples"
         ></CategoryView>
       </div>
       <PhotoCollage></PhotoCollage>

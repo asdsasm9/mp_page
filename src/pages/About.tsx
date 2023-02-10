@@ -25,7 +25,7 @@ const About = () => {
     <div className="w-full">
       <img
         className="w-full object-cover aboutMainImg mb-10"
-        src="fotky_web/site/about.jpeg"
+        src="fotky_web/site/about/main_about.jpg"
         alt=""
       />
       <AboutView

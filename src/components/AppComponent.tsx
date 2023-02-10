@@ -13,7 +13,7 @@ import ScrollToTop from "./ScrollToTop";
 const AppComponent = () => {
   return (
     <>
-      <BrowserRouter>
+      <BrowserRouter basename="/mp_page">
         <ScrollToTop></ScrollToTop>
         <NavMenu></NavMenu>
         <Routes>

@@ -1,4 +1,10 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  HashRouter,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 import { Category } from "../data/Data";
 import About from "../pages/About";
 import Contact from "../pages/Contact";
@@ -13,7 +19,7 @@ import ScrollToTop from "./ScrollToTop";
 const AppComponent = () => {
   return (
     <>
-      <BrowserRouter basename="/mp_page">
+      <HashRouter>
         <ScrollToTop></ScrollToTop>
         <NavMenu></NavMenu>
         <Routes>
@@ -33,11 +39,11 @@ const AppComponent = () => {
           />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/*" element={<NotFound />} />
+          <Route path="/*" element={<Navigate to="/home" />} />
         </Routes>
 
         <BottomBar></BottomBar>
-      </BrowserRouter>
+      </HashRouter>
     </>
   );
 };

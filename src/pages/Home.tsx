@@ -17,7 +17,7 @@ const Home = () => {
       <HelloView></HelloView>
 
       <p className="textHardTitle pl-10 md:pl-14">KATEGORIE</p>
-      <div className="flex flex-wrap mx-10 md:mb-14 justify-between">
+      <div className="flex flex-wrap mx-10 md:mb-14 justify-between categoriesMainDiv">
         <CategoryView
           title="SVATBY"
           imgSrc="fotky_web/site/home/weddings.jpg"

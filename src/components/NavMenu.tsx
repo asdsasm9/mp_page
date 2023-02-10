@@ -88,7 +88,7 @@ const NavMenu = () => {
           backgroundColor,
         }}
       >
-        <div className="container mx-auto px-4 py-3 sm:flex items-center justify-between">
+        <div className=" px-4 py-3 sm:flex items-center justify-between md:mx-10">
           <div className="flex w-100 justify-between">
             <div className="text-lg font-bold ">
               <button className="logoFont" onClick={() => navigate("/home")}>

@@ -69,7 +69,7 @@ const NavMenu = () => {
         <div className="container mx-auto px-4 py-3 sm:flex items-center justify-between">
           <div className="flex w-100 justify-between">
             <div className="text-lg font-bold ">
-              <button className="logoFont" onClick={() => navigate("/")}>
+              <button className="logoFont" onClick={() => navigate("/home")}>
                 MULLNY
               </button>
             </div>
@@ -102,7 +102,7 @@ const NavMenu = () => {
               }`}
             >
               <li>
-                <button className="navText" onClick={() => navigate("/")}>
+                <button className="navText" onClick={() => navigate("/home")}>
                   Domov
                 </button>
               </li>
@@ -125,56 +125,6 @@ const NavMenu = () => {
         </div>
       </header>
     </>
-  );
-  let a = (
-    <div
-      className="w-full top-0 left-0 fixed flex items-center justify-between p-2 bg-white"
-      style={{
-        transition: "background-color 0.3s ease-in-out",
-        backgroundColor,
-      }}
-    >
-      <div className="text-lg font-bold px-20">
-        <button className="logoFont" onClick={() => navigate("/")}>
-          MULLNY
-        </button>
-      </div>
-      <div className="flex space-x-20 px-20">
-        <button className="navText" onClick={() => navigate("/")}>
-          Home
-        </button>
-        <div className="dropdown">
-          <button className="navText">Portfolio</button>
-          <div className="dropdown-content">
-            <button
-              className="navDropdownText"
-              onClick={() => navigate("/weddings")}
-            >
-              Svadby
-            </button>
-            <button
-              className="navDropdownText"
-              onClick={() => navigate("/portraits")}
-            >
-              Portréty
-            </button>
-            <button
-              className="navDropdownText"
-              onClick={() => navigate("/couples")}
-            >
-              Párové focení
-            </button>
-          </div>
-        </div>
-
-        <button className="navText" onClick={() => navigate("/about")}>
-          About
-        </button>
-        <button className="navText" onClick={() => navigate("/contact")}>
-          Contact
-        </button>
-      </div>
-    </div>
   );
 };
 

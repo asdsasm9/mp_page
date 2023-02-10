@@ -17,7 +17,7 @@ const AppComponent = () => {
         <ScrollToTop></ScrollToTop>
         <NavMenu></NavMenu>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/weddings" element={<Weddings />} />
           <Route
             path="/weddings/:wedding_id"

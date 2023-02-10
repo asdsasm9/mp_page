@@ -150,13 +150,19 @@ code {
 }
 
 .helloViewImg{
-  width: 80%;
-  height: calc(50vw * 0.75);
+  width: 90%;
   object-fit:contain;
   display: block;
   margin-left: auto;
   margin-right: auto;
 }
+
+@media (min-width: 768px) {
+  .helloViewImg{
+    width: 80%;
+    height: calc(50vw * 0.75);
+  }
+  }
 
 .bottomBarDiv{
   background-color: #F3F5F5;

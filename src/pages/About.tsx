@@ -25,25 +25,25 @@ const About = () => {
     <div className="w-full">
       <img
         className="w-full object-cover aboutMainImg mb-10"
-        src="fotky_web/site/about.jpeg"
+        src="fotky_web/site/about/main_about.jpg"
         alt=""
       />
       <AboutView
         title={"O MNĚ"}
-        imgSrc={"fotky_web/site/o_mne/o_mne.png"}
+        imgSrc={"fotky_web/site/about/cake.jpg"}
         description={aboutMe}
         textOnRight={true}
       ></AboutView>
       <AboutView
         title={"MOJE ZKUŠENOSTI"}
-        imgSrc={"fotky_web/site/o_mne/moje_skusenosti.png"}
+        imgSrc={"fotky_web/site/about/nature.jpg"}
         description={experiencesDescription}
         textOnRight={false}
       ></AboutView>
 
       <AboutView
         title={"MOJE VYBAVENÍ"}
-        imgSrc={"fotky_web/site/o_mne/vybavenie.png"}
+        imgSrc={"fotky_web/site/about/wedding.jpg"}
         description={myGear}
         textOnRight={true}
       ></AboutView>

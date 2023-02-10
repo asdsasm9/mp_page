@@ -17,6 +17,11 @@
   max-height: 23rem;
 }
 
+.textPartAbout{
+  display: flex;
+  vertical-align: middle;
+}
+
 
 .aboutImgDiv{
   width:50%;
@@ -25,7 +30,7 @@
 }
 
 .textAboutImg{
-  width: 80vw;
+  width: 70vw;
   height: 80vw;
   display: block;
   margin:auto;
@@ -57,6 +62,8 @@
 
   .textAboutImg{
       width: 40vw;
-      height: 40vw;
+      height: 50vw;
+      max-width: 500px;
+      max-height: 600px;
     } 
 }

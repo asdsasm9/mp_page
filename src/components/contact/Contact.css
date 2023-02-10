@@ -1,12 +1,12 @@
 .contactMainImg{
-    max-height: 26em;
+    max-height: 28em;
 }
 
 
 .contactImgDiv{
-    width:50%;
     padding: 10px;
     vertical-align:middle;
+    width: 100%;
 }
 
 .textContactImg{
@@ -15,11 +15,8 @@
     display: block;
     margin:auto;
     object-fit: cover;
-  }
-
-
-.contactImgDiv{
-    width: 100%;
+    max-width: 500px;
+    max-height: 500px;
   }
 
   @media (max-width: 640px) {

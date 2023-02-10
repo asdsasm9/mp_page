@@ -1,15 +1,8 @@
-import {
-  BrowserRouter,
-  HashRouter,
-  Navigate,
-  Route,
-  Routes,
-} from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Category } from "../data/Data";
 import About from "../pages/About";
 import Contact from "../pages/Contact";
 import Home from "../pages/Home";
-import NotFound from "../pages/NotFound";
 import PhotosShowcase from "../pages/PhotosShowcase";
 import Weddings from "../pages/Weddings";
 import BottomBar from "./BottomBar";

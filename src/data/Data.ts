@@ -37,7 +37,7 @@ export const sedlakovi: Gallery = {
   placeName: "",
   nameOfGallery: "Adam & Eliška",
   type: Category.WEDDING,
-  numOfImages: 12,
+  numOfImages: 13,
   mainImgNum: 4,
 };
 
@@ -57,7 +57,7 @@ export const anez: Gallery = {
   nameOfGallery: "Anež",
   type: Category.PORTRAITS,
   numOfImages: 9,
-  mainImgNum: 1,
+  mainImgNum: 9,
 };
 
 const lucka: Gallery = {
@@ -92,7 +92,7 @@ export const pati: Gallery = {
   nameOfGallery: "Pati",
   type: Category.PORTRAITS,
   numOfImages: 12,
-  mainImgNum: 4,
+  mainImgNum: 5,
 };
 
 const pati2: Gallery = {
@@ -142,7 +142,7 @@ export const allGalleries: Gallery[] = [
   mia,
   pati,
   pati2,
+  pavla_rafael,
   helis_tom,
   lucka_filip,
-  pavla_rafael,
 ];

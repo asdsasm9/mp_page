@@ -18,8 +18,8 @@ const AboutView = (props: {
         {myImg}
       </div>
 
-      <div className="w-100 px-10 p-10 sm:w-1/2 textPartAbout">
-        <div>
+      <div className="w-100 px-10 p-10 sm:w-1/2 flex justify-center">
+        <div className="textPartAbout">
           <p className="textAboutTitle">{props.title}</p>
           <p className="textAboutDescription pt-5">{props.description}</p>
         </div>

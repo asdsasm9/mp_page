@@ -39,8 +39,9 @@ const GalleryPhotos = (props: { imgUrls: string[]; gallery: Gallery }) => {
   return (
     <>
       <p className="textHardTitle px-7 mt-12">{props.gallery.nameOfGallery}</p>
-      <div className="md:hidden px-5">{oneSide}</div>
+
       <div className="hidden md:flex">{twoSides}</div>
+      <div className="md:hidden px-5">{oneSide}</div>
     </>
   );
 };

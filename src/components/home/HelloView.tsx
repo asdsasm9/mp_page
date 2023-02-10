@@ -13,15 +13,17 @@ const HelloView = () => {
   return (
     <>
       <div className="mt-10 md:flex">
-        <div className="w-100 p-4 py-7 px-10 md:pl-20 md:px-0 md:w-1/2 ">
-          <p className="textHardTitle w-100 pb-3">{title}</p>
-          <p className="textBasic md:mt-4 ">{description1}</p>
-          <div className="spacer" />
-          <p className="mt-4 textBasic">{description2}</p>
-          <div className="py-3">
-            <button className="learnMore" onClick={() => navigate("/about")}>
-              {KnowMore}
-            </button>
+        <div className="w-100 p-4 py-7 px-10 md:pl-20 md:px-0 md:w-1/2 flex justify-center">
+          <div className="textPartAbout">
+            <p className="textHardTitle w-100 pb-3">{title}</p>
+            <p className="textBasic md:mt-4 ">{description1}</p>
+            <div className="spacer" />
+            <p className="mt-4 textBasic">{description2}</p>
+            <div className="py-3">
+              <button className="learnMore" onClick={() => navigate("/about")}>
+                {KnowMore}
+              </button>
+            </div>
           </div>
         </div>
         <div className="w-100 p-5 pt-0 flex items-center md:w-1/2 md:pt-5">

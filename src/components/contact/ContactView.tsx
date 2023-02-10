@@ -32,10 +32,12 @@ const ContactView = (props: {
         {myImg}
       </div>
 
-      <div className="w-100 px-10 p-10 sm:w-1/2">
-        <p className="textAboutTitle">{props.title}</p>
-        <p className="textAboutDescription pt-5">{props.description}</p>
-        {button1}
+      <div className="w-100 px-10 p-10 sm:w-1/2 flex justify-center">
+        <div className="textPartAbout">
+          <p className="textAboutTitle">{props.title}</p>
+          <p className="textAboutDescription pt-5">{props.description}</p>
+          {button1}
+        </div>
       </div>
       <div
         className={`contactImgDiv contactImgDivSecond ${

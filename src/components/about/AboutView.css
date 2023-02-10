@@ -18,8 +18,8 @@
 }
 
 .textPartAbout{
-  display: flex;
-  vertical-align: middle;
+  width: 100%;
+  max-width: 700px;
 }
 
 

@@ -27,13 +27,13 @@ Například fotografie přírody nebo zvířat. Pokud by vás něco zaujalo, mů
     <>
       <div className="w-full">
         <img
-          className="w-full object-cover contactMainImg mb-10"
-          src="fotky_web/site/aboutExperience.jpeg"
+          className="w-full mb-14 object-cover contactMainImg"
+          src="fotky_web/site/contact/main_contact.jpg"
           alt=""
         />
         <ContactView
           title={"KONTAKT"}
-          imgSrc={"fotky_web/site/kontakt/kontakt.png"}
+          imgSrc={"fotky_web/site/contact/contact.jpg"}
           description={contactDesc}
           textOnRight={false}
           button1={buttonContact}
@@ -41,7 +41,7 @@ Například fotografie přírody nebo zvířat. Pokud by vás něco zaujalo, mů
 
         <ContactView
           title={"INSTAGRAM"}
-          imgSrc={"fotky_web/site/kontakt/instagram.png"}
+          imgSrc={"fotky_web/site/contact/instagram.png"}
           description={instagramDesc}
           textOnRight={true}
           button1={buttonInstagram}

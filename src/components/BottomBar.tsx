@@ -48,12 +48,12 @@ const BottomBar = () => {
   );
 
   return (
-    <div className="bottomBarDiv py-2 pl-7 sm:pl-20 flex justify-between">
+    <div className="bottomBarDiv py-2 pl-7 sm:pl-14 flex justify-between">
       <div>
-        <p className="logoFont mb-3">MULLNY</p>
-        <p className="textBasic">Fotím v Jihomoravskom kraji</p>
+        <p className="logoFont mb-2">MULLNY</p>
+        <p className="textBasic mb-2">Fotím v Jihomoravskom kraji</p>
       </div>
-      <div className="text-right pt-5 pr-4 flex">
+      <div className="text-right pt-5 pr-4 sm:pr-10 flex">
         <a href={InstagramUrl} target="_blank">
           {instagram}
         </a>

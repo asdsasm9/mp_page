@@ -31,16 +31,17 @@
       }
 
       .img1{
-        transform: translate(180%, 25%);
-        z-index: 1;
+        width: 40%;
+        transform: translate(70%, 90%);
       }
 
       .img2{
-        transform: translate(120%, 90%);
+        transform: translate(170%, 25%);
+        z-index: 1;
       }
 
       .img3{
-        transform: translate(220%, 00%);
+        transform: translate(220%, -7%);
       }
 
 } 

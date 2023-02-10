@@ -37,7 +37,7 @@ export const sedlakovi: Gallery = {
   placeName: "",
   nameOfGallery: "Adam & Eliška",
   type: Category.WEDDING,
-  numOfImages: 10,
+  numOfImages: 12,
   mainImgNum: 4,
 };
 
@@ -92,7 +92,7 @@ export const pati: Gallery = {
   nameOfGallery: "Pati",
   type: Category.PORTRAITS,
   numOfImages: 12,
-  mainImgNum: 1,
+  mainImgNum: 4,
 };
 
 const pati2: Gallery = {

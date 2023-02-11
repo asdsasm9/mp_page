@@ -1,8 +1,11 @@
 import ContactView, { buttonInfo } from "../components/contact/ContactView";
 import { InstagramUrl, MailUrl } from "../data/Translations";
+import usePageTitle from "../hooks/usePageTitle";
 import "./../components/contact/Contact.css";
 
 const Contact = () => {
+  usePageTitle("Kontakt");
+
   const contactDesc =
     "Chcete nové fotky, nebo máte nejaké otázky? \
   Portréty, svatby, produkty, neváhejte se mi ozvat. Máte konkrétní představu o tom, jak by to mělo vypadat?\

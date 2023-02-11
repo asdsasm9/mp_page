@@ -113,7 +113,7 @@ const NavMenu = () => {
                   className="navText"
                   onClick={() => handleClick("/home")}
                 >
-                  Domov
+                  Úvod
                 </button>
               </li>
               {portfolioDropDown}

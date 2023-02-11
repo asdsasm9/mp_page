@@ -2,8 +2,11 @@ import CategoryView from "../components/home/CategoryView";
 import Experience from "../components/home/Experience";
 import HelloView from "../components/home/HelloView";
 import PhotoCollage from "../components/home/PhotoCollage";
+import usePageTitle from "../hooks/usePageTitle";
 
 const Home = () => {
+  usePageTitle("Úvod");
+
   return (
     <>
       <div className="w-full">

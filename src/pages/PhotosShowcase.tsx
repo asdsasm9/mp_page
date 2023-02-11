@@ -7,8 +7,11 @@ import {
   getAllPortraits,
   getByGalleryId,
 } from "../data/DataHandler";
+import usePageTitle from "../hooks/usePageTitle";
 
 const PhotosShowcase = (props: { category: Category }) => {
+  usePageTitle("Fotogalerie");
+
   const params = useParams();
   let showingGalleries: Gallery[] = [];
 

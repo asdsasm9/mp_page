@@ -1,7 +1,10 @@
 import WeddingView from "../components/weddings/WeddingView";
 import { getAllWeddings, getMainImagePath } from "../data/DataHandler";
+import usePageTitle from "../hooks/usePageTitle";
 
 const Weddings = () => {
+  usePageTitle("Svatby");
+
   return (
     <div className="pt-20">
       {getAllWeddings().map((wedding, index) => (

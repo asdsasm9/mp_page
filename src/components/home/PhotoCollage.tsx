@@ -16,7 +16,7 @@ const PhotoCollage = () => {
   const shuffledPhotos = photos; //photos.sort(() => Math.random() - 0.5);
   //${photo.xT}, ${photo.yT})
   return (
-    <div className="collage pt-10 mb-10 lg:pl-14">
+    <div className="collage pt-10 mb-10 lg:pl-14 text-justify sm:text-left">
       <p className="textHardTitle px-10 w-full lg:px-0">
         CHTĚLI BYSTE VYFOTIT?
       </p>

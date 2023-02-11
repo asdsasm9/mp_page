@@ -14,7 +14,7 @@ const HelloView = () => {
     <>
       <div className="mt-10 md:flex">
         <div className="w-100 p-4 py-7 px-10 md:pl-20 md:px-0 md:w-1/2 flex justify-center">
-          <div className="textPartAbout">
+          <div className="textPartAbout text-justify sm:text-left">
             <p className="textHardTitle w-100 pb-3">{title}</p>
             <p className="textBasic md:mt-4 ">{description1}</p>
             <div className="spacer" />

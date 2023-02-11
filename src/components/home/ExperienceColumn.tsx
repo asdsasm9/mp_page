@@ -9,7 +9,7 @@ const ExperienceColumn = (props: {
   const description = props.review.description;
   return (
     <div className="w-full px-10 py-5 md:py-10 flex justify-center md:w-1/2">
-      <div className="experienceColumn w-50 ">
+      <div className="experienceColumn w-50 text-justify sm:text-left ">
         <p className="textHardTitle experienceTitle">
           {props.absoluteTopTitle}
         </p>

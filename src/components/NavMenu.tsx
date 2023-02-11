@@ -15,6 +15,11 @@ const NavMenu = () => {
     }
   };
 
+  const handleClick = (url: string) => {
+    navigate(url);
+    setIsMenuOpen(false);
+  };
+
   const changeMenuOpen = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -31,19 +36,19 @@ const NavMenu = () => {
     <>
       <button
         className="navDropdownText dropdown-content-button"
-        onClick={() => navigate("/weddings")}
+        onClick={() => handleClick("/weddings")}
       >
         - Svadby
       </button>
       <button
         className="navDropdownText dropdown-content-button"
-        onClick={() => navigate("/portraits")}
+        onClick={() => handleClick("/portraits")}
       >
         - Portréty
       </button>
       <button
         className="navDropdownText dropdown-content-button"
-        onClick={() => navigate("/couples")}
+        onClick={() => handleClick("/couples")}
       >
         - Párové focení
       </button>
@@ -91,7 +96,7 @@ const NavMenu = () => {
         <div className=" px-4 py-3 sm:flex items-center justify-between md:mx-10">
           <div className="flex w-100 justify-between">
             <div className="text-lg font-bold ">
-              <button className="logoFont" onClick={() => navigate("/home")}>
+              <button className="logoFont" onClick={() => handleClick("/home")}>
                 MULLNY
               </button>
             </div>
@@ -104,20 +109,26 @@ const NavMenu = () => {
               }`}
             >
               <li>
-                <button className="navText" onClick={() => navigate("/home")}>
+                <button
+                  className="navText"
+                  onClick={() => handleClick("/home")}
+                >
                   Domov
                 </button>
               </li>
               {portfolioDropDown}
               <li>
-                <button className="navText" onClick={() => navigate("/about")}>
+                <button
+                  className="navText"
+                  onClick={() => handleClick("/about")}
+                >
                   O mně
                 </button>
               </li>
               <li>
                 <button
                   className="navText"
-                  onClick={() => navigate("/contact")}
+                  onClick={() => handleClick("/contact")}
                 >
                   Kontakt
                 </button>

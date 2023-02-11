@@ -3,17 +3,17 @@
   "name": "Focení svateb, portrétu a párových fotek",
   "icons": [
     {
-      "src": "fotky_web/preview/logo.png",
+      "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
     },
     {
-      "src": "fotky_web/preview/logo.png",
+      "src": "logo.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src":"fotky_web/preview/logo.png",
+      "src": "logo.png",
       "type": "image/png",
       "sizes": "512x512"
     }

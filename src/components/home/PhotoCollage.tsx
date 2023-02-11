@@ -16,11 +16,11 @@ const PhotoCollage = () => {
   const shuffledPhotos = photos; //photos.sort(() => Math.random() - 0.5);
   //${photo.xT}, ${photo.yT})
   return (
-    <div className="collage pt-10 mb-10 lg:pl-14 text-justify sm:text-left">
+    <div className="collage pt-10 mb-10 lg:pl-14">
       <p className="textHardTitle px-10 w-full lg:px-0">
         CHTĚLI BYSTE VYFOTIT?
       </p>
-      <p className="textExperience px-10 pt-5 h-full md:w-1/3 lg:px-0">
+      <p className="textExperience px-10 pt-5 h-full md:w-1/3 lg:px-0 text-justify sm:text-left">
         Možná by bylo dobré mít skvělou profilovku na sociálních sítích, nebo by
         jste si chtěl rozšřit své portfolio. Nebo pokud je právě ten den kdy se
         rozhodujete jako bude vypadat vaše svatba, neváhejte mě kontaktovat a

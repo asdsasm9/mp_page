@@ -4,6 +4,7 @@ import About from "../pages/About";
 import Contact from "../pages/Contact";
 import Home from "../pages/Home";
 import PhotosShowcase from "../pages/PhotosShowcase";
+import Portfolio from "../pages/Portfolio";
 import Weddings from "../pages/Weddings";
 import BottomBar from "./BottomBar";
 import NavMenu from "./NavMenu";
@@ -17,6 +18,7 @@ const AppComponent = () => {
         <NavMenu></NavMenu>
         <Routes>
           <Route path="/home" element={<Home />} />
+          <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/weddings" element={<Weddings />} />
           <Route
             path="/weddings/:wedding_id"

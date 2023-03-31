@@ -48,7 +48,7 @@ const BottomBar = () => {
   );
 
   return (
-    <div className="bottomBarDiv py-2 pl-7 sm:pl-14 flex justify-between">
+    <footer className="py-2 pl-7 sm:pl-14 flex justify-between">
       <div>
         <p className="logoFont mb-2">MULLNY</p>
         <p className="textBasic mb-2">Fotím v Jihomoravskom kraji</p>
@@ -60,7 +60,7 @@ const BottomBar = () => {
         <a href={MailUrl}>{email}</a>
         {myWed}
       </div>
-    </div>
+    </footer>
   );
 };
 

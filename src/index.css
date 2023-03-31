@@ -11,6 +11,10 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+footer {
+  background-color: #F3F5F5;
+  width: 100%;
+}
 
 @tailwind base;
 @tailwind components;
@@ -150,10 +154,6 @@ code {
 }
 
 
-.bottomBarDiv{
-  background-color: #F3F5F5;
-  width: 100%;
-}
 
 
 @media (min-width: 768px) {

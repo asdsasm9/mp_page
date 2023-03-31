@@ -57,7 +57,9 @@ const NavMenu = () => {
 
   let portfolioDropDown = (
     <li className="dropdown">
-      <button className="navText">Portfolio</button>
+      <button className="navText" onClick={() => handleClick("/portfolio")}>
+        Portfolio
+      </button>
       <div className="dropdown-content">{dropDownButtons}</div>
     </li>
   );

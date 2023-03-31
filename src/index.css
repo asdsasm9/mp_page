@@ -53,12 +53,7 @@ footer {
   left: 50px;
 }
 
-/* .logoFont{ 
-  font-family: "Times", Times, serif;
-  font-size: 27px;
-  font-weight: 400;
-  color: #464646;
-} */
+
 
 
 .categoriesMainDiv{
@@ -167,13 +162,30 @@ footer {
 }
 
 
-.mainLogo{
-  width: 130px;
-  height: auto;
+
+
+.logoFont{ 
+  font-family: "Times", Times, serif;
+  font-size: 27px;
+  font-weight: 400;
+  color: #464646;
 }
 
+.mainLogo{
+  width: 140px;
+  height: auto;
+  display: none;
+}
+
+@media (min-width: 700px) {
+
+  .mainLogo{
+    display: block;
+  }
+}
 
 @media (min-width: 768px) {
+
   .spacer{
     height:15px;
   }
@@ -196,3 +208,5 @@ footer {
     padding-bottom: calc(40vh - 250px);
   }
 }
+
+

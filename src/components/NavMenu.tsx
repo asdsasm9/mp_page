@@ -95,10 +95,13 @@ const NavMenu = () => {
           backgroundColor,
         }}
       >
-        <div className=" px-4 py-1 sm:flex items-center justify-between md:mx-10">
+        <div className=" px-4 py-3 sm:flex items-center justify-between md:mx-10">
           <div className="flex w-100 justify-between">
             <div className="text-lg font-bold ">
-              <button className="mainLogo" onClick={() => handleClick("/home")}>
+              <button
+                className="mainLogo logoFont"
+                onClick={() => handleClick("/home")}
+              >
                 <img src="/fotky_web/site/common/main_logo_2.png" />
               </button>
             </div>

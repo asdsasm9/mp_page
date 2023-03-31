@@ -30,7 +30,7 @@ const Contact = () => {
     <>
       <div className="w-full">
         <img
-          className="w-full mb-14 object-cover contactMainImg"
+          className="w-full mb-14 object-cover mainTopImg"
           src="fotky_web/site/contact/main_contact.jpg"
           alt=""
         />

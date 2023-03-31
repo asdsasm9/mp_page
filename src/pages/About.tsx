@@ -29,7 +29,7 @@ const About = () => {
   return (
     <div className="w-full">
       <img
-        className="w-full object-cover aboutMainImg mb-10"
+        className="w-full object-cover mainTopImg mb-10"
         src="fotky_web/site/about/main_about.jpg"
         alt=""
       />

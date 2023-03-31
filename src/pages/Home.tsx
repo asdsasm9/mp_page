@@ -11,7 +11,7 @@ const Home = () => {
     <>
       <div className="w-full">
         <img
-          className="w-full object-cover homeMainImg"
+          className="w-full object-cover mainTopImg"
           src="fotky_web/site/home/main.jpg"
           alt=""
         />
@@ -19,23 +19,25 @@ const Home = () => {
 
       <HelloView></HelloView>
 
-      <p className="textHardTitle pl-10 md:pl-14">KATEGORIE</p>
-      <div className="flex flex-wrap mx-10 md:mb-14 justify-between categoriesMainDiv">
-        <CategoryView
-          title="SVATBY"
-          imgSrc="fotky_web/site/home/weddings.jpg"
-          urlPath="/weddings"
-        ></CategoryView>
-        <CategoryView
-          title="PORTRÉTY"
-          imgSrc="fotky_web/site/home/portraits.jpg"
-          urlPath="/portraits"
-        ></CategoryView>
-        <CategoryView
-          title="PÁROVÉ FOCENÍ"
-          imgSrc="fotky_web/site/home/couples.jpg"
-          urlPath="/couples"
-        ></CategoryView>
+      <div className="CategoriesView">
+        <p className="textHardTitle pl-10 md:pl-14">KATEGORIE</p>
+        <div className="flex flex-wrap mx-10 md:mb-14 justify-between categoriesMainDiv">
+          <CategoryView
+            title="SVATBY"
+            imgSrc="fotky_web/site/home/weddings.jpg"
+            urlPath="/weddings"
+          ></CategoryView>
+          <CategoryView
+            title="PORTRÉTY"
+            imgSrc="fotky_web/site/home/portraits.jpg"
+            urlPath="/portraits"
+          ></CategoryView>
+          <CategoryView
+            title="PÁROVÉ FOCENÍ"
+            imgSrc="fotky_web/site/home/couples.jpg"
+            urlPath="/couples"
+          ></CategoryView>
+        </div>
       </div>
       <PhotoCollage></PhotoCollage>
 

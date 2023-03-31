@@ -22,8 +22,8 @@ code {
   background-color: rgba(227, 204, 180, var(--tw-bg-opacity));
 }
 
-.homeMainImg{
-  max-height: 40rem;
+.mainTopImg{
+  max-height: 95vh;
 }
 
 .menu_icon{
@@ -73,14 +73,6 @@ code {
   color: #464646;
 }
 
-@media (min-width: 768px) {
-.spacer{
-  height:15px;
-}
-.experienceTitle{
-  height: 70px;
-}
-}
 
 .textHardTitle {
   padding-top: 20px;
@@ -157,14 +149,33 @@ code {
   margin-right: auto;
 }
 
-@media (min-width: 768px) {
-  .helloViewImg{
-    width: 80%;
-    height: calc(50vw * 0.75);
-  }
-  }
 
 .bottomBarDiv{
   background-color: #F3F5F5;
   width: 100%;
+}
+
+
+@media (min-width: 768px) {
+  .spacer{
+    height:15px;
+  }
+  .experienceTitle{
+    height: 70px;
+  }
+  .CategoriesView{
+    padding-top: 70px;
+    padding-bottom: 70px;
+  }
+  .helloViewImg{
+    width: 80%;
+    height: calc(50vw * 0.75);
+  }
+}
+
+@media (min-width: 992px) {
+  .CategoriesView{
+    padding-top: calc(40vh - 250px);
+    padding-bottom: calc(40vh - 250px);
+  }
 }

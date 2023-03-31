@@ -7,11 +7,14 @@ export type Review = {
 export const PatiReview: Review = {
   gallery: pati,
   description:
-    "Nejdříve jsme fotili spolu produktovky. Nakonec vznikly skvělé portréty, za které jsem moc vděčná. Nejdříve jsme fotili spolu produktovky. Nakonec vznikly skvělé portréty, za které jsem moc vděčná. Nejdříve jsme fotili spolu produktovky. Nakonec vznikly skvělé portréty, za které jsem moc vděčná",
+    "Focení s Terkou byla skvělá zkušenost! Byla velmi příjemná, ochotná a přizpůsobila se mému tempu a stylu. \
+    Všechny fotografie jsou naprosto nádherné, s dokonalým světlem a krásnými barvami. \
+    Terka dokázala zachytit krásné momenty a emoce, a to mě naprosto nadchlo. Navíc, byla velmi rychlá v dodání hotových fotografií.\
+    Můžu s klidem říct, že je jedna z nejlepších fotografů, se kterými jsem měla tu čest spolupracovat. ",
 };
 
 export const AnezReview: Review = {
   gallery: anez,
   description:
-    "S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z výsledků jsem vždy nadšená!. S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z výsledků jsem vždy nadšená!. S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z výsledků jsem vždy nadšená!. S Terkou je focení vždy přirozené a zábavné. Dokáže zachytit ty nejlepší situace, takže z výsledků jsem vždy nadšená!",
+    "Spolupráce s Terkou byla úžasná. Od začátku do konce byli velmi profesionální, kreativní a velmi rychlá v odpovědích. Fotografie jsou úžasné, s krásnými barvami a úžasnými detaily. Terka mi pomohla uvolnit se před kamerou a výsledné fotografie jsou prostě fantastické. Určitě doporučuji pro vaši další focení",
 };

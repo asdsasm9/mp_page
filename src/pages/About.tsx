@@ -13,16 +13,18 @@ const About = () => {
     Věřím že naše spolupráce bude skvělý zážitek.";
 
   const experiencesDescription =
-    "Fotím již 5 let. Za tu dobu jsem stihla vyfotit 46 000 fotek portrétů, 12 000 fotek svateb a 4 000 fotek produktů. \
+    "Za dobu mé kariéry jsem stihla vyfotit přes 46 000 fotek portrétů, 12 000 fotek svateb a 4 000 fotek produktů. \
     Absolvovala jsem kurz fotografování portrétů a nespočet kurzů na úpravu fotografií. \
-    V budoucnu bych se chtěla věnovat i dalším zaměřením a rozšířit si zkušenosti ve fotografii. \
+    Fotografování byl pro mě odjakživa koníček, ale před pár lety jsem se rozhodla svoje dovednosti prohloubit na profesionální úrovni \
+    a podstoupila jsem několika měsíční kurz, který mě pomohl najít mé vnímání fotografií. Díky tomuto kurzu, několikaletými zkušenostmi \
+    a desítkami nafocených svateb vám mohu nabídnout tu největší kvalitu, kterou si Vaše momenty zaslouží.\
     Vždy se snažím zachytit lidi podle jejich představ a věřím, že správnou spoluprací lze dosáhnout skvělé výsledky.";
 
-  const myGear =
-    "V mém fotobatohu se skrývá několik úžasných spolupracovníků, bez kterých by to nešlo. \
-    Důležité jsou samozřejmě bohaté zkušenosti, ale i vybavení se kterým fotograf fotí. Tímto vybavením vám zajišťuji kvalitu fotografií, které se budou vyjímat ve vašem fotoalbu. \
-    Fotím se Sony Alpha A7R III s objektivem Sigma 24-70 mm f/2,8 DG DN Art. Taky vlastním Nikon D 7100 a objektivy Nikon 50 mm f/1,8 AF-S NIKKOR G nebo Sigma 17-50 mm f/2,8 EX DC OS HSM.\
-    Součastí vybavení jsou taky stativy, průhledné deštníky, fotoodrazky, externí blesk a mnoho dalšího. ";
+  const myStarts =
+    "Fotografování mě zaujalo již v dětství. Nejenže jsem si tajně půjčovala tátův foťák a fotila květiny a včely na balkóně, ale také jsem milovala staré fotoalba. Vždy jsem mohla hodiny sedět s rodinnými fotografiemi a prohlížet si okamžiky, které jsme prožili. Na fotografiích se mi líbí to, že se k nim kdykoliv můžu vrátit a zavzpomínat, co jsem zažila. nebo skrz fotografie poznat mládí mých rodičů a to co oni zažívali. \
+    Vždy mě bavilo se dívat kolem sebe a všímat si detailů, které mnoho lidem utekly. proto jsem se rozhodla je zachytit a tak zvěčnit ty jedinečné momenty plné emocí nebo i malých drobností v přírodě. \
+    Jedna z mých oblíbených činností je chodit do přírody a dívat se kolem sebe. a čerpat tu jednoduchost a zároveň bohatství co se kolem nás skrývá. \
+    ";
 
   return (
     <div className="w-full">
@@ -33,21 +35,20 @@ const About = () => {
       />
       <AboutView
         title={"O MNĚ"}
-        imgSrc={"fotky_web/site/about/cake.jpg"}
+        imgSrc={"fotky_web/site/about/nature.jpg"}
         description={aboutMe}
         textOnRight={true}
       ></AboutView>
       <AboutView
-        title={"MOJE ZKUŠENOSTI"}
-        imgSrc={"fotky_web/site/about/nature.jpg"}
+        title={"MÉ ZKUŠENOSTI"}
+        imgSrc={"fotky_web/site/about/wedding.jpg"}
         description={experiencesDescription}
         textOnRight={false}
       ></AboutView>
-
       <AboutView
-        title={"MOJE VYBAVENÍ"}
-        imgSrc={"fotky_web/site/about/wedding.jpg"}
-        description={myGear}
+        title={"MŮJ PŘIBĚH"}
+        imgSrc={"fotky_web/site/about/cake.jpg"}
+        description={myStarts}
         textOnRight={true}
       ></AboutView>
     </div>

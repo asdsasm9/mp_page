@@ -2,12 +2,12 @@ import { useNavigate } from "react-router-dom";
 import { KnowMore } from "../../data/Translations";
 
 const HelloView = () => {
-  const title = "VÍTEJTE";
+  const title = "Vítejte na mé stránce";
 
   const description1 =
-    "Jmenuji se Terka a vítám vas na mé stránce. Za 5 let fotografování jsem vytvořila tisíce fotografií přírody a lidí. Fotím po celém Jihomoravském kraji a to především svatby, portréty a produkty.";
+    "Vítejte na mých webových stránkách. Jmenuji se Terezie Müllnerová a jsem fotografka z Brna. Specializuji se na portrétní párové a svatební fotografie. Ráda zachytím krásné a autentické momenty, které Vám zůstanou v paměti díky fotografiím už navždy. ";
   const description2 =
-    "Součástí focení je zaručena příjemná atmosféra. Nejdůležitější je zjistit vaše představy a zrealizovat je. Poté zajistit vše potřebné pro nejlepší výsledek fotografií a příjemný zážitek. Následně fotografie upravím a pak vám je pošlu.";
+    "Mým cílem je vytvořit příjemnou a uvolněnou atmosféru během focení, abych vás dokázala zachytit přirozeně a autenticky. ";
 
   const navigate = useNavigate();
   return (

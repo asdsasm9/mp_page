@@ -7,16 +7,16 @@ const Contact = () => {
   usePageTitle("Kontakt");
 
   const contactDesc =
-    "Chcete nové fotky, nebo máte nejaké otázky? \
-  Portréty, svatby, produkty, neváhejte se mi ozvat. Máte konkrétní představu o tom, jak by to mělo vypadat?\
-  Výborně, tak ji můžeme zrealizovat. A když nemáte, vůbec nevadí! Společně se na všem domluvíme.  Napsat mi můžete na Instagram anebo na email. \
-  Jako potvrzení vám odešlu potvrzovací email toho, na čem jsme se domluvili. Už se těším na naši spolupráci.";
+    "Pokud máte zájem o nové fotografie nebo máte nějaké dotazy ohledně portrétů, svateb nebo produktů, neváhejte mě kontaktovat.\
+     Máte konkrétní představu, jak by měly fotografie vypadat? Skvěle, společně to dokážeme zrealizovat. \
+     Pokud ale žádné nápady zatím nemáte, nevadí! Můžeme společně vymyslet něco skvělého. \
+     Kontaktovat mě můžete přes Instagram nebo e-mail. Jakmile se dohodneme na všech podrobnostech, zašlu vám potvrzovací e-mail.\
+    Už se těším na naši spolupráci!";
 
   const instagramDesc =
-    "Neváhejte se podívat i na můj Instagram.\
-Pavidelne na něj přidávám nové příspěvky a novinky. \
-Najdete tam i moje fotografie, které na stránce nejsou. \
-Například fotografie přírody nebo zvířat. Pokud by vás něco zaujalo, můžete mě přes něj kontaktovat.";
+    "Neváhejte se podívat i na můj Instagram. Pavidelne na něj přidávám nové příspěvky a novinky. \
+    Najdete tam i moje fotografie, které na stránce nejsou. Například fotografie přírody nebo zvířat. \
+    Pokud by vás něco zaujalo, můžete mě přes něj kontaktovat.";
 
   const buttonContact: buttonInfo = {
     title: "mullnyphotos@gmail.com",

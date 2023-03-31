@@ -23,7 +23,7 @@ const ContactView = (props: {
     <img src={props.imgSrc} alt="Image" className="textContactImg" />
   );
   return (
-    <div className="mb-5 mx-3 sm:mx-10 sm:flex">
+    <div className="mb-5 mx-3 sm:mx-10 sm:flex items-center">
       <div
         className={`contactImgDiv contactImgDivFirst ${
           props.textOnRight ? "hidden" : "flex"

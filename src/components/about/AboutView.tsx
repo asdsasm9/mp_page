@@ -9,7 +9,7 @@ const AboutView = (props: {
 }) => {
   const myImg = <img src={props.imgSrc} alt="Image" className="textAboutImg" />;
   return (
-    <div className="mb-5 mx-3 sm:mx-10 sm:flex">
+    <div className="mb-5 mx-3 sm:mx-10 sm:flex items-center">
       <div
         className={`aboutImgDiv aboutImgDivFirst ${
           props.textOnRight ? "hidden" : "flex"
@@ -20,7 +20,7 @@ const AboutView = (props: {
 
       <div className="w-100 px-10 p-10 sm:w-1/2 flex justify-center text-justify sm:text-left">
         <div className="textPartAbout">
-          <p className="textAboutTitle">{props.title}</p>
+          <p className="textAboutTitle mb-5">{props.title}</p>
           <p className="textAboutDescription pt-5">{props.description}</p>
         </div>
       </div>

@@ -37,8 +37,8 @@ export const sedlakovi: Gallery = {
   placeName: "",
   nameOfGallery: "Adam & Eliška",
   type: Category.WEDDING,
-  numOfImages: 13,
-  mainImgNum: 4,
+  numOfImages: 44,
+  mainImgNum: 42,
 };
 
 export const suranovi: Gallery = {

@@ -9,10 +9,13 @@ import {
 } from "../data/DataHandler";
 import usePageTitle from "../hooks/usePageTitle";
 import ReactGA from "react-ga";
+import { useEffect } from "react";
 
 const PhotosShowcase = (props: { category: Category }) => {
   usePageTitle("Fotogalerie");
-  ReactGA.pageview("/showcase/" + props.category.toString());
+  useEffect(() => {
+    ReactGA.pageview(window.location.pathname);
+  }, []);
 
   const params = useParams();
   let showingGalleries: Gallery[] = [];

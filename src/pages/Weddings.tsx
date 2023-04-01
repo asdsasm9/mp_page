@@ -2,10 +2,13 @@ import WeddingView from "../components/weddings/WeddingView";
 import { getAllWeddings, getMainImagePath } from "../data/DataHandler";
 import usePageTitle from "../hooks/usePageTitle";
 import ReactGA from "react-ga";
+import { useEffect } from "react";
 
 const Weddings = () => {
-  ReactGA.pageview("/weddings");
   usePageTitle("Svatby");
+  useEffect(() => {
+    ReactGA.pageview(window.location.pathname);
+  }, []);
 
   return (
     <div className="pt-20">

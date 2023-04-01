@@ -2,10 +2,13 @@ import AboutView from "../components/about/AboutView";
 import usePageTitle from "../hooks/usePageTitle";
 import "./../components/about/About.css";
 import ReactGA from "react-ga";
+import { useEffect } from "react";
 
 const About = () => {
-  ReactGA.pageview("/about");
   usePageTitle("O mně");
+  useEffect(() => {
+    ReactGA.pageview(window.location.pathname);
+  }, []);
 
   const aboutMe =
     "Jsem Terka a vítám Vás na své stránce. Již 5 let se věnuji fotografování. Nejdříve jsem se zaměřovala na fotografování přírody, která mě nikdy nepřestane fascinovat.\

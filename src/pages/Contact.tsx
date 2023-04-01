@@ -4,10 +4,13 @@ import usePageTitle from "../hooks/usePageTitle";
 import "./../components/contact/Contact.css";
 
 import ReactGA from "react-ga";
+import { useEffect } from "react";
 
 const Contact = () => {
-  ReactGA.pageview("/contact");
   usePageTitle("Kontakt");
+  useEffect(() => {
+    ReactGA.pageview(window.location.pathname);
+  }, []);
 
   const contactDesc =
     "Pokud máte zájem o nové fotografie nebo máte nějaké dotazy ohledně portrétů, svateb nebo produktů, neváhejte mě kontaktovat.\

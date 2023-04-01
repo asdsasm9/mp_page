@@ -2,10 +2,13 @@ import CategoryView from "../components/home/CategoryView";
 import Experience from "../components/home/Experience";
 import usePageTitle from "../hooks/usePageTitle";
 import ReactGA from "react-ga";
+import { useEffect } from "react";
 
 const Portfolio = () => {
-  ReactGA.pageview("/portfolio");
-  usePageTitle("Portfolio");
+  usePageTitle("Portfólio");
+  useEffect(() => {
+    ReactGA.pageview(window.location.pathname);
+  }, []);
 
   return (
     <>

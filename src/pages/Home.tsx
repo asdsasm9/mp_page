@@ -4,10 +4,13 @@ import HelloView from "../components/home/HelloView";
 import PhotoCollage from "../components/home/PhotoCollage";
 import usePageTitle from "../hooks/usePageTitle";
 import ReactGA from "react-ga";
+import { useEffect } from "react";
 
 const Home = () => {
-  ReactGA.pageview("/home");
   usePageTitle("Úvod");
+  useEffect(() => {
+    ReactGA.pageview(window.location.pathname);
+  }, []);
 
   return (
     <>

@@ -3,7 +3,10 @@ import { InstagramUrl, MailUrl } from "../data/Translations";
 import usePageTitle from "../hooks/usePageTitle";
 import "./../components/contact/Contact.css";
 
+import ReactGA from "react-ga";
+
 const Contact = () => {
+  ReactGA.pageview("/contact");
   usePageTitle("Kontakt");
 
   const contactDesc =

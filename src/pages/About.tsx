@@ -1,8 +1,10 @@
 import AboutView from "../components/about/AboutView";
 import usePageTitle from "../hooks/usePageTitle";
 import "./../components/about/About.css";
+import ReactGA from "react-ga";
 
 const About = () => {
+  ReactGA.pageview("/about");
   usePageTitle("O mně");
 
   const aboutMe =

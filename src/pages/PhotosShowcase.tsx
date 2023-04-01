@@ -8,9 +8,11 @@ import {
   getByGalleryId,
 } from "../data/DataHandler";
 import usePageTitle from "../hooks/usePageTitle";
+import ReactGA from "react-ga";
 
 const PhotosShowcase = (props: { category: Category }) => {
   usePageTitle("Fotogalerie");
+  ReactGA.pageview("/showcase/" + props.category.toString());
 
   const params = useParams();
   let showingGalleries: Gallery[] = [];

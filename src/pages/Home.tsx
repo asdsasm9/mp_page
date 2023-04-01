@@ -3,8 +3,10 @@ import Experience from "../components/home/Experience";
 import HelloView from "../components/home/HelloView";
 import PhotoCollage from "../components/home/PhotoCollage";
 import usePageTitle from "../hooks/usePageTitle";
+import ReactGA from "react-ga";
 
 const Home = () => {
+  ReactGA.pageview("/home");
   usePageTitle("Úvod");
 
   return (

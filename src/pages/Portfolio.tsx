@@ -3,11 +3,13 @@ import Experience from "../components/home/Experience";
 import usePageTitle from "../hooks/usePageTitle";
 import ReactGA from "react-ga";
 import { useEffect } from "react";
+import { pushAnalysisEvent, AnalyticAction } from "../data/AnalyticsHandler";
 
 const Portfolio = () => {
   usePageTitle("Portfólio");
   useEffect(() => {
     ReactGA.pageview(window.location.pathname);
+    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
   }, []);
 
   return (

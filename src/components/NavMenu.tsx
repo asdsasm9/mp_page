@@ -38,7 +38,7 @@ const NavMenu = () => {
         className="navDropdownText dropdown-content-button"
         onClick={() => handleClick("/weddings")}
       >
-        - Svadby
+        - Svatby
       </button>
       <button
         className="navDropdownText dropdown-content-button"

@@ -5,11 +5,13 @@ import "./../components/contact/Contact.css";
 
 import ReactGA from "react-ga";
 import { useEffect } from "react";
+import { AnalyticAction, pushAnalysisEvent } from "../data/AnalyticsHandler";
 
 const Contact = () => {
   usePageTitle("Kontakt");
   useEffect(() => {
     ReactGA.pageview(window.location.pathname);
+    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
   }, []);
 
   const contactDesc =

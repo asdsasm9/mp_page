@@ -10,11 +10,13 @@ import {
 import usePageTitle from "../hooks/usePageTitle";
 import ReactGA from "react-ga";
 import { useEffect } from "react";
+import { AnalyticAction, pushAnalysisEvent } from "../data/AnalyticsHandler";
 
 const PhotosShowcase = (props: { category: Category }) => {
   usePageTitle("Fotogalerie");
   useEffect(() => {
     ReactGA.pageview(window.location.pathname);
+    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
   }, []);
 
   const params = useParams();

@@ -3,11 +3,13 @@ import usePageTitle from "../hooks/usePageTitle";
 import "./../components/about/About.css";
 import ReactGA from "react-ga";
 import { useEffect } from "react";
+import { AnalyticAction, pushAnalysisEvent } from "../data/AnalyticsHandler";
 
 const About = () => {
   usePageTitle("O mně");
   useEffect(() => {
     ReactGA.pageview(window.location.pathname);
+    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
   }, []);
 
   const aboutMe =

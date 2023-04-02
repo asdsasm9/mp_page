@@ -1,5 +1,11 @@
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import GalleryPhotos from "../components/showcase/GalleryPhotos";
+import {
+  AnalyticAction,
+  pushAnalysisEvent,
+  pushAnalysisPageChange,
+} from "../data/AnalyticsHandler";
 import { Category, Gallery } from "../data/Data";
 import {
   getAllCouples,
@@ -8,15 +14,14 @@ import {
   getByGalleryId,
 } from "../data/DataHandler";
 import usePageTitle from "../hooks/usePageTitle";
-import ReactGA from "react-ga";
-import { useEffect } from "react";
-import { AnalyticAction, pushAnalysisEvent } from "../data/AnalyticsHandler";
 
 const PhotosShowcase = (props: { category: Category }) => {
   usePageTitle("Fotogalerie");
+
+  const pageId = "showcase";
   useEffect(() => {
-    ReactGA.pageview(window.location.pathname);
-    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
+    pushAnalysisPageChange(pageId);
+    pushAnalysisEvent(pageId, AnalyticAction.PAGE);
   }, []);
 
   const params = useParams();

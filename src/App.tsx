@@ -1,10 +1,8 @@
 import "./App.css";
 import AppComponent from "./components/AppComponent";
 
-import ReactGA from "react-ga";
-
 function App() {
-  ReactGA.initialize("G-7QEZCZ09WY");
+  console.log("app");
 
   return <AppComponent />;
 }

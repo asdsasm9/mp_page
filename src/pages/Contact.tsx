@@ -3,15 +3,20 @@ import { InstagramUrl, MailUrl } from "../data/Translations";
 import usePageTitle from "../hooks/usePageTitle";
 import "./../components/contact/Contact.css";
 
-import ReactGA from "react-ga";
 import { useEffect } from "react";
-import { AnalyticAction, pushAnalysisEvent } from "../data/AnalyticsHandler";
+import {
+  AnalyticAction,
+  pushAnalysisEvent,
+  pushAnalysisPageChange,
+} from "../data/AnalyticsHandler";
 
 const Contact = () => {
   usePageTitle("Kontakt");
+
+  const pageId = "contact";
   useEffect(() => {
-    ReactGA.pageview(window.location.pathname);
-    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
+    pushAnalysisPageChange(pageId);
+    pushAnalysisEvent(pageId, AnalyticAction.PAGE);
   }, []);
 
   const contactDesc =

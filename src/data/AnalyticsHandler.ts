@@ -1,4 +1,4 @@
-import ReactGA from "react-ga";
+import ReactGA from "react-ga4";
 
 export enum AnalyticAction {
   COMPONENT = "ComponentClick",
@@ -8,4 +8,14 @@ export enum AnalyticAction {
 
 export const pushAnalysisEvent = (category: string, action: AnalyticAction) => {
   ReactGA.event({ category: category, action: action });
+};
+
+export const pushAnalysisPageChange = (pageId: string) => {
+  console.log(pageId);
+  ReactGA.send({
+    hitType: "pageview",
+    page: `/${pageId}`,
+    title: "",
+    legacyDimensionMetric: false,
+  });
 };

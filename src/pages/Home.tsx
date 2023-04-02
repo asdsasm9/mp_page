@@ -1,17 +1,22 @@
+import { useEffect } from "react";
 import CategoryView from "../components/home/CategoryView";
 import Experience from "../components/home/Experience";
 import HelloView from "../components/home/HelloView";
 import PhotoCollage from "../components/home/PhotoCollage";
+import {
+  AnalyticAction,
+  pushAnalysisEvent,
+  pushAnalysisPageChange,
+} from "../data/AnalyticsHandler";
 import usePageTitle from "../hooks/usePageTitle";
-import ReactGA from "react-ga";
-import { useEffect } from "react";
-import { pushAnalysisEvent, AnalyticAction } from "../data/AnalyticsHandler";
 
 const Home = () => {
   usePageTitle("Úvod");
+
+  const pageId = "home";
   useEffect(() => {
-    ReactGA.pageview(window.location.pathname);
-    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
+    pushAnalysisPageChange(pageId);
+    pushAnalysisEvent(pageId, AnalyticAction.PAGE);
   }, []);
 
   return (

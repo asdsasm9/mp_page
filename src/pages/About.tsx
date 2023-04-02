@@ -1,15 +1,20 @@
+import { useEffect } from "react";
 import AboutView from "../components/about/AboutView";
+import {
+  AnalyticAction,
+  pushAnalysisEvent,
+  pushAnalysisPageChange,
+} from "../data/AnalyticsHandler";
 import usePageTitle from "../hooks/usePageTitle";
 import "./../components/about/About.css";
-import ReactGA from "react-ga";
-import { useEffect } from "react";
-import { AnalyticAction, pushAnalysisEvent } from "../data/AnalyticsHandler";
 
 const About = () => {
   usePageTitle("O mně");
+
+  const pageId = "about";
   useEffect(() => {
-    ReactGA.pageview(window.location.pathname);
-    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
+    pushAnalysisPageChange(pageId);
+    pushAnalysisEvent(pageId, AnalyticAction.PAGE);
   }, []);
 
   const aboutMe =

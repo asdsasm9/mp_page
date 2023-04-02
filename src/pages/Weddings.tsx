@@ -1,15 +1,20 @@
+import { useEffect } from "react";
 import WeddingView from "../components/weddings/WeddingView";
+import {
+  AnalyticAction,
+  pushAnalysisEvent,
+  pushAnalysisPageChange,
+} from "../data/AnalyticsHandler";
 import { getAllWeddings, getMainImagePath } from "../data/DataHandler";
 import usePageTitle from "../hooks/usePageTitle";
-import ReactGA from "react-ga";
-import { useEffect } from "react";
-import { pushAnalysisEvent, AnalyticAction } from "../data/AnalyticsHandler";
 
 const Weddings = () => {
   usePageTitle("Svatby");
+
+  const pageId = "weddings";
   useEffect(() => {
-    ReactGA.pageview(window.location.pathname);
-    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
+    pushAnalysisPageChange(pageId);
+    pushAnalysisEvent(pageId, AnalyticAction.PAGE);
   }, []);
 
   return (

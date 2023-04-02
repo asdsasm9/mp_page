@@ -1,15 +1,20 @@
+import { useEffect } from "react";
 import CategoryView from "../components/home/CategoryView";
 import Experience from "../components/home/Experience";
+import {
+  AnalyticAction,
+  pushAnalysisEvent,
+  pushAnalysisPageChange,
+} from "../data/AnalyticsHandler";
 import usePageTitle from "../hooks/usePageTitle";
-import ReactGA from "react-ga";
-import { useEffect } from "react";
-import { pushAnalysisEvent, AnalyticAction } from "../data/AnalyticsHandler";
 
 const Portfolio = () => {
   usePageTitle("Portfólio");
+
+  const pageId = "portfolio";
   useEffect(() => {
-    ReactGA.pageview(window.location.pathname);
-    pushAnalysisEvent(window.location.pathname, AnalyticAction.PAGE);
+    pushAnalysisPageChange(pageId);
+    pushAnalysisEvent(pageId, AnalyticAction.PAGE);
   }, []);
 
   return (

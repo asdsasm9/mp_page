@@ -11,6 +11,7 @@ export const pushAnalysisEvent = (category: string, action: AnalyticAction) => {
 };
 
 export const pushAnalysisPageChange = (pageId: string) => {
+  return;
   console.log(pageId);
   ReactGA.send({
     hitType: "pageview",

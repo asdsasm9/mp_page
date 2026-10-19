@@ -1,7 +1,7 @@
 ---
 // Album page: header (title, place, date, description), breadcrumb, photo grid, previous/next album, lightbox.
 // Each thumbnail is a link to the 1600 JPEG, so the grid works without JavaScript; lightbox.ts upgrades it
-// to a native <dialog>.
+// to a native <dialog>. The data-lb-* attributes (fit srcset, master URL and size) are read only by the zoom script.
 import Breadcrumb from '../../../components/Breadcrumb.astro';
 import Photo from '../../../components/Photo.astro';
 import Base from '../../../layouts/Base.astro';
@@ -61,13 +61,23 @@ const { prev, next } = catalog.neighbours(album.slug);
 
     <ul class="grid">
       {
-        thumbs.map((t) => (
-          <li>
-            <a href={photoSources(t.photo, env.imgBaseUrl).fallback.url} data-lb-item>
-              <Photo photo={t.photo} base={env.imgBaseUrl} alt={t.alt} context="grid" eager={t.eager} priority={t.priority} />
-            </a>
-          </li>
-        ))
+        thumbs.map((t) => {
+          const src = photoSources(t.photo, env.imgBaseUrl);
+          return (
+            <li>
+              <a
+                href={src.fallback.url}
+                data-lb-item
+                data-lb-set={src.lightboxSet}
+                data-lb-master={src.master.url}
+                data-lb-mw={src.master.width}
+                data-lb-mh={src.master.height}
+              >
+                <Photo photo={t.photo} base={env.imgBaseUrl} alt={t.alt} context="grid" eager={t.eager} priority={t.priority} />
+              </a>
+            </li>
+          );
+        })
       }
     </ul>
 
@@ -78,8 +88,17 @@ const { prev, next } = catalog.neighbours(album.slug);
   </div>
 
   <dialog class="lightbox" data-lightbox aria-label="Prohlížeč fotografií">
-    <img data-lb="img" alt="" />
+    <div class="lb-stage" data-lb="stage">
+      <img class="lb-back" data-lb="back" alt="" hidden />
+      <img class="lb-front" data-lb="img" alt="" />
+    </div>
     <p class="count" data-lb="count" aria-live="polite"></p>
+    <p class="lb-status" data-lb="status" role="status" aria-live="polite"></p>
+    <div class="lb-zoom" data-lb="zoom" role="group" aria-label="Přiblížení" hidden>
+      <button type="button" class="lb-btn" data-lb="zoom-out" aria-label="Oddálit">&minus;</button>
+      <button type="button" class="lb-btn" data-lb="zoom-fit" aria-label="Přizpůsobit">1&times;</button>
+      <button type="button" class="lb-btn" data-lb="zoom-in" aria-label="Přiblížit">+</button>
+    </div>
     <button type="button" class="lb-btn lb-close" data-lb="close" aria-label="Zavřít">&times;</button>
     <button type="button" class="lb-btn lb-prev" data-lb="prev" aria-label="Předchozí fotografie">&lsaquo;</button>
     <button type="button" class="lb-btn lb-next" data-lb="next" aria-label="Další fotografie">&rsaquo;</button>
@@ -176,13 +195,70 @@ const { prev, next } = catalog.neighbours(album.slug);
     place-items: center;
   }
 
-  .lightbox img {
+  .lightbox [hidden] {
+    display: none;
+  }
+
+  /* Zoom area: both images share one grid cell; the front one is shown over the back (grid thumbnail) one. */
+  .lb-stage {
+    display: grid;
+    place-items: center;
+    inline-size: 100%;
+    block-size: 100dvh;
+    overflow: hidden;
+  }
+
+  /* The script sets data-zoom="on" when the master gives enough headroom; then gestures belong to the page script. */
+  .lb-stage[data-zoom='on'] {
+    touch-action: none;
+  }
+
+  .lb-stage img {
+    grid-area: 1 / 1;
     display: block;
     max-inline-size: 100%;
     max-block-size: 100dvh;
     inline-size: auto;
     block-size: auto;
     object-fit: contain;
+    transform: translate(var(--lb-x, 0), var(--lb-y, 0)) scale(var(--lb-scale, 1));
+  }
+
+  .lb-stage[data-zoom='on'] img {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .lb-stage[data-zoom='on'][data-zoomed] {
+    cursor: grab;
+  }
+
+  .lb-status {
+    position: absolute;
+    inset-block-start: var(--space-3);
+    inset-inline: var(--space-8);
+    margin: 0;
+    text-align: center;
+    font-size: var(--font-size-small);
+  }
+
+  .lb-status:empty {
+    display: none;
+  }
+
+  /* Zoom buttons: the button alternative to pinch, double tap, wheel and drag (WCAG 2.5.1, 2.5.7). */
+  .lb-zoom {
+    position: absolute;
+    inset-block-end: var(--space-3);
+    inset-inline-end: var(--space-3);
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .lb-zoom .lb-btn {
+    position: static;
+    font-size: var(--font-size-0);
   }
 
   .count {
@@ -242,6 +318,10 @@ const { prev, next } = catalog.neighbours(album.slug);
   }
 
   @media (prefers-reduced-motion: no-preference) {
+    .lb-stage img {
+      transition: transform var(--motion-fast) var(--motion-ease);
+    }
+
     .lightbox[open] {
       animation: lb-in var(--motion-base) var(--motion-ease);
     }

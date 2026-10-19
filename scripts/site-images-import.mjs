@@ -1,4 +1,4 @@
-// One-off import of the 16 site images the legacy app really used (plan WP3-6, CONTENT-MAPPING row "site/*").
+// One-off import of the 15 site images the site really uses (the legacy contact/instagram.png feed screenshot was dropped, T-96) (plan WP3-6, CONTENT-MAPPING row "site/*").
 // Reads legacy/fotky_web/site/ (read-only), writes apps/web/src/assets/site/ with the long edge at most
 // 2400 px (JPEG quality 80, PNG lossless). The result is committed so the build survives the later
 // removal of legacy/. Idempotent: an existing output file is kept (use --force to regenerate).
@@ -32,7 +32,6 @@ export const SITE_FILES = [
   'about/cake.jpg',
   'contact/main_contact.jpg',
   'contact/contact.jpg',
-  'contact/instagram.png',
 ];
 
 /** Imports every file; returns one row per file with the action taken. */

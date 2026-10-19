@@ -17,7 +17,10 @@ let out = '';
 let html = '';
 
 beforeAll(() => {
-  out = mkdtempSync(join(tmpdir(), 'mp-web-'));
+  // Astro keeps its scratch state in apps/web/.astro (types, .prerender) and offers no CLI flag or config key to move it
+  // (cacheDir only moves the Vite cache), so --outDir does not isolate this build. Never run another `astro build` in
+  // apps/web (npm run build, design-check) while this test runs; see docs/DESIGN-CHECK.md "Not done / limits".
+  out =mkdtempSync(join(tmpdir(), 'mp-web-'));
   execFileSync('npx', ['astro', 'build', '--outDir', out], {
     cwd: webRoot,
     env: { ...process.env, ASTRO_TELEMETRY_DISABLED: '1', PUBLIC_SITE_ENV: '', PUBLIC_SNAPSHOT_URL: '' },

@@ -1,4 +1,5 @@
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -137,7 +138,10 @@ describe('serve-dist', () => {
   writeFileSync(join(dist, '_headers'), "/*\n  Content-Security-Policy: default-src 'self'\n");
   let running;
   const start = async () => (running ??= await listen(createDistServer(dist)));
-  afterAll(() => running?.server.close());
+  afterAll(() => {
+    running?.server.closeAllConnections?.();
+    running?.server.close();
+  });
 
   it('sends CSP on HTML', async () => {
     const { origin } = await start();
@@ -163,8 +167,16 @@ describe('serve-dist', () => {
   });
   it('does not escape the dist root', async () => {
     const { origin } = await start();
-    const res = await fetch(`${origin}/..%2f..%2fpackage.json`);
-    expect(res.status).toBe(404);
+    // Plain http.request without keep-alive: undici's fetch would keep the socket open and stall the server close.
+    const status = await new Promise((resolve, reject) => {
+      const req = request(`${origin}/..%2f..%2fpackage.json`, { agent: false, headers: { connection: 'close' } }, (res) => {
+        res.resume();
+        res.on('end', () => resolve(res.statusCode));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    expect(status).toBe(404);
   });
 });
 

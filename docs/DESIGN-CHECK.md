@@ -41,8 +41,11 @@ only a proxy. INP is not claimed as passed.
 
 - `/cookies/` overflowed 272 px at 320 px (definition list with `max-content` column). Now one column below 48rem.
 - `/kontakt/` Instagram button showed the legacy feed screenshot (`instagram.png`, 865 px photo grid) shrunk to 24 px
-  as its "icon". Replaced by an inline SVG glyph in `currentColor`.
+  as its "icon". Replaced by an inline SVG glyph in `currentColor`. The unused asset was deleted (T-96) and removed from
+  `scripts/site-images-import.mjs`.
 - Eager, non-LCP images now get `fetchpriority="low"` so they do not compete with the LCP image (category LCP 3228 to about 2930 ms).
+  Caveat: `loading="eager"` is only for the hero or the first row of tiles. Eager images further down the page get
+  `fetchpriority="low"` and gain nothing from being eager; keep everything else lazy.
 - The 404 page's own HTTP 404 status was reported as a console error; only that exact document message is now ignored.
 - Lab server now gzips text types like the real host (home LCP 2553 to 2404 ms).
 - Tooling: Chrome autodetect (macOS paths), `is-crawlable` handling, scripted keyboard pass, dark-scheme screenshots,
@@ -59,4 +62,11 @@ Not covered by tokens: nothing found by the checks.
 ## Not done / limits
 
 - Lighthouse numbers come from a laptop and vary by about 100 to 300 ms between runs; rerun before relying on a 50 ms margin.
+- Concurrent `astro build` runs in `apps/web` collide: Astro writes `apps/web/.astro/.prerender` and has no CLI flag or
+  config key to relocate it (`cacheDir` only moves the Vite cache, `--outDir` only the output). `Base.test.ts` builds with
+  `--outDir <tmp>`, so do not run `npm run build -w apps/web` or `npm run design-check` while `npm test` runs; run them one
+  after the other.
+- A production build has no `noindex`: the `robots` check in `scripts/site-checks.mjs` (page-checks gate) fails a production
+  build with `noindex` on any indexable page and requires it on the 404 page; its tests are in `scripts/site-checks.test.mjs`
+  ("robots"). The design-check itself only ever builds the noindex fixture.
 - Photos in the fixture are the dev images in `/_dev-img`; production numbers need a snapshot build against the real image host.

@@ -27,9 +27,10 @@ beforeAll(async () => {
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 describe('importSiteImages', () => {
-  it('writes exactly 16 files with long edge at most 2400, and a rerun keeps them all', async () => {
+  it('writes exactly 15 files (no instagram.png) with long edge at most 2400, and a rerun keeps them all', async () => {
+    expect(SITE_FILES).not.toContain('contact/instagram.png');
     const rows = await importSiteImages({ srcDir: src, outDir: out });
-    expect(rows).toHaveLength(16);
+    expect(rows).toHaveLength(15);
     expect(rows.every((r: { action: string }) => r.action === 'written')).toBe(true);
     for (const r of rows as Array<{ rel: string; width: number; height: number }>) {
       expect(Math.max(r.width, r.height), r.rel).toBeLessThanOrEqual(MAX_EDGE);
@@ -38,7 +39,7 @@ describe('importSiteImages', () => {
     expect([main.width, main.height]).toEqual([2400, 800]);
 
     const again = await importSiteImages({ srcDir: src, outDir: out });
-    expect(again).toHaveLength(16);
+    expect(again).toHaveLength(15);
     expect(again.every((r: { action: string }) => r.action === 'kept')).toBe(true);
   });
 

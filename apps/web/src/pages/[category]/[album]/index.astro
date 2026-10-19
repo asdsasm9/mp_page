@@ -202,6 +202,7 @@ const { prev, next } = catalog.neighbours(album.slug);
   /* Zoom area: both images share one grid cell; the front one is shown over the back (grid thumbnail) one. */
   .lb-stage {
     display: grid;
+    grid-template: 100% / 100%;
     place-items: center;
     inline-size: 100%;
     block-size: 100dvh;
@@ -216,10 +217,10 @@ const { prev, next } = catalog.neighbours(album.slug);
   .lb-stage img {
     grid-area: 1 / 1;
     display: block;
-    max-inline-size: 100%;
-    max-block-size: 100dvh;
-    inline-size: auto;
-    block-size: auto;
+    /* Both layers fill the stage and contain the photo, so the thumbnail and the sharper image sit exactly
+       on each other and the swap does not move anything; the script measures this box for the zoom limits. */
+    inline-size: 100%;
+    block-size: 100%;
     object-fit: contain;
     transform: translate(var(--lb-x, 0), var(--lb-y, 0)) scale(var(--lb-scale, 1));
   }
@@ -288,7 +289,8 @@ const { prev, next } = catalog.neighbours(album.slug);
     cursor: pointer;
   }
 
-  .lb-btn:disabled {
+  .lb-btn:disabled,
+  .lb-btn[aria-disabled='true'] {
     opacity: 0.4;
     cursor: default;
   }

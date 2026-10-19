@@ -40,25 +40,32 @@ export const STEP_FACTOR = 1.5;
 
 export const identity: ZoomView = { scale: 1, x: 0, y: 0 };
 
-/** The photo (width x height, any unit) contained in the stage, never enlarged past its own size ratio. */
+const positive = (n: number): boolean => Number.isFinite(n) && n > 0;
+
+/**
+ * The largest box with the photo's aspect ratio that fits inside the stage (it scales the photo up or down to
+ * touch the stage on one axis, whatever the photo's own pixel size is). 0 x 0 for any non-finite or non-positive size.
+ */
 export function fitSize(stage: Size, photo: Size): Size {
-  if (stage.width <= 0 || stage.height <= 0 || photo.width <= 0 || photo.height <= 0) {
+  if (!positive(stage.width) || !positive(stage.height) || !positive(photo.width) || !positive(photo.height)) {
     return { width: 0, height: 0 };
   }
   const k = Math.min(stage.width / photo.width, stage.height / photo.height);
   return { width: photo.width * k, height: photo.height * k };
 }
 
-/** Largest scale: min(4, master width / fit width in CSS px). 1 when the geometry is degenerate. */
+/** Largest scale: min(4, master width / fit width in CSS px). 1 when the geometry is degenerate or non-finite. */
 export function maxScale(masterWidth: number, fitCssWidth: number): number {
-  if (!(masterWidth > 0) || !(fitCssWidth > 0)) return 1;
+  if (!positive(masterWidth) || !positive(fitCssWidth)) return 1;
   return Math.max(1, Math.min(MAX_SCALE_LIMIT, masterWidth / fitCssWidth));
 }
 
 /** Zoom is only offered when the master has at least ~10 % more pixels than the fit box shows. */
 export const zoomEnabled = (max: number): boolean => max >= MIN_HEADROOM;
 
-export const clampScale = (scale: number, max: number): number => Math.min(Math.max(scale, 1), Math.max(1, max));
+/** 1..max; a non-finite scale (NaN, Infinity) is treated as fit, a non-finite max as 1. */
+export const clampScale = (scale: number, max: number): number =>
+  Number.isFinite(scale) ? Math.min(Math.max(scale, 1), Math.max(1, Number.isFinite(max) ? max : 1)) : 1;
 
 /** Largest |translation| per axis at `scale`: half of the overflow of the scaled image over the stage. */
 function limits(scale: number, g: ZoomGeometry): Point {
@@ -68,7 +75,7 @@ function limits(scale: number, g: ZoomGeometry): Point {
   };
 }
 
-const clampAbs = (v: number, limit: number): number => Math.min(Math.max(v, -limit), limit);
+const clampAbs = (v: number, limit: number): number => (Number.isFinite(v) ? Math.min(Math.max(v, -limit), limit) : 0);
 
 /** Clamps scale to 1..max and the translation so no edge of the image is pulled inside the stage. */
 export function clampView(view: ZoomView, g: ZoomGeometry): ZoomView {
@@ -87,14 +94,16 @@ export function panBy(view: ZoomView, dx: number, dy: number, g: ZoomGeometry): 
 export function zoomAt(view: ZoomView, scale: number, at: Point, g: ZoomGeometry): ZoomView {
   const next = clampScale(scale, g.max);
   const ratio = next / view.scale;
-  return clampView({ scale: next, x: at.x - (at.x - view.x) * ratio, y: at.y - (at.y - view.y) * ratio }, g);
+  // A non-finite pointer position falls back to the stage centre rather than poisoning the view with NaN.
+  const p = Number.isFinite(at.x) && Number.isFinite(at.y) ? at : { x: 0, y: 0 };
+  return clampView({ scale: next, x: p.x - (p.x - view.x) * ratio, y: p.y - (p.y - view.y) * ratio }, g);
 }
 
 /** One button / key step: `dir` +1 zooms in, -1 out, around `at` (default the stage centre). */
 export function zoomStep(view: ZoomView, dir: 1 | -1, g: ZoomGeometry, at: Point = { x: 0, y: 0 }): ZoomView {
   const factor = dir > 0 ? STEP_FACTOR : 1 / STEP_FACTOR;
   const target = view.scale * factor;
-  // Snap back to exactly fit when stepping out near 1, and to exactly max when stepping in near it.
+  // A step out that would end below 1.05 snaps to exactly fit; a step in past max is clamped to exactly max by zoomAt.
   return zoomAt(view, target < 1.05 ? 1 : target, at, g);
 }
 

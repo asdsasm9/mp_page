@@ -143,4 +143,28 @@ describe('lightbox zoom state', () => {
     expect(canZoomOut({ scale: 1.5, x: 0, y: 0 })).toBe(true);
     expect(zoomPercent({ scale: 1.5, x: 0, y: 0 })).toBe(150);
   });
+
+  it('non-finite and zero sizes give a 0 x 0 fit and a max of 1 (zoom off)', () => {
+    const zero = { width: 0, height: 0 };
+    expect(fitSize({ width: NaN, height: 800 }, { width: 10, height: 10 })).toEqual(zero);
+    expect(fitSize(stage, { width: Infinity, height: 10 })).toEqual(zero);
+    expect(fitSize(stage, { width: 0, height: 0 })).toEqual(zero);
+    expect(maxScale(NaN, 1000)).toBe(1);
+    expect(maxScale(Infinity, 1000)).toBe(1);
+    expect(maxScale(3000, NaN)).toBe(1);
+    expect(zoomEnabled(maxScale(3000, 0))).toBe(false);
+  });
+
+  it('a NaN view or scale never leaks NaN out of the clamp', () => {
+    expect(clampView({ scale: NaN, x: 5, y: 5 }, g)).toEqual(identity);
+    const v = clampView({ scale: 2, x: NaN, y: Infinity }, g);
+    expect(v.scale).toBe(2);
+    expect(Number.isFinite(v.x) && Number.isFinite(v.y)).toBe(true);
+    expect(clampView({ scale: 2, x: 0, y: 0 }, { ...g, max: NaN })).toEqual(identity);
+  });
+
+  it('zooming at a NaN point falls back to the stage centre', () => {
+    const v = zoomAt(identity, 2, { x: NaN, y: 10 }, g);
+    expect(v).toEqual(zoomAt(identity, 2, { x: 0, y: 0 }, g));
+  });
 });

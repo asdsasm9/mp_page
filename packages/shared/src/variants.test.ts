@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   PhotoVariantsSchema,
   estimateBytes,
+  WEBP_BYTES_PER_PIXEL,
+  WEBP_TIER_VALUES,
   fitWithin,
   sumBytes,
   variantPlan,
@@ -20,20 +22,20 @@ describe('fitWithin', () => {
 });
 
 describe('variantPlan examples', () => {
-  it('4000x3000 -> master 3000x2250 with all four tiers', () => {
+  it('4000x3000 -> master 3000x2250 with all five tiers', () => {
     const m = fitWithin(4000, 3000);
     const p = variantPlan(m.w, m.h);
     expect(p.master).toEqual({ w: 3000, h: 2250 });
-    expect(p.webp.map((e) => e.tier)).toEqual([480, 960, 1600, 2400]);
+    expect(p.webp.map((e) => e.tier)).toEqual([480, 720, 960, 1600, 2400]);
     expect(p.webp[0]).toEqual({ tier: 480, w: 480, h: 360 });
     expect(p.jpeg).toEqual({ w: 1600, h: 1200 });
   });
-  it('2000x3000 -> master 2000x3000, tiers 480/960/1600', () => {
+  it('2000x3000 -> master 2000x3000, tiers 480/720/960/1600', () => {
     const m = fitWithin(2000, 3000);
     expect(m).toEqual({ w: 2000, h: 3000 });
     const p = variantPlan(m.w, m.h);
-    expect(p.webp.map((e) => e.tier)).toEqual([480, 960, 1600]);
-    expect(p.webp[2]).toEqual({ tier: 1600, w: 1600, h: 2400 });
+    expect(p.webp.map((e) => e.tier)).toEqual([480, 720, 960, 1600]);
+    expect(p.webp[3]).toEqual({ tier: 1600, w: 1600, h: 2400 });
   });
   it('300x200 -> tier 480 with actual size 300x200, jpeg 300x200', () => {
     const p = variantPlan(300, 200);
@@ -41,7 +43,32 @@ describe('variantPlan examples', () => {
     expect(p.jpeg).toEqual({ w: 300, h: 200 });
   });
   it('1500 wide master has no tier between 960 and 1500 (documented limitation)', () => {
-    expect(variantPlan(1500, 1000).webp.map((e) => e.tier)).toEqual([480, 960]);
+    expect(variantPlan(1500, 1000).webp.map((e) => e.tier)).toEqual([480, 720, 960]);
+  });
+
+  it('tier list exists once and is ascending with 720', () => {
+    expect([...WEBP_TIER_VALUES]).toEqual([480, 720, 960, 1600, 2400]);
+  });
+
+  const masters: Array<[number, number[]]> = [
+    [400, [480]],
+    [480, [480]],
+    [600, [480]],
+    [719, [480]],
+    [720, [480, 720]],
+    [1000, [480, 720, 960]],
+    [1480, [480, 720, 960]],
+    [2400, [480, 720, 960, 1600, 2400]],
+    [3000, [480, 720, 960, 1600, 2400]],
+  ];
+  it.each(masters)('master width %i -> tiers %j', (w, tiers) => {
+    const p = variantPlan(w, Math.round(w * 0.75));
+    expect(p.webp.map((e) => e.tier)).toEqual(tiers);
+    expect(p.webp.some((e) => e.tier === 720)).toBe(w >= 720);
+  });
+  it('a master narrower than 480 gets one tier at its actual size', () => {
+    expect(variantPlan(400, 300).webp).toEqual([{ tier: 480, w: 400, h: 300 }]);
+    expect(variantPlan(719, 479).webp.map((e) => e.tier)).toEqual([480]);
   });
 });
 
@@ -132,10 +159,24 @@ describe('PhotoVariantsSchema', () => {
     expect(PhotoVariantsSchema.safeParse(noJpeg).success).toBe(false);
     expect(PhotoVariantsSchema.safeParse({ ...sample, avif: [] }).success).toBe(false);
   });
-  it('rejects an unknown tier', () => {
-    expect(
-      PhotoVariantsSchema.safeParse({ ...sample, webp: [{ tier: 700, w: 700, h: 400, bytes: 1 }] }).success,
-    ).toBe(false);
+  it('rejects an unknown tier (700, 800)', () => {
+    for (const t of [700, 800]) {
+      expect(
+        PhotoVariantsSchema.safeParse({ ...sample, webp: [{ tier: t, w: t, h: 400, bytes: 1 }] }).success,
+      ).toBe(false);
+    }
+  });
+  it('accepts a 720 tier and rows without it', () => {
+    const with720 = {
+      ...sample,
+      webp: [
+        { tier: 480, w: 480, h: 320, bytes: 20_000 },
+        { tier: 720, w: 720, h: 480, bytes: 40_000 },
+        { tier: 960, w: 960, h: 640, bytes: 80_000 },
+      ],
+    };
+    expect(PhotoVariantsSchema.safeParse(with720).success).toBe(true);
+    expect(PhotoVariantsSchema.safeParse(sample).success).toBe(true);
   });
 });
 
@@ -143,13 +184,27 @@ describe('sumBytes', () => {
   it('equals the manual sum', () => {
     expect(sumBytes(sample)).toBe(1_000_000 + 20_000 + 80_000 + 300_000 + 100_000);
   });
+  it('equals the sum of parts with five tiers', () => {
+    const five: PhotoVariants = {
+      master: { w: 3000, h: 2000, bytes: 1_000_000 },
+      webp: [480, 720, 960, 1600, 2400].map((t, i) => ({ tier: t as 480, w: t, h: Math.round(t * 2 / 3), bytes: 10_000 * (i + 1) })),
+      jpeg: { w: 1600, h: 1067, bytes: 300_000 },
+      og: { w: 1200, h: 630, bytes: 100_000 },
+    };
+    expect(sumBytes(five)).toBe(1_000_000 + 10_000 + 20_000 + 30_000 + 40_000 + 50_000 + 300_000 + 100_000);
+  });
 });
 
 describe('estimateBytes', () => {
-  it('3000x2000 is between 1.5 MB and 3.5 MB', () => {
+  it('3000x2000 is between 2.0 MB and 3.0 MB (sanity bound incl. the 720 tier)', () => {
     const e = estimateBytes(3000, 2000);
-    expect(e).toBeGreaterThan(1_500_000);
-    expect(e).toBeLessThan(3_500_000);
+    expect(e).toBeGreaterThan(2_000_000);
+    expect(e).toBeLessThan(3_000_000);
+  });
+  it('the 720 tier adds its term to the estimate', () => {
+    // 720x480 px at WEBP_BYTES_PER_PIXEL
+    expect(WEBP_BYTES_PER_PIXEL * 720 * 480).toBeCloseTo(41_472, 0);
+    expect(estimateBytes(720, 480)).toBeGreaterThan(estimateBytes(719, 479));
   });
   it('is an integer and grows with size', () => {
     expect(Number.isInteger(estimateBytes(1000, 700))).toBe(true);

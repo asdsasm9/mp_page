@@ -1,8 +1,8 @@
 /** Storage key scheme. Keys derive from the photo id only, never from album or category. */
-import type { PhotoVariants } from './variants';
+import { WEBP_TIER_VALUES, type PhotoVariants } from './variants';
 
-export const WEBP_TIERS = [480, 960, 1600, 2400] as const;
-export type WebpTier = (typeof WEBP_TIERS)[number];
+/** Derived from the single tier list in variants.ts. */
+export type WebpTier = (typeof WEBP_TIER_VALUES)[number];
 
 export const SNAPSHOT_KEY = 'catalog/published.json';
 export const MAX_KEY_LENGTH = 512;
@@ -26,7 +26,7 @@ export function masterKey(id: string): string {
   return `${photoPrefix(id)}master.jpg`;
 }
 export function webpKey(id: string, tier: WebpTier): string {
-  if (!(WEBP_TIERS as readonly number[]).includes(tier)) throw new Error(`Invalid tier: ${tier}`);
+  if (!(WEBP_TIER_VALUES as readonly number[]).includes(tier)) throw new Error(`Invalid tier: ${tier}`);
   return `${photoPrefix(id)}${tier}.webp`;
 }
 export function jpegKey(id: string): string {
@@ -61,7 +61,7 @@ export function parseKey(key: string): ParsedKey | null {
   const w = /^(\d+)\.webp$/.exec(file);
   if (w) {
     const tier = Number(w[1]);
-    if ((WEBP_TIERS as readonly number[]).includes(tier)) return { kind: 'webp', id, tier: tier as WebpTier };
+    if ((WEBP_TIER_VALUES as readonly number[]).includes(tier)) return { kind: 'webp', id, tier: tier as WebpTier };
   }
   return null;
 }

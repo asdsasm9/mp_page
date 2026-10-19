@@ -2,13 +2,16 @@
  * Image variant planning and the variants jsonb shape.
  *
  * Known limitation (accepted for v1, the CONTENT-MAPPING rule): WebP tiers are only the
- * values of 480/960/1600/2400 that fit inside the master width, so a 1500 px wide master
+ * values of 480/720/960/1600/2400 that fit inside the master width, so a 1500 px wide master
  * gets no tier between 960 and 1500. AVIF is not planned (D-9).
+ * The 720 tier (WP-03b) is required for new uploads; rows stored before it stay valid
+ * without it (they are never re-validated against the plan).
  */
 import { z } from 'zod';
 
 export const MASTER_MAX_EDGE = 3000;
-export const WEBP_TIER_VALUES = [480, 960, 1600, 2400] as const;
+/** The one and only tier list; keys.ts and the zod schemas derive from it. */
+export const WEBP_TIER_VALUES = [480, 720, 960, 1600, 2400] as const;
 export const JPEG_WIDTH = 1600;
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
@@ -77,7 +80,15 @@ export function variantPlan(masterW: number, masterH: number): VariantPlan {
 
 const posInt = z.number().int().positive();
 const bytes = z.number().int().nonnegative();
-const tier = z.union([z.literal(480), z.literal(960), z.literal(1600), z.literal(2400)]);
+/** Union of literals derived from WEBP_TIER_VALUES (never listed twice). */
+export const WebpTierSchema = z.union(
+  WEBP_TIER_VALUES.map((t) => z.literal(t)) as unknown as [
+    z.ZodLiteral<(typeof WEBP_TIER_VALUES)[number]>,
+    z.ZodLiteral<(typeof WEBP_TIER_VALUES)[number]>,
+    ...z.ZodLiteral<(typeof WEBP_TIER_VALUES)[number]>[],
+  ],
+);
+const tier = WebpTierSchema;
 
 const dims = z.object({ w: posInt, h: posInt, bytes }).strict();
 
@@ -106,6 +117,9 @@ export function sumBytes(v: PhotoVariants): number {
 // i.e. about 0.25 bytes per pixel for a quality ~80 JPEG. legacy-photos.json does not exist
 // yet (WP2-11); recalibrate from it later if the sanity bound test drifts.
 // MASTERPLAN expects about 2 to 2.5 MB per photo in total; the figures below are slightly pessimistic.
+// WP-03b: the 720 tier adds ~41 KB to the estimate at 0.12 B/px (the real sharp q70 file is ~95 KB),
+// i.e. +2 to 4.5% storage per photo, still under the 9.5 GB guard. WEBP_BYTES_PER_PIXEL is left
+// unchanged; the sanity-bound test keeps a 3000x2000 estimate between 2.0 and 3.0 MB (about 2.8 MB).
 export const MASTER_JPEG_BYTES_PER_PIXEL = 0.25;
 export const WEBP_BYTES_PER_PIXEL = 0.12;
 export const JPEG_1600_BYTES_PER_PIXEL = 0.22;

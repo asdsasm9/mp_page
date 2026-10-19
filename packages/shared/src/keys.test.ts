@@ -12,6 +12,7 @@ import {
   photoPrefix,
   webpKey,
 } from './keys';
+import { WEBP_TIER_VALUES } from './variants';
 
 const ID = '123e4567-e89b-42d3-a456-426614174000';
 
@@ -20,6 +21,7 @@ describe('key strings', () => {
     expect(photoPrefix(ID)).toBe(`photos/${ID}/`);
     expect(masterKey(ID)).toBe(`photos/${ID}/master.jpg`);
     expect(webpKey(ID, 480)).toBe(`photos/${ID}/480.webp`);
+    expect(webpKey(ID, 720)).toBe(`photos/${ID}/720.webp`);
     expect(webpKey(ID, 960)).toBe(`photos/${ID}/960.webp`);
     expect(webpKey(ID, 1600)).toBe(`photos/${ID}/1600.webp`);
     expect(webpKey(ID, 2400)).toBe(`photos/${ID}/2400.webp`);
@@ -53,7 +55,7 @@ describe('isValidPhotoId', () => {
 describe('parseKey', () => {
   it('round-trips every kind', () => {
     expect(parseKey(masterKey(ID))).toEqual({ kind: 'master', id: ID });
-    for (const t of [480, 960, 1600, 2400] as const) {
+    for (const t of WEBP_TIER_VALUES) {
       expect(parseKey(webpKey(ID, t))).toEqual({ kind: 'webp', id: ID, tier: t });
     }
     expect(parseKey(jpegKey(ID))).toEqual({ kind: 'jpeg', id: ID });
@@ -62,6 +64,7 @@ describe('parseKey', () => {
   it('returns null for foreign keys', () => {
     expect(parseKey(SNAPSHOT_KEY)).toBeNull();
     expect(parseKey(`photos/${ID}/700.webp`)).toBeNull();
+    expect(parseKey(`photos/${ID}/800.webp`)).toBeNull();
     expect(parseKey(`photos/${ID}/other.jpg`)).toBeNull();
     expect(parseKey(`photos/${ID.toUpperCase()}/master.jpg`)).toBeNull();
     expect(parseKey(`photos/${ID}/sub/master.jpg`)).toBeNull();

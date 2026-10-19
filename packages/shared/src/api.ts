@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { validateAlt } from './alt';
 import { API_ERROR_CODES, type ApiErrorCode } from './errors';
 import { allKeys, jpegKey, isValidPhotoId, masterKey, ogKey, webpKey, type WebpTier } from './keys';
-import { MASTER_MAX_EDGE, PhotoVariantsSchema, variantPlan, type PhotoVariants } from './variants';
+import { MASTER_MAX_EDGE, PhotoVariantsSchema, WebpTierSchema, variantPlan, type PhotoVariants } from './variants';
 
 // ---------------------------------------------------------------- error codes
 
@@ -144,7 +144,7 @@ const nonNegInt = z.number().int().nonnegative();
 const isoDateTime = z.iso.datetime({ offset: true });
 const quotaLevel = z.enum(['ok', 'warn', 'full']);
 const kindSchema = z.enum(['master', 'webp', 'jpeg', 'og']);
-const tierSchema = z.union([z.literal(480), z.literal(960), z.literal(1600), z.literal(2400)]);
+const tierSchema = WebpTierSchema;
 
 /** Pattern for legacy_key (WP-6 migration only). */
 export const LEGACY_KEY_RE = /^(weddings|portraits|couples)\/[a-z0-9_]+\/[0-9]+\.jpg$/;

@@ -12,6 +12,7 @@ import {
   jpegKey,
   masterKey,
   ogKey,
+  PhotoVariantsSchema,
   planUploadFiles,
   sumBytes,
   variantPlan,
@@ -37,22 +38,29 @@ const filesFor = (w: number, h: number) =>
   planUploadFiles(ID, w, h).map((f) => (f.tier ? { kind: f.kind, tier: f.tier, bytes: 10 } : { kind: f.kind, bytes: 10 }));
 
 describe('planUploadFiles', () => {
-  it('gives 7 files for a 3000x2250 master with keys from the shared helpers', () => {
+  it('gives 8 files for a 3000x2250 master with keys from the shared helpers', () => {
     const files = planUploadFiles(ID, 3000, 2250);
     expect(files.map((f) => f.key)).toEqual([
       masterKey(ID),
       webpKey(ID, 480),
+      webpKey(ID, 720),
       webpKey(ID, 960),
       webpKey(ID, 1600),
       webpKey(ID, 2400),
       jpegKey(ID),
       ogKey(ID),
     ]);
-    expect(files.map((f) => f.kind)).toEqual(['master', 'webp', 'webp', 'webp', 'webp', 'jpeg', 'og']);
-    expect(files.filter((f) => f.kind === 'webp').map((f) => f.tier)).toEqual([480, 960, 1600, 2400]);
+    expect(files.map((f) => f.kind)).toEqual(['master', 'webp', 'webp', 'webp', 'webp', 'webp', 'jpeg', 'og']);
+    expect(files.filter((f) => f.kind === 'webp').map((f) => f.tier)).toEqual([480, 720, 960, 1600, 2400]);
     expect(files.map((f) => f.contentType)).toEqual([
-      'image/jpeg', 'image/webp', 'image/webp', 'image/webp', 'image/webp', 'image/jpeg', 'image/jpeg',
+      'image/jpeg', 'image/webp', 'image/webp', 'image/webp', 'image/webp', 'image/webp', 'image/jpeg', 'image/jpeg',
     ]);
+  });
+
+  it('a 719 px master has no 720 file, a 720 px master has exactly 480 and 720', () => {
+    const tiers = (w: number) => planUploadFiles(ID, w, Math.round(w * 0.75)).filter((f) => f.kind === 'webp').map((f) => f.tier);
+    expect(tiers(719)).toEqual([480]);
+    expect(tiers(720)).toEqual([480, 720]);
   });
 
   it('gives master, one 480 tier, JPEG and OG for 300x200', () => {
@@ -137,6 +145,13 @@ describe('variantsMatchPlan and the commit schema', () => {
     const v = variantsFor(3000, 2250);
     expect(variantsMatchPlan({ ...v, webp: v.webp.slice(1) }, 3000, 2250)).toBe(false);
     expect(variantsMatchPlan(variantsFor(300, 200), 3000, 2250)).toBe(false);
+    // 1000 px master: a row without the 720 tier fails the strict plan
+    const v1000 = variantsFor(1000, 750);
+    expect(variantsMatchPlan(v1000, 1000, 750)).toBe(true);
+    expect(variantsMatchPlan({ ...v1000, webp: v1000.webp.filter((e) => e.tier !== 720) }, 1000, 750)).toBe(false);
+    // a stray 800 tier is refused by the schema, not just by the plan
+    const stray = { ...v1000, webp: [...v1000.webp, { tier: 800, w: 800, h: 600, bytes: 1 }] };
+    expect(PhotoVariantsSchema.safeParse(stray).success).toBe(false);
     expect(variantsMatchPlan({ ...v, webp: v.webp.map((e) => ({ ...e, tier: 480 as const })) }, 3000, 2250)).toBe(false);
   });
 

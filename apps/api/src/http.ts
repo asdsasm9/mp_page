@@ -52,6 +52,13 @@ export function withBaseHeaders(res: Response): Response {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 
+/** A copy of the response carrying `x-request-id` (the input is never mutated). */
+export function withRequestId(res: Response, requestId: string): Response {
+  const headers = new Headers(res.headers);
+  headers.set('x-request-id', requestId);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
 export type BodyResult = { ok: true; value: unknown } | { ok: false; code: WorkerErrorCode };
 
 function isJsonContentType(value: string | null): boolean {

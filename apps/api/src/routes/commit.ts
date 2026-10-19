@@ -8,13 +8,13 @@ import {
   CommitRequestSchema,
   allKeys,
   apiCodeFromZodError,
-  photoPrefix,
   sumBytes,
   type CommitRequest,
   type StorageAdapter,
 } from '@mp/shared';
 import type { Route } from '../index';
 import { errorResponse, jsonResponse, readJsonBody } from '../http';
+import { removePhotoObjects } from './remove-photo-objects';
 
 type Variants = CommitRequest['variants'];
 
@@ -26,12 +26,7 @@ function declaredBytes(v: Variants): number[] {
 /** Delete every object under the photo prefix. Failures are swallowed: reconcile finds leftovers. */
 async function removeObjects(storage: StorageAdapter, photoId: string): Promise<void> {
   try {
-    let cursor: string | undefined;
-    do {
-      const page = await storage.list(photoPrefix(photoId), cursor === undefined ? {} : { cursor });
-      if (page.objects.length > 0) await storage.delete(page.objects.map((o) => o.key));
-      cursor = page.cursor;
-    } while (cursor !== undefined);
+    await removePhotoObjects(storage, photoId);
   } catch {
     /* leftover objects are reported by reconcile */
   }

@@ -7,6 +7,9 @@ export interface FakeR2Bucket extends R2BucketPort {
   keys(): string[];
 }
 
+/** Alias for tests outside this folder (the gate keeps the binding type name inside storage/). */
+export const createFakeBucket = (now?: () => Date): FakeR2Bucket => createFakeR2Bucket(now);
+
 export function createFakeR2Bucket(now: () => Date = () => new Date()): FakeR2Bucket {
   const objects = new Map<string, R2ObjectPort & { body: Uint8Array }>();
   const deleteCalls: number[] = [];

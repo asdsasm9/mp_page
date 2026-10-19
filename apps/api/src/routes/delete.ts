@@ -3,28 +3,10 @@
  * drops, covers clear), then every object under `photos/<id>/` is removed immediately, orphans included.
  * An id whose storage deletion fails is reported in `failed`; reconcile removes the leftovers later.
  */
-import {
-  DeleteRequestSchema,
-  apiCodeFromZodError,
-  photoPrefix,
-  type StorageAdapter,
-} from '@mp/shared';
+import { DeleteRequestSchema, apiCodeFromZodError, type StorageAdapter } from '@mp/shared';
 import type { Route } from '../index';
 import { errorResponse, jsonResponse, readJsonBody } from '../http';
-
-async function removePrefix(storage: StorageAdapter, id: string): Promise<number> {
-  let count = 0;
-  let cursor: string | undefined;
-  do {
-    const page = await storage.list(photoPrefix(id), cursor === undefined ? {} : { cursor });
-    if (page.objects.length > 0) {
-      await storage.delete(page.objects.map((o) => o.key));
-      count += page.objects.length;
-    }
-    cursor = page.cursor;
-  } while (cursor !== undefined);
-  return count;
-}
+import { removePhotoObjects } from './remove-photo-objects';
 
 export function createDeleteRoute(deps: { storage: StorageAdapter }): Route {
   return {
@@ -43,7 +25,7 @@ export function createDeleteRoute(deps: { storage: StorageAdapter }): Route {
       const failed: string[] = [];
       for (const row of rpc.data.deleted) {
         try {
-          objectsDeleted += await removePrefix(deps.storage, row.id);
+          objectsDeleted += await removePhotoObjects(deps.storage, row.id);
         } catch {
           failed.push(row.id);
         }

@@ -12,6 +12,7 @@
     "wrangler": "4.151.2"
   },
   "dependencies": {
+    "@mp/shared": "0.0.0",
     "aws4fetch": "1.0.20"
   }
 }

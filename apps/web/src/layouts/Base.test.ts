@@ -6,6 +6,7 @@ import { gzipSync } from 'node:zlib';
 import { SnapshotSchema } from '@mp/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
+import { HASH_REDIRECT_SCRIPT } from '../lib/hash-redirect';
 import { aboutMeta, contactMeta, portfolioMeta } from '../lib/seo';
 import { checkWeight, measureFirstLoad, snapshotImageBytes } from '../lib/weight';
 
@@ -466,6 +467,14 @@ describe('Base layout (built home page)', () => {
     for (const tag of ['twitter:card', 'twitter:title', 'twitter:description']) {
       expect(html).toContain(`name="${tag}"`);
     }
+  });
+
+  it('inlines the identical hash-redirect script in the home head, and only there', () => {
+    const head = html.slice(0, html.indexOf('</head>'));
+    expect(head).toContain(`<script>${HASH_REDIRECT_SCRIPT}</script>`);
+    expect(count(/<script>\(function\(\)\{var h=location\.hash/g)).toBe(1);
+    const category = categoryHtml['svatby']!;
+    expect(category).not.toContain('location.hash');
   });
 
   it('has no href="#" and loads nothing from a third-party host', () => {

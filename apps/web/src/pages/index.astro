@@ -8,6 +8,7 @@ import { REVIEWS } from '../content/reviews';
 import Base from '../layouts/Base.astro';
 import { getCatalog } from '../lib/catalog';
 import { readRawEnv, resolveEnv } from '../lib/env';
+import { HASH_REDIRECT_SCRIPT } from '../lib/hash-redirect';
 import { homeCategoryCards, homeReviews } from '../lib/home';
 import { SITE_ORIGIN, photographerFull, website } from '../lib/jsonld';
 import { homeMeta } from '../lib/seo';
@@ -40,7 +41,8 @@ const collage = [
 ];
 ---
 <Base meta={meta} path="/" ogImage={ogImage} jsonLd={[photographerFull(ogImage.url), website()]}>
-  <!-- hash-redirect script slot (T-65): the inline script is injected into the head slot of this page -->
+  <!-- Must be inline to run before first paint; T-67's CSP gets its sha256 from the postbuild. -->
+  <script is:inline slot="head" set:html={HASH_REDIRECT_SCRIPT} />
   <section class="hero" aria-labelledby="nadpis">
     <Image
       src={hero}

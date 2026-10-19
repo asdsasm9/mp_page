@@ -1,0 +1,5 @@
+# Never deployed from a builder. No routes, no secrets, no vars with values.
+# Secrets are set with `wrangler secret put`, never in a file.
+name = "mullnyphotos-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-19"

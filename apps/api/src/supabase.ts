@@ -16,6 +16,8 @@ export type SupabaseResult<T> =
       code: WorkerErrorCode;
       /** Upstream HTTP status, or 0 when there was no response (network error, timeout). */
       status: number;
+      /** Seconds to wait, from a PUBLISH_TOO_SOON error detail (otherwise absent). */
+      retryAfter?: number;
     };
 
 export interface SupabaseOptions {
@@ -87,7 +89,13 @@ export function createSupabaseClient(options: SupabaseOptions): SupabaseClient {
         }
       }
       if (!res.ok) {
-        return { ok: false as const, code: mapSupabaseError(res.status, parsed ? body : null), status: res.status };
+        const code = mapSupabaseError(res.status, parsed ? body : null);
+        const failure = { ok: false as const, code, status: res.status };
+        const details = parsed && body !== null && typeof body === 'object' ? (body as { details?: unknown }).details : null;
+        if (code === 'PUBLISH_TOO_SOON' && typeof details === 'string' && /^\d{1,5}$/.test(details)) {
+          return { ...failure, retryAfter: Number(details) };
+        }
+        return failure;
       }
       if (!parsed) return { ok: false as const, code: 'UPSTREAM_ERROR' as const, status: res.status };
       return { ok: true as const, body, status: res.status };

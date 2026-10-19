@@ -74,7 +74,10 @@ Photo area:
 One queue for the whole session, visible from every screen (top-bar indicator opens the drawer).
 - Per file row: thumbnail (local preview), file name, target album, step label, progress bar, size, buttons "Zrušit" (queued/running) or "Zkusit znovu" (failed), "Odebrat z fronty" (failed/done).
 - Overall summary on top: "Nahráno 23 z 40 · zbývá asi 4 min" with one bar, button "Zrušit vše", "Zkusit znovu neúspěšné (3)" once something failed.
-- Steps per file (label text, in order): "Ve frontě", "Zpracovávám" (resize and convert in the browser to the variants 480/960/1600/2400 px AVIF/WebP + JPEG fallback), "Nahrávám", "Ukládám", "Hotovo".
+- Steps per file (label text, in order): "Ve frontě", "Zpracovávám" (resize and convert in the browser to the five WebP tiers 480/720/960/1600/2400 px, a 1600 px JPEG fallback, the OG image and the master), "Nahrávám", "Ukládám", "Hotovo".
+- Processing requirements (the encoder follows `variantPlan` in `packages/shared` exactly; a missing or extra tier is refused at commit):
+  - It computes the dominant colour of every photo (`#rrggbb`, for example from a canvas downscale) and sends it as `dominant_color`; it is the placeholder block shown before the image loads.
+  - The master is always re-encoded (never uploaded as the original file) so EXIF and GPS metadata are stripped; the master is publicly linked for zoom.
 - Concurrency: 3 files at once; the queue survives navigation inside the SPA; closing the tab during uploads triggers the browser "leave page?" warning while the queue is not empty.
 - Failure states (each file, independent; one failure never stops the rest):
   - Unsupported file: "Nepodporovaný formát (JPEG, PNG, HEIC, WebP)."

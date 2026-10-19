@@ -45,6 +45,15 @@ Used storage is `sum(photos.bytes_total)`; reserved is the sum of unexpired rese
 The `variants` jsonb shape is `{master:{w,h,bytes}, webp:[{tier,w,h,bytes}], jpeg:{w,h,bytes}, og:{w,h,bytes}}`;
 key paths are never stored, they derive from the photo id.
 
+WebP tiers: `tier` is one of 480, 720, 960, 1600, 2400 (defined once as `WEBP_TIER_VALUES` in `packages/shared`);
+only tiers not wider than the master exist (a 719 px master has no 720). New uploads must carry exactly the planned
+set, including 720 when the master is at least 720 px wide; a commit with a missing or extra tier (for example 800) is
+refused. Rows stored without a 720 entry are still valid: they are never re-validated, reconcile reports no drift for
+them and the site renders their srcset without 720 (it falls back to 960). The 720 tier needed no SQL migration
+(`variants_bytes_sum` and `register_photo` read the `webp` array generically) and no stored file had to be
+regenerated: the seed and the snapshot fixture are regenerated from `scripts/gen-fixtures.ts`.
+`dominant_color` (`#rrggbb`) is the placeholder block shown before an image loads.
+
 ## Grant matrix
 
 Generated from the catalog (`has_table_privilege`, `has_column_privilege`). `table` means the whole table,

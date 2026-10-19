@@ -35,6 +35,26 @@ describe('photoSources', () => {
     expect(s.webpSrcset).not.toContain('2400.webp');
   });
 
+  it('mixed catalog: a photo with 720 lists it, a legacy photo without 720 renders a srcset without it', () => {
+    const withTier = photo({
+      variants: {
+        ...photo().variants,
+        webp: [
+          { tier: 480, w: 480, h: 320, bytes: 1 },
+          { tier: 720, w: 720, h: 480, bytes: 1 },
+          { tier: 960, w: 960, h: 640, bytes: 1 },
+        ],
+      },
+    });
+    const a = photoSources(withTier, IMG);
+    expect(a.webpSrcset).toBe(
+      `${IMG}/photos/${ID}/480.webp 480w, ${IMG}/photos/${ID}/720.webp 720w, ${IMG}/photos/${ID}/960.webp 960w`,
+    );
+    const legacy = photoSources(photo(), IMG);
+    expect(legacy.webpSrcset).not.toContain('720');
+    expect(legacy.webp.map((e) => e.width)).toEqual([480, 960]);
+  });
+
   it('gives a 300x200 photo one entry with its real width', () => {
     const small = photo({
       width: 300,

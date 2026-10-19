@@ -61,6 +61,20 @@ describe('gen-fixtures part 2: seed.sql and snapshot.fixture.json', () => {
     }
   });
 
+  it('every fixture photo with a master of at least 720 px has a 720 WebP entry', () => {
+    let withTier = 0;
+    for (const p of gen.rows.photos) {
+      const tiers = p.variants.webp.map((e) => e.tier);
+      if (p.variants.master.w >= 720) {
+        expect(tiers, p.id).toContain(720);
+        withTier++;
+      } else {
+        expect(tiers, p.id).not.toContain(720);
+      }
+    }
+    expect(withTier).toBeGreaterThan(0);
+  });
+
   it('no file under packages/shared/fixtures exceeds 400 KB', () => {
     for (const f of [LEGACY_PHOTOS_JSON, SNAPSHOT_FIXTURE_JSON]) expect(statSync(f).size).toBeLessThan(400 * 1024);
   });

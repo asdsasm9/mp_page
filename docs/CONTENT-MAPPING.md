@@ -92,19 +92,19 @@ One `photos` row per legacy file `public/fotky_web/galleries/<cat>/<id>/<n>.jpg`
 Keys are based on the photo id, never on album or category, so moving a photo between albums, renaming slugs and reordering never touch R2.
 
 ```
-photos/<photo_id>/original.<ext>        the uploaded file as is (migration: the legacy jpg)
-photos/<photo_id>/<w>.avif              variant, w in {480, 960, 1600, 2400}
-photos/<photo_id>/<w>.webp
-photos/<photo_id>/<w>.jpg               JPEG fallback
+photos/<photo_id>/master.jpg            the master, up to 3000 px (migration: the legacy jpg), no EXIF/GPS
+photos/<photo_id>/<w>.webp              WebP tier, w in {480, 720, 960, 1600, 2400}
+photos/<photo_id>/1600.jpg              JPEG fallback (also the no-JS lightbox link)
+photos/<photo_id>/og.jpg                Open Graph image, 1200 px wide
 ```
 
-- `<photo_id>` is the `photos.id` UUID (lowercase). `photos.storage_key` stores the `original` key; variant keys are derived from it by the shared helper (`packages/shared`), so there is one place that knows the scheme.
-- Variants wider than the source are skipped (no upscaling): the widest variant is the largest listed width not exceeding the source width; sources under 480 px get only their own size.
+- `<photo_id>` is the `photos.id` UUID (lowercase). `photos.master_key` is `photos/<id>/master.jpg`; all other keys are derived from the id by the shared helpers (`packages/shared`), so there is one place that knows the scheme.
+- Variants wider than the source are skipped (no upscaling): a WebP tier exists only when it is not wider than the master (a 719 px master has no 720, a 720 px master has 480 and 720); sources under 480 px get only their own size. Rows stored before the 720 tier existed stay valid without it.
 - All objects are immutable (new upload = new photo id), so public URLs get `Cache-Control: public, max-age=31536000, immutable`.
 - Public URL = `<PUBLIC_BASE_URL>/<key>` (`img.mullnyphotos.cz`, waits for H-5).
-- `photos.bytes_total` sums the original plus every variant; this feeds the T-6 quota guard.
+- `photos.bytes_total` sums the master plus every variant; this feeds the T-6 quota guard.
 - Delete a photo = delete all keys under `photos/<photo_id>/`.
-- Migration idempotency: key lookup is by `photos.legacy_key`; if the row exists the upload step checks the `original` object exists (HEAD) and only re-uploads missing objects.
+- Migration idempotency: key lookup is by `photos.legacy_key`; if the row exists the upload step checks the `master` object exists (HEAD) and only re-uploads missing objects.
 - Site assets (`site/*`) are not stored in R2 (they ship with the site build).
 
 ## 7. Redirects: old URL to new URL

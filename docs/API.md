@@ -75,9 +75,30 @@ Quota status: `{ used_bytes, reserved_bytes, hard, warn, photo_count, level }` w
 
 Request: `{ album_id, items: [{ photo_id, width, height, files: [{ kind, tier?, bytes }] }] }`. `files` must be exactly
 the planned set for that size (master, the WebP tiers that fit, the 1600 JPEG, the OG image); the client picks no keys
-and no content types. The Worker checks the per-file limit, then asks the database `reserve_uploads` (hard limit,
+and no content types. A missing or extra tier (for example 800, or 2400 for a 1200 px master) is a 400. The Worker checks the per-file limit, then asks the database `reserve_uploads` (hard limit,
 first-fit across the batch); only accepted items get presigned PUT URLs. The signed headers include `content-type`,
 `content-length` and `cache-control` (`public, max-age=31536000, immutable`).
+
+Example for a 1200 x 800 photo (the WebP tiers that fit are 480, 720 and 960; the planned set has six files):
+
+```json
+{
+  "album_id": "bbbbbbbb-0000-4000-8000-000000000001",
+  "items": [{
+    "photo_id": "cccccccc-0000-4000-8000-000000000001", "width": 1200, "height": 800,
+    "files": [
+      { "kind": "master", "bytes": 310000 },
+      { "kind": "webp", "tier": 480, "bytes": 38000 },
+      { "kind": "webp", "tier": 720, "bytes": 71000 },
+      { "kind": "webp", "tier": 960, "bytes": 118000 },
+      { "kind": "jpeg", "bytes": 160000 },
+      { "kind": "og", "bytes": 90000 }
+    ]
+  }]
+}
+```
+
+A 3000 x 2000 photo lists all five tiers (480, 720, 960, 1600, 2400); a 600 px master lists 480 only.
 
 Response `{ items: [{ photo_id, ok, code?, uploads? }], used_bytes, reserved_bytes, hard, warn, level }`. An item is
 `ok: true` with `uploads: [{ kind, tier?, key, method: "PUT", url, headers, expiresAt }]`, or `ok: false` with
@@ -87,6 +108,9 @@ Response `{ items: [{ photo_id, ok, code?, uploads? }], used_bytes, reserved_byt
 ## POST /uploads/commit
 
 Request: `{ photo_id, album_id, width, height, variants, bytes_total, dominant_color?, alt?, legacy_key? }`.
+`variants` is `{ "master": {w,h,bytes}, "webp": [{ "tier": 480, ... }, { "tier": 720, "w": 720, "h": 480, "bytes": 71000 }, { "tier": 960, ... }], "jpeg": {...}, "og": {...} }`
+and must equal the planned set for the size (a new upload without the 720 entry is a 400); rows already stored without
+720 stay valid. `dominant_color` is `#rrggbb`.
 `legacy_key` is for the WP-6 migration only (pattern `weddings|portraits|couples/<name>/<n>.jpg`).
 Before the database is touched the Worker sends a HEAD for every object and checks that it exists, has the declared
 size, is within the per-file limit, and that the total fits the reservation. Then it calls `register_photo`, which

@@ -1,7 +1,70 @@
 import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { LEGACY_GALLERIES_DIR, LEGACY_PHOTOS_JSON, jpegSize, readLegacyPhotos, serializeLegacyPhotos } from './gen-fixtures';
+import { LEGACY_ALBUMS, LEGACY_CATEGORIES } from '../packages/shared/src/legacy/albums';
+import { SnapshotSchema, assertPublishable, type Snapshot } from '../packages/shared/src/snapshot';
+import {
+  FIXTURE_NAMESPACE,
+  LEGACY_GALLERIES_DIR,
+  LEGACY_PHOTOS_JSON,
+  SEED_SQL,
+  SNAPSHOT_FIXTURE_JSON,
+  jpegSize,
+  readLegacyPhotos,
+  renderPart2,
+  serializeLegacyPhotos,
+  uuidV5,
+} from './gen-fixtures';
+
+describe('gen-fixtures part 2: seed.sql and snapshot.fixture.json', () => {
+  const gen = renderPart2();
+
+  it('drift: regenerating in memory equals the committed files', () => {
+    expect(gen.seedSql).toBe(readFileSync(SEED_SQL, 'utf8'));
+    expect(gen.snapshotJson).toBe(readFileSync(SNAPSHOT_FIXTURE_JSON, 'utf8'));
+    expect(renderPart2().seedSql).toBe(gen.seedSql);
+  });
+
+  it('uuidV5 is deterministic, v5-shaped and matches the RFC 4122 DNS example', () => {
+    expect(uuidV5('x')).toBe(uuidV5('x'));
+    expect(uuidV5('x')).not.toBe(uuidV5('y'));
+    expect(uuidV5('x')).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(uuidV5('python.org', '6ba7b810-9dad-11d1-80b4-00c04fd430c8')).toBe('886313e1-3b8a-5372-9b90-0c9aee199e5d');
+    expect(FIXTURE_NAMESPACE).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('the fixture parses, is publishable and has the legacy shape', () => {
+    const fixture = JSON.parse(readFileSync(SNAPSHOT_FIXTURE_JSON, 'utf8')) as Snapshot;
+    expect(SnapshotSchema.parse(fixture)).toEqual(fixture);
+    expect(() => assertPublishable(fixture)).not.toThrow();
+    expect(fixture.counts).toEqual({ categories: 3, albums: 13, photos: 141 });
+    expect(fixture.categories.map((c) => c.name)).toEqual(['Svatby', 'Portréty', 'Párové focení']);
+    expect(fixture.redirects).toEqual([]);
+    const albums = fixture.categories.flatMap((c) => c.albums);
+    for (const a of albums) expect(a.legacyId).toBe(a.slug);
+    for (const la of LEGACY_ALBUMS) {
+      const a = albums.find((x) => x.slug === la.id)!;
+      expect(a.photos).toHaveLength(la.photoCount);
+      const cover = gen.rows.photos.find((p) => p.legacy_key === `${la.legacyCategory}/${la.id}/${la.mainImgNum}.jpg`)!;
+      expect(a.coverPhotoId).toBe(cover.id);
+    }
+    expect(fixture.categories.map((c) => c.slug)).toEqual(LEGACY_CATEGORIES.map((c) => c.slug));
+  });
+
+  it('bytes_total equals the variants sum for every photo and ids are unique', () => {
+    const ids = new Set(gen.rows.photos.map((p) => p.id));
+    expect(ids.size).toBe(141);
+    for (const p of gen.rows.photos) {
+      const v = p.variants;
+      expect(p.bytes_total).toBe(v.master.bytes + v.webp.reduce((s, e) => s + e.bytes, 0) + v.jpeg.bytes + v.og.bytes);
+      expect(p.master_key).toBe(`photos/${p.id}/master.jpg`);
+    }
+  });
+
+  it('no file under packages/shared/fixtures exceeds 400 KB', () => {
+    for (const f of [LEGACY_PHOTOS_JSON, SNAPSHOT_FIXTURE_JSON]) expect(statSync(f).size).toBeLessThan(400 * 1024);
+  });
+});
 
 describe('gen-fixtures part 1', () => {
   it('regenerating produces a byte-identical legacy-photos.json (deterministic)', () => {

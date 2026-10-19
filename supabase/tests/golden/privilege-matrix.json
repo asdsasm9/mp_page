@@ -47,13 +47,17 @@
     }
   },
   "functions": {
+    "albums_delete_history": { "anon": false, "authenticated": false },
+    "albums_slug_history": { "anon": false, "authenticated": false },
     "bump_pending": { "anon": false, "authenticated": false },
+    "categories_slug_history": { "anon": false, "authenticated": false },
     "check_album_cover": { "anon": false, "authenticated": false },
     "clear_cover_on_photo_change": { "anon": false, "authenticated": false },
     "delete_photos": { "anon": false, "authenticated": true },
     "is_admin": { "anon": false, "authenticated": true },
     "keepalive": { "anon": true, "authenticated": true },
     "record_publish": { "anon": false, "authenticated": true },
+    "record_slug_redirect": { "anon": false, "authenticated": false },
     "register_photo": { "anon": false, "authenticated": true },
     "request_publish": { "anon": false, "authenticated": true },
     "reserve_uploads": { "anon": false, "authenticated": true },

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CHECKS,
   checkEnvExampleSane,
+  checkMigrationsLint,
   checkNoDeadDeps,
   checkNoDirectR2,
   checkNoEnvFiles,
@@ -107,12 +108,41 @@ describe('no-ga-in-dist', () => {
     ).toBe('FAIL'));
 });
 
+describe('migrations-lint', () => {
+  const lintFiles = [f('supabase/tests/lint.test.ts'), f('supabase/tests/golden/privilege-matrix.json')];
+  const mig = (name, text = 'create table public.t (id int);') => f(`supabase/migrations/${name}`, text);
+  const run = (...files) => checkMigrationsLint([...files, ...lintFiles]);
+  it('passes ordered migrations', () =>
+    expect(status(run(mig('20261019100000_a.sql'), mig('20261019100100_b.sql')))).toBe('PASS'));
+  it('fails with no migrations', () => expect(status(checkMigrationsLint(lintFiles))).toBe('FAIL'));
+  it('fails on a badly named file', () => expect(status(run(mig('1_a.sql')))).toBe('FAIL'));
+  it('fails on a duplicate timestamp', () =>
+    expect(status(run(mig('20261019100000_a.sql'), mig('20261019100000_b.sql')))).toBe('FAIL'));
+  it('fails on grant to public and using (true)', () => {
+    expect(status(run(mig('20261019100000_a.sql', 'grant select on public.t to public;')))).toBe('FAIL');
+    expect(status(run(mig('20261019100000_a.sql', 'create policy p on public.t using (true);')))).toBe('FAIL');
+  });
+  it('fails on service role but ignores comments and "into public."', () => {
+    expect(status(run(mig('20261019100000_a.sql', `grant all on public.t to ${fakeRole};`)))).toBe('FAIL');
+    expect(status(run(mig('20261019100000_a.sql', `-- ${fakeRole} to public\ninsert into public.t values (1);`)))).toBe('PASS');
+  });
+  it('fails when the catalog lint test or golden file is missing', () =>
+    expect(status(checkMigrationsLint([mig('20261019100000_a.sql')]))).toBe('FAIL'));
+});
+
 describe('registry and runner', () => {
-  const inputs = { files: [f('.env.example', 'A=\n')], dist: [] };
-  it('has the 5 pending checks with owners', () => {
+  const inputs = {
+    files: [
+      f('.env.example', 'A=\n'),
+      f('supabase/migrations/20261019100000_a.sql', 'create table public.t (id int);'),
+      f('supabase/tests/lint.test.ts'),
+      f('supabase/tests/golden/privilege-matrix.json'),
+    ],
+    dist: [],
+  };
+  it('has the 4 pending checks with owners', () => {
     const pend = runChecks(inputs).rows.filter((r) => r.status === 'PENDING');
     expect(pend.map((r) => r.name)).toEqual([
-      'migrations-lint',
       'page-checks',
       'budget',
       'quota-guard-tests',

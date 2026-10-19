@@ -144,6 +144,38 @@ export function checkNoGaInDist(distFiles) {
   );
 }
 
+const MIGRATION_RE = /^supabase\/migrations\/(\d{14})_[a-z0-9_]+\.sql$/;
+const stripSqlComments = (sql) => sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
+
+/**
+ * Static migration lint: files are named <14 digits>_<name>.sql with strictly ascending timestamps,
+ * no "to public" grant, no "using (true)" policy, no service role. The catalog lint itself
+ * (supabase/tests/lint.test.ts, run by `npm test`) and its golden matrix must be present.
+ */
+export function checkMigrationsLint(files) {
+  const bad = [];
+  const sql = files.filter((f) => /^supabase\/migrations\//.test(f.path)).sort((a, b) => (a.path < b.path ? -1 : 1));
+  if (sql.length === 0) return { status: 'FAIL', details: 'no migrations found in supabase/migrations' };
+  let prev = '';
+  for (const f of sql) {
+    const m = MIGRATION_RE.exec(f.path);
+    if (!m) {
+      bad.push(`${f.path} (name must be <14 digits>_<name>.sql)`);
+      continue;
+    }
+    if (m[1] <= prev) bad.push(`${f.path} (timestamp not strictly ascending)`);
+    prev = m[1];
+    const text = stripSqlComments(f.text);
+    if (/\bto\s+public\b(?!\s*\.)/i.test(text)) bad.push(`${f.path} ("to public")`);
+    if (/using\s*\(\s*true\s*\)/i.test(text) || /with\s+check\s*\(\s*true\s*\)/i.test(text)) bad.push(`${f.path} (policy true)`);
+    if (/service_role/i.test(text)) bad.push(`${f.path} (service role)`);
+  }
+  for (const required of ['supabase/tests/lint.test.ts', 'supabase/tests/golden/privilege-matrix.json']) {
+    if (!files.some((f) => f.path === required)) bad.push(`${required} missing`);
+  }
+  return result(bad, `${sql.length} migrations in order, text lint clean`);
+}
+
 const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
 
 export const CHECKS = [
@@ -155,7 +187,7 @@ export const CHECKS = [
   { name: 'no-dead-deps', input: 'files', run: checkNoDeadDeps },
   { name: 'no-direct-r2', input: 'files', run: checkNoDirectR2 },
   { name: 'no-ga-in-dist', input: 'dist', run: checkNoGaInDist },
-  { name: 'migrations-lint', input: 'files', run: pending('WP-2') },
+  { name: 'migrations-lint', input: 'files', run: checkMigrationsLint },
   { name: 'page-checks', input: 'files', run: pending('WP-3') },
   { name: 'budget', input: 'files', run: pending('WP-3') },
   { name: 'quota-guard-tests', input: 'files', run: pending('WP-4') },

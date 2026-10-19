@@ -28,22 +28,33 @@ export interface CategoryCard {
 /** Slugs that get a page: categories with at least one published album (the catalog already drops empty ones). */
 export const categoryPaths = (catalog: Catalog): string[] => catalog.categories.map((c) => c.slug);
 
+/** One album card; `index` is its position on the page (drives eager/priority). Null for an album without photos. */
+export function albumCard(
+  catalog: Catalog,
+  category: Pick<SnapshotCategory, 'slug'>,
+  album: SnapshotAlbum,
+  index: number,
+  eagerRow = FIRST_ROW,
+): CategoryCard | null {
+  const photo = catalog.coverOf(album);
+  if (!photo) return null;
+  return {
+    slug: album.slug,
+    title: album.title,
+    place: album.place?.trim() || null,
+    path: `/${category.slug}/${album.slug}/`,
+    photo,
+    countLabel: plural(album.photos.length, PHOTOS),
+    eager: index < eagerRow,
+    priority: index === 0 && eagerRow > 0,
+  };
+}
+
 export function categoryCards(catalog: Catalog, category: SnapshotCategory): CategoryCard[] {
   const cards: CategoryCard[] = [];
   for (const album of category.albums as SnapshotAlbum[]) {
-    const photo = catalog.coverOf(album);
-    if (!photo) continue;
-    const index = cards.length;
-    cards.push({
-      slug: album.slug,
-      title: album.title,
-      place: album.place?.trim() || null,
-      path: `/${category.slug}/${album.slug}/`,
-      photo,
-      countLabel: plural(album.photos.length, PHOTOS),
-      eager: index < FIRST_ROW,
-      priority: index === 0,
-    });
+    const card = albumCard(catalog, category, album, cards.length);
+    if (card) cards.push(card);
   }
   return cards;
 }

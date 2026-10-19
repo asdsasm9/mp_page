@@ -1,10 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SnapshotSchema } from '@mp/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
+import { portfolioMeta } from '../lib/seo';
 import { checkWeight, measureFirstLoad, snapshotImageBytes } from '../lib/weight';
 
 // Builds the real site into a temp dir (fixture mode) and checks the shell of the home page.
@@ -156,6 +157,45 @@ describe('Category pages (built, shared build)', () => {
       expect(checkWeight(w), `${c.slug}: ${JSON.stringify(w)}`).toEqual([]);
       expect(w.images).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('Portfolio page (built, shared build)', () => {
+  it('has meta from portfolioMeta, one h1, a breadcrumb and BreadcrumbList JSON-LD', () => {
+    const page = readFileSync(join(out, 'portfolio', 'index.html'), 'utf8');
+    const m = portfolioMeta();
+    expect(page).toContain(`<title>${m.title}</title>`);
+    expect(page).toContain(`<meta name="description" content="${m.description}">`);
+    expect([...page.matchAll(/<h1[\s>]/g)]).toHaveLength(1);
+    expect(page).toContain('<nav class="breadcrumb"');
+    expect(page).toContain('<link rel="canonical" href="https://www.mullnyphotos.cz/portfolio/">');
+    const types = [...page.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(
+      (x) => (JSON.parse(x[1]!) as { '@type': string })['@type'],
+    );
+    expect(types).toEqual(['BreadcrumbList']);
+  });
+
+  it('links every category and a selection of albums that resolve to built pages', () => {
+    const page = readFileSync(join(out, 'portfolio', 'index.html'), 'utf8');
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    const hrefs = [...main.matchAll(/<a href="(\/[^"]+\/)"/g)].map((x) => x[1]!);
+    for (const c of fixture.categories) expect(hrefs).toContain(`/${c.slug}/`);
+    const albumLinks = hrefs.filter((h) => h.split('/').length === 4);
+    expect(albumLinks).toHaveLength(9);
+    const known = fixture.categories.flatMap((c) => c.albums.map((a) => `/${c.slug}/${a.slug}/`));
+    for (const h of albumLinks) expect(known, h).toContain(h);
+    // Album pages are a later task (the [category]/[album] route); once it exists they must be built too.
+    const albumRoute = (f: string): boolean => existsSync(new URL(`../pages/[category]/${f}`, import.meta.url).pathname);
+    if (albumRoute('[album]') || albumRoute('[album].astro')) {
+      for (const h of albumLinks) expect(existsSync(join(out, h, 'index.html')), h).toBe(true);
+    }
+  });
+
+  it('marks Portfolio as the current nav link', () => {
+    const page = readFileSync(join(out, 'portfolio', 'index.html'), 'utf8');
+    const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(page)?.[1] ?? '';
+    const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((x) => x[1]);
+    expect(current).toEqual(['/portfolio/']);
   });
 });
 

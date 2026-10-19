@@ -1,0 +1,123 @@
+---
+// Portfolio (decision D-6): all categories as cover cards, then a selection of albums (lib/portfolio.ts).
+// The category cards are the first row, so they are eager and the first one is the LCP candidate.
+import AlbumCard from '../../components/AlbumCard.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import Photo from '../../components/Photo.astro';
+import Base from '../../layouts/Base.astro';
+import { getCatalog } from '../../lib/catalog';
+import { FIRST_ROW } from '../../lib/category';
+import { readRawEnv, resolveEnv } from '../../lib/env';
+import { homeCategoryCards } from '../../lib/home';
+import { ogImage as photoOgImage } from '../../lib/images';
+import { breadcrumbList } from '../../lib/jsonld';
+import { portfolioCards } from '../../lib/portfolio';
+import { portfolioMeta } from '../../lib/seo';
+
+const env = resolveEnv(readRawEnv());
+const catalog = await getCatalog(env);
+const path = '/portfolio/';
+const meta = portfolioMeta();
+const categories = homeCategoryCards(catalog);
+const albums = portfolioCards(catalog);
+const firstCover = categories[0]?.photo;
+const og = firstCover ? photoOgImage(firstCover, env.imgBaseUrl) : null;
+const crumbs = [{ name: 'Portfolio', path }];
+---
+<Base
+  meta={meta}
+  path={path}
+  ogImage={og ? { url: og.url, width: og.width, height: og.height, alt: 'Portfolio' } : undefined}
+  jsonLd={[breadcrumbList(crumbs)]}
+>
+  <div class="page">
+    <Breadcrumb crumbs={crumbs} />
+    <h1>Portfolio</h1>
+
+    <section aria-labelledby="kategorie">
+      <h2 id="kategorie">Kategorie</h2>
+      <ul class="grid">
+        {
+          categories.map((card, i) => (
+            <li>
+              <a href={card.path}>
+                <Photo
+                  photo={card.photo}
+                  base={env.imgBaseUrl}
+                  alt=""
+                  context="card"
+                  eager={i < FIRST_ROW}
+                  priority={i === 0}
+                />
+                <span class="card-name">{card.name}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {
+      albums.length > 0 && (
+        <section aria-labelledby="alba">
+          <h2 id="alba">Výběr z alb</h2>
+          <ul class="grid">
+            {albums.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
+          </ul>
+        </section>
+      )
+    }
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-5);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  h1 {
+    font-size: var(--font-size-5);
+  }
+
+  section {
+    display: grid;
+    gap: var(--space-5);
+    margin-block-start: var(--space-4);
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--space-6) var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .grid a {
+    display: grid;
+    gap: var(--space-2);
+    text-decoration: none;
+  }
+
+  .card-name {
+    font-size: var(--font-size-2);
+    letter-spacing: var(--tracking-heading);
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-width);
+    text-underline-offset: var(--space-1);
+  }
+
+  .grid a:hover .card-name {
+    text-decoration-thickness: var(--bar-thickness);
+  }
+
+  @media (min-width: 48rem) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

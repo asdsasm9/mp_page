@@ -2,7 +2,7 @@
 // Category page: breadcrumb, h1, album cards (cover 480/960 via Photo, title, place, count).
 // Only categories with at least one published album get a page (getStaticPaths from the catalog).
 import Breadcrumb from '../../components/Breadcrumb.astro';
-import Photo from '../../components/Photo.astro';
+import AlbumCard from '../../components/AlbumCard.astro';
 import Base from '../../layouts/Base.astro';
 import { getCatalog } from '../../lib/catalog';
 import { categoryCards, categoryPaths } from '../../lib/category';
@@ -36,27 +36,7 @@ const crumbs = [{ name: category.name, path }];
     <Breadcrumb crumbs={crumbs} />
     <h1>{category.name}</h1>
     <ul class="albums">
-      {
-        cards.map((card) => (
-          <li>
-            <a href={card.path}>
-              <Photo
-                photo={card.photo}
-                base={env.imgBaseUrl}
-                alt=""
-                context="card"
-                eager={card.eager}
-                priority={card.priority}
-              />
-              <span class="card-title">{card.title}</span>
-              <span class="card-meta">
-                {card.place && <span>{card.place}</span>}
-                <span>{card.countLabel}</span>
-              </span>
-            </a>
-          </li>
-        ))
-      }
+      {cards.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
     </ul>
   </div>
 </Base>
@@ -80,32 +60,6 @@ const crumbs = [{ name: category.name, path }];
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  .albums a {
-    display: grid;
-    gap: var(--space-2);
-    text-decoration: none;
-  }
-
-  .card-title {
-    font-size: var(--font-size-2);
-    letter-spacing: var(--tracking-heading);
-    text-decoration: underline;
-    text-decoration-thickness: var(--border-width);
-    text-underline-offset: var(--space-1);
-  }
-
-  .albums a:hover .card-title {
-    text-decoration-thickness: var(--bar-thickness);
-  }
-
-  .card-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-3);
-    font-size: var(--font-size-small);
-    color: var(--color-text-muted);
   }
 
   @media (min-width: 48rem) {

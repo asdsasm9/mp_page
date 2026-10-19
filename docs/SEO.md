@@ -11,6 +11,7 @@ Goal: rank for local searches in Brno and the South Moravian region, and look tr
 - Contact: `mullnyphotos@gmail.com`, Instagram `mullny_photos`, MyWed profile `https://mywed.com/cs/photographer/mullny/`. **Q-2**: phone number to publish (or none)? Gmail address is fine for contact but a phone is a stronger local signal.
 - Brand string: `Mullny Photos` (audit shows `MullnyPhotos` and `Mullny photos` both in use; use `Mullny Photos` everywhere; **Q-3** confirm the spelling).
 - Language: `<html lang="cs">`, `og:locale` `cs_CZ`. Single language, no hreflang.
+- `/portfolio/` is a real page (T-95, D-6): all categories plus a selection of up to 9 albums (first album per category first). There is no `/portfolio` -> `/` redirect; the legacy hash mapping `#/portfolio` -> `/portfolio/` belongs to T-65/T-66.
 - URL scheme (final slugs come from T-2): `/`, `/portfolio/`, `/svatby/`, `/portrety/`, `/parove-foceni/`, `/svatby/<album-slug>/`, `/o-mne/`, `/kontakt/`, `/cookies/`. Trailing slash, lowercase, ASCII, hyphens. Category slugs are editable in the admin, so the sitemap, canonicals and breadcrumbs are always derived from the stored slug, never hardcoded.
 - Every page is real prerendered HTML containing its title, description, canonical, OG and JSON-LD in the served document (no client-side injection), so crawlers need no JavaScript.
 

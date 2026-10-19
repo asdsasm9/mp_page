@@ -29,6 +29,15 @@ These were left exactly as on the old site because they are not clear typos. Tel
 - Home: "portrétní párové a svatební" lacks a comma after "portrétní".
 - Capitalised "Vás"/"Vaše" and lowercase "vám"/"váš" are mixed on the old site.
 
+## Placeholders to check (About and Contact)
+
+These are our wording, not yours. Please check that they describe the photos correctly.
+
+- About photo alt texts: main photo "Nevěsta v bílých šatech zvednutá ženichem v pšeničném poli v zlatém světle"; "Ženich líbá nevěstu na čelo, nevěsta drží kytici z kapradí a trav"; "Svatební dort s lesním ovocem a dřevěným zápichem Pan & Paní na plátku kmene"; "Muž sedí na houpačce pod starou vrbou a dívá se na malou holčičku".
+- Contact photo alt texts: main photo "Nevěsta opřená hlavou o rameno ženicha se dívá do objektivu"; "Usměvavý pár sedí v lese opřený o kmen stromu".
+- Heading "Napište mi" above the contact text (the old site had no heading there) and the hidden note "(Instagram, otevře se v novém okně)" on the Instagram button.
+- The About page opens with the "O MNĚ" text as the first block under the page title (the title is not repeated).
+
 ## Questions
 
 - **Q-1 (product photography).** "Mé zkušenosti" says: "přes 46 000 fotek portrétů, 12 000 fotek svateb a 4 000 fotek produktů", and Contact mentions "produktů". Copied unchanged. Do you still offer product photography, and are these numbers still true? We will not use "produktové focení" as a keyword until you confirm.

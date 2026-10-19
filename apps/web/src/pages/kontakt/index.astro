@@ -1,0 +1,128 @@
+---
+// Contact: hero (the only fetchpriority=high image), mailto and Instagram links, no form.
+// JSON-LD: Photographer (full) and BreadcrumbList.
+import { Image, getImage } from 'astro:assets';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { CONTACT, NAV } from '../../content/texts';
+import Base from '../../layouts/Base.astro';
+import { SITE_ORIGIN, breadcrumbList, photographerFull } from '../../lib/jsonld';
+import { contactMeta } from '../../lib/seo';
+import hero from '../../assets/site/contact/main_contact.jpg';
+import side from '../../assets/site/contact/contact.jpg';
+import instagramIcon from '../../assets/site/contact/instagram.png';
+
+const path = '/kontakt/';
+const meta = contactMeta();
+const crumbs = [{ name: NAV.contact, path }];
+
+const heroAlt = 'Nevěsta opřená hlavou o rameno ženicha se dívá do objektivu';
+const og = await getImage({ src: hero, width: 1200, height: 630, format: 'jpg', quality: 70 });
+const ogImage = { url: `${SITE_ORIGIN}${og.src}`, width: 1200, height: 630, alt: heroAlt };
+---
+<Base meta={meta} path={path} ogImage={ogImage} jsonLd={[photographerFull(ogImage.url), breadcrumbList(crumbs)]}>
+  <div class="page">
+    <Breadcrumb crumbs={crumbs} />
+    <Image
+      class="hero"
+      src={hero}
+      alt={heroAlt}
+      widths={[480, 960, 1600]}
+      sizes="(min-width: 80rem) 75rem, 100vw"
+      format="webp"
+      loading="eager"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <h1>{CONTACT.contact.title}</h1>
+
+    <section class="block" aria-labelledby="napiste">
+      <div class="text">
+        <h2 id="napiste">Napište mi</h2>
+        <p>{CONTACT.contact.body}</p>
+        <a class="button" href={CONTACT.contact.buttonHref}>{CONTACT.contact.buttonLabel}</a>
+      </div>
+      <Image
+        src={side}
+        alt="Usměvavý pár sedí v lese opřený o kmen stromu"
+        widths={[480, 960]}
+        sizes="(min-width: 48rem) 40vw, 100vw"
+        format="webp"
+        loading="lazy"
+        decoding="async"
+      />
+    </section>
+
+    <section class="text" aria-labelledby="instagram">
+      <h2 id="instagram">{CONTACT.instagram.title}</h2>
+      <p>{CONTACT.instagram.body}</p>
+      <a class="button" href={CONTACT.instagram.buttonHref} rel="noopener noreferrer" target="_blank">
+        <Image class="icon" src={instagramIcon} alt="" width={24} height={24} loading="lazy" decoding="async" />
+        {CONTACT.instagram.buttonLabel}
+    <span class="visually-hidden"> (Instagram, otevře se v novém okně)</span>
+      </a>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-5);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  h1 {
+    font-size: var(--font-size-5);
+  }
+
+  .page :global(img:not(.icon)) {
+    inline-size: 100%;
+    block-size: auto;
+    border-radius: var(--radius-md);
+    background: var(--color-placeholder);
+  }
+
+  .block {
+    display: grid;
+    gap: var(--space-5);
+    align-items: center;
+    margin-block-start: var(--space-5);
+  }
+
+  .text {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-3);
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--target-min);
+    padding-inline: var(--space-5);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+  }
+
+  .button:hover {
+    background: var(--color-accent-hover);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .button {
+      transition: background-color var(--motion-fast) var(--motion-ease);
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .block {
+      grid-template-columns: 3fr 2fr;
+      gap: var(--space-6);
+    }
+  }
+</style>

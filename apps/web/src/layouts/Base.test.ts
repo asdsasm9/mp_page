@@ -6,7 +6,7 @@ import { gzipSync } from 'node:zlib';
 import { SnapshotSchema } from '@mp/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
-import { portfolioMeta } from '../lib/seo';
+import { aboutMeta, contactMeta, portfolioMeta } from '../lib/seo';
 import { checkWeight, measureFirstLoad, snapshotImageBytes } from '../lib/weight';
 
 // Builds the real site into a temp dir (fixture mode) and checks the shell of the home page.
@@ -260,6 +260,107 @@ describe('Portfolio page (built, shared build)', () => {
     const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(page)?.[1] ?? '';
     const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((x) => x[1]);
     expect(current).toEqual(['/portfolio/']);
+  });
+});
+
+describe('About and Contact pages (built, shared build)', () => {
+  const read = (dir: string): string => readFileSync(join(out, dir, 'index.html'), 'utf8');
+  const ldBlocks = (page: string): Array<Record<string, unknown>> =>
+    [...page.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(
+      (x) => JSON.parse(x[1]!) as Record<string, unknown>,
+    );
+  const pages = [
+    { dir: 'o-mne', path: '/o-mne/', m: aboutMeta(), types: ['Person', 'BreadcrumbList'] },
+    { dir: 'kontakt', path: '/kontakt/', m: contactMeta(), types: ['Photographer', 'BreadcrumbList'] },
+  ];
+
+  it('has SEO pattern title and description, one h1, breadcrumb, canonical and the expected JSON-LD', () => {
+    for (const { dir, path, m, types } of pages) {
+      const page = read(dir);
+      expect(page).toContain(`<title>${m.title}</title>`);
+      expect(page).toContain(`<meta name="description" content="${m.description}">`);
+      expect([...page.matchAll(/<h1[\s>]/g)], dir).toHaveLength(1);
+      expect(page).toContain('<nav class="breadcrumb"');
+      expect(page).toContain(`<link rel="canonical" href="https://www.mullnyphotos.cz${path}">`);
+      expect(ldBlocks(page).map((b) => b['@type'])).toEqual(types);
+      expect(page).not.toMatch(/"@type":"(Review|AggregateRating)"/);
+    }
+  });
+
+  it('has the hero as the only fetchpriority=high image and real alt text on every image', () => {
+    for (const { dir } of pages) {
+      const page = read(dir);
+      const imgs = imgTags(page.slice(page.indexOf('<main'), page.indexOf('</main>')));
+      const high = imgs.filter((t) => t.includes('fetchpriority="high"'));
+      expect(high, dir).toHaveLength(1);
+      expect(high[0]).toContain('loading="eager"');
+      expect([...page.matchAll(/fetchpriority="high"/g)]).toHaveLength(1);
+      for (const t of imgs) {
+        if (!/\salt="[^"]+"/.test(t)) {
+          expect(t).toMatch(EMPTY_ALT);
+          continue;
+        }
+        expect(/\salt="([^"]+)"/.exec(t)?.[1]).not.toMatch(/\.(jpe?g|webp|png)$/i);
+      }
+      // The Instagram icon is the only decorative image; every other one has text.
+      expect(imgs.filter((t) => !/\salt="[^"]+"/.test(t)).length).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('Contact has a working mailto and an Instagram link with rel, and no form', () => {
+    const page = read('kontakt');
+    expect(page).toContain('href="mailto:mullnyphotos@gmail.com"');
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    const ig = [...main.matchAll(/<a\b[^>]*href="https:\/\/www\.instagram\.com\/[^"]*"[^>]*>/g)].map((x) => x[0]);
+    expect(ig).toHaveLength(1);
+    expect(ig[0]).toContain('rel="noopener noreferrer"');
+    expect(page).not.toMatch(/<form[\s>]/);
+    expect(read('o-mne')).not.toMatch(/<form[\s>]/);
+  });
+
+  it('About emits Person referencing #business; Contact emits the full Photographer', () => {
+    const person = ldBlocks(read('o-mne'))[0]!;
+    expect(person['@type']).toBe('Person');
+    expect(person['worksFor']).toEqual({ '@id': 'https://www.mullnyphotos.cz/#business' });
+    const photographer = ldBlocks(read('kontakt'))[0]!;
+    expect(photographer['@id']).toBe('https://www.mullnyphotos.cz/#business');
+    expect(photographer['email']).toBe('mullnyphotos@gmail.com');
+  });
+
+  it('has an absolute 1200x630 og:image under 300 KB', () => {
+    for (const { dir } of pages) {
+      const page = read(dir);
+      const url = /<meta property="og:image" content="(https:\/\/www\.mullnyphotos\.cz\/[^"]+)">/.exec(page)?.[1];
+      expect(url, dir).toBeTruthy();
+      expect(page).toContain('<meta property="og:image:width" content="1200">');
+      expect(page).toContain('<meta property="og:image:height" content="630">');
+      const file = join(out, new URL(url!).pathname);
+      expect(existsSync(file), file).toBe(true);
+      const buf = readFileSync(file);
+      expect(buf.length).toBeLessThan(300 * 1024);
+      // JPEG SOF0/SOF2 marker carries the pixel size.
+      let w = 0;
+      let h = 0;
+      for (let i = 2; i < buf.length - 9; ) {
+        if (buf[i] !== 0xff) break;
+        const marker = buf[i + 1]!;
+        if (marker === 0xc0 || marker === 0xc2) {
+          h = buf.readUInt16BE(i + 5);
+          w = buf.readUInt16BE(i + 7);
+          break;
+        }
+        i += 2 + buf.readUInt16BE(i + 2);
+      }
+      expect([w, h]).toEqual([1200, 630]);
+    }
+  });
+
+  it('marks About and Contact as the current nav link', () => {
+    for (const { dir, path } of pages) {
+      const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(read(dir))?.[1] ?? '';
+      const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((x) => x[1]);
+      expect(current).toEqual([path]);
+    }
   });
 });
 

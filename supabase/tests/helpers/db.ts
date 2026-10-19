@@ -1,5 +1,5 @@
 import { PGlite } from '@electric-sql/pglite';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,11 +14,28 @@ export async function createDb(): Promise<PGlite> {
   return db;
 }
 
-/** Applies supabase/migrations/*.sql in filename order. Empty until WP-2. */
-export async function applyMigrations(_db: PGlite, files: string[] = []): Promise<void> {
+export const MIGRATIONS_DIR = join(here, '..', '..', 'migrations');
+
+/** Absolute paths of supabase/migrations/*.sql in filename order. */
+export function migrationFiles(dir: string = MIGRATIONS_DIR): string[] {
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort()
+    .map((f) => join(dir, f));
+}
+
+/** Applies the given migration files (default: all of supabase/migrations) in filename order. */
+export async function applyMigrations(db: PGlite, files: string[] = migrationFiles()): Promise<void> {
   for (const file of [...files].sort()) {
-    await _db.exec(readFileSync(file, 'utf8'));
+    await db.exec(readFileSync(file, 'utf8'));
   }
+}
+
+/** Fresh database with the auth stub and every migration applied. */
+export async function createMigratedDb(): Promise<PGlite> {
+  const db = await createDb();
+  await applyMigrations(db);
+  return db;
 }
 
 /**

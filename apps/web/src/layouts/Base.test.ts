@@ -364,6 +364,43 @@ describe('About and Contact pages (built, shared build)', () => {
   });
 });
 
+describe('Cookies page and 404 (built, shared build)', () => {
+  const cookies = (): string => readFileSync(join(out, 'cookies', 'index.html'), 'utf8');
+
+  it('/cookies/ has the title, canonical, one h1, breadcrumb and BreadcrumbList', () => {
+    const page = cookies();
+    expect(page).toContain('<title>Zásady cookies a ochrany soukromí | Mullny Photos</title>');
+    expect(page).toContain('<link rel="canonical" href="https://www.mullnyphotos.cz/cookies/">');
+    expect([...page.matchAll(/<h1[\s>]/g)]).toHaveLength(1);
+    expect(page).toContain('<nav class="breadcrumb"');
+    expect(page).toContain('"@type":"BreadcrumbList"');
+  });
+
+  it('/cookies/ implies no banner, claims nothing about analytics, and has [doplnit] markers and the slot', () => {
+    const page = cookies();
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    // The HTML comment that marks the WP-7 slot names ANALYTICS_PARAGRAPH; only visible text is checked.
+    expect(main.replace(/<!--[\s\S]*?-->/g, '')).not.toMatch(/cookiebar|souhlas|analytic|google analytics|měření/i);
+    expect((main.match(/\[doplnit\]/g) ?? []).length).toBeGreaterThanOrEqual(3);
+    expect(page).toContain('ANALYTICS_PARAGRAPH');
+    expect(main).toContain('href="mailto:mullnyphotos@gmail.com"');
+    expect(main).toContain('href="https://uoou.gov.cz"');
+    expect(main).toContain('Cloudflare');
+    expect(main).not.toMatch(/\bEU\b|Evropsk/);
+  });
+
+  it('dist/404.html exists, is noindex, and links to / and the three categories', () => {
+    const file = join(out, '404.html');
+    expect(existsSync(file)).toBe(true);
+    const page = readFileSync(file, 'utf8');
+    expect(page).toContain('<meta name="robots" content="noindex, nofollow">');
+    expect(page).toContain('<title>Stránka nenalezena | Mullny Photos</title>');
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    const hrefs = [...main.matchAll(/<a href="([^"]+)"/g)].map((x) => x[1]);
+    expect(hrefs).toEqual(['/', ...fixture.categories.map((c) => `/${c.slug}/`)]);
+  });
+});
+
 describe('Base layout (built home page)', () => {
   it('is Czech with exactly one main landmark and one h1', () => {
     expect(html).toContain('<html lang="cs">');

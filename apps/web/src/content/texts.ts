@@ -95,6 +95,47 @@ export const NOT_FOUND = {
   body: 'Tuto stránku se nepodařilo najít. Vraťte se na úvod nebo si prohlédněte portfolio.',
 } as const;
 
+export const UOOU_URL = 'https://uoou.gov.cz';
+
+/** Wording is ours (docs/ANALYTICS-CONSENT.md section 4, reduced to option C / D-3 and WP-3); open `[doplnit]` items are in docs/TEXTS-REVIEW.md. */
+export const COOKIES = {
+  title: 'Zásady cookies a ochrany soukromí',
+  intro: 'Tato stránka vysvětluje, jaké údaje tento web zpracovává a komu je můžete nahlásit nebo se na ně zeptat.',
+  controller: {
+    title: 'Správce údajů',
+    intro: 'Správcem osobních údajů je fotografka provozující web Mullny Photos.',
+    nameLabel: 'Jméno a příjmení nebo obchodní jméno',
+    addressLabel: 'Adresa',
+    idLabel: 'IČO',
+    mailLabel: 'E-mail',
+    placeholder: '[doplnit]',
+  },
+  storage: {
+    title: 'Co web ukládá',
+    body: 'Web nepoužívá žádné cookies a neukládá do vašeho zařízení žádná data, ani v místním úložišti prohlížeče.',
+  },
+  hosting: {
+    title: 'Hosting',
+    body: 'Web běží na službách společnosti Cloudflare, která doručuje stránky a obrázky. Při načtení stránky zpracovává technické údaje nutné k doručení a zabezpečení, například IP adresu. Cloudflare provozuje servery po celém světě.',
+  },
+  fonts: {
+    title: 'Písma',
+    body: 'Písma jsou součástí webu a načítají se z něj. Web si je nestahuje od třetích stran.',
+  },
+  mail: {
+    title: 'E-mailové dotazy',
+    body: 'Když mi napíšete e-mail, použiji vaši adresu a obsah zprávy jen k odpovědi a domluvě focení. Na webu není žádný formulář. Odkazy na Instagram a MyWed vedou na cizí weby, které mají vlastní zásady.',
+  },
+  rights: {
+    title: 'Vaše práva',
+    body: 'Máte právo na přístup ke svým osobním údajům, jejich opravu nebo výmaz, omezení zpracování, vznesení námitky a přenositelnost. Napište mi na e-mail uvedený výše. Pokud se domníváte, že s údaji nakládám nesprávně, můžete podat stížnost u Úřadu pro ochranu osobních údajů.',
+    complaintLabel: 'Úřad pro ochranu osobních údajů (uoou.gov.cz)',
+    complaintHref: UOOU_URL,
+  },
+  /** Slot for WP-7: the analytics paragraph is filled here (null until then) and rendered at the marked place on /cookies/. */
+  ANALYTICS_PARAGRAPH: null as string | null,
+} as const;
+
 /**
  * AUDIT section 4 strings intentionally not carried over.
  * Each entry: legacy string and the reason.

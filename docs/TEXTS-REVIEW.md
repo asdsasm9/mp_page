@@ -38,6 +38,15 @@ These are our wording, not yours. Please check that they describe the photos cor
 - Heading "Napište mi" above the contact text (the old site had no heading there) and the hidden note "(Instagram, otevře se v novém okně)" on the Instagram button.
 - The About page opens with the "O MNĚ" text as the first block under the page title (the title is not repeated).
 
+## Cookies page (open `[doplnit]` items)
+
+The text on `/cookies/` is our wording, reduced to what is true today (no cookies, Cloudflare hosting, self-hosted fonts, e-mail only). Please check it and fill in:
+
+- **[doplnit] Controller name** (your name or trading name), **address** and **IČO**. The page shows `[doplnit]` until these are entered in `apps/web/src/content/texts.ts` (`COOKIES.controller`). The page must not go live with the markers.
+- **[doplnit] Analytics paragraph.** Left empty on purpose (`COOKIES.ANALYTICS_PARAGRAPH`); it is filled together with the analytics work package.
+- **[doplnit] Date of last update**, to be added when the text is approved.
+- Please confirm the 404 wording "Tuto stránku se nepodařilo najít. Vraťte se na úvod nebo si prohlédněte portfolio." and the link list under it.
+
 ## Questions
 
 - **Q-1 (product photography).** "Mé zkušenosti" says: "přes 46 000 fotek portrétů, 12 000 fotek svateb a 4 000 fotek produktů", and Contact mentions "produktů". Copied unchanged. Do you still offer product photography, and are these numbers still true? We will not use "produktové focení" as a keyword until you confirm.

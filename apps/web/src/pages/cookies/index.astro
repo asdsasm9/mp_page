@@ -1,0 +1,104 @@
+---
+// Cookies and privacy (option C, decision D-3): text only. The site stores nothing; the analytics paragraph is a slot for WP-7.
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { COOKIES, MAIL_ADDRESS, MAIL_URL } from '../../content/texts';
+import Base from '../../layouts/Base.astro';
+import { breadcrumbList } from '../../lib/jsonld';
+import { cookiesMeta } from '../../lib/seo';
+
+const path = '/cookies/';
+const meta = cookiesMeta();
+const crumbs = [{ name: COOKIES.title, path }];
+const { controller, storage, hosting, fonts, mail, rights } = COOKIES;
+const analytics = COOKIES.ANALYTICS_PARAGRAPH;
+---
+<Base meta={meta} path={path} jsonLd={[breadcrumbList(crumbs)]}>
+  <div class="page">
+    <Breadcrumb crumbs={crumbs} />
+    <h1>{COOKIES.title}</h1>
+    <p>{COOKIES.intro}</p>
+
+    <section aria-labelledby="spravce">
+      <h2 id="spravce">{controller.title}</h2>
+      <p>{controller.intro}</p>
+      <dl>
+        <dt>{controller.nameLabel}</dt>
+        <dd>{controller.placeholder}</dd>
+        <dt>{controller.addressLabel}</dt>
+        <dd>{controller.placeholder}</dd>
+        <dt>{controller.idLabel}</dt>
+        <dd>{controller.placeholder}</dd>
+        <dt>{controller.mailLabel}</dt>
+        <dd><a href={MAIL_URL}>{MAIL_ADDRESS}</a></dd>
+      </dl>
+    </section>
+
+    <section aria-labelledby="uloziste">
+      <h2 id="uloziste">{storage.title}</h2>
+      <p>{storage.body}</p>
+    </section>
+
+    <section aria-labelledby="hosting">
+      <h2 id="hosting">{hosting.title}</h2>
+      <p>{hosting.body}</p>
+    </section>
+
+    <section aria-labelledby="pisma">
+      <h2 id="pisma">{fonts.title}</h2>
+      <p>{fonts.body}</p>
+    </section>
+
+    <section aria-labelledby="email">
+      <h2 id="email">{mail.title}</h2>
+      <p>{mail.body}</p>
+    </section>
+
+    <!-- ANALYTICS_PARAGRAPH: WP-7 fills COOKIES.ANALYTICS_PARAGRAPH in content/texts.ts; it appears here. -->
+
+    {
+      analytics && (
+        <section aria-labelledby="mereni">
+          <h2 id="mereni">Měření návštěvnosti</h2>
+          <p>{analytics}</p>
+        </section>
+      )
+    }
+
+    <section aria-labelledby="prava">
+      <h2 id="prava">{rights.title}</h2>
+      <p>{rights.body}</p>
+      <p><a href={rights.complaintHref} rel="noopener noreferrer">{rights.complaintLabel}</a></p>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-4);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  h1 {
+    font-size: var(--font-size-5);
+  }
+
+  section {
+    display: grid;
+    gap: var(--space-3);
+    margin-block-start: var(--space-4);
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-2) var(--space-4);
+    margin: 0;
+  }
+
+  dd {
+    margin: 0;
+  }
+</style>

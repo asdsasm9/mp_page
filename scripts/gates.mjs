@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { checkPageChecks, loadSite } from './site-checks.mjs';
+import { checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
 
 const SELF = ['scripts/gates.mjs', 'scripts/gates.test.mjs'];
 const isSelf = (p) => SELF.includes(p);
@@ -190,7 +190,7 @@ export const CHECKS = [
   { name: 'no-ga-in-dist', input: 'dist', run: checkNoGaInDist },
   { name: 'migrations-lint', input: 'files', run: checkMigrationsLint },
   { name: 'page-checks', input: 'site', run: checkPageChecks },
-  { name: 'budget', input: 'files', run: pending('WP-3') },
+  { name: 'budget', input: 'site', run: checkBudget },
   { name: 'quota-guard-tests', input: 'files', run: pending('WP-4') },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
 ];

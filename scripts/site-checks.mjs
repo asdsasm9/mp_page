@@ -6,6 +6,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { BUDGET, KB, aboveFoldImageUrls, checkWeight, measureFirstLoad } from '../apps/web/src/lib/weight.ts';
 
 export const SITE_ORIGIN = 'https://www.mullnyphotos.cz';
 export const PLACEHOLDER = '[doplnit]';
@@ -311,6 +312,100 @@ export function checkPageChecks(site) {
   return { status: 'PASS', details: `${site.pages.length} pages, ${site.siteEnv ?? 'unknown'} build${warn}` };
 }
 
+// ------------------------------------------------------------------ budget (plan WP3-23, gate `budget`)
+
+export const LCP_IMAGE_LIMIT = 150 * KB;
+
+const HOST_ATTRS = { img: ['src', 'srcset'], source: ['src', 'srcset'], script: ['src'], iframe: ['src'], form: ['action'], video: ['src', 'poster'], audio: ['src'], embed: ['src'], object: ['data'] };
+const NON_RESOURCE_RELS = new Set(['canonical', 'alternate', 'author', 'license', 'help', 'prev', 'next']);
+
+/** Absolute http(s) hosts that page resources (not plain `<a>` links or meta tags) point at. */
+export function resourceHosts(html) {
+  const hosts = new Set();
+  const add = (value) => {
+    for (const part of String(value ?? '').split(',')) {
+      const url = part.trim().split(/\s+/)[0] ?? '';
+      const m = /^(?:https?:)?\/\/([^/?#\s]+)/i.exec(url);
+      if (m) hosts.add(m[1].toLowerCase());
+    }
+  };
+  for (const [name, attrNames] of Object.entries(HOST_ATTRS)) {
+    for (const tag of tagsOf(html, name)) for (const n of attrNames) add(attrsOf(tag)[n]);
+  }
+  for (const tag of tagsOf(html, 'link')) {
+    const a = attrsOf(tag);
+    const rels = (a.rel ?? '').toLowerCase().split(/\s+/);
+    if (!rels.some((r) => NON_RESOURCE_RELS.has(r))) add(a.href);
+  }
+  return hosts;
+}
+
+/** Hosts the site may load resources from: itself and the image host. */
+export const allowedHosts = (imageHost) =>
+  new Set([new URL(SITE_ORIGIN).host, ...(imageHost ? [imageHost.toLowerCase()] : [])]);
+
+const kb = (n) => `${(n / KB).toFixed(1)} KB`;
+
+/**
+ * Measures first-load weight of every page of `site` (needs `site.distDir`) and returns
+ * `{ errors, warnings, lines }`; `lines` print each number against its limit (Home first).
+ */
+export function runBudget(site) {
+  const errors = [];
+  const warnings = [];
+  const lines = [];
+  const allowed = allowedHosts(site.imageHost);
+  const pages = [...site.pages].sort((a, b) => (a.path === 'index.html' ? -1 : b.path === 'index.html' ? 1 : 0));
+  for (const page of pages) {
+    // The 404 page is not at <route>/index.html, which measureFirstLoad expects; it is a bare page without images.
+    if (is404(page)) continue;
+    const route = routeOf(page.path);
+    const w = measureFirstLoad({
+      distDir: site.distDir,
+      page: route,
+      imageBytes: site.imageBytes,
+      slotWidth: 390,
+    });
+    const scope = `${where(page)}: `;
+    for (const m of checkWeight(w)) (m.startsWith('unknown size') ? warnings : errors).push(`budget: ${scope}${m}`);
+    const sizes = aboveFoldImageUrls(page.html)
+      .map((u) => (u.startsWith('/') && !u.startsWith('//') ? readLocalSize(site.distDir, u) : site.imageBytes?.(u)))
+      .filter((n) => n !== undefined);
+    const lcp = sizes.length ? Math.max(...sizes) : 0;
+    if (lcp > LCP_IMAGE_LIMIT) errors.push(`budget: ${scope}largest above-the-fold image ${lcp} B is over ${LCP_IMAGE_LIMIT} B`);
+    for (const host of resourceHosts(page.html)) {
+      if (!allowed.has(host)) errors.push(`budget: ${scope}resource from non-self host ${host}`);
+    }
+    const mark = (v, limit) => `${kb(v)} / ${kb(limit)}${v > limit ? ' OVER' : ''}`;
+    lines.push(
+      `${where(page).padEnd(36)} html ${mark(w.html, BUDGET.html)}; css ${mark(w.css, BUDGET.css)}; js ${mark(w.js, BUDGET.js)}; ` +
+        `fonts ${w.fontFiles}/${BUDGET.fontFiles} files ${mark(w.fonts, BUDGET.fonts)}; images ${mark(w.images, BUDGET.images)}; ` +
+        `lcp image ${mark(lcp, LCP_IMAGE_LIMIT)}; total ${mark(w.total, BUDGET.total)}`,
+    );
+  }
+  return { errors, warnings, lines };
+}
+
+function readLocalSize(distDir, urlPath) {
+  try {
+    return readFileSync(join(distDir, decodeURIComponent(urlPath.split(/[?#]/)[0]))).length;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Gate adapter for `budget`: `site` is null (or has no distDir) when there is no dist. */
+export function checkBudget(site) {
+  if (!site || site.pages.length === 0 || !site.distDir) return { status: 'SKIP', details: 'no apps/web/dist found' };
+  const { errors, warnings, lines } = runBudget(site);
+  const warn = warnings.length ? `; WARNING ${warnings.length} eager image sizes unknown` : '';
+  if (errors.length > 0) {
+    const shown = errors.slice(0, 5).join('; ');
+    return { status: 'FAIL', details: `${errors.length} problems: ${shown}${errors.length > 5 ? '; ...' : ''}${warn}` };
+  }
+  return { status: 'PASS', details: `${lines.length} pages within budget${warn}` };
+}
+
 // ------------------------------------------------------------------ loading dist
 
 /** Every file below `dir`, relative to it, posix separators. */
@@ -333,7 +428,13 @@ export function loadSite(distDir, walkFn = listFiles) {
     siteEnv = null;
   }
   siteEnv ??= process.env.PUBLIC_SITE_ENV === 'production' ? 'production' : 'local';
-  return { pages, files, sitemapXml: read('sitemap.xml'), redirectsText: read('_redirects') ?? '', siteEnv };
+  let imageHost = null;
+  try {
+    imageHost = new URL(process.env.PUBLIC_IMG_BASE_URL ?? '').host;
+  } catch {
+    imageHost = null;
+  }
+  return { pages, files, sitemapXml: read('sitemap.xml'), redirectsText: read('_redirects') ?? '', siteEnv, distDir, imageHost };
 }
 
 export function main() {
@@ -351,7 +452,14 @@ export function main() {
       ? `page-checks OK: ${site.pages.length} pages (${site.siteEnv})`
       : `page-checks FAILED: ${errors.length} problems`,
   );
-  return errors.length === 0 ? 0 : 1;
+  const budget = runBudget(site);
+  for (const l of budget.lines) console.log(`BUDGET ${l}`);
+  for (const w of budget.warnings) console.log(`WARN  ${w}`);
+  for (const e of budget.errors) console.log(`FAIL  ${e}`);
+  console.log(
+    budget.errors.length === 0 ? `budget OK: ${site.pages.length} pages` : `budget FAILED: ${budget.errors.length} problems`,
+  );
+  return errors.length === 0 && budget.errors.length === 0 ? 0 : 1;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

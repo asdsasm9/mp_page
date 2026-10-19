@@ -84,7 +84,9 @@ export function aboveFoldImageUrls(html: string, slotWidth = 390): string[] {
     const eager = attr(img, 'loading') === 'eager' || attr(img, 'fetchpriority') === 'high';
     if (!eager) continue;
     const source = /<source\b[^>]*\ssrcset="([^"]+)"/.exec(block)?.[1];
-    const url = (source && pickCandidate(source, slotWidth)) || attr(img, 'src');
+    // A bare `<img srcset>` (Astro's static images) is resolved like a `<source>`; `src` is only its fallback.
+    const set = source ?? attr(img, 'srcset');
+    const url = (set && pickCandidate(set, slotWidth)) || attr(img, 'src');
     if (url) urls.push(url);
   }
   return urls;

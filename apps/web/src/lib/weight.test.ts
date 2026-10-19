@@ -37,6 +37,13 @@ describe('aboveFoldImageUrls', () => {
   });
 });
 
+describe('aboveFoldImageUrls with a bare img srcset', () => {
+  it('picks the srcset candidate for the slot, not the src fallback', () => {
+    const html = '<img src="/big.webp" srcset="/s.webp 480w, /m.webp 960w, /big.webp 1600w" loading="eager">';
+    expect(aboveFoldImageUrls(html)).toEqual(['/s.webp']);
+  });
+});
+
 describe('measureFirstLoad', () => {
   it('adds gzip html/css/js, fonts and image sizes, and flags unknown images', () => {
     const html =

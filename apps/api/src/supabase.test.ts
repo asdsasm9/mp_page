@@ -163,7 +163,7 @@ describe('paging', () => {
 });
 
 describe('no privileged key', () => {
-  it('worker sources never mention service_role', () => {
+  it('worker sources never mention the privileged database role', () => {
     const marker = ['service', 'role'].join('_');
     for (const f of ['supabase.ts', 'auth.ts', 'env.ts', 'index.ts', 'http.ts', 'cors.ts']) {
       const src = readFileSync(new URL(`./${f}`, import.meta.url), 'utf8');

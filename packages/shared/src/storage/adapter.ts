@@ -29,7 +29,7 @@ export interface StorageAdapter {
   publicUrl(key: string): string;
 }
 
-export type StorageErrorCode = 'INVALID_KEY' | 'URL_EXPIRED' | 'CONTENT_LENGTH_MISMATCH' | 'CONTENT_TYPE_MISMATCH' | 'UNKNOWN_URL';
+export type StorageErrorCode = 'INVALID_KEY' | 'URL_EXPIRED' | 'CONTENT_LENGTH_MISMATCH' | 'CONTENT_TYPE_MISMATCH' | 'UNKNOWN_URL' | 'NOT_CONFIGURED';
 
 export class StorageError extends Error {
   constructor(

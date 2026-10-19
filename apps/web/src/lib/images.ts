@@ -3,7 +3,10 @@
  * never from string concatenation in components. The srcset is built from the variants that actually
  * exist, never from the plan, and every width and height is the stored one.
  */
-import { jpegKey, ogKey, webpKey, type SnapshotPhoto, type WebpTier } from '@mp/shared';
+import { jpegKey, masterKey, ogKey, webpKey, type SnapshotPhoto, type WebpTier } from '@mp/shared';
+
+/** Lightbox fit tiers: the large WebP tiers (1600 and 2400), when they exist for a photo. */
+const LIGHTBOX_MIN_TIER = 1600;
 
 export interface SourceEntry {
   url: string;
@@ -24,6 +27,13 @@ export interface PhotoSources {
   height: number;
   /** `--c:#rrggbb` placeholder style, or null when the photo has no dominant colour. */
   placeholderStyle: string | null;
+  /** The stored master JPEG with its real dimensions. Loaded by the zoom script only, never in the initial markup. */
+  master: SourceEntry;
+  /**
+   * srcset of the 1600 and 2400 WebP tiers that exist (the lightbox fit candidates). If a small master has
+   * neither, the largest existing tier is used so the lightbox always has a source.
+   */
+  lightboxSet: string;
 }
 
 const trimBase = (base: string): string => base.replace(/\/+$/, '');
@@ -37,23 +47,30 @@ export function photoSources(photo: SnapshotPhoto, base: string): PhotoSources {
   }));
   const jpeg = photo.variants.jpeg;
   const fallback = { url: `${b}/${jpegKey(photo.id)}`, width: jpeg.w, height: jpeg.h };
+  const srcset = (list: SourceEntry[]): string => list.map((e) => `${e.url} ${e.width}w`).join(', ');
+  const large = webp.filter((_, i) => (photo.variants.webp[i]?.tier ?? 0) >= LIGHTBOX_MIN_TIER);
+  const lightbox = large.length > 0 ? large : webp.slice(-1);
   return {
     webp,
-    webpSrcset: webp.map((e) => `${e.url} ${e.width}w`).join(', '),
+    webpSrcset: srcset(webp),
     fallback,
     width: fallback.width,
     height: fallback.height,
     placeholderStyle: photo.dominantColor ? `--c:${photo.dominantColor}` : null,
+    master: { url: `${b}/${masterKey(photo.id)}`, width: photo.variants.master.w, height: photo.variants.master.h },
+    lightboxSet: srcset(lightbox),
   };
 }
 
 export type SizesContext = 'grid' | 'card' | 'lightbox' | 'hero';
 
 const SIZES: Record<SizesContext, string> = {
-  // Album grid: three columns on wide screens, two on medium, one on narrow.
-  grid: '(min-width: 64rem) 33vw, (min-width: 40rem) 50vw, 100vw',
-  // Category and album card: three columns from 48rem (page gutters make it a little under 33vw).
-  card: '(min-width: 48rem) 33vw, 100vw',
+  // Album grid: three columns from 64rem, two from 40rem, one below; page gutter is 1rem minimum per side.
+  // 24.5rem cap = (--layout-max 80rem - 2 x 2.5rem gutter - 2 x --space-3 gap) / 3, the real column maximum.
+  grid: '(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 2rem)',
+  // Category and album card: three columns from 48rem. The real maximum is 24rem (gap --space-5);
+  // 24.5rem is the shared, marginally conservative cap.
+  card: '(min-width: 48rem) min(33vw, 24.5rem), calc(100vw - 2rem)',
   // Lightbox and full-width hero use the whole viewport.
   lightbox: '100vw',
   hero: '100vw',

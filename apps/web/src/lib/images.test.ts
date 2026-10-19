@@ -105,8 +105,34 @@ describe('sizesFor', () => {
       expect(sizesFor(c)).not.toMatch(/px/);
     }
     expect(sizesFor('lightbox')).toBe('100vw');
-    // Cards sit in three columns from 48rem.
-    expect(sizesFor('card')).toBe('(min-width: 48rem) 33vw, 100vw');
+    // Cards sit in three columns from 48rem, capped at the real column maximum.
+    expect(sizesFor('card')).toBe('(min-width: 48rem) min(33vw, 24.5rem), calc(100vw - 2rem)');
+    expect(sizesFor('grid')).toBe('(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 2rem)');
+    expect(sizesFor('hero')).toBe('100vw');
+  });
+});
+
+describe('master and lightboxSet', () => {
+  const big = (tiers: Array<480 | 720 | 960 | 1600 | 2400>): SnapshotPhoto =>
+    photo({
+      variants: {
+        ...photo().variants,
+        webp: tiers.map((t) => ({ tier: t, w: t, h: Math.round((t * 2) / 3), bytes: 1 })),
+      },
+    });
+
+  it('master comes from masterKey with the stored dimensions', () => {
+    expect(photoSources(photo(), `${IMG}/`).master).toEqual({ url: `${IMG}/photos/${ID}/master.jpg`, width: 3000, height: 2000 });
+  });
+
+  it('lightboxSet lists the 1600 and 2400 tiers that exist', () => {
+    const s = photoSources(big([480, 720, 960, 1600, 2400]), IMG);
+    expect(s.lightboxSet).toBe(`${IMG}/photos/${ID}/1600.webp 1600w, ${IMG}/photos/${ID}/2400.webp 2400w`);
+    expect(photoSources(big([480, 960, 1600]), IMG).lightboxSet).toBe(`${IMG}/photos/${ID}/1600.webp 1600w`);
+  });
+
+  it('lightboxSet falls back to the largest tier for a small master', () => {
+    expect(photoSources(big([480, 720, 960]), IMG).lightboxSet).toBe(`${IMG}/photos/${ID}/960.webp 960w`);
   });
 });
 
@@ -141,6 +167,12 @@ describe('Photo.astro source scan', () => {
       expect(tag).toMatch(/\swidth=\{src\.width\}/);
       expect(tag).toMatch(/\sheight=\{src\.height\}/);
     }
+  });
+
+  it('placeholder: --c colour variable via style, background from --c, block-size auto (CLS 0)', () => {
+    expect(markup).toMatch(/style=\{src\.placeholderStyle\}/);
+    expect(src).toMatch(/background-color: var\(--c, var\(--color-placeholder\)\)/);
+    expect(src).toMatch(/block-size: auto/);
   });
 
   it('does not hardcode eager loading or fetchpriority', () => {

@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   CHECKS,
+  QUOTA_GUARD_FILE,
+  QUOTA_GUARD_TITLES,
+  checkQuotaGuardTests,
   checkEnvExampleSane,
   checkMigrationsLint,
   checkNoDeadDeps,
@@ -130,6 +133,29 @@ describe('migrations-lint', () => {
     expect(status(checkMigrationsLint([mig('20261019100000_a.sql')]))).toBe('FAIL'));
 });
 
+const quotaSuite = (skip = -1) =>
+  QUOTA_GUARD_TITLES.filter((_, i) => i !== skip)
+    .map((t) => `  it('${t.replace(/'/g, "\\'")}', async () => {});`)
+    .join('\n');
+
+describe('quota-guard-tests', () => {
+  const run = (text) => checkQuotaGuardTests(text === null ? [] : [f(QUOTA_GUARD_FILE, text)]);
+  it('passes with all eleven titles', () => {
+    expect(QUOTA_GUARD_TITLES).toHaveLength(11);
+    expect(status(run(quotaSuite()))).toBe('PASS');
+  });
+  it('fails when the file is missing', () => expect(status(run(null))).toBe('FAIL'));
+  it('fails when any one case is removed or renamed', () => {
+    for (let i = 0; i < QUOTA_GUARD_TITLES.length; i++) {
+      const r = run(quotaSuite(i));
+      expect(status(r)).toBe('FAIL');
+      expect(r.details).toContain(QUOTA_GUARD_TITLES[i]);
+    }
+  });
+  it('does not accept a title that is only in a comment', () =>
+    expect(status(run(`${quotaSuite(0)}\n// ${QUOTA_GUARD_TITLES[0]}`))).toBe('FAIL'));
+});
+
 describe('registry and runner', () => {
   const inputs = {
     files: [
@@ -137,6 +163,7 @@ describe('registry and runner', () => {
       f('supabase/migrations/20261019100000_a.sql', 'create table public.t (id int);'),
       f('supabase/tests/lint.test.ts'),
       f('supabase/tests/golden/privilege-matrix.json'),
+      f(QUOTA_GUARD_FILE, quotaSuite()),
     ],
     dist: [],
   };
@@ -146,12 +173,9 @@ describe('registry and runner', () => {
   it('budget is SKIP without dist (no site input)', () => {
     expect(runChecks(inputs).rows.find((r) => r.name === 'budget').status).toBe('SKIP');
   });
-  it('has the 2 pending checks with owners', () => {
+  it('has the 1 pending check with an owner', () => {
     const pend = runChecks(inputs).rows.filter((r) => r.status === 'PENDING');
-    expect(pend.map((r) => r.name)).toEqual([
-      'quota-guard-tests',
-      'docs-complete',
-    ]);
+    expect(pend.map((r) => r.name)).toEqual(['docs-complete']);
     expect(pend.every((r) => /WP-\d/.test(r.details))).toBe(true);
   });
   it('exits 0 normally and 1 with --strict', () => {

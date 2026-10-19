@@ -177,6 +177,35 @@ export function checkMigrationsLint(files) {
   return result(bad, `${sql.length} migrations in order, text lint clean`);
 }
 
+export const QUOTA_GUARD_FILE = 'apps/api/test/quota-guard.test.ts';
+export const QUOTA_GUARD_TITLES = [
+  'refuses a reserve that would cross the hard limit and issues no URL',
+  'accepts a reserve exactly at the limit',
+  'accepts just under the limit',
+  'level is warn from the warn threshold and full at the hard limit',
+  'deleting photos lowers usage and re-allows an upload',
+  'a direct call over the limit is refused with STORAGE_FULL',
+  'limits come from app_config: lowering the limit changes the result',
+  'commit is refused when the object is larger than reserved (presign did not enforce length)',
+  'register backstop refuses over the limit even without a reservation',
+  'partial batch: a refused big file does not block a later small one',
+  'two parallel batches cannot both take the last bytes',
+];
+
+/** The T-6 acceptance suite must exist and contain every fixed case title as an it(...) title. */
+export function checkQuotaGuardTests(files) {
+  const f = files.find((x) => x.path === QUOTA_GUARD_FILE);
+  if (!f) return { status: 'FAIL', details: `${QUOTA_GUARD_FILE} missing` };
+  const missing = QUOTA_GUARD_TITLES.filter((t) => {
+    const quoted = [`'${t.replace(/'/g, "\\'")}'`, `"${t}"`, `\`${t}\``];
+    return !quoted.some((q) => new RegExp(`\\bit\\(\\s*${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(f.text));
+  });
+  return result(
+    missing.map((t) => `missing case "${t}"`),
+    `${QUOTA_GUARD_TITLES.length} cases present`,
+  );
+}
+
 const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
 
 export const CHECKS = [
@@ -191,7 +220,7 @@ export const CHECKS = [
   { name: 'migrations-lint', input: 'files', run: checkMigrationsLint },
   { name: 'page-checks', input: 'site', run: checkPageChecks },
   { name: 'budget', input: 'site', run: checkBudget },
-  { name: 'quota-guard-tests', input: 'files', run: pending('WP-4') },
+  { name: 'quota-guard-tests', input: 'files', run: checkQuotaGuardTests },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
 ];
 

@@ -140,10 +140,12 @@ describe('registry and runner', () => {
     ],
     dist: [],
   };
-  it('has the 4 pending checks with owners', () => {
+  it('page-checks is SKIP without dist (no site input)', () => {
+    expect(runChecks(inputs).rows.find((r) => r.name === 'page-checks').status).toBe('SKIP');
+  });
+  it('has the 3 pending checks with owners', () => {
     const pend = runChecks(inputs).rows.filter((r) => r.status === 'PENDING');
     expect(pend.map((r) => r.name)).toEqual([
-      'page-checks',
       'budget',
       'quota-guard-tests',
       'docs-complete',

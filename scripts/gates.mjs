@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { checkPageChecks, loadSite } from './site-checks.mjs';
 
 const SELF = ['scripts/gates.mjs', 'scripts/gates.test.mjs'];
 const isSelf = (p) => SELF.includes(p);
@@ -188,7 +189,7 @@ export const CHECKS = [
   { name: 'no-direct-r2', input: 'files', run: checkNoDirectR2 },
   { name: 'no-ga-in-dist', input: 'dist', run: checkNoGaInDist },
   { name: 'migrations-lint', input: 'files', run: checkMigrationsLint },
-  { name: 'page-checks', input: 'files', run: pending('WP-3') },
+  { name: 'page-checks', input: 'site', run: checkPageChecks },
   { name: 'budget', input: 'files', run: pending('WP-3') },
   { name: 'quota-guard-tests', input: 'files', run: pending('WP-4') },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
@@ -197,7 +198,7 @@ export const CHECKS = [
 export function runChecks(inputs, { strict = false, checks = CHECKS } = {}) {
   const rows = checks.map((c) => ({
     name: c.name,
-    ...c.run(c.input === 'dist' ? inputs.dist : inputs.files),
+    ...c.run(c.input === 'dist' ? inputs.dist : c.input === 'site' ? (inputs.site ?? null) : inputs.files),
   }));
   const failed = rows.some((r) => r.status === 'FAIL' || (strict && r.status === 'PENDING'));
   return { rows, exitCode: failed ? 1 : 0 };
@@ -255,7 +256,7 @@ export function collect(root) {
   for (const app of walk(join(root, 'apps'), root).filter((p) => /\/dist\/.*\.html$/.test(p))) {
     distPaths.push(app);
   }
-  return { files, dist: loadFiles(root, distPaths) };
+  return { files, dist: loadFiles(root, distPaths), site: loadSite(join(root, 'apps', 'web', 'dist')) };
 }
 
 export function main(argv = process.argv.slice(2)) {

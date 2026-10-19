@@ -206,6 +206,36 @@ export function checkQuotaGuardTests(files) {
   );
 }
 
+export const WRANGLER_TOML = 'apps/api/wrangler.toml';
+
+/**
+ * Worker hygiene (WP4-19): wrangler.toml has no `[vars]` section, no secret-named assignment and no
+ * key-shaped value (32+ token characters); no console call in apps/api/src (tests excluded) mentions
+ * authorization or a bearer token on the same line.
+ */
+export function checkApiHygiene(files) {
+  const bad = [];
+  const toml = files.find((x) => x.path === WRANGLER_TOML);
+  if (!toml) bad.push(`${WRANGLER_TOML} missing`);
+  else {
+    const code = toml.text.replace(/^\s*#.*$/gm, '');
+    if (/^\s*\[(vars|env\.[^\]]*\.vars)\]/m.test(code)) bad.push(`${WRANGLER_TOML} (has a [vars] section)`);
+    if (/^\s*[A-Za-z0-9_]*(secret|token|password|api_?key|access_?key)[A-Za-z0-9_]*\s*=/im.test(code)) {
+      bad.push(`${WRANGLER_TOML} (secret-named assignment)`);
+    }
+    if (/["'][A-Za-z0-9+/_=-]{32,}["']/.test(code)) bad.push(`${WRANGLER_TOML} (key-shaped value)`);
+  }
+  for (const f of files) {
+    if (!f.path.startsWith('apps/api/src/') || /\.test\.ts$/.test(f.path)) continue;
+    f.text.split('\n').forEach((line, i) => {
+      if (/console\.\w+\s*\(/.test(line) && /authorization|bearer/i.test(line)) {
+        bad.push(`${f.path}:${i + 1} (console call mentions authorization)`);
+      }
+    });
+  }
+  return result(bad);
+}
+
 const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
 
 export const CHECKS = [
@@ -221,6 +251,7 @@ export const CHECKS = [
   { name: 'page-checks', input: 'site', run: checkPageChecks },
   { name: 'budget', input: 'site', run: checkBudget },
   { name: 'quota-guard-tests', input: 'files', run: checkQuotaGuardTests },
+  { name: 'api-hygiene', input: 'files', run: checkApiHygiene },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
 ];
 

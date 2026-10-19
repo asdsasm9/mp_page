@@ -6,6 +6,8 @@ import {
   CHECKS,
   QUOTA_GUARD_FILE,
   QUOTA_GUARD_TITLES,
+  WRANGLER_TOML,
+  checkApiHygiene,
   checkQuotaGuardTests,
   checkEnvExampleSane,
   checkMigrationsLint,
@@ -156,6 +158,25 @@ describe('quota-guard-tests', () => {
     expect(status(run(`${quotaSuite(0)}\n// ${QUOTA_GUARD_TITLES[0]}`))).toBe('FAIL'));
 });
 
+describe('api-hygiene', () => {
+  const toml = (text) => f(WRANGLER_TOML, text);
+  const good = 'name = "mullnyphotos-api"\n# TOKEN = "x"\n[triggers]\ncrons = ["17 3 * * *"]\n';
+  it('passes a clean wrangler.toml and clean sources', () =>
+    expect(status(checkApiHygiene([toml(good), f('apps/api/src/a.ts', 'console.info("ok")')]))).toBe('PASS'));
+  it('fails when wrangler.toml is missing', () => expect(status(checkApiHygiene([]))).toBe('FAIL'));
+  it('fails on a [vars] section', () =>
+    expect(status(checkApiHygiene([toml(`${good}[vars]\nA = "b"\n`)]))).toBe('FAIL'));
+  it('fails on a secret-named assignment', () =>
+    expect(status(checkApiHygiene([toml(`${good}R2_SECRET_ACCESS_KEY = "b"\n`)]))).toBe('FAIL'));
+  it('fails on a key-shaped value', () =>
+    expect(status(checkApiHygiene([toml(`${good}x = "${'a1B2'.repeat(10)}"\n`)]))).toBe('FAIL'));
+  it('fails on a console call that mentions authorization, ignores tests', () => {
+    const line = 'console.log(request.headers.get("authorization"))';
+    expect(status(checkApiHygiene([toml(good), f('apps/api/src/a.ts', line)]))).toBe('FAIL');
+    expect(status(checkApiHygiene([toml(good), f('apps/api/src/a.test.ts', line)]))).toBe('PASS');
+  });
+});
+
 describe('registry and runner', () => {
   const inputs = {
     files: [
@@ -164,6 +185,7 @@ describe('registry and runner', () => {
       f('supabase/tests/lint.test.ts'),
       f('supabase/tests/golden/privilege-matrix.json'),
       f(QUOTA_GUARD_FILE, quotaSuite()),
+      f(WRANGLER_TOML, 'name = "x"\n'),
     ],
     dist: [],
   };

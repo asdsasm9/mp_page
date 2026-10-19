@@ -1,0 +1,255 @@
+---
+// Album page: header (title, place, date, description), breadcrumb, photo grid, previous/next album, lightbox.
+// Each thumbnail is a link to the 1600 JPEG, so the grid works without JavaScript; lightbox.ts upgrades it
+// to a native <dialog>.
+import Breadcrumb from '../../../components/Breadcrumb.astro';
+import Photo from '../../../components/Photo.astro';
+import Base from '../../../layouts/Base.astro';
+import { albumThumbs, formatShotOn } from '../../../lib/album';
+import { getCatalog } from '../../../lib/catalog';
+import { readRawEnv, resolveEnv } from '../../../lib/env';
+import { ogImage as photoOgImage, photoSources } from '../../../lib/images';
+import { albumGallery, albumPath, breadcrumbList } from '../../../lib/jsonld';
+import { albumMeta } from '../../../lib/seo';
+
+export async function getStaticPaths() {
+  const catalog = await getCatalog(resolveEnv(readRawEnv()));
+  return catalog.categories.flatMap((category) =>
+    category.albums
+      .filter((album) => album.photos.length > 0)
+      .map((album) => ({ params: { category: category.slug, album: album.slug } })),
+  );
+}
+
+const env = resolveEnv(readRawEnv());
+const catalog = await getCatalog(env);
+const category = catalog.categoryBySlug.get(Astro.params.category!)!;
+const album = catalog.albumBySlug.get(Astro.params.album!)!.album;
+const path = albumPath(category, album);
+const meta = albumMeta(category, album);
+const thumbs = albumThumbs(category, album);
+const cover = catalog.coverOf(album);
+const og = cover ? photoOgImage(cover, env.imgBaseUrl) : null;
+const crumbs = [
+  { name: category.name, path: `/${category.slug}/` },
+  { name: album.title, path },
+];
+const date = formatShotOn(album.shotOn);
+const description = album.description?.trim() || null;
+const { prev, next } = catalog.neighbours(album.slug);
+---
+<Base
+  meta={meta}
+  path={path}
+  ogImage={og ? { url: og.url, width: og.width, height: og.height, alt: album.title } : undefined}
+  jsonLd={[albumGallery(category, album, meta.description ?? '', env.imgBaseUrl), breadcrumbList(crumbs)]}
+>
+  <div class="page">
+    <Breadcrumb crumbs={crumbs} />
+    <header class="album-head">
+      <h1>{album.title}</h1>
+      {
+        (album.place || date) && (
+          <p class="meta">
+            {album.place && <span>{album.place}</span>}
+            {date && <time datetime={album.shotOn!}>{date}</time>}
+          </p>
+        )
+      }
+      {description && <p class="description">{description}</p>}
+    </header>
+
+    <ul class="grid">
+      {
+        thumbs.map((t) => (
+          <li>
+            <a href={photoSources(t.photo, env.imgBaseUrl).fallback.url} data-lb-item>
+              <Photo photo={t.photo} base={env.imgBaseUrl} alt={t.alt} context="grid" eager={t.eager} priority={t.priority} />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <nav class="album-nav" aria-label="Další alba">
+      {prev ? <a rel="prev" href={albumPath(category, prev)}>&larr; {prev.title}</a> : <span></span>}
+      {next ? <a rel="next" href={albumPath(category, next)}>{next.title} &rarr;</a> : <span></span>}
+    </nav>
+  </div>
+
+  <dialog class="lightbox" data-lightbox aria-label="Prohlížeč fotografií">
+    <img data-lb="img" alt="" />
+    <p class="count" data-lb="count" aria-live="polite"></p>
+    <button type="button" class="lb-btn lb-close" data-lb="close" aria-label="Zavřít">&times;</button>
+    <button type="button" class="lb-btn lb-prev" data-lb="prev" aria-label="Předchozí fotografie">&lsaquo;</button>
+    <button type="button" class="lb-btn lb-next" data-lb="next" aria-label="Další fotografie">&rsaquo;</button>
+  </dialog>
+</Base>
+
+<script>
+  import '../../../scripts/lightbox';
+</script>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-5);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  .album-head {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  h1 {
+    font-size: var(--font-size-5);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  .description {
+    max-inline-size: var(--measure);
+    margin: 0;
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .grid a {
+    display: block;
+  }
+
+  @media (min-width: 40rem) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .album-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .album-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-min);
+  }
+
+  /* Lightbox: full-viewport modal dialog on the overlay colour. */
+  .lightbox {
+    inline-size: 100%;
+    max-inline-size: none;
+    block-size: 100dvh;
+    max-block-size: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--color-overlay);
+    color: var(--color-on-overlay);
+    z-index: var(--z-dialog);
+  }
+
+  .lightbox[open] {
+    display: grid;
+    place-items: center;
+  }
+
+  .lightbox img {
+    display: block;
+    max-inline-size: 100%;
+    max-block-size: 100dvh;
+    inline-size: auto;
+    block-size: auto;
+    object-fit: contain;
+  }
+
+  .count {
+    position: absolute;
+    inset-block-end: var(--space-3);
+    inset-inline: 0;
+    margin: 0;
+    text-align: center;
+    font-size: var(--font-size-small);
+  }
+
+  .lb-btn {
+    position: absolute;
+    inline-size: var(--target-min);
+    block-size: var(--target-min);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: var(--border-width) solid var(--color-on-overlay);
+    border-radius: var(--radius-full);
+    background: var(--color-overlay);
+    color: var(--color-on-overlay);
+    font: inherit;
+    font-size: var(--font-size-2);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .lb-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .lb-btn:focus-visible {
+    outline: var(--focus-width) solid var(--color-focus-on-dark);
+    outline-offset: var(--focus-offset);
+  }
+
+  .lb-close {
+    inset-block-start: var(--space-3);
+    inset-inline-end: var(--space-3);
+  }
+
+  .lb-prev,
+  .lb-next {
+    inset-block-start: 50%;
+    translate: 0 -50%;
+  }
+
+  .lb-prev {
+    inset-inline-start: var(--space-3);
+  }
+
+  .lb-next {
+    inset-inline-end: var(--space-3);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lightbox[open] {
+      animation: lb-in var(--motion-base) var(--motion-ease);
+    }
+
+    @keyframes lb-in {
+      from {
+        opacity: 0;
+      }
+    }
+  }
+</style>

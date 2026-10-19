@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { gzipSync } from 'node:zlib';
 import { SnapshotSchema } from '@mp/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
@@ -156,6 +157,69 @@ describe('Category pages (built, shared build)', () => {
       const w = measureFirstLoad({ distDir: out, page: `/${c.slug}/`, imageBytes });
       expect(checkWeight(w), `${c.slug}: ${JSON.stringify(w)}`).toEqual([]);
       expect(w.images).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('Album pages (built, shared build)', () => {
+  const albums = fixture.categories.flatMap((c) => c.albums.map((a) => ({ c, a })));
+  const read = (c: string, a: string): string => readFileSync(join(out, c, a, 'index.html'), 'utf8');
+
+  it('builds all 13 album pages with one h1, breadcrumb, canonical, ImageGallery and BreadcrumbList', () => {
+    expect(albums).toHaveLength(13);
+    for (const { c, a } of albums) {
+      const page = read(c.slug, a.slug);
+      expect([...page.matchAll(/<h1[\s>]/g)], a.slug).toHaveLength(1);
+      expect(page).toContain('<nav class="breadcrumb"');
+      expect(page).toContain(`<link rel="canonical" href="https://www.mullnyphotos.cz/${c.slug}/${a.slug}/">`);
+      const types = [...page.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(
+        (m) => (JSON.parse(m[1]!) as { '@type': string })['@type'],
+      );
+      expect(types).toEqual(['ImageGallery', 'BreadcrumbList']);
+      expect(page).toContain('<dialog');
+      expect(page).toContain('data-lightbox');
+    }
+  });
+
+  it('sedlakovi: 44 photos with real alt, dimensions, first row eager, rest lazy, links to the 1600 JPEG', () => {
+    const page = read('svatby', 'sedlakovi');
+    const grid = page.slice(page.indexOf('<ul class="grid'), page.indexOf('</ul>', page.indexOf('<ul class="grid')));
+    const imgs = imgTags(grid);
+    expect(imgs).toHaveLength(44);
+    expect(imgs.map((t) => /loading="(\w+)"/.exec(t)?.[1])).toEqual(
+      imgs.map((_, i) => (i < 3 ? 'eager' : 'lazy')),
+    );
+    for (const t of imgs) {
+      const alt = /\salt="([^"]+)"/.exec(t)?.[1];
+      expect(alt, t).toBeTruthy();
+      expect(alt).not.toMatch(/\.(jpe?g|webp|png)$/i);
+      expect(t).toMatch(/\swidth="\d+"/);
+      expect(t).toMatch(/\sheight="\d+"/);
+    }
+    expect(imgs[11]).toMatch(/alt="[^"]*fotografie 12 z 44"/);
+    const hrefs = [...grid.matchAll(/<a href="([^"]+)" data-lb-item/g)].map((m) => m[1]!);
+    expect(hrefs).toHaveLength(44);
+    for (const h of hrefs) expect(h).toMatch(/\/1600\.jpg$/);
+  });
+
+  it('has previous and next album links within the category', () => {
+    const page = read('svatby', 'sedlakovi');
+    const list = fixture.categories.find((c) => c.slug === 'svatby')!.albums.map((a) => a.slug);
+    const i = list.indexOf('sedlakovi');
+    if (i > 0) expect(page).toContain(`rel="prev" href="/svatby/${list[i - 1]}/"`);
+    if (i < list.length - 1) expect(page).toContain(`rel="next" href="/svatby/${list[i + 1]}/"`);
+  });
+
+  it('ships the lightbox script under 3 KB gzip, with no inline handlers', () => {
+    const page = read('svatby', 'sedlakovi');
+    expect(page).not.toMatch(/\son(click|keydown|load|error)=/);
+    const dir = join(out, '_astro');
+    const js = readdirSync(dir).filter((f) => f.endsWith('.js'));
+    const lightboxFiles = js.filter((f) => readFileSync(join(dir, f), 'utf8').includes('data-lb-item'));
+    expect(lightboxFiles.length).toBeGreaterThan(0);
+    for (const f of lightboxFiles) {
+      const bytes = gzipSync(readFileSync(join(dir, f))).length;
+      expect(bytes, f).toBeLessThan(3 * 1024);
     }
   });
 });

@@ -11,7 +11,7 @@ Goal: rank for local searches in Brno and the South Moravian region, and look tr
 - Contact: `mullnyphotos@gmail.com`, Instagram `mullny_photos`, MyWed profile `https://mywed.com/cs/photographer/mullny/`. **Q-2**: phone number to publish (or none)? Gmail address is fine for contact but a phone is a stronger local signal.
 - Brand string: `Mullny Photos` (audit shows `MullnyPhotos` and `Mullny photos` both in use; use `Mullny Photos` everywhere; **Q-3** confirm the spelling).
 - Language: `<html lang="cs">`, `og:locale` `cs_CZ`. Single language, no hreflang.
-- URL scheme (final slugs come from T-2): `/`, `/svatby/`, `/portrety/`, `/parove-foceni/`, `/svatby/<album-slug>/`, `/o-mne/`, `/kontakt/`. Trailing slash, lowercase, ASCII, hyphens. Category slugs are editable in the admin, so the sitemap, canonicals and breadcrumbs are always derived from the stored slug, never hardcoded.
+- URL scheme (final slugs come from T-2): `/`, `/portfolio/`, `/svatby/`, `/portrety/`, `/parove-foceni/`, `/svatby/<album-slug>/`, `/o-mne/`, `/kontakt/`, `/cookies/`. Trailing slash, lowercase, ASCII, hyphens. Category slugs are editable in the admin, so the sitemap, canonicals and breadcrumbs are always derived from the stored slug, never hardcoded.
 - Every page is real prerendered HTML containing its title, description, canonical, OG and JSON-LD in the served document (no client-side injection), so crawlers need no JavaScript.
 
 ## 2. Title and description patterns
@@ -24,11 +24,13 @@ Rules for all pages:
 
 | Page type | Title pattern | Description pattern |
 |---|---|---|
-| Home `/` | `Fotograf Brno: svatby, portréty, páry \| Mullny Photos` (52) | `Svatební, portrétní a párový fotograf z Brna. Přirozené fotografie plné emocí, focení v Brně a Jihomoravském kraji. Napište mi o termínu.` (about 138) |
+| Home `/` | `Fotograf Brno: svatby, portréty, páry \| Mullny Photos` (53) | `Svatební, portrétní a párový fotograf z Brna. Přirozené fotografie plné emocí, focení v Brně a Jihomoravském kraji. Napište mi o termínu.` (about 138) |
 | Category `/svatby/` | `Svatební fotograf Brno – svatby \| Mullny Photos` | `Ukázky svatebních fotografií z Brna a okolí. Reportážní focení svatebního dne od příprav po první tanec. Prohlédněte si {count} svateb.` |
 | Category `/portrety/` | `Portrétní focení Brno – portréty a rodiny \| Mullny Photos` | `Portréty, rodinné a těhotenské focení v Brně, ve studiu nebo u vás doma. Prohlédněte si ukázky mých fotografií.` |
 | Category `/parove-foceni/` | `Párové focení Brno – fotky pro páry \| Mullny Photos` | `Párové a zásnubní focení v Brně a okolí. Uvolněné fotografie, které vás vystihují. Prohlédněte si ukázky.` |
 | Album `/<kat>/<album>/` | `{album title}{ – {place}} – {category singular} \| Mullny Photos` (e.g. `Adam & Eliška – svatba \| Mullny Photos`) | The album's SEO text field if filled; otherwise `{Category singular} {album title}{ v místě {place}}. {n} fotografií z focení v Brně a okolí od fotografky Mullny Photos.` |
+| Portfolio `/portfolio/` (human decision D-6: a real page listing all categories and a selection of albums) | `Portfolio – svatby, portréty a páry v Brně \| Mullny Photos` | `Portfolio fotografky z Brna: ukázky svateb, portrétů a párového focení. Prohlédněte si všechny kategorie a výběr mých alb.` |
+| Cookies `/cookies/` | `Zásady cookies a ochrany soukromí \| Mullny Photos` | `Zásady používání cookies a ochrany osobních údajů na webu Mullny Photos. Zjistěte, jaké údaje web zpracovává a proč.` |
 | About `/o-mne/` | `O mně – fotografka Terezie Müllnerová, Brno \| Mullny Photos` | `Jsem Terezie Müllnerová, fotografka z Brna. Specializuji se na svatby, portréty a párové focení. Přečtěte si můj příběh a zkušenosti.` |
 | Contact `/kontakt/` | `Kontakt – objednání focení v Brně \| Mullny Photos` | `Napište mi na mullnyphotos@gmail.com nebo na Instagram @mullny_photos a domluvme termín focení svatby, portrétů nebo rodiny.` |
 | 404 | `Stránka nenalezena \| Mullny Photos` | none (noindex) |

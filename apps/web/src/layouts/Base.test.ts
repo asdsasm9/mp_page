@@ -401,6 +401,35 @@ describe('Cookies page and 404 (built, shared build)', () => {
   });
 });
 
+describe('Sitemap and robots (built, shared build)', () => {
+  it('sitemap.xml lists the 21 fixture URLs (1 + 1 + 3 + 13 + 3), without 404, and sedlakovi has 44 images', () => {
+    const xml = readFileSync(join(out, 'sitemap.xml'), 'utf8');
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+    const albums = fixture.categories.flatMap((c) => c.albums.map((a) => `/${c.slug}/${a.slug}/`));
+    const expected = [
+      '/',
+      '/portfolio/',
+      ...fixture.categories.map((c) => `/${c.slug}/`),
+      ...albums,
+      '/o-mne/',
+      '/kontakt/',
+      '/cookies/',
+    ].map((p) => `https://www.mullnyphotos.cz${p}`);
+    expect(locs).toHaveLength(21);
+    expect([...locs].sort()).toEqual([...expected].sort());
+    expect(locs.filter((l) => /404/.test(l!))).toEqual([]);
+    const sedlakovi = xml.slice(xml.indexOf('/svatby/sedlakovi/</loc>'));
+    expect([...sedlakovi.slice(0, sedlakovi.indexOf('</url>')).matchAll(/<image:image>/g)]).toHaveLength(44);
+    expect([...xml.matchAll(/<lastmod>/g)]).toHaveLength(fixture.categories.length + albums.length);
+  });
+
+  it('robots.txt of the non-production build disallows everything', () => {
+    const robots = readFileSync(join(out, 'robots.txt'), 'utf8');
+    expect(robots).toContain('Disallow: /');
+    expect(robots).not.toContain('Sitemap:');
+  });
+});
+
 describe('Base layout (built home page)', () => {
   it('is Czech with exactly one main landmark and one h1', () => {
     expect(html).toContain('<html lang="cs">');

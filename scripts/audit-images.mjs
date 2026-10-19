@@ -1,4 +1,4 @@
-// Audit of every image under public/fotky_web: pixel size and file size per album.
+// Audit of every image under legacy/fotky_web: pixel size and file size per album.
 // Usage: node scripts/audit-images.mjs
 // Node built-ins only. Parses JPEG (SOF markers), PNG (IHDR) and GIF headers itself.
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -6,7 +6,7 @@ import { join, relative, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const base = join(root, "public", "fotky_web");
+const base = join(root, "legacy", "fotky_web");
 
 function walk(dir) {
   const out = [];

@@ -11,7 +11,7 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "vitest run --reporter=verbose",
+    "test": "vitest run",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "build": "npm run build -w apps/web -w apps/admin",
     "gates": "node scripts/gates.mjs",

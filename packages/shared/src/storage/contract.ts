@@ -11,6 +11,8 @@ export interface ContractOptions {
   publicBase: string;
   /** Prefix under which the suite writes its test objects. Default "contract-test/". */
   testPrefix?: string;
+  /** True when the adapter must report `uploaded` (ISO) from list and head. Required for the fake, optional for others. */
+  expectUploaded?: boolean;
 }
 
 const bytes = (n: number, fill = 7) => new Uint8Array(n).fill(fill);
@@ -67,6 +69,17 @@ export function runStorageContract(
       } while (cursor !== undefined && pages < 10);
       expect(pages).toBe(3);
       expect(seen).toEqual(Array.from({ length: 7 }, (_, i) => `${P}p/${String(i).padStart(2, '0')}`));
+    });
+
+    it('list returns an ISO uploaded time when the implementation supports it', async () => {
+      await s.put(`${P}u/1`, bytes(1), { contentType: 'image/jpeg' });
+      const r = await s.list(`${P}u/`);
+      const uploaded = r.objects[0]?.uploaded;
+      if (opts.expectUploaded) expect(uploaded).toBeDefined();
+      if (uploaded !== undefined) {
+        expect(Number.isNaN(Date.parse(uploaded))).toBe(false);
+        expect(new Date(uploaded).toISOString()).toBe(uploaded);
+      }
     });
 
     it('delete of a missing key is a no-op', async () => {

@@ -24,11 +24,13 @@ interface Stored {
   body: Uint8Array;
   contentType?: string;
   cacheControl?: string;
+  uploaded: string;
 }
 
 interface Grant {
   key: string;
   contentType: string;
+  cacheControl?: string;
   contentLength: number;
   expiresAtMs: number;
 }
@@ -41,14 +43,14 @@ export function createFakeStorage(options: FakeStorageOptions): FakeStorage {
   const grants = new Map<string, Grant>();
 
   const info = (key: string, s: Stored): StorageObjectInfo => {
-    const out: StorageObjectInfo = { key, bytes: s.body.byteLength };
+    const out: StorageObjectInfo = { key, bytes: s.body.byteLength, uploaded: s.uploaded };
     if (s.contentType !== undefined) out.contentType = s.contentType;
     return out;
   };
   const sortedKeys = () => [...objects.keys()].sort();
 
   const store = (key: string, body: Uint8Array, contentType: string | undefined, cacheControl?: string) => {
-    const s: Stored = { body: body.slice() };
+    const s: Stored = { body: body.slice(), uploaded: now().toISOString() };
     if (contentType !== undefined) s.contentType = contentType;
     if (cacheControl !== undefined) s.cacheControl = cacheControl;
     objects.set(key, s);
@@ -85,11 +87,20 @@ export function createFakeStorage(options: FakeStorageOptions): FakeStorage {
       assertSafeKey(key);
       const expiresAtMs = now().getTime() + opts.expiresInSec * 1000;
       const url = `fake://put/${key}?exp=${expiresAtMs}`;
-      grants.set(url, { key, contentType: opts.contentType, contentLength: opts.contentLength, expiresAtMs });
+      const grant: Grant = { key, contentType: opts.contentType, contentLength: opts.contentLength, expiresAtMs };
+      const headers: Record<string, string> = {
+        'content-type': opts.contentType,
+        'content-length': String(opts.contentLength),
+      };
+      if (opts.cacheControl !== undefined) {
+        grant.cacheControl = opts.cacheControl;
+        headers['cache-control'] = opts.cacheControl;
+      }
+      grants.set(url, grant);
       return {
         url,
         method: 'PUT',
-        headers: { 'content-type': opts.contentType, 'content-length': String(opts.contentLength) },
+        headers,
         expiresAt: new Date(expiresAtMs).toISOString(),
       };
     },
@@ -108,7 +119,7 @@ export function createFakeStorage(options: FakeStorageOptions): FakeStorage {
         const ct = headers['content-type'] ?? headers['Content-Type'];
         if (ct !== undefined && ct !== g.contentType) throw new StorageError('CONTENT_TYPE_MISMATCH');
       }
-      return store(g.key, body, headers['content-type'] ?? headers['Content-Type'] ?? g.contentType);
+      return store(g.key, body, headers['content-type'] ?? headers['Content-Type'] ?? g.contentType, g.cacheControl);
     },
     totalBytes() {
       let n = 0;

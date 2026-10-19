@@ -5,6 +5,8 @@ export interface StorageObjectInfo {
   key: string;
   bytes: number;
   contentType?: string;
+  /** ISO time the object was written (R2 `uploaded`). Optional for adapters; the fake always sets it. */
+  uploaded?: string;
 }
 
 export interface PresignedPut {
@@ -22,7 +24,7 @@ export interface StorageAdapter {
   list(prefix: string, opts?: { cursor?: string; limit?: number }): Promise<{ objects: StorageObjectInfo[]; cursor?: string }>;
   presignPut(
     key: string,
-    opts: { contentType: string; contentLength: number; expiresInSec: number },
+    opts: { contentType: string; contentLength: number; expiresInSec: number; cacheControl?: string },
   ): Promise<PresignedPut>;
   publicUrl(key: string): string;
 }

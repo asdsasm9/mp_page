@@ -5,7 +5,7 @@ import { createFakeStorage } from './fake';
 
 const baseUrl = 'https://img.example.test';
 
-runStorageContract('fake', () => createFakeStorage({ baseUrl: `${baseUrl}/` }), { publicBase: baseUrl });
+runStorageContract('fake', () => createFakeStorage({ baseUrl: `${baseUrl}/` }), { publicBase: baseUrl, expectUploaded: true });
 
 describe('fake storage helpers', () => {
   it('simulatePut writes the object after a presign', async () => {
@@ -46,6 +46,27 @@ describe('fake storage helpers', () => {
     await expect(
       fake.simulatePut({ url: 'fake://put/k?exp=1', method: 'PUT', headers: {}, expiresAt: '' }, new Uint8Array(1)),
     ).rejects.toBeInstanceOf(StorageError);
+  });
+
+  it('sets uploaded from the injected clock on put and simulatePut', async () => {
+    let t = Date.parse('2026-10-19T12:00:00Z');
+    const fake = createFakeStorage({ baseUrl, now: () => new Date(t) });
+    await fake.put('k/a', new Uint8Array(1), { contentType: 'image/jpeg' });
+    expect((await fake.head('k/a'))?.uploaded).toBe('2026-10-19T12:00:00.000Z');
+    t += 60_000;
+    const p = await fake.presignPut('k/b', { contentType: 'image/jpeg', contentLength: 1, expiresInSec: 900 });
+    await fake.simulatePut(p, new Uint8Array(1));
+    const listed = await fake.list('k/');
+    expect(listed.objects.map((o) => o.uploaded)).toEqual(['2026-10-19T12:00:00.000Z', '2026-10-19T12:01:00.000Z']);
+  });
+
+  it('puts cacheControl into the presigned headers only when given', async () => {
+    const fake = createFakeStorage({ baseUrl });
+    const cc = 'public, max-age=31536000, immutable';
+    const withCc = await fake.presignPut('k/a', { contentType: 'image/jpeg', contentLength: 1, expiresInSec: 60, cacheControl: cc });
+    expect(withCc.headers['cache-control']).toBe(cc);
+    const without = await fake.presignPut('k/b', { contentType: 'image/jpeg', contentLength: 1, expiresInSec: 60 });
+    expect(without.headers).not.toHaveProperty('cache-control');
   });
 
   it('stores a copy of the body', async () => {

@@ -71,7 +71,7 @@ describe('design tokens', () => {
       '--space-1', '--space-2', '--space-3', '--space-4', '--space-5', '--space-6', '--space-7',
       '--space-8', '--radius-md', '--radius-full', '--shadow-sm', '--shadow-md',
       '--motion-fast', '--motion-base', '--motion-ease', '--layout-max', '--layout-gutter',
-      '--header-height', '--target-min', '--focus-width', '--focus-offset', '--border-width',
+      '--header-height', '--target-min', '--focus-width', '--focus-offset', '--bar-thickness', '--border-width',
       '--z-header', '--z-dialog', '--z-skip',
     ];
     for (const name of required) expect(tokens[name], name).toBeTruthy();

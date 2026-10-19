@@ -2,7 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { SnapshotSchema } from '@mp/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
 
 // Builds the real site into a temp dir (fixture mode) and checks the shell of the home page.
 const webRoot = new URL('../..', import.meta.url).pathname;
@@ -24,6 +26,61 @@ afterAll(() => {
 });
 
 const count = (re: RegExp): number => [...html.matchAll(re)].length;
+
+const fixture = SnapshotSchema.parse(fixtureJson);
+/** HTML of the section whose opening tag contains `marker`. */
+const section = (marker: string): string => {
+  const start = html.indexOf(marker);
+  expect(start, marker).toBeGreaterThan(-1);
+  return html.slice(start, html.indexOf('</section>', start));
+};
+const jsonLdTypes = (): string[] =>
+  [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(
+    (m) => (JSON.parse(m[1]!) as { '@type': string })['@type'],
+  );
+
+describe('Home page (built, shared build)', () => {
+  it('has one h1 and an eager hero as the only fetchpriority=high image', () => {
+    expect(count(/<h1[\s>]/g)).toBe(1);
+    const imgs = [...html.matchAll(/<img\b[^>]*>/g)].map((m) => m[0]);
+    const high = imgs.filter((t) => /fetchpriority="high"/.test(t));
+    expect(high).toHaveLength(1);
+    expect(high[0]).toContain('loading="eager"');
+    expect(count(/fetchpriority="high"/g)).toBe(1);
+    expect(high[0]).toMatch(/\balt="[^"]+"/);
+  });
+
+  it('links the three fixture categories from #kategorie with their 480 cover', () => {
+    const cats = section('id="kategorie"');
+    const hrefs = [...cats.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
+    expect(hrefs).toEqual(fixture.categories.map((c) => `/${c.slug}/`));
+    for (const c of fixture.categories) {
+      const album = c.albums[0]!;
+      const cover = album.photos.find((p) => p.id === album.coverPhotoId) ?? album.photos[0]!;
+      expect(cats).toContain(`${cover.id}/480.webp 480w`);
+    }
+  });
+
+  it('shows the pati and anez review images and no other eager image', () => {
+    const reviews = section('<section class="reviews');
+    const cover = (slug: string): string => {
+      const album = fixture.categories.flatMap((c) => c.albums).find((a) => a.slug === slug)!;
+      return album.coverPhotoId!;
+    };
+    expect(reviews).toContain(`${cover('pati')}/480.webp`);
+    expect(reviews).toContain(`${cover('anez')}/480.webp`);
+    expect(reviews).not.toContain('loading="eager"');
+  });
+
+  it('passes an absolute og:image', () => {
+    expect(html).toMatch(/<meta property="og:image" content="https:\/\/www\.mullnyphotos\.cz\/[^"]+">/);
+  });
+
+  it('emits Photographer and WebSite JSON-LD only, no Review', () => {
+    expect(jsonLdTypes().sort()).toEqual(['Photographer', 'WebSite']);
+    expect(html).not.toMatch(/"@type":"(Review|AggregateRating)"/);
+  });
+});
 
 describe('Base layout (built home page)', () => {
   it('is Czech with exactly one main landmark and one h1', () => {

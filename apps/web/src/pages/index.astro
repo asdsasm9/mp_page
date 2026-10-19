@@ -1,10 +1,282 @@
 ---
-// Placeholder home; the real home page is T-59.
+// Home: hero (the LCP image), hello text, category cards, collage, reviews.
+// Only the hero image is eager with fetchpriority="high"; every other image is lazy.
+import { Image, getImage } from 'astro:assets';
+import Photo from '../components/Photo.astro';
+import { HOME, SITE } from '../content/texts';
+import { REVIEWS } from '../content/reviews';
 import Base from '../layouts/Base.astro';
+import { getCatalog } from '../lib/catalog';
+import { readRawEnv, resolveEnv } from '../lib/env';
+import { homeCategoryCards, homeReviews } from '../lib/home';
+import { SITE_ORIGIN, photographerFull, website } from '../lib/jsonld';
 import { homeMeta } from '../lib/seo';
+import hero from '../assets/site/home/main.jpg';
+import hello from '../assets/site/home/hello.jpg';
+import trio1 from '../assets/site/home/trio1.jpg';
+import trio2 from '../assets/site/home/trio2.jpg';
+import trio3 from '../assets/site/home/trio3.jpg';
+import couples from '../assets/site/home/couples.jpg';
+import portraits from '../assets/site/home/portraits.jpg';
+import weddings from '../assets/site/home/weddings.jpg';
 
+const env = resolveEnv(readRawEnv());
+const catalog = await getCatalog(env);
 const meta = homeMeta();
+const cards = homeCategoryCards(catalog);
+const reviews = homeReviews(catalog, REVIEWS);
+
+const heroAlt = 'Mullny Photos – párové a svatební focení v Brně';
+const og = await getImage({ src: hero, width: 1200, height: 630, format: 'jpg' });
+const ogImage = { url: `${SITE_ORIGIN}${og.src}`, width: 1200, height: 630, alt: heroAlt };
+
+const collage = [
+  { src: trio1, alt: 'Portrét ze série fotografií, první snímek' },
+  { src: trio2, alt: 'Portrét ze série fotografií, druhý snímek' },
+  { src: trio3, alt: 'Portrét ze série fotografií, třetí snímek' },
+  { src: weddings, alt: 'Svatební fotografie' },
+  { src: couples, alt: 'Fotografie páru' },
+  { src: portraits, alt: 'Portrétní fotografie' },
+];
 ---
-<Base meta={meta} path="/">
-  <h1>Mullny Photos</h1>
+<Base meta={meta} path="/" ogImage={ogImage} jsonLd={[photographerFull(ogImage.url), website()]}>
+  <!-- hash-redirect script slot (T-65): the inline script is injected into the head slot of this page -->
+  <section class="hero" aria-labelledby="nadpis">
+    <Image
+      src={hero}
+      alt={heroAlt}
+      widths={[480, 960, 1600]}
+      sizes="100vw"
+      format="webp"
+      loading="eager"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <div class="hero-text">
+      <h1 id="nadpis">Mullny Photos</h1>
+      <p>{SITE.description}</p>
+      <a class="button" href="#kategorie">{HOME.categoriesTitle}</a>
+    </div>
+  </section>
+
+  <section class="hello" aria-labelledby="vitejte">
+    <div class="hello-text">
+      <h2 id="vitejte">{HOME.hello.title}</h2>
+      {HOME.hello.paragraphs.map((p) => <p>{p}</p>)}
+    </div>
+    <Image
+      src={hello}
+      alt="Fotografka Terezie Müllnerová"
+      widths={[480, 960]}
+      sizes="(min-width: 48rem) 40vw, 100vw"
+      format="webp"
+      loading="lazy"
+      decoding="async"
+    />
+  </section>
+
+  <section id="kategorie" class="categories" aria-labelledby="kategorie-nadpis">
+    <h2 id="kategorie-nadpis">{HOME.categoriesTitle}</h2>
+    <ul>
+      {
+        cards.map((card) => (
+          <li>
+            <a href={card.path}>
+              <Photo photo={card.photo} base={env.imgBaseUrl} alt={card.alt} context="card" />
+              <span class="card-name">{card.name}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="collage" aria-label="Ukázky fotografií">
+    {
+      collage.map((item) => (
+        <Image
+          src={item.src}
+          alt={item.alt}
+          widths={[480, 960]}
+          sizes="(min-width: 48rem) 33vw, 50vw"
+          format="webp"
+          loading="lazy"
+          decoding="async"
+        />
+      ))
+    }
+  </section>
+
+  <section class="quote" aria-label="Citát">
+    <blockquote><p>{HOME.quote}</p></blockquote>
+  </section>
+
+  {
+    reviews.length > 0 && (
+      <section class="reviews" aria-labelledby="recenze">
+        <h2 id="recenze">{HOME.reviewsTitle}</h2>
+        <ul>
+          {reviews.map(({ review, photo, alt }) => (
+            <li>
+              <figure>
+                <Photo photo={photo} base={env.imgBaseUrl} alt={alt} context="card" />
+                <blockquote><p>{review.text}</p></blockquote>
+                <figcaption>{review.name}</figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
 </Base>
+
+<style>
+  section {
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding-inline: var(--layout-gutter);
+    margin-block-start: var(--space-7);
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hero {
+    max-inline-size: none;
+    padding-inline: 0;
+    margin-block-start: 0;
+  }
+
+  .hero :global(img) {
+    inline-size: 100%;
+    block-size: auto;
+    background: var(--color-placeholder);
+  }
+
+  .hero-text {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-3);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-6) var(--layout-gutter) 0;
+  }
+
+  h1 {
+    font-size: var(--font-size-5);
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-min);
+    padding-inline: var(--space-5);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: background-color var(--motion-fast) var(--motion-ease);
+  }
+
+  .button:hover {
+    background: var(--color-accent-hover);
+  }
+
+  .hello {
+    display: grid;
+    gap: var(--space-5);
+    align-items: center;
+  }
+
+  .hello-text {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .hello :global(img),
+  .collage :global(img) {
+    inline-size: 100%;
+    block-size: auto;
+    border-radius: var(--radius-md);
+    background: var(--color-placeholder);
+  }
+
+  .categories h2,
+  .reviews h2 {
+    margin-block-end: var(--space-5);
+  }
+
+  .categories ul {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .categories a {
+    display: grid;
+    gap: var(--space-3);
+    text-decoration: none;
+  }
+
+  .card-name {
+    font-size: var(--font-size-2);
+    letter-spacing: var(--tracking-heading);
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-width);
+    text-underline-offset: var(--space-1);
+  }
+
+  .categories a:hover .card-name {
+    text-decoration-thickness: var(--bar-thickness);
+  }
+
+  .collage {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+
+  .quote blockquote p {
+    font-size: var(--font-size-1);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .reviews ul {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .reviews figure {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+  }
+
+  .reviews figcaption {
+    font-size: var(--font-size-small);
+    color: var(--color-text-muted);
+  }
+
+  @media (min-width: 48rem) {
+    .hello {
+      grid-template-columns: 3fr 2fr;
+      gap: var(--space-6);
+    }
+
+    .categories ul {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .collage {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .reviews ul {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

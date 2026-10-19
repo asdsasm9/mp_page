@@ -4,7 +4,7 @@
 import logo from '../assets/site/common/main_logo_2.png';
 import { Image } from 'astro:assets';
 
-import type { NavItem } from '../lib/nav';
+import { ariaCurrent, isSection, type NavItem } from '../lib/nav';
 
 interface Props {
   items: readonly NavItem[];
@@ -13,9 +13,6 @@ interface Props {
 }
 
 const { items, current } = Astro.props;
-// A link is "current" on its own page; on a deeper page (album) the category link is a section marker only.
-const isCurrent = (path: string): boolean => current === path;
-const isSection = (path: string): boolean => path !== '/' && current !== path && current.startsWith(path);
 ---
 <header class="site-header">
   <div class="bar">
@@ -23,7 +20,7 @@ const isSection = (path: string): boolean => path !== '/' && current !== path &&
       class="logo"
       href="/"
       aria-label="Mullny Photos – úvodní stránka"
-      aria-current={isCurrent('/') ? 'page' : undefined}
+      aria-current={ariaCurrent(current, '/')}
     >
       <Image src={logo} alt="" width={151} height={60} loading="eager" format="webp" />
     </a>
@@ -39,8 +36,8 @@ const isSection = (path: string): boolean => path !== '/' && current !== path &&
               <li>
                 <a
                   href={item.path}
-                  aria-current={isCurrent(item.path) ? 'page' : undefined}
-                  data-section={isSection(item.path) ? '' : undefined}
+                  aria-current={ariaCurrent(current, item.path)}
+                  data-section={isSection(current, item.path) ? '' : undefined}
                 >
                   {item.label}
                 </a>
@@ -110,7 +107,7 @@ const isSection = (path: string): boolean => path !== '/' && current !== path &&
   .bars::after {
     display: block;
     inline-size: var(--space-5);
-    block-size: var(--focus-offset);
+    block-size: var(--bar-thickness);
     background: var(--color-text);
   }
 
@@ -167,7 +164,7 @@ const isSection = (path: string): boolean => path !== '/' && current !== path &&
 
   nav a[data-section] {
     text-decoration: underline;
-    text-decoration-thickness: var(--focus-offset);
+    text-decoration-thickness: var(--bar-thickness);
     text-underline-offset: var(--space-1);
   }
 

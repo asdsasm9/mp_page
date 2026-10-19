@@ -70,7 +70,7 @@ The current look is kept (H-3 is open): ink on paper, warm accent, Martel. A lat
 |---|---|
 | Type | `--font-body` (Martel then serif stack), `--font-size-0..5` (fluid `clamp()`, base at least 17 px), `--font-size-small`, `--line-height-body` 1.6, `--line-height-heading`, `--tracking-heading`, `--measure` 70ch |
 | Space | `--space-1..8` = 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4.5 rem |
-| Shape | `--radius-sm`, `--radius-md`, `--radius-full`, `--border-width`, `--focus-width`, `--focus-offset`, `--shadow-sm`, `--shadow-md` |
+| Shape | `--radius-sm`, `--radius-md`, `--radius-full`, `--border-width`, `--focus-width`, `--focus-offset`, `--bar-thickness` (2 px: menu icon bars, section underline), `--shadow-sm`, `--shadow-md` |
 | Motion | `--motion-fast` 150 ms, `--motion-base` 250 ms, `--motion-ease`; anything beyond colour or shadow is inside `prefers-reduced-motion: no-preference` |
 | Layout | `--layout-max`, `--layout-gutter`, `--header-height`, `--target-min` (44 px), `--z-header`, `--z-dialog`, `--z-skip` |
 

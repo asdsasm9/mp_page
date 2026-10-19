@@ -9,6 +9,7 @@ import {
   LEGACY_PHOTOS_JSON,
   SEED_SQL,
   SNAPSHOT_FIXTURE_JSON,
+  fixtureColor,
   jpegSize,
   readLegacyPhotos,
   renderPart2,
@@ -23,6 +24,19 @@ describe('gen-fixtures part 2: seed.sql and snapshot.fixture.json', () => {
     expect(gen.seedSql).toBe(readFileSync(SEED_SQL, 'utf8'));
     expect(gen.snapshotJson).toBe(readFileSync(SNAPSHOT_FIXTURE_JSON, 'utf8'));
     expect(renderPart2().seedSql).toBe(gen.seedSql);
+  });
+
+  it('every photo has a deterministic #rrggbb dominant colour, in the seed and the fixture', () => {
+    const fixture = JSON.parse(readFileSync(SNAPSHOT_FIXTURE_JSON, 'utf8')) as Snapshot;
+    const photos = fixture.categories.flatMap((c) => c.albums).flatMap((a) => a.photos);
+    expect(photos).toHaveLength(141);
+    for (const p of photos) {
+      expect(p.dominantColor, p.id).toMatch(/^#[0-9a-f]{6}$/);
+      expect(p.dominantColor).toBe(fixtureColor(p.id));
+    }
+    expect(new Set(photos.map((p) => p.dominantColor)).size).toBeGreaterThan(5);
+    for (const row of gen.rows.photos) expect(row.dominant_color).toMatch(/^#[0-9a-f]{6}$/);
+    expect(gen.seedSql).toContain('dominant_color, sort, legacy_key');
   });
 
   it('uuidV5 is deterministic, v5-shaped and matches the RFC 4122 DNS example', () => {

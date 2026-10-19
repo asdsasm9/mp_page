@@ -140,7 +140,7 @@ describe('Category pages (built, shared build)', () => {
     }
     expect(page).toContain('480.webp 480w');
     expect(page).toContain('960.webp 960w');
-    expect(page).toContain('(min-width: 48rem) min(33vw, 24.5rem), calc(100vw - 2rem)');
+    expect(page).toContain('(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)');
     expect(page).toMatch(/\d+ fotografi(e|í)/);
   });
 

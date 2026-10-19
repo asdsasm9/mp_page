@@ -33,7 +33,7 @@
               "height": 987,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8a9aa6",
               "variants": {
                 "master": {
                   "w": 1480,
@@ -78,7 +78,7 @@
               "height": 1161,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 1739,
@@ -129,7 +129,7 @@
               "height": 1198,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8a9aa6",
               "variants": {
                 "master": {
                   "w": 1796,
@@ -180,7 +180,7 @@
               "height": 1210,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1814,
@@ -231,7 +231,7 @@
               "height": 1589,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b9a99b",
               "variants": {
                 "master": {
                   "w": 2381,
@@ -296,7 +296,7 @@
               "height": 2352,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8a9aa6",
               "variants": {
                 "master": {
                   "w": 1569,
@@ -341,7 +341,7 @@
               "height": 1706,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 2558,
@@ -398,7 +398,7 @@
               "height": 2248,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6d7a6a",
               "variants": {
                 "master": {
                   "w": 1500,
@@ -443,7 +443,7 @@
               "height": 2247,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6d7a6a",
               "variants": {
                 "master": {
                   "w": 1499,
@@ -488,7 +488,7 @@
               "height": 2001,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 3000,
@@ -545,7 +545,7 @@
               "height": 1453,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 2178,
@@ -596,7 +596,7 @@
               "height": 1289,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 1932,
@@ -647,7 +647,7 @@
               "height": 1240,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b9a99b",
               "variants": {
                 "master": {
                   "w": 1857,
@@ -712,7 +712,7 @@
               "height": 1583,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7f8f9c",
               "variants": {
                 "master": {
                   "w": 2374,
@@ -763,7 +763,7 @@
               "height": 3000,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 2001,
@@ -814,7 +814,7 @@
               "height": 2538,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 1693,
@@ -865,7 +865,7 @@
               "height": 2309,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 1540,
@@ -910,7 +910,7 @@
               "height": 1070,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6d7a6a",
               "variants": {
                 "master": {
                   "w": 1603,
@@ -961,7 +961,7 @@
               "height": 2089,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8c7b6b",
               "variants": {
                 "master": {
                   "w": 1394,
@@ -1006,7 +1006,7 @@
               "height": 1493,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 2238,
@@ -1057,7 +1057,7 @@
               "height": 1494,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 2239,
@@ -1108,7 +1108,7 @@
               "height": 1183,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7d6e63",
               "variants": {
                 "master": {
                   "w": 1773,
@@ -1159,7 +1159,7 @@
               "height": 1445,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 964,
@@ -1204,7 +1204,7 @@
               "height": 1684,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8c7b6b",
               "variants": {
                 "master": {
                   "w": 1124,
@@ -1249,7 +1249,7 @@
               "height": 1629,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 2442,
@@ -1306,7 +1306,7 @@
               "height": 1394,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8a9aa6",
               "variants": {
                 "master": {
                   "w": 2089,
@@ -1357,7 +1357,7 @@
               "height": 1995,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 1331,
@@ -1402,7 +1402,7 @@
               "height": 1503,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b9a99b",
               "variants": {
                 "master": {
                   "w": 2252,
@@ -1453,7 +1453,7 @@
               "height": 2203,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#4f5a52",
               "variants": {
                 "master": {
                   "w": 1470,
@@ -1498,7 +1498,7 @@
               "height": 1762,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 1176,
@@ -1543,7 +1543,7 @@
               "height": 2256,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#74806f",
               "variants": {
                 "master": {
                   "w": 1505,
@@ -1588,7 +1588,7 @@
               "height": 2424,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1617,
@@ -1639,7 +1639,7 @@
               "height": 1654,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#93846f",
               "variants": {
                 "master": {
                   "w": 2479,
@@ -1696,7 +1696,7 @@
               "height": 1999,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 1333,
@@ -1741,7 +1741,7 @@
               "height": 2937,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7d6e63",
               "variants": {
                 "master": {
                   "w": 1959,
@@ -1792,7 +1792,7 @@
               "height": 2026,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 1351,
@@ -1837,7 +1837,7 @@
               "height": 1954,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1304,
@@ -1882,7 +1882,7 @@
               "height": 1262,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7d6e63",
               "variants": {
                 "master": {
                   "w": 1891,
@@ -1933,7 +1933,7 @@
               "height": 1355,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 2031,
@@ -1984,7 +1984,7 @@
               "height": 1234,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#93846f",
               "variants": {
                 "master": {
                   "w": 1850,
@@ -2035,7 +2035,7 @@
               "height": 2019,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1347,
@@ -2080,7 +2080,7 @@
               "height": 2236,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 1492,
@@ -2125,7 +2125,7 @@
               "height": 2190,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1461,
@@ -2170,7 +2170,7 @@
               "height": 1519,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#9a8478",
               "variants": {
                 "master": {
                   "w": 2277,
@@ -2221,7 +2221,7 @@
               "height": 992,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 1486,
@@ -2266,7 +2266,7 @@
               "height": 1520,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6b7886",
               "variants": {
                 "master": {
                   "w": 1014,
@@ -2311,7 +2311,7 @@
               "height": 1576,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#4f5a52",
               "variants": {
                 "master": {
                   "w": 1051,
@@ -2356,7 +2356,7 @@
               "height": 2002,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7f8f9c",
               "variants": {
                 "master": {
                   "w": 3000,
@@ -2413,7 +2413,7 @@
               "height": 1704,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7f8f9c",
               "variants": {
                 "master": {
                   "w": 2554,
@@ -2470,7 +2470,7 @@
               "height": 1389,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 2083,
@@ -2521,7 +2521,7 @@
               "height": 2566,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1712,
@@ -2572,7 +2572,7 @@
               "height": 2848,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 1899,
@@ -2623,7 +2623,7 @@
               "height": 2896,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1932,
@@ -2674,7 +2674,7 @@
               "height": 2718,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8c7b6b",
               "variants": {
                 "master": {
                   "w": 1813,
@@ -2725,7 +2725,7 @@
               "height": 2601,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#9a8478",
               "variants": {
                 "master": {
                   "w": 1736,
@@ -2776,7 +2776,7 @@
               "height": 2511,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#74806f",
               "variants": {
                 "master": {
                   "w": 1675,
@@ -2827,7 +2827,7 @@
               "height": 2414,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6d7a6a",
               "variants": {
                 "master": {
                   "w": 1610,
@@ -2892,7 +2892,7 @@
               "height": 1269,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#74806f",
               "variants": {
                 "master": {
                   "w": 1901,
@@ -2943,7 +2943,7 @@
               "height": 1267,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 1899,
@@ -2994,7 +2994,7 @@
               "height": 2863,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7d6e63",
               "variants": {
                 "master": {
                   "w": 1910,
@@ -3045,7 +3045,7 @@
               "height": 1347,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 2020,
@@ -3096,7 +3096,7 @@
               "height": 1600,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7f8f9c",
               "variants": {
                 "master": {
                   "w": 2398,
@@ -3171,7 +3171,7 @@
               "height": 2025,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#9a8478",
               "variants": {
                 "master": {
                   "w": 1351,
@@ -3216,7 +3216,7 @@
               "height": 2283,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#74806f",
               "variants": {
                 "master": {
                   "w": 1523,
@@ -3261,7 +3261,7 @@
               "height": 1522,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 2281,
@@ -3312,7 +3312,7 @@
               "height": 2169,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#93846f",
               "variants": {
                 "master": {
                   "w": 1448,
@@ -3357,7 +3357,7 @@
               "height": 2187,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8a9aa6",
               "variants": {
                 "master": {
                   "w": 1459,
@@ -3402,7 +3402,7 @@
               "height": 2169,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7f8f9c",
               "variants": {
                 "master": {
                   "w": 1447,
@@ -3447,7 +3447,7 @@
               "height": 2048,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6b7886",
               "variants": {
                 "master": {
                   "w": 1366,
@@ -3492,7 +3492,7 @@
               "height": 1604,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7d6e63",
               "variants": {
                 "master": {
                   "w": 2404,
@@ -3549,7 +3549,7 @@
               "height": 2453,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#93846f",
               "variants": {
                 "master": {
                   "w": 1636,
@@ -3614,7 +3614,7 @@
               "height": 1944,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 2914,
@@ -3671,7 +3671,7 @@
               "height": 2001,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7d6e63",
               "variants": {
                 "master": {
                   "w": 3000,
@@ -3728,7 +3728,7 @@
               "height": 1818,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#93846f",
               "variants": {
                 "master": {
                   "w": 2725,
@@ -3785,7 +3785,7 @@
               "height": 1533,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 2299,
@@ -3836,7 +3836,7 @@
               "height": 1530,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 2292,
@@ -3901,7 +3901,7 @@
               "height": 1999,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#74806f",
               "variants": {
                 "master": {
                   "w": 1334,
@@ -3946,7 +3946,7 @@
               "height": 2069,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8c7b6b",
               "variants": {
                 "master": {
                   "w": 1380,
@@ -3991,7 +3991,7 @@
               "height": 1718,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1146,
@@ -4036,7 +4036,7 @@
               "height": 2050,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1368,
@@ -4081,7 +4081,7 @@
               "height": 1845,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 1231,
@@ -4126,7 +4126,7 @@
               "height": 1927,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7f8f9c",
               "variants": {
                 "master": {
                   "w": 1286,
@@ -4171,7 +4171,7 @@
               "height": 2201,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1468,
@@ -4230,7 +4230,7 @@
               "height": 2685,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#74806f",
               "variants": {
                 "master": {
                   "w": 1791,
@@ -4281,7 +4281,7 @@
               "height": 1242,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6b7886",
               "variants": {
                 "master": {
                   "w": 1862,
@@ -4332,7 +4332,7 @@
               "height": 2325,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1551,
@@ -4377,7 +4377,7 @@
               "height": 2051,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6b7886",
               "variants": {
                 "master": {
                   "w": 1368,
@@ -4422,7 +4422,7 @@
               "height": 1990,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 1328,
@@ -4467,7 +4467,7 @@
               "height": 1969,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 1313,
@@ -4512,7 +4512,7 @@
               "height": 1523,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#93846f",
               "variants": {
                 "master": {
                   "w": 2284,
@@ -4563,7 +4563,7 @@
               "height": 1179,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8a9aa6",
               "variants": {
                 "master": {
                   "w": 1767,
@@ -4614,7 +4614,7 @@
               "height": 1378,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 2066,
@@ -4665,7 +4665,7 @@
               "height": 1494,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 2240,
@@ -4716,7 +4716,7 @@
               "height": 1428,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6d7a6a",
               "variants": {
                 "master": {
                   "w": 2140,
@@ -4767,7 +4767,7 @@
               "height": 2642,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1763,
@@ -4818,7 +4818,7 @@
               "height": 2847,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1900,
@@ -4869,7 +4869,7 @@
               "height": 2858,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7d6e63",
               "variants": {
                 "master": {
                   "w": 1907,
@@ -4920,7 +4920,7 @@
               "height": 1216,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#74806f",
               "variants": {
                 "master": {
                   "w": 1822,
@@ -4971,7 +4971,7 @@
               "height": 2267,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 1513,
@@ -5016,7 +5016,7 @@
               "height": 2491,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1662,
@@ -5067,7 +5067,7 @@
               "height": 2012,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7d6e63",
               "variants": {
                 "master": {
                   "w": 1342,
@@ -5112,7 +5112,7 @@
               "height": 2584,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#4f5a52",
               "variants": {
                 "master": {
                   "w": 1724,
@@ -5163,7 +5163,7 @@
               "height": 1534,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 2298,
@@ -5228,7 +5228,7 @@
               "height": 1791,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b9a99b",
               "variants": {
                 "master": {
                   "w": 1195,
@@ -5273,7 +5273,7 @@
               "height": 2301,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#9a8478",
               "variants": {
                 "master": {
                   "w": 1535,
@@ -5318,7 +5318,7 @@
               "height": 1843,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6d7a6a",
               "variants": {
                 "master": {
                   "w": 1229,
@@ -5363,7 +5363,7 @@
               "height": 2003,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1336,
@@ -5408,7 +5408,7 @@
               "height": 1693,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6b7886",
               "variants": {
                 "master": {
                   "w": 1567,
@@ -5453,7 +5453,7 @@
               "height": 2050,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 1368,
@@ -5498,7 +5498,7 @@
               "height": 1876,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1251,
@@ -5543,7 +5543,7 @@
               "height": 1846,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1232,
@@ -5588,7 +5588,7 @@
               "height": 2149,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 1434,
@@ -5633,7 +5633,7 @@
               "height": 2225,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#c2b5a5",
               "variants": {
                 "master": {
                   "w": 1484,
@@ -5678,7 +5678,7 @@
               "height": 1447,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#93846f",
               "variants": {
                 "master": {
                   "w": 2169,
@@ -5729,7 +5729,7 @@
               "height": 2035,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#4f5a52",
               "variants": {
                 "master": {
                   "w": 1358,
@@ -5788,7 +5788,7 @@
               "height": 2497,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7f8f9c",
               "variants": {
                 "master": {
                   "w": 1666,
@@ -5839,7 +5839,7 @@
               "height": 2578,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6d7a6a",
               "variants": {
                 "master": {
                   "w": 1720,
@@ -5890,7 +5890,7 @@
               "height": 2588,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6b7886",
               "variants": {
                 "master": {
                   "w": 1727,
@@ -5941,7 +5941,7 @@
               "height": 2538,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1694,
@@ -6016,7 +6016,7 @@
               "height": 1365,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#9a8478",
               "variants": {
                 "master": {
                   "w": 2046,
@@ -6067,7 +6067,7 @@
               "height": 2131,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#4f5a52",
               "variants": {
                 "master": {
                   "w": 1422,
@@ -6112,7 +6112,7 @@
               "height": 2042,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8a9aa6",
               "variants": {
                 "master": {
                   "w": 1362,
@@ -6157,7 +6157,7 @@
               "height": 1245,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 1866,
@@ -6208,7 +6208,7 @@
               "height": 1253,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#4f5a52",
               "variants": {
                 "master": {
                   "w": 1877,
@@ -6259,7 +6259,7 @@
               "height": 1291,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1935,
@@ -6310,7 +6310,7 @@
               "height": 1265,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b9a99b",
               "variants": {
                 "master": {
                   "w": 1895,
@@ -6361,7 +6361,7 @@
               "height": 1561,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#9a8478",
               "variants": {
                 "master": {
                   "w": 2339,
@@ -6412,7 +6412,7 @@
               "height": 1128,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#74806f",
               "variants": {
                 "master": {
                   "w": 1692,
@@ -6463,7 +6463,7 @@
               "height": 1688,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#74806f",
               "variants": {
                 "master": {
                   "w": 2530,
@@ -6520,7 +6520,7 @@
               "height": 1485,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#b0a090",
               "variants": {
                 "master": {
                   "w": 2225,
@@ -6585,7 +6585,7 @@
               "height": 2245,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7f8f9c",
               "variants": {
                 "master": {
                   "w": 1498,
@@ -6630,7 +6630,7 @@
               "height": 2941,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#5f6b73",
               "variants": {
                 "master": {
                   "w": 1962,
@@ -6681,7 +6681,7 @@
               "height": 2137,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a58f7d",
               "variants": {
                 "master": {
                   "w": 1426,
@@ -6726,7 +6726,7 @@
               "height": 1795,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#4f5a52",
               "variants": {
                 "master": {
                   "w": 1197,
@@ -6771,7 +6771,7 @@
               "height": 1578,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8a9aa6",
               "variants": {
                 "master": {
                   "w": 1053,
@@ -6816,7 +6816,7 @@
               "height": 1726,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 1151,
@@ -6875,7 +6875,7 @@
               "height": 1962,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#7f8f9c",
               "variants": {
                 "master": {
                   "w": 1309,
@@ -6920,7 +6920,7 @@
               "height": 1830,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#6d7a6a",
               "variants": {
                 "master": {
                   "w": 1221,
@@ -6965,7 +6965,7 @@
               "height": 1869,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#a39382",
               "variants": {
                 "master": {
                   "w": 1247,
@@ -7010,7 +7010,7 @@
               "height": 1701,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#8a9aa6",
               "variants": {
                 "master": {
                   "w": 1135,
@@ -7055,7 +7055,7 @@
               "height": 2388,
               "alt": null,
               "caption": null,
-              "dominantColor": null,
+              "dominantColor": "#93846f",
               "variants": {
                 "master": {
                   "w": 1593,

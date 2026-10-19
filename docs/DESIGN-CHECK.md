@@ -59,6 +59,19 @@ contact-360, contact-1280, album-1280, 404-768. The site is light-only (`color-s
 identical to light, as intended. Observed: consistent header/footer, readable type, no truncation, no layout breaks.
 Not covered by tokens: nothing found by the checks.
 
+## Image fit (`npm run image-fit`)
+
+Checks every photo on `/`, `/svatby/` and an album page at 360/412/768/1280/1920 px x DPR 1/2/3: file width >= rendered
+width x DPR and <= 1.6 x that, CLS 0. Needs a built `apps/web/dist` and Chrome (`CHROME_PATH` or a standard install).
+Statuses that do not fail: `floor` (smallest tier already), `cap` (largest tier the photo has), `ladder` (see below).
+
+- Finding (R3, deferred): at 360 px and DPR 3 a card slot needs 984 px; the 960 tier is 2.4% short, so the browser takes
+  1600 (ratio 1.63). Adam's priority (D-8) is full quality, so this is accepted and reported as `ladder`. A 1200 px tier
+  would cut about 35% of the bytes for DPR 3 phones at 360 px; it needs a contract change (tier list, quota, seed,
+  encoder) and Adam's approval.
+- Sizes found by the first real run and fixed: card `sizes` now uses `min((100vw - 7rem) / 3, 24.5rem)` (real column
+  219.5 px at 768 px), and home review photos use their own `review` context.
+
 ## Not done / limits
 
 - Lighthouse numbers come from a laptop and vary by about 100 to 300 ms between runs; rerun before relying on a 50 ms margin.

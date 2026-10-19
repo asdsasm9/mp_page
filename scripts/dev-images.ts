@@ -36,6 +36,8 @@ export interface DevImageRow {
   files: number;
   created: number;
   placeholder: boolean;
+  /** Colour computed from the generated image (null when nothing was generated this run). */
+  color: string | null;
 }
 
 /** Maps fixture photo ids to their legacy file (the ids are UUIDv5 of the legacy key, see gen-fixtures). */
@@ -69,6 +71,13 @@ export function publicKeys(photo: DevPhoto): Array<{ key: string; kind: 'webp' |
   ];
 }
 
+/** Mean colour of an image as #rrggbb (sharp stats on a 32 px downscale); the same idea the WP-5 encoder uses. */
+export async function dominantColorOf(input: Buffer): Promise<string> {
+  const { channels } = await sharp(input).resize({ width: 32, height: 32, fit: 'inside' }).removeAlpha().toColourspace('srgb').stats();
+  const hex = (c: { mean: number } | undefined) => Math.round(c?.mean ?? 0).toString(16).padStart(2, '0');
+  return `#${hex(channels[0])}${hex(channels[1])}${hex(channels[2])}`;
+}
+
 export async function generateDevImages(
   photos: DevPhoto[],
   { galleriesDir = GALLERIES_DIR, outDir = DEV_IMG_OUT, force = false } = {},
@@ -79,6 +88,7 @@ export async function generateDevImages(
     const missing = keys.filter((k) => force || !existsSync(join(outDir, ...k.key.split('/'))));
     const source = photo.legacyKey ? join(galleriesDir, ...photo.legacyKey.split('/')) : null;
     const hasSource = source !== null && existsSync(source);
+    let color: string | null = photo.dominantColor;
     if (missing.length > 0) {
       mkdirSync(join(outDir, 'photos', photo.id), { recursive: true });
       const { master } = photo.variants;
@@ -90,6 +100,7 @@ export async function generateDevImages(
             .resize({ width: master.w, height: master.h, fit: 'fill' })
             .toBuffer()
         : null;
+      if (masterBuf) color = await dominantColorOf(masterBuf);
       for (const k of missing) {
         const target = join(outDir, ...k.key.split('/'));
         let pipe: sharp.Sharp;
@@ -104,7 +115,7 @@ export async function generateDevImages(
         else await pipe.jpeg({ quality: 75, mozjpeg: true }).toFile(target);
       }
     }
-    rows.push({ id: photo.id, files: keys.length, created: missing.length, placeholder: !hasSource });
+    rows.push({ id: photo.id, files: keys.length, created: missing.length, placeholder: !hasSource, color });
   }
   return rows;
 }

@@ -18,6 +18,7 @@
     "bench:snapshot": "tsx scripts/bench-snapshot.ts",
     "check:site": "npm run build -w apps/web && node scripts/site-checks.mjs",
     "design-check": "node scripts/design-check.mjs",
+    "image-fit": "node scripts/image-fit.mjs",
     "fixtures": "tsx scripts/gen-fixtures.ts",
     "site-images:import": "node scripts/site-images-import.mjs",
     "dev-images": "tsx scripts/dev-images.ts"

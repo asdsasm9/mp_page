@@ -121,7 +121,7 @@ const collage = [
           {reviews.map(({ review, photo, alt }) => (
             <li>
               <figure>
-                <Photo photo={photo} base={env.imgBaseUrl} alt={alt} context="card" />
+                <Photo photo={photo} base={env.imgBaseUrl} alt={alt} context="review" />
                 <blockquote><p>{review.text}</p></blockquote>
                 <figcaption>{review.name}</figcaption>
               </figure>

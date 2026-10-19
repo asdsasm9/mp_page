@@ -100,15 +100,16 @@ describe('photoSources', () => {
 
 describe('sizesFor', () => {
   it('returns a sizes string per context without pixel units', () => {
-    for (const c of ['grid', 'card', 'lightbox', 'hero'] as const) {
+    for (const c of ['grid', 'card', 'review', 'lightbox', 'hero'] as const) {
       expect(sizesFor(c).length).toBeGreaterThan(0);
       expect(sizesFor(c)).not.toMatch(/px/);
     }
     expect(sizesFor('lightbox')).toBe('100vw');
     // Cards sit in three columns from 48rem, capped at the real column maximum.
-    expect(sizesFor('card')).toBe('(min-width: 48rem) min(33vw, 24.5rem), calc(100vw - 2rem)');
+    expect(sizesFor('card')).toBe('(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)');
     expect(sizesFor('grid')).toBe('(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 2rem)');
     expect(sizesFor('hero')).toBe('100vw');
+    expect(sizesFor('review')).toBe('(min-width: 48rem) min(44vw, 36.5rem), calc(100vw - 2rem)');
   });
 });
 

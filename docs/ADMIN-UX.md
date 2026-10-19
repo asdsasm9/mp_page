@@ -77,6 +77,7 @@ One queue for the whole session, visible from every screen (top-bar indicator op
 - Steps per file (label text, in order): "Ve frontě", "Zpracovávám" (resize and convert in the browser to the five WebP tiers 480/720/960/1600/2400 px, a 1600 px JPEG fallback, the OG image and the master), "Nahrávám", "Ukládám", "Hotovo".
 - Processing requirements (the encoder follows `variantPlan` in `packages/shared` exactly; a missing or extra tier is refused at commit):
   - It computes the dominant colour of every photo (`#rrggbb`, for example from a canvas downscale) and sends it as `dominant_color`; it is the placeholder block shown before the image loads.
+  - The one-off legacy migration does the same with sharp stats on a small downscale (`dominantColorOf` in `scripts/dev-images.ts`), so no photo keeps a null `dominant_color`.
   - The master is always re-encoded (never uploaded as the original file) so EXIF and GPS metadata are stripped; the master is publicly linked for zoom.
 - Concurrency: 3 files at once; the queue survives navigation inside the SPA; closing the tab during uploads triggers the browser "leave page?" warning while the queue is not empty.
 - Failure states (each file, independent; one failure never stops the rest):

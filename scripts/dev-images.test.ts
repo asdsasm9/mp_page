@@ -7,6 +7,7 @@ import {
   GALLERIES_DIR,
   SNAPSHOT_FIXTURE,
   devPhotosFromSnapshot,
+  dominantColorOf,
   generateDevImages,
   publicKeys,
   type DevImageRow,
@@ -57,6 +58,15 @@ describe('generateDevImages', () => {
     }
     const real = first.find((r) => r.id !== missing.id && !r.placeholder);
     expect(real).toBeDefined();
+  });
+
+  it('reports a #rrggbb colour for every photo, computed from the generated image when there is a source', () => {
+    for (const r of first) expect(r.color, r.id).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
+  it('dominantColorOf returns the colour of a solid image', async () => {
+    const buf = await sharp({ create: { width: 64, height: 48, channels: 3, background: '#336699' } }).png().toBuffer();
+    expect(await dominantColorOf(buf)).toBe('#336699');
   });
 
   it('a second run creates no files', () => {

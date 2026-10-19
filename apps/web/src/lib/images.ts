@@ -62,7 +62,7 @@ export function photoSources(photo: SnapshotPhoto, base: string): PhotoSources {
   };
 }
 
-export type SizesContext = 'grid' | 'card' | 'lightbox' | 'hero';
+export type SizesContext = 'grid' | 'card' | 'review' | 'lightbox' | 'hero';
 
 const SIZES: Record<SizesContext, string> = {
   // Album grid: three columns from 64rem, two from 40rem, one below; page gutter is 1rem minimum per side.
@@ -70,7 +70,12 @@ const SIZES: Record<SizesContext, string> = {
   grid: '(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 2rem)',
   // Category and album card: three columns from 48rem. The real maximum is 24rem (gap --space-5);
   // 24.5rem is the shared, marginally conservative cap.
-  card: '(min-width: 48rem) min(33vw, 24.5rem), calc(100vw - 2rem)',
+  // Below the cap the column is (100vw - 7rem) / 3: measured 219.5 px at 768 px (33vw said 253 and made the
+  // browser take 720 instead of 480 at DPR 2).
+  card: '(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)',
+  // Home page review photo: the wider 3fr column from 48rem, measured 337 px at 768 and 584 px (36.5rem) from ~1280
+  // (image-fit check); 44vw reproduces 338 px at 768 and the cap reaches 584 px.
+  review: '(min-width: 48rem) min(44vw, 36.5rem), calc(100vw - 2rem)',
   // Lightbox and full-width hero use the whole viewport.
   lightbox: '100vw',
   hero: '100vw',

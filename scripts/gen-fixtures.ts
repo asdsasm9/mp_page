@@ -120,6 +120,18 @@ export interface SeedRows {
   urlHistory: UrlHistoryRow[];
 }
 
+/** Muted, photo-like colours for the placeholder block of fixture photos (real colours come from the encoder). */
+export const FIXTURE_PALETTE = [
+  '#8c7b6b', '#a39382', '#6d7a6a', '#7f8f9c', '#b0a090', '#5f6b73', '#9a8478', '#c2b5a5',
+  '#74806f', '#8a9aa6', '#a58f7d', '#4f5a52', '#b9a99b', '#6b7886', '#93846f', '#7d6e63',
+] as const;
+
+/** Deterministic dominant colour (#rrggbb) for a photo id: SHA-1 of the id picks a palette entry. */
+export function fixtureColor(id: string): string {
+  const h = createHash('sha1').update(id, 'utf8').digest();
+  return FIXTURE_PALETTE[h.readUInt32BE(0) % FIXTURE_PALETTE.length]!;
+}
+
 /** Variants for one photo: master via fitWithin, the rest via variantPlan, bytes estimated per file. */
 export function variantsFor(sourceW: number, sourceH: number): PhotoVariants {
   const master = fitWithin(sourceW, sourceH, MASTER_MAX_EDGE);
@@ -169,7 +181,7 @@ export function buildSeedRows(legacy: LegacyPhotoEntry[]): SeedRows {
         height: variants.master.h,
         variants,
         bytes_total: sumBytes(variants),
-        dominant_color: null,
+        dominant_color: fixtureColor(id),
         alt: null,
         caption: null,
         sort: n * 10,
@@ -226,13 +238,13 @@ export function renderSeedSql(rows: SeedRows): string {
   ];
   for (const a of rows.albums) {
     out.push(`-- photos of ${a.slug}`);
-    out.push('insert into public.photos (id, album_id, master_key, width, height, variants, bytes_total, sort, legacy_key) values');
+    out.push('insert into public.photos (id, album_id, master_key, width, height, variants, bytes_total, dominant_color, sort, legacy_key) values');
     out.push(
       rows.photos
         .filter((p) => p.album_id === a.id)
         .map(
           (p) =>
-            `  (${q(p.id)}, ${q(p.album_id)}, ${q(p.master_key)}, ${p.width}, ${p.height}, ${q(JSON.stringify(p.variants))}::jsonb, ${p.bytes_total}, ${p.sort}, ${q(p.legacy_key)})`,
+            `  (${q(p.id)}, ${q(p.album_id)}, ${q(p.master_key)}, ${p.width}, ${p.height}, ${q(JSON.stringify(p.variants))}::jsonb, ${p.bytes_total}, ${q(p.dominant_color)}, ${p.sort}, ${q(p.legacy_key)})`,
         )
         .join(',\n') + ';',
     );

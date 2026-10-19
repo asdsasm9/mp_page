@@ -4,5 +4,5 @@
     "lib": ["ES2022", "DOM"],
     "allowJs": true
   },
-  "include": ["src", "astro.config.mjs"]
+  "include": ["src", "scripts", "astro.config.mjs"]
 }

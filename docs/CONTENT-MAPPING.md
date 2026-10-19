@@ -2,6 +2,8 @@
 
 Date: 2026-10-19. Inputs: `docs/AUDIT.md` (T-1), `VISION.md`, the legacy `src/data/Data.ts`. Scope note (Adam, 2026-10-19): page texts stay in code, so there is **no `pages` table**. The database holds only categories, albums and photos.
 
+**Decision D-6 (2026-10-19): `/portfolio/` stays a real page.** The WP-3 plan default (no page, `_redirects` rows sending `/portfolio` and `/portfolio/` to `/` with 301) is dropped: do not generate those two redirect rows. The page itself, its navigation entry and its SEO.md title pattern are added by backlog task T-95; until it ships, the hash script's `#/portfolio` to `/portfolio/` mapping (7.2) keeps pointing at the future page.
+
 ## 1. What goes where
 
 | Legacy content | Target |

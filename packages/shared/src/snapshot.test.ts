@@ -48,11 +48,11 @@ describe('SnapshotSchema', () => {
     counts: { categories: 1, albums: 1, photos: 1 },
     categories: [
       {
-        slug: 'svatby', name: 'Svatby', description: null, seoTitle: null, seoDescription: null,
+        slug: 'svatby', name: 'Svatby', description: null, seoTitle: null, seoDescription: null, updatedAt: TS,
         albums: [
           {
             slug: 'frankovi', title: 'Michal & Rozárka', place: null, shotOn: '2024-06-01', description: null,
-            seoTitle: null, seoDescription: null, coverPhotoId: uuid(1), legacyId: 'frankovi',
+            seoTitle: null, seoDescription: null, coverPhotoId: uuid(1), legacyId: 'frankovi', updatedAt: TS,
             photos: [{ id: uuid(1), width: 3000, height: 2000, alt: null, caption: null, dominantColor: '#aabbcc', variants }],
           },
         ],
@@ -94,6 +94,14 @@ describe('SnapshotSchema', () => {
   it('rejects schemaVersion 2', () => {
     const s = { ...valid(), schemaVersion: 2 };
     expect(SnapshotSchema.safeParse(s).success).toBe(false);
+  });
+  it('rejects a missing or malformed updatedAt', () => {
+    const s = valid();
+    delete (s.categories[0]!.albums[0]! as Partial<Snapshot['categories'][number]['albums'][number]>).updatedAt;
+    expect(SnapshotSchema.safeParse(s).success).toBe(false);
+    const t = valid();
+    t.categories[0]!.updatedAt = 'yesterday';
+    expect(SnapshotSchema.safeParse(t).success).toBe(false);
   });
   it('rejects an album with no title', () => {
     const s = valid();
@@ -200,6 +208,25 @@ describe('buildSnapshot', () => {
       { from: '/b/', to: null, status: 410 },
     ]);
     expect(s.categories[0]!.albums[0]!.shotOn).toBe('2024-06-01');
+  });
+  it('album updatedAt is the latest of the album and its photos; a changed photo alt moves it', () => {
+    const LATER = '2026-11-01T08:30:00+01:00'; // offset input is normalised to UTC
+    const base = buildSnapshot({ categories: [c1], albums: [a1], photos: [photo(1, a1.id)], urlHistory: [] }, NOW);
+    expect(base.categories[0]!.albums[0]!.updatedAt).toBe(TS);
+    expect(base.categories[0]!.updatedAt).toBe(TS);
+    const edited = buildSnapshot(
+      { categories: [c1], albums: [a1], photos: [photo(1, a1.id, { alt: 'New alt', updated_at: LATER })], urlHistory: [] },
+      NOW,
+    );
+    expect(edited.categories[0]!.albums[0]!.updatedAt).toBe('2026-11-01T07:30:00.000Z');
+    expect(edited.categories[0]!.updatedAt).toBe('2026-11-01T07:30:00.000Z');
+  });
+  it('category updatedAt follows its own row and its published albums only', () => {
+    const draft = album(2, c1.id, { published: false, updated_at: '2027-01-01T00:00:00.000Z' });
+    const catNew = cat(1, { updated_at: '2026-12-01T00:00:00.000Z' });
+    const s = buildSnapshot({ categories: [catNew], albums: [a1, draft], photos: [photo(1, a1.id)], urlHistory: [] }, NOW);
+    expect(s.categories[0]!.updatedAt).toBe('2026-12-01T00:00:00.000Z');
+    expect(s.categories[0]!.albums[0]!.updatedAt).toBe(TS);
   });
   it('output always passes the schema and carries generatedAt', () => {
     const s = buildSnapshot({ categories: [c1], albums: [a1], photos: [photo(1, a1.id)], urlHistory: [] }, NOW);

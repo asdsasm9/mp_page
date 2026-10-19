@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mp/shared": "0.0.0",
     "astro": "7.4.0"
   }
 }

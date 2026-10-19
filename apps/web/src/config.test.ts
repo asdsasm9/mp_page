@@ -7,5 +7,6 @@ describe('web astro config', () => {
     expect(config.trailingSlash).toBe('always');
     expect(config.output).toBe('static');
     expect(config.build?.format).toBe('directory');
+    expect(config.build?.inlineStylesheets).toBe('never');
   });
 });

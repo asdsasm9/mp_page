@@ -9,6 +9,8 @@ import { PhotoVariantsSchema } from './variants';
 const nullableText = z.string().nullable();
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD');
 
+const isoDateTime = z.iso.datetime({ offset: true });
+
 export const SnapshotPhotoSchema = z
   .object({
     id: z.string().min(1),
@@ -32,6 +34,8 @@ export const SnapshotAlbumSchema = z
     seoDescription: nullableText,
     coverPhotoId: z.string().nullable(),
     legacyId: nullableText,
+    /** Latest change of the album or any of its photos (sitemap lastmod). */
+    updatedAt: isoDateTime,
     photos: z.array(SnapshotPhotoSchema),
   })
   .strict();
@@ -43,6 +47,8 @@ export const SnapshotCategorySchema = z
     description: nullableText,
     seoTitle: nullableText,
     seoDescription: nullableText,
+    /** Latest change of the category or any of its published albums (sitemap lastmod). */
+    updatedAt: isoDateTime,
     albums: z.array(SnapshotAlbumSchema),
   })
   .strict();
@@ -138,6 +144,11 @@ export interface SnapshotSource {
 }
 
 type Sortable = { sort: number; id: string };
+
+/** Latest of the given timestamps as a UTC ISO string (database offsets are normalised). */
+function latest(...stamps: string[]): string {
+  return new Date(Math.max(...stamps.map((s) => Date.parse(s)))).toISOString();
+}
 const bySortThenId = (a: Sortable, b: Sortable) => a.sort - b.sort || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
 /**
@@ -166,13 +177,8 @@ export function buildSnapshot(src: SnapshotSource, now: Date): Snapshot {
   const categories: SnapshotCategory[] = [...src.categories]
     .filter((c) => c.visible)
     .sort(bySortThenId)
-    .map((c) => ({
-      slug: c.slug,
-      name: c.name,
-      description: c.description,
-      seoTitle: c.seo_title,
-      seoDescription: c.seo_description,
-      albums: [...(albumsByCategory.get(c.id) ?? [])].sort(bySortThenId).map((a) => {
+    .map((c) => {
+      const albums = [...(albumsByCategory.get(c.id) ?? [])].sort(bySortThenId).map((a) => {
         const photos = [...(photosByAlbum.get(a.id) ?? [])].sort(bySortThenId);
         const cover =
           a.cover_photo_id !== null && photos.some((p) => p.id === a.cover_photo_id)
@@ -190,6 +196,7 @@ export function buildSnapshot(src: SnapshotSource, now: Date): Snapshot {
           seoDescription: a.seo_description,
           coverPhotoId: cover,
           legacyId: a.legacy_id,
+          updatedAt: latest(a.updated_at, ...photos.map((p) => p.updated_at)),
           photos: photos.map((p) => ({
             id: p.id,
             width: p.width,
@@ -200,8 +207,17 @@ export function buildSnapshot(src: SnapshotSource, now: Date): Snapshot {
             variants: p.variants,
           })),
         };
-      }),
-    }));
+      });
+      return {
+        slug: c.slug,
+        name: c.name,
+        description: c.description,
+        seoTitle: c.seo_title,
+        seoDescription: c.seo_description,
+        updatedAt: latest(c.updated_at, ...albums.map((a) => a.updatedAt)),
+        albums,
+      };
+    });
 
   const redirects = [...src.urlHistory]
     .sort((a, b) => (a.old_path < b.old_path ? -1 : a.old_path > b.old_path ? 1 : 0))

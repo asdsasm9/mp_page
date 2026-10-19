@@ -1,0 +1,80 @@
+/*
+ * Design tokens: the single source for colour, type, space, radius, motion, layout.
+ * Components use only these (var(--...)); no raw hex or px outside this file.
+ * Contrast is enforced by tokens.test.ts. Documentation: docs/DESIGN-TOKENS.md.
+ * Light scheme only (D-6 / plan 4.3); the current look is kept until H-3.
+ */
+@layer reset, tokens, base, components, utilities;
+
+@layer tokens {
+  :root {
+    color-scheme: light;
+
+    /* Colour: ink on paper, one warm accent */
+    --color-bg: #fafafa;
+    --color-surface: #f3f5f5;
+    --color-surface-raised: #ffffff;
+    --color-text: #464646;
+    --color-text-muted: #5f5f5f;
+    --color-accent: rgb(227, 204, 180);
+    --color-accent-hover: rgb(217, 190, 161);
+    --color-on-accent: #464646;
+    --color-border: #d9d9d9;
+    --color-border-strong: #767676;
+    --color-focus: #1d4f91;
+    --color-focus-on-dark: #f2d8b8;
+    --color-overlay: rgb(20, 20, 20);
+    --color-on-overlay: #fafafa;
+    --color-placeholder: #e6e6e6;
+    --color-danger: #a4262c;
+    --color-theme: #fafafa;
+
+    /* Type: Martel (self-hosted 400) then a serif fallback stack */
+    --font-body: 'Martel', 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
+    --font-size-0: clamp(1.0625rem, 1.02rem + 0.2vw, 1.1875rem);
+    --font-size-1: clamp(1.1875rem, 1.12rem + 0.3vw, 1.375rem);
+    --font-size-2: clamp(1.375rem, 1.25rem + 0.6vw, 1.75rem);
+    --font-size-3: clamp(1.75rem, 1.5rem + 1.2vw, 2.5rem);
+    --font-size-4: clamp(2.125rem, 1.7rem + 2vw, 3.25rem);
+    --font-size-5: clamp(2.5rem, 1.9rem + 3vw, 4.25rem);
+    --font-size-small: 0.9375rem;
+    --line-height-body: 1.6;
+    --line-height-heading: 1.2;
+    --tracking-heading: 0.01em;
+    --measure: 70ch;
+
+    /* Space: 4 px base (0.25rem steps) */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-7: 3rem;
+    --space-8: 4.5rem;
+
+    /* Radius, borders, shadow */
+    --radius-sm: 0.125rem;
+    --radius-md: 0.5rem;
+    --radius-full: 9999px;
+    --border-width: 1px;
+    --focus-width: 3px;
+    --focus-offset: 2px;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
+    --shadow-md: 0 4px 12px rgb(0 0 0 / 0.12);
+
+    /* Motion */
+    --motion-fast: 150ms;
+    --motion-base: 250ms;
+    --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+
+    /* Layout */
+    --layout-max: 80rem;
+    --layout-gutter: clamp(1rem, 4vw, 2.5rem);
+    --header-height: 4.5rem;
+    --target-min: 2.75rem;
+    --z-header: 10;
+    --z-dialog: 20;
+    --z-skip: 30;
+  }
+}

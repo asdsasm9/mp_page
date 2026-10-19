@@ -112,9 +112,15 @@ describe('seed.sql on a freshly migrated database', () => {
 
     const fromDb = buildSnapshot({ categories, albums, photos, urlHistory }, new Date(fixture.generatedAt));
     expect(SnapshotSchema.safeParse(fromDb).success).toBe(true);
-    const { generatedAt: _a, ...dbRest } = fromDb;
-    const { generatedAt: _b, ...fixRest } = fixture;
-    expect(dbRest).toEqual(fixRest);
+    // The seed rows take the database clock, so updatedAt (derived from row timestamps) cannot match
+    // the fixture's fixed clock. It is checked separately: every value is a valid ISO date-time.
+    const strip = (s: Snapshot) =>
+      JSON.parse(JSON.stringify(s, (k, v: unknown) => (k === 'updatedAt' || k === 'generatedAt' ? undefined : v)));
+    expect(strip(fromDb)).toEqual(strip(fixture));
+    for (const c of fromDb.categories) {
+      expect(c.updatedAt).toMatch(/^\d{4}-\d\d-\d\dT/);
+      for (const a of c.albums) expect(a.updatedAt).toMatch(/^\d{4}-\d\d-\d\dT/);
+    }
   });
 
   it('a second fresh database also loads the seed', async () => {

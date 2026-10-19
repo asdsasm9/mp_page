@@ -137,3 +137,11 @@ COVER_NOT_IN_ALBUM (SQLSTATE 23514) comes from the cover trigger.
 `supabase/seed.sql` and `packages/shared/fixtures/snapshot.fixture.json` from the same rows, with deterministic
 UUIDv5-style ids. A drift test regenerates them in memory and compares. The seed runs as the database owner,
 creates no admin and leaves `pending_changes` at 0.
+
+## Snapshot `updatedAt` (WP3-3)
+
+Each snapshot album and category carries `updatedAt` (ISO date-time, UTC). `buildSnapshot` sets an album's value to
+the latest `updated_at` of the album row and its photos, and a category's to the latest of the category row and its
+published albums (hidden or draft rows do not count). The public site uses it as sitemap `lastmod`. The fixture uses
+the fixed fixture clock; the seed test compares the database-built snapshot with the fixture ignoring `updatedAt`,
+because the seed takes the database clock.

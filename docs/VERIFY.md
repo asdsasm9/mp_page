@@ -21,6 +21,25 @@ Rule: a forum post alone is never VERIFIED; prefer vendor docs and note the date
 | 14 | R2 "GB" decimal or binary | Margin of the 9.5e9 hard limit | Read R2 pricing docs | builder-with-WebSearch | UNVERIFIED | none | 9.5e9 keeps margin under either reading of 10 GB (10e9 decimal, about 10.74e9 binary). |
 | 15 | Local offline build (web and admin); optional `wrangler deploy --dry-run` | Skeleton must build without services | `npm run build` | builder-offline | UNVERIFIED | `npm run build` exited 0 on 2026-10-19 and produced `apps/web/dist/index.html` and `apps/admin/dist/index.html`. The sandbox had network access, so "works with no network" is not proven. `wrangler deploy --dry-run` was not run (it may ask for login). | Re-run with the network off to close this row. |
 | 16 | Exact dependency versions, Node, npm audit | Reproducible installs | See below | builder-offline | VERIFIED | `package.json` files read 2026-10-19; `npm audit` run once | All pinned exactly; lockfile committed. |
+| 17 | Pages `_redirects` limits (static rule count, 410 status support, wildcard behaviour) | `redirects.ts` emits up to 1900 rows and may emit 410 rows | Read Cloudflare Pages redirects docs, then test on a preview | builder-with-WebSearch, then human | UNVERIFIED | none (no web access, 2026-10-19) | Generator fails the build above 1900 rows; 410 rows are dropped (path then 404s) until verified. |
+| 18 | Pages rule for `/index.html` and `/x/index.html` (does Pages strip it, does `trailingSlash: always` match) | Canonical URLs and legacy links | Preview deploy, `curl -I` on `/svatby/index.html` | human | HUMAN | none | Canonical URLs always end with a slash; no rule depends on this. |
+| 19 | CSP `style-src-attr` support (old Safari) | Per-photo `--c` placeholder colour is an inline style attribute | MDN / caniuse, then check on an iPhone | builder-with-WebSearch, then human | UNVERIFIED | none | Failure only drops the placeholder colour, nothing else. |
+| 20 | Astro image API in the installed 7.4.0 | `Picture`, `getImage`, `build.inlineStylesheets` used by WP-3 | Read installed types | builder-offline | VERIFIED | `apps/web/node_modules` resolved to `node_modules/astro` 7.4.0: `astro/client.d.ts` declares `astro:assets` exports `getImage`, `Image`, `Picture`, `Font`; `dist/types/public/config.d.ts:1458` declares `build.inlineStylesheets?: 'always' \| 'auto' \| 'never'`; sharp 0.35.5 is already the resolved image service dependency (2026-10-19). | Plan 4.5 stands: site images use `astro:assets` `Picture`; photo `<picture>` is built by our own helper from the snapshot variants. |
+| 21 | Chrome on the build machine for `design-check` | Decides whether WP3-25 can run in the autopilot | Run `ls` on the Chrome app path or set `CHROME_PATH` | builder-offline | UNVERIFIED | The shell sandbox denied the check on 2026-10-19; availability unknown. | Tool will exit 2 "SKIPPED: Chrome not found" if absent; WP3-25 becomes HUMAN (about 10 minutes). |
+| 22 | Pages treatment of `404.html` | Static 404 page and status | Preview deploy, request an unknown path | human | HUMAN | none | Pages serves a root `404.html` for unknown paths by documented convention (not verified here); the local server in WP3-24 imitates it. |
+
+## WP-3 dependency pins (chosen 2026-10-19 with `npm view <pkg> version`; D-6 approved the list)
+
+| Package | Pin | Dev or runtime | Used by |
+|---------|-----|----------------|---------|
+| sharp | 0.35.5 | apps/web devDependency (already installed transitively by astro) | WP3-6, WP3-21 |
+| @fontsource/martel | 5.3.0 | apps/web dependency (font files copied to dist, no runtime code) | WP3-5 |
+| lighthouse | 13.5.0 | root devDependency | WP3-24 |
+| puppeteer-core | 25.14.0 | root devDependency | WP3-24 |
+| axe-core | 4.14.0 | root devDependency | WP3-24 |
+| aws4fetch | 1.0.20 | apps/api dependency | WP-4 |
+
+Each is added by the step that first uses it, not before. No Tailwind (D-6).
 
 ## Row 16 detail
 

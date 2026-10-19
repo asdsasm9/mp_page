@@ -15,7 +15,9 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "build": "npm run build -w apps/web -w apps/admin",
     "gates": "node scripts/gates.mjs",
-    "fixtures": "tsx scripts/gen-fixtures.ts"
+    "fixtures": "tsx scripts/gen-fixtures.ts",
+    "site-images:import": "node scripts/site-images-import.mjs",
+    "dev-images": "tsx scripts/dev-images.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.10",

@@ -49,4 +49,7 @@ typings/
 .astro/
 coverage/
 .tmp/
+
+# Dev images for fixture mode (npm run dev-images); never committed, never shipped
+_dev-img/
 supabase/.temp/

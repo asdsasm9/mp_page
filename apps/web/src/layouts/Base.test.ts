@@ -431,6 +431,50 @@ describe('Sitemap and robots (built, shared build)', () => {
   });
 });
 
+describe('Icons and manifest (built, shared build)', () => {
+  /** PNG IHDR: width and height at bytes 16 and 20, after the 8-byte signature. */
+  const pngSize = (file: string): [number, number] => {
+    const buf = readFileSync(join(out, file));
+    expect(buf.subarray(1, 4).toString('latin1'), file).toBe('PNG');
+    return [buf.readUInt32BE(16), buf.readUInt32BE(20)];
+  };
+
+  it('ships the icons at the declared pixel sizes', () => {
+    expect(pngSize('apple-touch-icon.png')).toEqual([180, 180]);
+    expect(pngSize('icon-192.png')).toEqual([192, 192]);
+    expect(pngSize('icon-512.png')).toEqual([512, 512]);
+    expect(pngSize('android-chrome-192x192.png')).toEqual([192, 192]);
+    expect(pngSize('logo.png')).toEqual([512, 512]);
+    expect(readFileSync(join(out, 'android-chrome-192x192.png')).equals(readFileSync(join(out, 'icon-192.png')))).toBe(true);
+    expect(readFileSync(join(out, 'logo.png')).equals(readFileSync(join(out, 'icon-512.png')))).toBe(true);
+    expect(existsSync(join(out, 'favicon.ico'))).toBe(true);
+  });
+
+  it('has a Czech manifest whose icons exist at their declared sizes', () => {
+    const m = JSON.parse(readFileSync(join(out, 'manifest.webmanifest'), 'utf8')) as {
+      name: string;
+      lang: string;
+      theme_color: string;
+      icons: Array<{ src: string; sizes: string }>;
+    };
+    expect(m.name).toBe('Mullny Photos');
+    expect(m.lang).toBe('cs');
+    const theme = /--color-theme:\s*([^;]+);/.exec(readFileSync(join(webRoot, 'src/styles/tokens.css'), 'utf8'))?.[1]?.trim();
+    expect(m.theme_color).toBe(theme);
+    expect(m.icons.map((i) => i.sizes)).toEqual(['192x192', '512x512']);
+    for (const i of m.icons) {
+      const [w, h] = pngSize(i.src.slice(1));
+      expect(`${w}x${h}`).toBe(i.sizes);
+    }
+  });
+
+  it('links the 180 px PNG as apple-touch-icon, not the .ico, and the manifest from the home head', () => {
+    expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">');
+    expect(html).not.toMatch(/rel="apple-touch-icon"[^>]*\.ico/);
+    expect(html).toContain('<link rel="manifest" href="/manifest.webmanifest">');
+  });
+});
+
 describe('Base layout (built home page)', () => {
   it('is Czech with exactly one main landmark and one h1', () => {
     expect(html).toContain('<html lang="cs">');

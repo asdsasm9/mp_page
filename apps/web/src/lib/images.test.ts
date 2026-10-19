@@ -101,7 +101,8 @@ describe('loadingAttrs', () => {
     expect(loadingAttrs()).toEqual({ loading: 'lazy', decoding: 'async' });
   });
   it('eager only when requested', () => {
-    expect(loadingAttrs({ eager: true })).toEqual({ loading: 'eager', decoding: 'async' });
+    // Eager but not the LCP image: low priority so it does not compete with the LCP image on slow links.
+    expect(loadingAttrs({ eager: true })).toEqual({ loading: 'eager', decoding: 'async', fetchpriority: 'low' });
   });
   it('fetchpriority high only for the priority image, which is eager', () => {
     expect(loadingAttrs({ priority: true })).toEqual({ loading: 'eager', decoding: 'async', fetchpriority: 'high' });

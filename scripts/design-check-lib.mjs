@@ -66,6 +66,46 @@ export function median(nums) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+/**
+ * SEO category score recomputed without the is-crawlable audit. Non-production builds are noindex by design
+ * (plan 4.1), which would cap the score at 0.69 forever; indexability of the production build is covered by
+ * the build guard and the cutover checklist, not by this lab run.
+ */
+export function seoIgnoringCrawlable(lhr) {
+  const refs = lhr.categories?.seo?.auditRefs;
+  if (!Array.isArray(refs)) return lhr.categories?.seo?.score ?? null;
+  let sum = 0;
+  let weight = 0;
+  for (const ref of refs) {
+    if (ref.id === 'is-crawlable' || !ref.weight) continue;
+    const a = lhr.audits?.[ref.id];
+    if (!a || a.score === null || a.scoreDisplayMode === 'notApplicable' || a.scoreDisplayMode === 'manual' || a.scoreDisplayMode === 'informative') continue;
+    sum += a.score * ref.weight;
+    weight += ref.weight;
+  }
+  return weight ? sum / weight : null;
+}
+
+/**
+ * Keyboard pass stops: [{ label, outlineStyle, outlineWidth, boxShadow, obscured, inViewport }] in Tab order.
+ * Problems: no visible focus indicator (WCAG 2.4.7), focused element covered by another element (2.4.11), no stops at all.
+ */
+export function evaluateKeyboard(route, stops) {
+  if (!stops.length) return [`${route}: keyboard pass found nothing focusable`];
+  const out = [];
+  for (const s of stops) {
+    const outline = s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0;
+    if (!outline && (!s.boxShadow || s.boxShadow === 'none')) out.push(`${route}: no visible focus indicator on ${s.label}`);
+    if (s.obscured) out.push(`${route}: focused ${s.label} is covered by another element`);
+  }
+  return out;
+}
+
+/** A 404 page is served with status 404; Chrome logs that as a console error for the document itself. Drop only that one. */
+export function isExpectedConsoleError(route, msg, pageUrl) {
+  return route.name === '404' && /status of 404/.test(msg.text) && msg.url === pageUrl;
+}
+
 /** Reduce one Lighthouse JSON report (lhr) to the numbers we judge. */
 export function summarizeLhr(lhr) {
   const cat = (id) => lhr.categories?.[id]?.score ?? null;
@@ -74,7 +114,9 @@ export function summarizeLhr(lhr) {
     performance: cat('performance'),
     accessibility: cat('accessibility'),
     'best-practices': cat('best-practices'),
-    seo: cat('seo'),
+    seo: seoIgnoringCrawlable(lhr),
+    // Raw crawlability (is-crawlable): 0 on every non-production build because those are noindex on purpose.
+    crawlable: lhr.audits?.['is-crawlable']?.score ?? null,
     lcp: num('largest-contentful-paint'),
     cls: num('cumulative-layout-shift'),
     tbt: num('total-blocking-time'),
@@ -130,6 +172,7 @@ export function aggregate(results, t = THRESHOLDS) {
     if (!r.light) failures.push(...evaluateLighthouse(r.route, r.lighthouse ?? {}, t));
     failures.push(...evaluateAxe(r.route, r.axe ?? []));
     failures.push(...evaluateReflow(r.route, r.overflow ?? 0));
+    if (r.keyboard) failures.push(...evaluateKeyboard(r.route, r.keyboard));
     failures.push(...evaluateConsole(r.route, r.consoleErrors ?? []));
   }
   if (!results.length) failures.push('no routes were checked');

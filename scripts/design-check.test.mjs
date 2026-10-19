@@ -5,9 +5,47 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
-  EXIT, THRESHOLDS, aggregate, evaluateLighthouse, median, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
+  EXIT, THRESHOLDS, aggregate, evaluateKeyboard, evaluateLighthouse, isExpectedConsoleError, seoIgnoringCrawlable, median, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
 } from './design-check-lib.mjs';
+import { CHROME_FALLBACKS, findChrome } from './design-check.mjs';
 import { createDistServer, headersFor, listen, parseHeaders } from './serve-dist.mjs';
+
+describe('seo, console and keyboard evaluation', () => {
+  const lhr = {
+    categories: { seo: { score: 0.69, auditRefs: [{ id: 'is-crawlable', weight: 4 }, { id: 'title', weight: 1 }, { id: 'meta', weight: 1 }] } },
+    audits: { 'is-crawlable': { score: 0, scoreDisplayMode: 'binary' }, title: { score: 1, scoreDisplayMode: 'binary' }, meta: { score: 0, scoreDisplayMode: 'binary' } },
+  };
+  it('ignores is-crawlable but still counts other SEO failures', () => {
+    expect(seoIgnoringCrawlable(lhr)).toBe(0.5);
+    lhr.audits.meta.score = 1;
+    expect(seoIgnoringCrawlable(lhr)).toBe(1);
+    expect(summarizeLhr(lhr).crawlable).toBe(0);
+  });
+  it('only drops the 404 document error on the 404 route', () => {
+    const msg = { text: 'Failed to load resource: the server responded with a status of 404 (Not Found)', url: 'http://x/a/' };
+    expect(isExpectedConsoleError({ name: '404' }, msg, 'http://x/a/')).toBe(true);
+    expect(isExpectedConsoleError({ name: '404' }, { ...msg, url: 'http://x/img.png' }, 'http://x/a/')).toBe(false);
+    expect(isExpectedConsoleError({ name: 'home' }, msg, 'http://x/a/')).toBe(false);
+  });
+  it('flags missing focus indicators and covered focus', () => {
+    const ok = { label: 'a', outlineStyle: 'solid', outlineWidth: '3px', boxShadow: 'none', obscured: false };
+    expect(evaluateKeyboard('/', [ok])).toEqual([]);
+    expect(evaluateKeyboard('/', [{ ...ok, outlineStyle: 'none' }])).toHaveLength(1);
+    expect(evaluateKeyboard('/', [{ ...ok, obscured: true }])).toHaveLength(1);
+    expect(evaluateKeyboard('/', [])).toHaveLength(1);
+    expect(aggregate([{ route: '/', light: true, axe: [], overflow: 0, consoleErrors: [], keyboard: [{ ...ok, outlineStyle: 'none' }] }]).verdict).toBe('FAIL');
+  });
+});
+
+describe('findChrome', () => {
+  it('prefers CHROME_PATH, falls back to macOS path, else null', () => {
+    const mac = CHROME_FALLBACKS[0];
+    expect(findChrome({ CHROME_PATH: '/x/chrome' }, (p) => p === '/x/chrome')).toBe('/x/chrome');
+    expect(findChrome({}, (p) => p === mac)).toBe(mac);
+    expect(findChrome({ CHROME_PATH: '/missing' }, (p) => p === mac)).toBe(mac);
+    expect(findChrome({}, () => false)).toBeNull();
+  });
+});
 
 const good = { performance: 1, accessibility: 1, 'best-practices': 1, seo: 1, lcp: 1200, cls: 0.01, tbt: 0 };
 
@@ -108,6 +146,15 @@ describe('serve-dist', () => {
     expect(res.headers.get('content-security-policy')).toBe("default-src 'self'");
     expect(res.headers.get('content-type')).toContain('text/html');
   });
+  it('gzips text responses for clients that accept it', async () => {
+    const { origin } = await start();
+    const gz = await fetch(`${origin}/kontakt/`, { headers: { 'accept-encoding': 'gzip' } });
+    expect(gz.headers.get('content-encoding')).toBe('gzip');
+    const plain = await fetch(`${origin}/kontakt/`, { headers: { 'accept-encoding': 'identity' } });
+    expect(plain.headers.get('content-encoding')).toBeNull();
+    expect(await plain.text()).toContain('<h1>');
+    expect(await gz.text()).toContain('<h1>');
+  });
   it('answers 404 with the 404 page for unknown paths', async () => {
     const { origin } = await start();
     const res = await fetch(`${origin}/nope/`);
@@ -123,7 +170,7 @@ describe('serve-dist', () => {
 
 describe('runner without Chrome', () => {
   it('prints SKIPPED and exits 2', () => {
-    const r = spawnSync(process.execPath, [fileURLToPath(new URL('./design-check.mjs', import.meta.url))], { env: { ...process.env, CHROME_PATH: '' }, encoding: 'utf8' });
+    const r = spawnSync(process.execPath, [fileURLToPath(new URL('./design-check.mjs', import.meta.url))], { env: { ...process.env, CHROME_PATH: '', DESIGN_CHECK_NO_FALLBACK: '1' }, encoding: 'utf8' });
     expect(r.stdout).toContain('SKIPPED: Chrome not found');
     expect(r.status).toBe(2);
   });

@@ -83,11 +83,12 @@ export function ogImage(photo: SnapshotPhoto, base: string): OgImage {
 export interface LoadingAttrs {
   loading: 'lazy' | 'eager';
   decoding: 'async';
-  fetchpriority?: 'high';
+  fetchpriority?: 'high' | 'low';
 }
 
 /** Lazy by default. `eager` only when requested; `fetchpriority="high"` only for the priority (LCP) image, which is eager too. */
 export function loadingAttrs(opts: { eager?: boolean; priority?: boolean } = {}): LoadingAttrs {
   if (opts.priority) return { loading: 'eager', decoding: 'async', fetchpriority: 'high' };
-  return { loading: opts.eager ? 'eager' : 'lazy', decoding: 'async' };
+  if (opts.eager) return { loading: 'eager', decoding: 'async', fetchpriority: 'low' };
+  return { loading: 'lazy', decoding: 'async' };
 }

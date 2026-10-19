@@ -4,6 +4,10 @@ import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 
+import { gzipSync } from 'node:zlib';
+
+const COMPRESSIBLE = /^(text\/|application\/(json|xml|manifest\+json)|image\/svg)/;
+
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -102,8 +106,17 @@ export function createDistServer(distDir) {
       res.end('Not found');
       return;
     }
-    res.writeHead(status, { ...headers, 'content-type': TYPES[extname(body).toLowerCase()] ?? 'application/octet-stream' });
-    res.end(req.method === 'HEAD' ? undefined : readFileSync(body));
+    const type = TYPES[extname(body).toLowerCase()] ?? 'application/octet-stream';
+    let data = readFileSync(body);
+    const out = { ...headers, 'content-type': type };
+    // Like the real host, compress text types for clients that accept it (so lab numbers are not inflated).
+    if (COMPRESSIBLE.test(type) && /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))) {
+      data = gzipSync(data);
+      out['content-encoding'] = 'gzip';
+      out.vary = 'Accept-Encoding';
+    }
+    res.writeHead(status, out);
+    res.end(req.method === 'HEAD' ? undefined : data);
   });
 }
 

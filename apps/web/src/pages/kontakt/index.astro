@@ -9,7 +9,6 @@ import { SITE_ORIGIN, breadcrumbList, photographerFull } from '../../lib/jsonld'
 import { contactMeta } from '../../lib/seo';
 import hero from '../../assets/site/contact/main_contact.jpg';
 import side from '../../assets/site/contact/contact.jpg';
-import instagramIcon from '../../assets/site/contact/instagram.png';
 
 const path = '/kontakt/';
 const meta = contactMeta();
@@ -56,7 +55,11 @@ const ogImage = { url: `${SITE_ORIGIN}${og.src}`, width: 1200, height: 630, alt:
       <h2 id="instagram">{CONTACT.instagram.title}</h2>
       <p>{CONTACT.instagram.body}</p>
       <a class="button" href={CONTACT.instagram.buttonHref} rel="noopener noreferrer" target="_blank">
-        <Image class="icon" src={instagramIcon} alt="" width={24} height={24} loading="lazy" decoding="async" />
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <rect x="3" y="3" width="18" height="18" rx="5" />
+          <circle cx="12" cy="12" r="4" />
+          <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" />
+        </svg>
         {CONTACT.instagram.buttonLabel}
     <span class="visually-hidden"> (Instagram, otevře se v novém okně)</span>
       </a>
@@ -95,6 +98,10 @@ const ogImage = { url: `${SITE_ORIGIN}${og.src}`, width: 1200, height: 630, alt:
     display: grid;
     justify-items: start;
     gap: var(--space-3);
+  }
+
+  .icon {
+    flex: none;
   }
 
   .button {

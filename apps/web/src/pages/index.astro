@@ -82,7 +82,7 @@ const collage = [
         cards.map((card) => (
           <li>
             <a href={card.path}>
-              <Photo photo={card.photo} base={env.imgBaseUrl} alt={card.alt} context="card" />
+              <Photo photo={card.photo} base={env.imgBaseUrl} alt="" context="card" />
               <span class="card-name">{card.name}</span>
             </a>
           </li>

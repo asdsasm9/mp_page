@@ -85,6 +85,8 @@ describe('sizesFor', () => {
       expect(sizesFor(c)).not.toMatch(/px/);
     }
     expect(sizesFor('lightbox')).toBe('100vw');
+    // Cards sit in three columns from 48rem.
+    expect(sizesFor('card')).toBe('(min-width: 48rem) 33vw, 100vw');
   });
 });
 

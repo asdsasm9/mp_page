@@ -22,7 +22,7 @@ describe('home data', () => {
     for (const card of cards) {
       const cat = catalog.categoryBySlug.get(card.slug)!;
       expect(card.photo.id).toBe(catalog.coverOf(cat.albums[0]!)!.id);
-      expect(card.alt.length).toBeGreaterThan(0);
+      expect(card.name.length).toBeGreaterThan(0);
     }
   });
 

@@ -52,8 +52,8 @@ export type SizesContext = 'grid' | 'card' | 'lightbox' | 'hero';
 const SIZES: Record<SizesContext, string> = {
   // Album grid: three columns on wide screens, two on medium, one on narrow.
   grid: '(min-width: 64rem) 33vw, (min-width: 40rem) 50vw, 100vw',
-  // Category card: two columns on wide screens.
-  card: '(min-width: 48rem) 50vw, 100vw',
+  // Category and album card: three columns from 48rem (page gutters make it a little under 33vw).
+  card: '(min-width: 48rem) 33vw, 100vw',
   // Lightbox and full-width hero use the whole viewport.
   lightbox: '100vw',
   hero: '100vw',

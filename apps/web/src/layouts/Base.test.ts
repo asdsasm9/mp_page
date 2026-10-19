@@ -5,9 +5,11 @@ import { join } from 'node:path';
 import { SnapshotSchema } from '@mp/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
+import { checkWeight, measureFirstLoad, snapshotImageBytes } from '../lib/weight';
 
 // Builds the real site into a temp dir (fixture mode) and checks the shell of the home page.
 const webRoot = new URL('../..', import.meta.url).pathname;
+const fixture = SnapshotSchema.parse(fixtureJson);
 let out = '';
 let html = '';
 
@@ -19,6 +21,7 @@ beforeAll(() => {
     stdio: 'pipe',
   });
   html = readFileSync(join(out, 'index.html'), 'utf8');
+  for (const c of fixture.categories) categoryHtml[c.slug] = readFileSync(join(out, c.slug, 'index.html'), 'utf8');
 }, 180_000);
 
 afterAll(() => {
@@ -27,7 +30,10 @@ afterAll(() => {
 
 const count = (re: RegExp): number => [...html.matchAll(re)].length;
 
-const fixture = SnapshotSchema.parse(fixtureJson);
+/** Astro prints an empty alt attribute as a bare `alt`. */
+const EMPTY_ALT = /\salt(?:="")?[\s>]/;
+const categoryHtml: Record<string, string> = {};
+const imgTags = (page: string): string[] => [...page.matchAll(/<img\b[^>]*>/g)].map((m) => m[0]);
 /** HTML of the section whose opening tag contains `marker`. */
 const section = (marker: string): string => {
   const start = html.indexOf(marker);
@@ -59,6 +65,10 @@ describe('Home page (built, shared build)', () => {
       const cover = album.photos.find((p) => p.id === album.coverPhotoId) ?? album.photos[0]!;
       expect(cats).toContain(`${cover.id}/480.webp 480w`);
     }
+    // The link text names the card, so its image is decorative.
+    const imgs = imgTags(cats);
+    expect(imgs).toHaveLength(fixture.categories.length);
+    for (const tag of imgs) expect(tag).toMatch(EMPTY_ALT);
   });
 
   it('shows the pati and anez review images and no other eager image', () => {
@@ -79,6 +89,73 @@ describe('Home page (built, shared build)', () => {
   it('emits Photographer and WebSite JSON-LD only, no Review', () => {
     expect(jsonLdTypes().sort()).toEqual(['Photographer', 'WebSite']);
     expect(html).not.toMatch(/"@type":"(Review|AggregateRating)"/);
+  });
+});
+
+describe('Category pages (built, shared build)', () => {
+  const albumHrefs = (page: string, slug: string): string[] =>
+    [...page.matchAll(new RegExp(`<a href="(/${slug}/[^"/]+/)"`, 'g'))].map((m) => m[1]!);
+
+  it('builds one page per fixture category and lists its albums in sort order', () => {
+    expect(Object.keys(categoryHtml)).toEqual(['svatby', 'portrety', 'parove-foceni']);
+    const expected = { svatby: 4, portrety: 6, 'parove-foceni': 3 } as Record<string, number>;
+    for (const c of fixture.categories) {
+      expect(albumHrefs(categoryHtml[c.slug]!, c.slug)).toEqual(c.albums.map((a) => `/${c.slug}/${a.slug}/`));
+      expect(c.albums).toHaveLength(expected[c.slug]!);
+    }
+  });
+
+  it('has one h1, a breadcrumb, canonical, and ImageGallery plus BreadcrumbList JSON-LD', () => {
+    for (const c of fixture.categories) {
+      const page = categoryHtml[c.slug]!;
+      expect([...page.matchAll(/<h1[\s>]/g)]).toHaveLength(1);
+      expect(page).toContain('<nav class="breadcrumb"');
+      expect(page).toMatch(/<li[^>]*aria-current="page"[^>]*>/);
+      expect(page).toContain(`<link rel="canonical" href="https://www.mullnyphotos.cz/${c.slug}/">`);
+      const types = [...page.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(
+        (m) => (JSON.parse(m[1]!) as { '@type': string })['@type'],
+      );
+      expect(types).toEqual(['ImageGallery', 'BreadcrumbList']);
+      expect(page).not.toMatch(/"@type":"(Review|AggregateRating)"/);
+    }
+  });
+
+  it('shows the count with a plural, cover 480 and 960 srcset, first row eager, first card high priority, rest lazy', () => {
+    const page = categoryHtml['portrety']!;
+    const imgs = imgTags(page).filter((t) => t.includes('/photos/'));
+    expect(imgs).toHaveLength(6);
+    expect(imgs.map((t) => /loading="(\w+)"/.exec(t)?.[1])).toEqual(['eager', 'eager', 'eager', 'lazy', 'lazy', 'lazy']);
+    expect(imgs.filter((t) => t.includes('fetchpriority="high"'))).toHaveLength(1);
+    expect(imgs[0]).toContain('fetchpriority="high"');
+    for (const t of imgs) {
+      expect(t).toMatch(/\swidth="\d+"/);
+      expect(t).toMatch(/\sheight="\d+"/);
+      expect(t).toMatch(EMPTY_ALT);
+    }
+    expect(page).toContain('480.webp 480w');
+    expect(page).toContain('960.webp 960w');
+    expect(page).toContain('(min-width: 48rem) 33vw, 100vw');
+    expect(page).toMatch(/\d+ fotografi(e|í)/);
+  });
+
+  it('marks the category link in the header with aria-current=page', () => {
+    for (const c of fixture.categories) {
+      const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(categoryHtml[c.slug]!)?.[1] ?? '';
+      const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((m) => m[1]);
+      expect(current).toEqual([`/${c.slug}/`]);
+    }
+    // The home page has no current nav link (its logo is the current page).
+    const homeNav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
+    expect(homeNav).not.toContain('aria-current');
+  });
+
+  it('keeps the first load of every category page under the budget', () => {
+    const imageBytes = snapshotImageBytes(fixture);
+    for (const c of fixture.categories) {
+      const w = measureFirstLoad({ distDir: out, page: `/${c.slug}/`, imageBytes });
+      expect(checkWeight(w), `${c.slug}: ${JSON.stringify(w)}`).toEqual([]);
+      expect(w.images).toBeGreaterThan(0);
+    }
   });
 });
 

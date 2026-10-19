@@ -12,7 +12,6 @@ export interface HomeCategoryCard {
   name: string;
   path: string;
   photo: SnapshotPhoto;
-  alt: string;
 }
 
 export interface HomeReview {
@@ -24,17 +23,10 @@ export interface HomeReview {
 export function homeCategoryCards(catalog: Catalog): HomeCategoryCard[] {
   const cards: HomeCategoryCard[] = [];
   for (const category of catalog.categories) {
-    const album = category.albums[0];
     const photo = catalog.categoryCover(category);
-    if (!album || !photo) continue;
-    const n = album.photos.findIndex((p) => p.id === photo.id) + 1;
-    cards.push({
-      slug: category.slug,
-      name: category.name,
-      path: `/${category.slug}/`,
-      photo,
-      alt: effectiveAlt(photo, { albumTitle: album.title, categoryKey: category.slug, n, total: album.photos.length }),
-    });
+    if (!photo) continue;
+    // The card image is decorative (alt=""): the link text is the category name.
+    cards.push({ slug: category.slug, name: category.name, path: `/${category.slug}/`, photo });
   }
   return cards;
 }

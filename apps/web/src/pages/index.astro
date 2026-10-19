@@ -1,17 +1,10 @@
 ---
-import Fonts from '../components/Fonts.astro';
-import '../styles/tokens.css';
-import '../styles/base.css';
+// Placeholder home; the real home page is T-59.
+import Base from '../layouts/Base.astro';
+import { homeMeta } from '../lib/seo';
+
+const meta = homeMeta();
 ---
-<!doctype html>
-<html lang="cs">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mullny Photos</title>
-    <Fonts />
-  </head>
-  <body>
-    <h1>Mullny Photos</h1>
-  </body>
-</html>
+<Base meta={meta} path="/">
+  <h1>Mullny Photos</h1>
+</Base>

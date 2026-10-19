@@ -1,0 +1,51 @@
+---
+// Visible breadcrumb (the JSON-LD BreadcrumbList is built separately in lib/jsonld.ts).
+// Pass the crumbs after "Úvod"; the last one is the current page and is not a link.
+import type { Crumb } from '../lib/jsonld';
+
+interface Props {
+  crumbs: readonly Crumb[];
+}
+
+const { crumbs } = Astro.props;
+const all: readonly Crumb[] = [{ name: 'Úvod', path: '/' }, ...crumbs];
+---
+<nav class="breadcrumb" aria-label="Drobečková navigace">
+  <ol>
+    {
+      all.map((crumb, i) =>
+        i === all.length - 1 ? (
+          <li aria-current="page">{crumb.name}</li>
+        ) : (
+          <li>
+            <a href={crumb.path}>{crumb.name}</a>
+          </li>
+        ),
+      )
+    }
+  </ol>
+</nav>
+
+<style>
+  .breadcrumb ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--font-size-small);
+    color: var(--color-text-muted);
+  }
+
+  .breadcrumb li:not(:last-child)::after {
+    content: '/';
+    margin-inline-start: var(--space-2);
+  }
+
+  .breadcrumb a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-min);
+  }
+</style>

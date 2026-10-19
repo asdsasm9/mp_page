@@ -8,6 +8,7 @@ import { ADMIN, goodEnv } from './test-support';
 let handlerCalls = 0;
 const guarded: Route = {
   methods: ['GET', 'POST'],
+  auth: false, // auth is covered in auth.test.ts; here only CORS matters
   handler: () => {
     handlerCalls++;
     return jsonResponse({ ok: true }, 200);

@@ -34,18 +34,22 @@ export function errorResponse(code: WorkerErrorCode, options: ErrorOptions = {})
   return jsonResponse(body, options.status ?? ERROR_STATUS[code], options.headers);
 }
 
-/** Make sure a response (e.g. from a handler) carries the base headers. */
+/**
+ * Return a response that carries the base headers. The input is never mutated (its headers may be
+ * immutable, e.g. a fetch() result or a proxied Response): a new Response shares the body stream.
+ */
 export function withBaseHeaders(res: Response): Response {
+  const headers = new Headers(res.headers);
   for (const [k, v] of Object.entries(BASE_HEADERS)) {
     if (k === 'vary') {
-      const cur = res.headers.get('vary');
-      if (!cur) res.headers.set('vary', v);
-      else if (!cur.split(',').some((p) => p.trim().toLowerCase() === 'origin')) res.headers.set('vary', `${cur}, ${v}`);
+      const cur = headers.get('vary');
+      if (!cur) headers.set('vary', v);
+      else if (!cur.split(',').some((p) => p.trim().toLowerCase() === 'origin')) headers.set('vary', `${cur}, ${v}`);
     } else {
-      res.headers.set(k, v);
+      headers.set(k, v);
     }
   }
-  return res;
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 
 export type BodyResult = { ok: true; value: unknown } | { ok: false; code: WorkerErrorCode };

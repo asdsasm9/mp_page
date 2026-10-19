@@ -1,3 +1,5 @@
+import { authenticate } from './auth';
+import { createSupabaseClient, type FetchFn, type SupabaseClient } from './supabase';
 import { applyCors, checkOrigin, deniedOriginResponse, preflightResponse } from './cors';
 import { parseEnv, type Config, type EnvOptions, type RawEnv } from './env';
 import { errorResponse, jsonResponse, withBaseHeaders } from './http';
@@ -5,11 +7,17 @@ import { errorResponse, jsonResponse, withBaseHeaders } from './http';
 export interface RouteContext {
   request: Request;
   config: Config;
+  /** Supabase client bound to the injected fetch and the anon key. */
+  supabase: SupabaseClient;
+  /** The caller's verified admin JWT; empty string on routes with `auth: false`. */
+  jwt: string;
 }
 
 export interface Route {
   /** Allowed methods (OPTIONS is handled by CORS and need not be listed). */
   methods: readonly string[];
+  /** Require an admin Bearer token (default true). Only /health opts out. */
+  auth?: boolean;
   handler: (ctx: RouteContext) => Response | Promise<Response>;
 }
 
@@ -17,9 +25,11 @@ export interface AppDeps {
   /** Extra routes by exact path; later work packages add theirs here. */
   routes?: Record<string, Route>;
   env?: EnvOptions;
+  /** Injected fetch for Supabase calls (default: global fetch). */
+  fetch?: FetchFn;
 }
 
-const healthRoute: Route = { methods: ['GET'], handler: () => jsonResponse({ ok: true }, 200) };
+const healthRoute: Route = { methods: ['GET'], auth: false, handler: () => jsonResponse({ ok: true }, 200) };
 
 /**
  * Request pipeline: env check, CORS (disallowed Origin 403, preflight 204 before auth), routing
@@ -51,9 +61,21 @@ export function createApp(deps: AppDeps = {}) {
       );
     }
 
+    const supabase = createSupabaseClient({
+      supabaseUrl: config.supabaseUrl,
+      anonKey: config.supabaseAnonKey,
+      fetch: deps.fetch ?? ((input, init) => fetch(input, init)),
+    });
+
     let response: Response;
     try {
-      response = await route.handler({ request, config });
+      let jwt = '';
+      if (route.auth !== false) {
+        const auth = await authenticate(request, supabase);
+        if (!auth.ok) return applyCors(withBaseHeaders(auth.response), origin);
+        jwt = auth.jwt;
+      }
+      response = await route.handler({ request, config, supabase, jwt });
     } catch {
       // No detail in the body or the log: errors may carry tokens or URLs.
       console.error('INTERNAL unhandled error in route handler');

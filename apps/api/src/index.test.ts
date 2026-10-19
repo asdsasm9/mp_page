@@ -7,6 +7,7 @@ import { ADMIN, goodEnv } from './test-support';
 
 const echoRoute: Route = {
   methods: ['POST'],
+  auth: false,
   handler: async ({ request }) => {
     const body = await readJsonBody(request, { maxBytes: 64 });
     if (!body.ok) return jsonResponse({ error: body.code }, body.code === 'PAYLOAD_TOO_LARGE' ? 413 : 400);
@@ -16,6 +17,7 @@ const echoRoute: Route = {
 
 const boomRoute: Route = {
   methods: ['GET'],
+  auth: false,
   handler: () => {
     throw new Error('secret-token-xyz at https://leak.example');
   },

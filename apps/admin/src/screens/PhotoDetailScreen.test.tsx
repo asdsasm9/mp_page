@@ -131,23 +131,25 @@ describe('photo detail', () => {
     expect(previous.disabled).toBe(true);
     expect(next.disabled).toBe(false);
     await user.click(next);
-    expect(screen.getByTestId('where').textContent).toBe(`/alba/${album.id}/foto/${rows[1]!.id}`);
+    await waitFor(() => expect(screen.getByTestId('where').textContent).toBe(`/alba/${album.id}/foto/${rows[1]!.id}`));
     await screen.findByRole('heading', { level: 1, name: `Fotka 2 z ${rows.length}` });
-    expect(previous.disabled).toBe(false);
-    expect((screen.getByLabelText('Alternativní text') as HTMLTextAreaElement).value).toBe(rows[1]!.alt ?? '');
+    await waitFor(() => expect(previous.disabled).toBe(false));
+    await waitFor(() =>
+      expect((screen.getByLabelText('Alternativní text') as HTMLTextAreaElement).value).toBe(rows[1]!.alt ?? ''),
+    );
     await user.click(previous);
     await screen.findByRole('heading', { level: 1, name: `Fotka 1 z ${rows.length}` });
     // Went back to the start: the focused "Předchozí" is now disabled, focus is on "Další".
-    expect(previous.disabled).toBe(true);
-    expect(document.activeElement).toBe(next);
+    await waitFor(() => expect(previous.disabled).toBe(true));
+    await waitFor(() => expect(document.activeElement).toBe(next));
 
     cleanup();
     await open(world, album, rows.at(-2)!, rows.length - 1, rows.length);
     const next2 = screen.getByRole('button', { name: 'Další' }) as HTMLButtonElement;
     await user.click(next2);
     await screen.findByRole('heading', { level: 1, name: `Fotka ${rows.length} z ${rows.length}` });
-    expect(next2.disabled).toBe(true);
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Předchozí' }));
+    await waitFor(() => expect(next2.disabled).toBe(true));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Předchozí' })));
   });
 
   it('saves an edited draft before Další / Předchozí navigates', async () => {

@@ -4,9 +4,20 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   CHECKS,
+  FAKE_WORLD_MARKER,
   QUOTA_GUARD_FILE,
   QUOTA_GUARD_TITLES,
   WRANGLER_TOML,
+  checkAdminDistExternalHosts,
+  checkAdminDistNoFakeMarker,
+  checkAdminDistNoKeyStrings,
+  checkAdminNoHtmlInjection,
+  checkAdminNoLimitLiterals,
+  checkAdminNoPhotoWrites,
+  checkAdminNoR2Hosts,
+  checkAdminNoServiceKey,
+  checkAdminNoSignUp,
+  envUrlHosts,
   checkApiHygiene,
   checkQuotaGuardTests,
   checkEnvExampleSane,
@@ -181,6 +192,72 @@ describe('api-hygiene', () => {
     const line = 'console.log(request.headers.get("authorization"))';
     expect(status(checkApiHygiene([toml(good), f('apps/api/src/a.ts', line)]))).toBe('FAIL');
     expect(status(checkApiHygiene([toml(good), f('apps/api/src/a.test.ts', line)]))).toBe('PASS');
+  });
+});
+
+describe('admin source rules (WP5-30)', () => {
+  const src = (text, path = 'apps/admin/src/a.ts') => [f(path, text)];
+  const cases = [
+    ['admin-no-service-key', checkAdminNoServiceKey, `const k = '${fakeRole}'`, 'const k = 1'],
+    ['admin-no-service-key (name)', checkAdminNoServiceKey, 'const SERVICE_KEY = 1', 'const key = 1'],
+    ['admin-no-signup', checkAdminNoSignUp, 'await auth.signUp({ email })', 'await auth.signIn()'],
+    ['admin-no-html-inject (React)', checkAdminNoHtmlInjection, '<div dangerouslySetInnerHTML={{ __html: x }} />', '<div>{x}</div>'],
+    ['admin-no-html-inject (innerHTML)', checkAdminNoHtmlInjection, 'el.innerHTML = x', 'el.textContent = x'],
+    ['admin-no-html-inject (insertAdjacentHTML)', checkAdminNoHtmlInjection, "el.insertAdjacentHTML('beforeend', x)", 'el.append(x)'],
+    ['admin-no-photo-writes (insert)', checkAdminNoPhotoWrites, "rest.insert('photos', row)", "rest.insert('albums', row)"],
+    ['admin-no-photo-writes (remove generic)', checkAdminNoPhotoWrites, "rest.remove<Row>('photos', q)", "rest.select('photos', q)"],
+    ['admin-no-photo-writes (from)', checkAdminNoPhotoWrites, "sb.from('photos').delete().eq('id', 1)", "sb.from('photos').select('*')"],
+    ['admin-no-r2-hosts', checkAdminNoR2Hosts, "fetch('https://acc.r2.cloudflarestorage.com/x')", "fetch(presignedUrl)"],
+    ['admin-no-r2-hosts (r2.dev)', checkAdminNoR2Hosts, "const u = 'https://pub-1.r2.dev/x'", 'const u = base'],
+    ['admin-no-limit-literals (hard)', checkAdminNoLimitLiterals, 'const HARD = 10_000_000_000', 'const HARD = config.hard'],
+    ['admin-no-limit-literals (warn)', checkAdminNoLimitLiterals, 'const W = 8000000000', 'const W = 80'],
+    ['admin-no-limit-literals (upload)', checkAdminNoLimitLiterals, 'const M = 12_000_000', 'const M = 112_000_000'],
+  ];
+  for (const [name, check, bad, good] of cases) {
+    it(`${name}: fails on a violating fixture, passes a clean one`, () => {
+      expect(status(check(src(bad)))).toBe('FAIL');
+      expect(status(check(src(good)))).toBe('PASS');
+    });
+  }
+  it('ignores tests and files outside apps/admin/src', () => {
+    expect(status(checkAdminNoHtmlInjection(src('el.innerHTML = x', 'apps/admin/src/a.test.ts')))).toBe('PASS');
+    expect(status(checkAdminNoHtmlInjection(src('el.innerHTML = x', 'apps/web/src/a.ts')))).toBe('PASS');
+  });
+  it('the real catalog-style reads of photos are allowed', () => {
+    expect(status(checkAdminNoPhotoWrites(src("rest.select<PhotoRow>('photos', q); update<PhotoRow>('photos', id, p)")))).toBe('PASS');
+  });
+});
+
+describe('admin dist rules (WP5-30)', () => {
+  const dist = (text, path = 'apps/admin/dist/assets/a.js') => [f(path, text)];
+  it('SKIP when no admin build exists', () => {
+    for (const c of [checkAdminDistNoFakeMarker, checkAdminDistNoKeyStrings, checkAdminDistExternalHosts]) {
+      expect(status(c([]))).toBe('SKIP');
+      expect(status(c([f('apps/web/dist/a.js', FAKE_WORLD_MARKER)]))).toBe('SKIP');
+    }
+  });
+  it('fake marker fails in either production dist, clean passes', () => {
+    expect(status(checkAdminDistNoFakeMarker(dist(`x="${FAKE_WORLD_MARKER}"`)))).toBe('FAIL');
+    expect(status(checkAdminDistNoFakeMarker(dist(`x="${FAKE_WORLD_MARKER}"`, '.tmp/admin-prod/site/assets/a.js')))).toBe('FAIL');
+    expect(status(checkAdminDistNoFakeMarker(dist('x=1')))).toBe('PASS');
+  });
+  it('key-shaped strings fail', () => {
+    expect(status(checkAdminDistNoKeyStrings(dist(`k="${fakeJwt}"`)))).toBe('FAIL');
+    expect(status(checkAdminDistNoKeyStrings(dist(`k="${['sk', 'live', 'a1B2c3D4e5F6g7H8i9'].join('_')}"`)))).toBe('FAIL');
+    expect(status(checkAdminDistNoKeyStrings(dist(`k="${fakeRole}"`)))).toBe('FAIL');
+    expect(status(checkAdminDistNoKeyStrings(dist(`apiSecret="${'aB3'.repeat(12)}"`)))).toBe('FAIL');
+    expect(status(checkAdminDistNoKeyStrings(dist('k="mock-anon-key"')))).toBe('PASS');
+  });
+  it('external hosts: libraries and env hosts pass, others fail', () => {
+    const env = ['abc.supabase.co'];
+    expect(status(checkAdminDistExternalHosts(dist('"https://github.com/x http://www.w3.org/2000/svg"'), env))).toBe('PASS');
+    expect(status(checkAdminDistExternalHosts(dist('"https://abc.supabase.co/rest/v1"'), env))).toBe('PASS');
+    expect(status(checkAdminDistExternalHosts(dist('"https://evil.example/x"'), env))).toBe('FAIL');
+    expect(status(checkAdminDistExternalHosts(dist('"https://abc.supabase.co.evil.example/x"'), env))).toBe('FAIL');
+    expect(status(checkAdminDistExternalHosts(dist('"https://abc.supabase.co/rest/v1"'), []))).toBe('FAIL');
+  });
+  it('envUrlHosts reads VITE_*_URL and *_ORIGIN hosts only', () => {
+    expect(envUrlHosts({ VITE_API_BASE_URL: 'https://api.x.test/a', VITE_R2_UPLOAD_ORIGIN: 'https://r2.x.test', VITE_OTHER: 'https://no.test', A_URL: 'https://no2.test' })).toEqual(['api.x.test', 'r2.x.test']);
   });
 });
 

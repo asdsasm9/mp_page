@@ -238,6 +238,105 @@ export function checkApiHygiene(files) {
   return result(bad);
 }
 
+// ---------------------------------------------------------------------------------------------- admin security (WP5-30)
+// Source rules scan apps/admin/src (tests excluded). The admin runs in the photographer's browser with the anon key
+// and her JWT only: no service key, no sign-up, no HTML injection, no direct writes to `photos` (the Worker does
+// those), no R2 hosts (uploads use presigned URLs from the Worker), no hard-coded limits (they come from app_config).
+// apps/admin/src/a11y/ is test support (axe audit helpers), never imported by the app.
+const isAdminSrc = (p) =>
+  p.startsWith('apps/admin/src/') && /\.(ts|tsx)$/.test(p) && !/\.test\.tsx?$/.test(p) && !p.startsWith('apps/admin/src/a11y/');
+const adminSource = (files) => files.filter((f) => isAdminSrc(f.path));
+const adminRule = (patterns, passMsg) => (files) => {
+  const src = adminSource(files);
+  return result(findMatches(src, () => false, patterns), `${src.length} admin sources clean${passMsg ? `, ${passMsg}` : ''}`);
+};
+const Q = `['"\`]`;
+
+export const checkAdminNoServiceKey = adminRule([
+  ['service_role', /service[_-]?role/i],
+  ['service key name', /service[_-]?key/i],
+]);
+export const checkAdminNoSignUp = adminRule([
+  ['signUp', /\bsign_?up\s*\(/i],
+  ['auth signup endpoint', /auth\/v1\/signup/i],
+  ['admin user creation', /auth\.admin|createUser\s*\(/],
+]);
+export const checkAdminNoHtmlInjection = adminRule([
+  ['dangerouslySetInnerHTML', /dangerouslySetInnerHTML/],
+  ['innerHTML/outerHTML', /\b(inner|outer)HTML\b/],
+  ['insertAdjacentHTML', /insertAdjacentHTML/],
+  ['document.write', /document\.write(ln)?\s*\(/],
+  ['eval / Function', /\beval\s*\(|new\s+Function\s*\(/],
+]);
+export const checkAdminNoPhotoWrites = adminRule([
+  ['photos insert/delete via rest helper', new RegExp(`\\b(insert|remove|delete|upsert)\\s*(<[^>(]*>)?\\(\\s*${Q}photos${Q}`)],
+  ['photos insert/delete via from()', new RegExp(`from\\(\\s*${Q}photos${Q}\\s*\\)\\s*\\.\\s*(insert|delete|upsert)`)],
+  ['photos via REST path', /rest\/v1\/photos/],
+]);
+export const checkAdminNoR2Hosts = adminRule([
+  ['r2.cloudflarestorage.com', /r2\.cloudflarestorage\.com/i],
+  ['r2.dev', /\.r2\.dev\b/i],
+  ['R2 SDK', /aws4fetch|@aws-sdk|R2Bucket/],
+]);
+export const checkAdminNoLimitLiterals = adminRule([
+  ['hard quota 10 GB', /(?<![\d_.,])10[_,]?000[_,]?000[_,]?000(?![\d_])/],
+  ['warn quota 8 GB', /(?<![\d_.,])8[_,]?000[_,]?000[_,]?000(?![\d_])/],
+  ['max upload 12 MB', /(?<![\d_.,])12[_,]?000[_,]?000(?![\d_])/],
+]);
+
+// Dist rules scan the production builds of the admin that exist on disk (apps/admin/dist and the gitignored
+// .tmp/admin-prod/site of admin-prod-check). The fake build in .tmp/admin-check is meant to contain the marker and
+// is never scanned. No build on disk: SKIP (a build is not made here, the gate stays fast).
+export const ADMIN_DIST_ROOTS = ['apps/admin/dist/', '.tmp/admin-prod/site/'];
+export const FAKE_WORLD_MARKER = 'MP_ADMIN_FAKE_WORLD_7f3a9c';
+const adminDistRule = (patterns) => (distFiles) => {
+  const dist = (distFiles ?? []).filter((f) => ADMIN_DIST_ROOTS.some((r) => f.path.startsWith(r)));
+  if (dist.length === 0) return { status: 'SKIP', details: 'no admin build on disk (npm run build -w apps/admin or npm run admin-prod-check)' };
+  return result(findMatches(dist, () => false, patterns), `${dist.length} built files clean`);
+};
+export const checkAdminDistNoFakeMarker = adminDistRule([
+  ['fake world marker', new RegExp(FAKE_WORLD_MARKER)],
+  ['fake world marker name', /MP_ADMIN_FAKE_WORLD/],
+]);
+export const checkAdminDistNoKeyStrings = adminDistRule([
+  ['JWT', /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/],
+  ['sk_ key', /\bsk_(live_|test_)?[A-Za-z0-9]{16,}/],
+  ['AWS access key id', /\b(AKIA|ASIA)[0-9A-Z]{16}\b/],
+  ['private key block', /-----BEGIN [A-Z ]*PRIVATE KEY/],
+  ['service_role', /service_role/i],
+  ['secret-named long value', /(secret|password|token)[\w"' ]{0,20}[:=]\s*["'][A-Za-z0-9+/_-]{32,}["']/i],
+]);
+
+// Hosts that libraries only mention in comments, error messages or XML namespaces (not requested by the app).
+export const LIBRARY_HOSTS = ['github.com', 'reactjs.org', 'reactrouter.com', 'json-schema.org', 'w3.org', 'localhost', '127.0.0.1'];
+const hostOf = (v) => {
+  try {
+    return new URL(v).hostname;
+  } catch {
+    return null;
+  }
+};
+export function checkAdminDistExternalHosts(distFiles, envHosts = envUrlHosts()) {
+  const dist = (distFiles ?? []).filter((f) => ADMIN_DIST_ROOTS.some((r) => f.path.startsWith(r)));
+  if (dist.length === 0) return { status: 'SKIP', details: 'no admin build on disk' };
+  const allowed = [...LIBRARY_HOSTS, ...envHosts];
+  const bad = new Set();
+  for (const f of dist) {
+    for (const m of f.text.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)) {
+      const h = m[1].toLowerCase().replace(/\.$/, '');
+      if (!allowed.some((a) => h === a || h.endsWith(`.${a}`))) bad.add(`${f.path} (${h})`);
+    }
+  }
+  return result([...bad], `${dist.length} built files, hosts limited to libraries and env`);
+}
+/** Hosts of the VITE_*_URL / *_ORIGIN values in the environment (what a build may legitimately embed). */
+export function envUrlHosts(env = process.env) {
+  return Object.entries(env)
+    .filter(([k, v]) => /^VITE_.*(URL|ORIGIN)$/.test(k) && v)
+    .map(([, v]) => hostOf(v))
+    .filter(Boolean);
+}
+
 const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
 
 export const CHECKS = [
@@ -254,13 +353,30 @@ export const CHECKS = [
   { name: 'budget', input: 'site', run: checkBudget },
   { name: 'quota-guard-tests', input: 'files', run: checkQuotaGuardTests },
   { name: 'api-hygiene', input: 'files', run: checkApiHygiene },
+  { name: 'admin-no-service-key', input: 'files', run: checkAdminNoServiceKey },
+  { name: 'admin-no-signup', input: 'files', run: checkAdminNoSignUp },
+  { name: 'admin-no-html-inject', input: 'files', run: checkAdminNoHtmlInjection },
+  { name: 'admin-no-photo-writes', input: 'files', run: checkAdminNoPhotoWrites },
+  { name: 'admin-no-r2-hosts', input: 'files', run: checkAdminNoR2Hosts },
+  { name: 'admin-no-limit-literals', input: 'files', run: checkAdminNoLimitLiterals },
+  { name: 'admin-dist-no-fake', input: 'admindist', run: checkAdminDistNoFakeMarker },
+  { name: 'admin-dist-no-keys', input: 'admindist', run: checkAdminDistNoKeyStrings },
+  { name: 'admin-dist-hosts', input: 'admindist', run: (d) => checkAdminDistExternalHosts(d) },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
 ];
 
 export function runChecks(inputs, { strict = false, checks = CHECKS } = {}) {
   const rows = checks.map((c) => ({
     name: c.name,
-    ...c.run(c.input === 'dist' ? inputs.dist : c.input === 'site' ? (inputs.site ?? null) : inputs.files),
+    ...c.run(
+      c.input === 'dist'
+        ? inputs.dist
+        : c.input === 'admindist'
+          ? (inputs.admindist ?? [])
+          : c.input === 'site'
+            ? (inputs.site ?? null)
+            : inputs.files,
+    ),
   }));
   const failed = rows.some((r) => r.status === 'FAIL' || (strict && r.status === 'PENDING'));
   return { rows, exitCode: failed ? 1 : 0 };
@@ -318,7 +434,12 @@ export function collect(root) {
   for (const app of walk(join(root, 'apps'), root).filter((p) => /\/dist\/.*\.html$/.test(p))) {
     distPaths.push(app);
   }
-  return { files, dist: loadFiles(root, distPaths), site: loadSite(join(root, 'apps', 'web', 'dist')) };
+  const admindist = [];
+  for (const r of ADMIN_DIST_ROOTS) {
+    const base = join(root, r);
+    admindist.push(...loadFiles(root, walk(base).filter((p) => /\.(js|css|html)$/.test(p)).map((p) => r + p)));
+  }
+  return { files, dist: loadFiles(root, distPaths), admindist, site: loadSite(join(root, 'apps', 'web', 'dist')) };
 }
 
 export function main(argv = process.argv.slice(2)) {

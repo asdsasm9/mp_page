@@ -461,6 +461,7 @@
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
   }
 
   .storage-large[data-level='warn'] {
@@ -883,6 +884,7 @@
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
   }
 
   .panel > .form {
@@ -1317,6 +1319,7 @@
 @layer components {
   .publish-card {
     max-inline-size: 32rem;
+    box-shadow: var(--shadow-sm);
   }
 
   .publish-card > * + * {
@@ -1367,6 +1370,22 @@
     text-align: start;
   }
 
+  .data-table thead th {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-small);
+    font-weight: 600;
+  }
+
+  .data-table tbody tr:hover {
+    background: var(--color-surface);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .data-table tbody tr {
+      transition: background-color var(--motion-fast) var(--motion-ease);
+    }
+  }
+
   .data-table .num {
     text-align: end;
   }
@@ -1401,6 +1420,7 @@
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
     justify-items: start;
   }
 

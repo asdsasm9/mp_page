@@ -38,6 +38,30 @@ describe('design pass: type hierarchy and rhythm', () => {
   });
 });
 
+describe('design pass: surfaces and tables', () => {
+  const ruleOf = (selector: string) => {
+    const esc = selector.replace(/[.[\]()'=>:]/g, '\\$&');
+    return [...css.matchAll(new RegExp(`\\n  ${esc} \\{[^}]*\\}`, 'g'))].map((m) => m[0]).join('\n');
+  };
+
+  it.each(['.panel', '.storage-large', '.finding', '.publish-card'])('%s has the row shadow', (sel) => {
+    expect(ruleOf(sel)).toContain('box-shadow: var(--shadow-sm)');
+  });
+
+  it('quiets the table header and highlights hovered body rows', () => {
+    const head = ruleOf('.data-table thead th');
+    expect(head).toContain('color: var(--color-text-muted)');
+    expect(head).toContain('font-size: var(--font-size-small)');
+    expect(ruleOf('.data-table tbody tr:hover')).toContain('background: var(--color-surface)');
+  });
+
+  it('transitions the row hover only inside the no-preference block', () => {
+    const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.data-table tbody tr \{[^}]*\}/)?.[0] ?? '';
+    expect(block).toContain('transition: background-color');
+    expect(css.match(/\.data-table tbody tr \{[^}]*transition/g)?.length).toBe(1);
+  });
+});
+
 describe('design pass: existing finding guards remain', () => {
   it('keeps the 44 px target rule for stand-alone links and list titles', () => {
     const rule = css.match(/\.row-title,[^{]*\{[^}]*\}/)?.[0] ?? '';

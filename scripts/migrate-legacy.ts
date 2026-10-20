@@ -6,9 +6,18 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { parseArgs, USAGE } from './migrate-legacy/args';
 import { formatReport, planMigration, PlanError, writeReport, type PlanDeps } from './migrate-legacy/planner';
 import { SourcePathError } from './migrate-legacy/sources';
-import { UsageError } from './migrate-legacy/types';
+import { UsageError, type MigrateOptions } from './migrate-legacy/types';
+import { BackendError, type MigrationBackend } from './migrate-legacy/backend';
+import { createHttpBackend, type FetchLike } from './migrate-legacy/http-backend';
+import { checkLive, LiveGuardError, type Env } from './migrate-legacy/live-guard';
 
 export interface MainDeps {
+  /** Environment for the live guards. Default: process.env. */
+  env?: Env;
+  /** Injected HTTP layer for the live backend (tests). */
+  fetch?: FetchLike;
+  /** Replaces the HttpBackend entirely (tests). */
+  backend?: MigrationBackend;
   plan?: PlanDeps;
   /** Where migration-report/ goes. Default: <repo>/migration-report. */
   reportDir?: string;
@@ -16,6 +25,50 @@ export interface MainDeps {
 }
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+/** Live mode: guards first (exit 2, no request), then sign-in. Upload steps follow in T-155..T-157. */
+async function runLive(
+  options: MigrateOptions,
+  out: (line: string) => void,
+  err: (line: string) => void,
+  deps: MainDeps,
+): Promise<number> {
+  let config;
+  try {
+    config = checkLive(options, deps.env ?? process.env);
+  } catch (e) {
+    if (e instanceof LiveGuardError) {
+      err(`migrate-legacy: ${e.message}`);
+      return 2;
+    }
+    throw e;
+  }
+  const backend =
+    deps.backend ??
+    createHttpBackend({
+      supabaseUrl: config.supabaseUrl,
+      anonKey: config.anonKey,
+      apiBaseUrl: config.apiBaseUrl,
+      ...(config.publicImgBaseUrl === undefined ? {} : { publicImgBaseUrl: config.publicImgBaseUrl }),
+      credentials: config.credentials,
+      ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
+    });
+  try {
+    await backend.signIn();
+  } catch (e) {
+    // Fails closed: nothing has been written. Only the code is printed.
+    const code = e instanceof BackendError ? e.code : 'UNKNOWN';
+    err(
+      code === 'NOT_ADMIN'
+        ? 'migrate-legacy: the signed-in account is not an admin (NOT_ADMIN). Nothing was written.'
+        : `migrate-legacy: sign-in failed (${code}). Nothing was written.`,
+    );
+    return 1;
+  }
+  out(`signed in as admin for project ${config.projectLabel}`);
+  err('migrate-legacy: --live upload is not implemented yet. Nothing was written.');
+  return 1;
+}
 
 /** Returns the process exit code. */
 export async function main(
@@ -38,10 +91,7 @@ export async function main(
     out(USAGE);
     return 0;
   }
-  if (options.live) {
-    err('migrate-legacy: --live is not implemented yet. Run without --live for the dry-run.');
-    return 2;
-  }
+  if (options.live) return runLive(options, out, err, deps);
   try {
     const plan = await planMigration(options, { publicImgBaseUrl: process.env.PUBLIC_IMG_BASE_URL, ...deps.plan });
     for (const line of formatReport(plan, options)) out(line);

@@ -7,6 +7,7 @@ import type { MigrationBackend } from './backend';
 import { syncCatalog } from './catalog';
 import { coversComplete, formatCovers, syncCovers } from './cover';
 import { createFakeBackend, type FakeBackend } from './fake-backend';
+import { tempReportDir } from './report-dir.helper';
 import { preflight, uploadPhotos, type UploadDeps } from './upload';
 
 let tiny: Buffer;
@@ -96,7 +97,7 @@ describe('full live run, 141 photos', () => {
   it('sets all 13 covers per the table, orders are 1..n, the report shows both, a rerun changes nothing', async () => {
     const b = createFakeBackend();
     const out: string[] = [];
-    const run = () => main(['--live', '--confirm-project', 'abcdefgh'], (l) => out.push(l), () => {}, { env, backend: b, upload: deps() });
+    const run = () => main(['--live', '--confirm-project', 'abcdefgh'], (l) => out.push(l), () => {}, { env, backend: b, upload: deps(), reportDir: tempReportDir() });
     expect(await run()).toBe(0);
     expect(b.photos()).toHaveLength(141);
     const covers = new Map(b.albums().map((a) => [a.legacy_id, b.photos().find((p) => p.id === a.cover_photo_id)?.legacy_key] as const));

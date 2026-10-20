@@ -7,6 +7,7 @@ import { BackendError, type MigrationBackend } from './backend';
 import { syncCatalog } from './catalog';
 import { createFakeBackend, type FakeBackend } from './fake-backend';
 import { formatUpload, preflight, uploadComplete, uploadPhotos, type Preflight, type UploadDeps } from './upload';
+import { tempReportDir } from './report-dir.helper';
 import type { MigrateOptions } from './types';
 
 let tiny: Buffer;
@@ -172,7 +173,7 @@ describe('preflight', () => {
     const out: string[] = [];
     const err: string[] = [];
     const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ADMIN_EMAIL: 'a@example.test', MIGRATE_ADMIN_PASSWORD: 'pw' };
-    const code = await main(['--live', '--confirm-project', 'abcdefgh', '--album', 'frankovi'], (l) => out.push(l), (l) => err.push(l), { env, backend: b, upload: deps() });
+    const code = await main(['--live', '--confirm-project', 'abcdefgh', '--album', 'frankovi'], (l) => out.push(l), (l) => err.push(l), { env, backend: b, upload: deps(), reportDir: tempReportDir() });
     expect(code).toBe(1);
     expect(err.join('\n')).toContain('refused, nothing was written');
     expect(b.calls.filter((c) => WRITES.includes(c))).toEqual([]);
@@ -187,7 +188,7 @@ describe('preflight', () => {
     expect(pre.warn).toBe(true);
     const out: string[] = [];
     const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ADMIN_EMAIL: 'a@example.test', MIGRATE_ADMIN_PASSWORD: 'pw' };
-    const code = await main(['--live', '--confirm-project', 'abcdefgh', '--album', 'frankovi'], (l) => out.push(l), () => {}, { env, backend: b, upload: deps() });
+    const code = await main(['--live', '--confirm-project', 'abcdefgh', '--album', 'frankovi'], (l) => out.push(l), () => {}, { env, backend: b, upload: deps(), reportDir: tempReportDir() });
     expect(code).toBe(0);
     expect(out.join('\n')).toContain('WARNING: this run crosses the storage warn level');
   });

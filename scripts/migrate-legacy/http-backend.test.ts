@@ -4,6 +4,7 @@ import { main } from '../migrate-legacy';
 import { BackendError } from './backend';
 import { createHttpBackend, type Credentials, type FetchLike } from './http-backend';
 import { checkLive, LiveGuardError } from './live-guard';
+import { tempReportDir } from './report-dir.helper';
 
 const SENTINEL_PASSWORD = 'SENTINEL-pw-7f3a9c-do-not-print';
 const SENTINEL_TOKEN = 'SENTINEL.jwt.token-91b2';
@@ -248,7 +249,7 @@ describe('migrate-legacy --live entry', () => {
   const run = async (argv: string[], env: Record<string, string | undefined>, fetch: FetchLike) => {
     const out: string[] = [];
     const err: string[] = [];
-    const code = await main(argv, (l) => out.push(l), (l) => err.push(l), { env, fetch });
+    const code = await main(argv, (l) => out.push(l), (l) => err.push(l), { env, fetch, reportDir: tempReportDir() });
     return { code, text: `${out.join('\n')}\n${err.join('\n')}` };
   };
   const live = ['--live', '--confirm-project', PROJECT];

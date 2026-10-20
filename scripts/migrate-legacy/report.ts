@@ -3,6 +3,7 @@
 // (error labels) is scrubbed of URLs and e-mail-shaped strings before it is written.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Drift } from './catalog';
 import type { CoverReport } from './cover';
 import type { UploadReport } from './upload';
 
@@ -28,16 +29,55 @@ export interface LiveReport {
   albums: LiveAlbumReport[];
   totals: { found: number; inserted: number; skipped: number; missing: number; repaired: number; failed: number; bytes: number };
   quota: { before: number; after: number | null };
+  /** Catalog drift: existing rows that differ from CONTENT-MAPPING (reported, never overwritten). */
+  drift: Drift[];
   aborted: string | null;
   result: 'OK' | 'INCOMPLETE';
 }
 
-const scrub = (s: string): string =>
-  s
+/** Removes URLs, e-mail-shaped strings, bearer tokens and any of the given secret values from free text. */
+export const scrub = (s: string, secrets: readonly string[] = []): string => {
+  let t = s;
+  for (const secret of secrets) if (secret.length > 0) t = t.split(secret).join('[redacted]');
+  return t
     .replace(/[a-z][a-z0-9+.-]*:\/\/\S+/gi, '[url]')
-    .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[email]');
+    .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[email]')
+    .replace(/\bbearer\s+\S+/gi, 'Bearer [redacted]');
+};
 
-export function buildLiveReport(upload: UploadReport, covers: CoverReport, alt: 'null' | 'default', ok: boolean): LiveReport {
+/** Report for a run whose upload/cover phase threw an unexpected exception: no photo numbers, RESULT: INCOMPLETE. */
+export function buildFailedLiveReport(
+  alt: 'null' | 'default',
+  quotaBefore: number,
+  drift: Drift[],
+  label: string,
+  secrets: readonly string[] = [],
+): LiveReport {
+  return {
+    mode: 'live',
+    alt,
+    albums: [],
+    totals: { found: 0, inserted: 0, skipped: 0, missing: 0, repaired: 0, failed: 0, bytes: 0 },
+    quota: { before: quotaBefore, after: null },
+    drift: drift.map(scrubDrift),
+    aborted: `upload phase failed: ${scrub(label, secrets)}`,
+    result: 'INCOMPLETE',
+  };
+}
+
+const scrubDrift = (d: Drift): Drift => ({
+  ...d,
+  expected: typeof d.expected === 'string' ? scrub(d.expected) : d.expected,
+  actual: typeof d.actual === 'string' ? scrub(d.actual) : d.actual,
+});
+
+export function buildLiveReport(
+  upload: UploadReport,
+  covers: CoverReport,
+  alt: 'null' | 'default',
+  ok: boolean,
+  drift: Drift[] = [],
+): LiveReport {
   const coverById = new Map(covers.albums.map((c) => [c.id, c] as const));
   const albums = upload.albums.map((a): LiveAlbumReport => {
     const c = coverById.get(a.id);
@@ -54,7 +94,7 @@ export function buildLiveReport(upload: UploadReport, covers: CoverReport, alt: 
       coverId: c?.coverId ?? null,
       coverStatus: c?.status ?? null,
       orderOk: c?.orderOk ?? null,
-      errors: a.errors.map(scrub),
+      errors: a.errors.map((e) => scrub(e)),
     };
   });
   const sum = (f: (a: LiveAlbumReport) => number) => albums.reduce((s, a) => s + f(a), 0);
@@ -72,6 +112,7 @@ export function buildLiveReport(upload: UploadReport, covers: CoverReport, alt: 
       bytes: upload.bytes,
     },
     quota: { before: upload.quotaBefore, after: upload.quotaAfter },
+    drift: drift.map(scrubDrift),
     aborted: upload.aborted,
     result: ok ? 'OK' : 'INCOMPLETE',
   };
@@ -90,6 +131,8 @@ export function formatLiveReportMd(r: LiveReport): string {
   const t = r.totals;
   lines.push(`totals: found ${t.found}, inserted ${t.inserted}, skipped ${t.skipped}, missing ${t.missing}, repaired ${t.repaired}, failed ${t.failed}, bytes ${t.bytes}`);
   lines.push(`quota used before ${r.quota.before}, after ${r.quota.after ?? 'unknown'}`);
+  lines.push(`catalog drift: ${r.drift.length}`);
+  for (const d of r.drift) lines.push(`DRIFT ${d.kind} ${d.ref} ${d.field}: expected ${JSON.stringify(d.expected)}, found ${JSON.stringify(d.actual)} (left unchanged)`);
   if (r.aborted) lines.push(`ABORTED: ${r.aborted}`);
   for (const a of r.albums) for (const e of a.errors) lines.push(`ERROR ${a.id}: ${e}`);
   lines.push('', `RESULT: ${r.result}`, '');

@@ -1,5 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -7,6 +6,7 @@ import { parseArgs, USAGE } from './migrate-legacy/args';
 import { planMigration, PlanError } from './migrate-legacy/planner';
 import { GALLERIES_DIR } from './migrate-legacy/sources';
 import { main } from './migrate-legacy';
+import { tempReportDir } from './migrate-legacy/report-dir.helper';
 
 describe('migrate-legacy scaffold', () => {
   it('--help prints usage and exits 0', async () => {
@@ -54,7 +54,7 @@ describe('migrate-legacy dry-run', () => {
   it('plans 3/13/141, writes only migration-report/, makes no network call', async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
-    const dir = mkdtempSync(join(tmpdir(), 'mig-'));
+    const dir = tempReportDir('mig-');
     const r = await run([], join(dir, 'migration-report'), '2026-01-01T00:00:00Z');
     vi.unstubAllGlobals();
     expect(r.code).toBe(0);
@@ -68,7 +68,7 @@ describe('migrate-legacy dry-run', () => {
   }, 30_000);
 
   it('writes 141 redirect lines in CONTENT-MAPPING 7.3 format', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'mig-'));
+    const dir = tempReportDir('mig-');
     await run([], dir, '2026-01-01T00:00:00Z');
     const lines = readFileSync(join(dir, 'legacy-image-redirects.txt'), 'utf8').trimEnd().split('\n');
     expect(lines).toHaveLength(141);
@@ -78,8 +78,8 @@ describe('migrate-legacy dry-run', () => {
   }, 30_000);
 
   it('is byte-identical across two dry-runs', async () => {
-    const dirA = mkdtempSync(join(tmpdir(), 'mig-'));
-    const dirB = mkdtempSync(join(tmpdir(), 'mig-'));
+    const dirA = tempReportDir('mig-');
+    const dirB = tempReportDir('mig-');
     const a = await run(['--album', 'sedlakovi'], dirA, '2026-01-01T00:00:00Z');
     const b = await run(['--album', 'sedlakovi'], dirB, '2026-06-01T00:00:00Z');
     expect(b.text).toBe(a.text);
@@ -88,14 +88,14 @@ describe('migrate-legacy dry-run', () => {
   }, 30_000);
 
   it('--album limits the plan', async () => {
-    const r = await run(['--album', 'lucka_filip'], mkdtempSync(join(tmpdir(), 'mig-')), '2026-01-01T00:00:00Z');
+    const r = await run(['--album', 'lucka_filip'], tempReportDir('mig-'), '2026-01-01T00:00:00Z');
     expect(r.text).toContain('albums 1, photos 5');
     expect(r.code).toBe(0);
   });
 
   it('a missing source file fails the planner and writes nothing', async () => {
     await expect(planMigration({ album: null, limitBytes: null }, { exists: (p) => !p.endsWith('/lucka_filip/3.jpg'), read: async () => jpeg })).rejects.toThrow(PlanError);
-    const dir = mkdtempSync(join(tmpdir(), 'mig-'));
+    const dir = tempReportDir('mig-');
     const errs: string[] = [];
     const code = await main([], () => {}, (l) => errs.push(l), { plan: { exists: () => false }, reportDir: join(dir, 'r') });
     expect(code).toBe(1);
@@ -104,7 +104,7 @@ describe('migrate-legacy dry-run', () => {
   });
 
   it('an undecodable file makes the result INCOMPLETE with exit 1', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'mig-'));
+    const dir = tempReportDir('mig-');
     const lines: string[] = [];
     const code = await main(['--album', 'lucka_filip'], (l) => lines.push(l), () => {}, {
       plan: { exists: () => true, read: async () => Buffer.from('not an image') },
@@ -118,7 +118,7 @@ describe('migrate-legacy dry-run', () => {
   it.skipIf(!existsSync(join(GALLERIES_DIR, 'couples', 'lucka_filip', '1.jpg')))('plans two real albums with real encoded sizes', async () => {
     for (const album of ['lucka_filip', 'pati2']) {
       const lines: string[] = [];
-      const code = await main(['--album', album], (l) => lines.push(l), () => {}, { reportDir: mkdtempSync(join(tmpdir(), 'mig-')) });
+      const code = await main(['--album', album], (l) => lines.push(l), () => {}, { reportDir: tempReportDir('mig-') });
       expect(code).toBe(0);
       expect(lines.join('\n')).toMatch(/planned R2 bytes [1-9]\d+/);
     }
@@ -126,6 +126,6 @@ describe('migrate-legacy dry-run', () => {
 
   it('--live is not accepted by the dry-run path', async () => {
     const errs: string[] = [];
-    expect(await main(['--live'], () => {}, (l) => errs.push(l))).toBe(2);
+    expect(await main(['--live'], () => {}, (l) => errs.push(l), { reportDir: tempReportDir('mig-') })).toBe(2);
   });
 });

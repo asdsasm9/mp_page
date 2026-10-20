@@ -64,7 +64,10 @@ fails closed (`NOT_ADMIN`) before any write. Use your own second admin account, 
 3. **Full run.** `npm run migrate-legacy -- --live --confirm-project <ref>`. Albums already done are skipped.
    Roughly 154 MB goes to R2 and 141 rows to the database, 0 EUR. The run stops at the first `STORAGE_FULL` or
    `FILE_TOO_LARGE`. It ends with `RESULT: OK` (exit 0) or `RESULT: INCOMPLETE` (exit 1; read the report, fix, re-run;
-   crash-resume and skipping of finished photos are automatic).
+   crash-resume and skipping of finished photos are automatic). Each live run writes `migration-report/<timestamp>.json`
+   and `.md`, with a `drift` list (existing catalog rows that differ from the mapping; left unchanged). If the upload or
+   cover phase fails unexpectedly, the files are still written with `RESULT: INCOMPLETE` and a scrubbed error label (no
+   URLs, e-mail addresses or credentials).
 4. **Second run for evidence.** Run step 3 again: inserted 0, skipped 141, no duplicates.
 
 ## Verification checklist (after the full run)

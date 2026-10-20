@@ -12,7 +12,7 @@ import { createHttpBackend, type FetchLike } from './migrate-legacy/http-backend
 import { formatCatalog, syncCatalog } from './migrate-legacy/catalog';
 import { formatUpload, preflight, uploadComplete, uploadPhotos, type UploadDeps } from './migrate-legacy/upload';
 import { coversComplete, formatCovers, syncCovers } from './migrate-legacy/cover';
-import { buildLiveReport, writeLiveReport } from './migrate-legacy/report';
+import { buildFailedLiveReport, buildLiveReport, writeLiveReport } from './migrate-legacy/report';
 import { checkLive, LiveGuardError, type Env } from './migrate-legacy/live-guard';
 
 export interface MainDeps {
@@ -95,6 +95,8 @@ async function runLive(
     err(`migrate-legacy: catalog phase failed (${code}).`);
     return 1;
   }
+  const reportDir = deps.reportDir ?? join(REPO_ROOT, 'migration-report');
+  const stamp = (deps.now?.() ?? new Date()).toISOString().replace(/[:.]/g, '-');
   try {
     const report = await uploadPhotos(backend, pre, catalog.albumIds, { ...deps.upload, repair: options.repair, alt: options.alt });
     const covers = await syncCovers(backend, options);
@@ -103,13 +105,23 @@ async function runLive(
     for (const line of lines) out(line);
     for (const line of formatCovers(covers)) out(line);
     const ok = uploadComplete(report) && coversComplete(covers);
-    const stamp = (deps.now?.() ?? new Date()).toISOString().replace(/[:.]/g, '-');
-    writeLiveReport(buildLiveReport(report, covers, options.alt, ok), deps.reportDir ?? join(REPO_ROOT, 'migration-report'), stamp);
+    writeLiveReport(buildLiveReport(report, covers, options.alt, ok, catalog.drift), reportDir, stamp);
     out('report written to migration-report/');
     out(ok ? 'RESULT: OK' : 'RESULT: INCOMPLETE');
     return ok ? 0 : 1;
   } catch (e) {
     err(`migrate-legacy: upload phase failed (${e instanceof BackendError ? e.code : (e as Error).message}).`);
+    // Still leave a report behind: catalog drift and an error label scrubbed of URLs, e-mails and credentials.
+    try {
+      const c = config.credentials;
+      const secrets = [config.anonKey, ...('accessToken' in c ? [c.accessToken] : [c.email, c.password])];
+      const label = e instanceof BackendError ? e.code : e instanceof Error ? e.message : 'UNKNOWN';
+      writeLiveReport(buildFailedLiveReport(options.alt, pre.storage.used_bytes, catalog.drift, label, secrets), reportDir, stamp);
+      out('report written to migration-report/');
+    } catch {
+      err('migrate-legacy: the report could not be written.');
+    }
+    out('RESULT: INCOMPLETE');
     return 1;
   }
 }

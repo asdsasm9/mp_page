@@ -105,6 +105,28 @@ describe('design pass: buttons, badges, destructive demotion', () => {
   });
 });
 
+describe('design pass: forms and login', () => {
+  it('clears the login card from the top edge with space-7', () => {
+    const rule = css.match(/\n  \.login-card \{[^}]*\}/)?.[0] ?? '';
+    expect(rule).toContain('margin-block-start: var(--space-7)');
+  });
+
+  it('darkens input and textarea borders on hover, never on invalid fields', () => {
+    const rule = css.match(/\n  input:hover[^{]*\{[^}]*\}/)?.[0] ?? '';
+    expect(rule).toContain('textarea:hover');
+    expect(rule).toContain(":not([aria-invalid='true'])");
+    expect(rule).toContain('border-color: var(--color-text)');
+  });
+
+  it('transitions field borders only inside the no-preference block and keeps the global focus ring', () => {
+    const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{[^@]*?input,\s*textarea \{[^}]*\}/)?.[0] ?? '';
+    expect(block).toContain('transition: border-color');
+    expect(css.match(/\n\s*(?:input|textarea)[^{]*\{[^}]*transition/g)?.length).toBe(1);
+    expect(css).toMatch(/:focus-visible\s*\{\s*outline: var\(--focus-width\) solid var\(--color-focus\)/);
+    expect(css).not.toMatch(/(?:input|textarea)[^{]*:focus[^{]*\{[^}]*outline:\s*(?:none|0)/);
+  });
+});
+
 describe('design pass: existing finding guards remain', () => {
   it('keeps the 44 px target rule for stand-alone links and list titles', () => {
     const rule = css.match(/\.row-title,[^{]*\{[^}]*\}/)?.[0] ?? '';

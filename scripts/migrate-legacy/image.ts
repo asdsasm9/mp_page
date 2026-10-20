@@ -39,7 +39,7 @@ export interface ProcessedPhoto {
   bytesTotal: number;
 }
 
-const jpegOut = (pipe: sharp.Sharp, quality: number) => pipe.jpeg({ quality, mozjpeg: true }).toBuffer();
+const jpegOut = (pipe: ReturnType<typeof sharp>, quality: number) => pipe.jpeg({ quality, mozjpeg: true }).toBuffer();
 
 async function dimsOf(buffer: Buffer): Promise<{ w: number; h: number }> {
   const m = await sharp(buffer).metadata();

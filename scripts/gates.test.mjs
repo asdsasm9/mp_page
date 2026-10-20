@@ -17,6 +17,11 @@ import {
   checkAdminNoR2Hosts,
   checkAdminNoServiceKey,
   checkAdminNoSignUp,
+  checkMigrateNoCredentials,
+  checkMigrateNoPhotoWrites,
+  checkMigrateNoR2,
+  checkMigrateNoServiceKey,
+  checkMigrateNoSignUp,
   envUrlHosts,
   checkApiHygiene,
   checkQuotaGuardTests,
@@ -225,6 +230,55 @@ describe('admin source rules (WP5-30)', () => {
   });
   it('the real catalog-style reads of photos are allowed', () => {
     expect(status(checkAdminNoPhotoWrites(src("rest.select<PhotoRow>('photos', q); update<PhotoRow>('photos', id, p)")))).toBe('PASS');
+  });
+});
+
+describe('migrate-legacy source rules (WP6-13)', () => {
+  const src = (text, path = 'scripts/migrate-legacy/http-backend.ts') => [f(path, text)];
+  const cases = [
+    ['migrate-no-service-key', checkMigrateNoServiceKey, `const k = '${fakeRole}'`, 'const k = anonKey'],
+    ['migrate-no-service-key (name)', checkMigrateNoServiceKey, 'const serviceKey = 1', 'const key = 1'],
+    ['migrate-no-signup', checkMigrateNoSignUp, 'await auth.signUp({ email })', 'await auth.signInWithPassword()'],
+    ['migrate-no-signup (admin)', checkMigrateNoSignUp, 'await sb.auth.admin.createUser({})', 'await sb.auth.getUser()'],
+    ['migrate-no-signup (endpoint)', checkMigrateNoSignUp, "fetch(`${u}/auth/v1/signup`)", "fetch(`${u}/auth/v1/token`)"],
+    ['migrate-no-photo-writes (rest POST)', checkMigrateNoPhotoWrites, "rest<PhotoRow>('POST', 'photos', {}, row)", "rest<AlbumRow>('POST', 'albums', {}, row)"],
+    ['migrate-no-photo-writes (rest PATCH)', checkMigrateNoPhotoWrites, "rest('PATCH', 'photos', q, b)", "rest<AlbumRow>('PATCH', 'albums', q, b)"],
+    ['migrate-no-photo-writes (rest DELETE)', checkMigrateNoPhotoWrites, 'rest("DELETE", "photos", q)', "rest<CategoryRow>('POST', 'categories', {}, c)"],
+    ['migrate-no-photo-writes (insert helper)', checkMigrateNoPhotoWrites, "db.insert('photos', row)", "db.insert('albums', row)"],
+    ['migrate-no-photo-writes (from)', checkMigrateNoPhotoWrites, "sb.from('photos').upsert(rows)", "sb.from('photos').select('*')"],
+    ['migrate-no-photo-writes (path literal)', checkMigrateNoPhotoWrites, "fetch(`${u}/rest/v1/photos`)", "fetch(`${u}/rest/v1/${table}`)"],
+    ['migrate-no-r2 (endpoint)', checkMigrateNoR2, "fetch('https://acc.r2.cloudflarestorage.com/x')", 'fetch(presignedUrl)'],
+    ['migrate-no-r2 (r2.dev)', checkMigrateNoR2, "const u = 'https://pub-1.r2.dev/x'", 'const u = base'],
+    ['migrate-no-r2 (aws4fetch)', checkMigrateNoR2, "import { AwsClient } from 'aws4fetch'", "import { fetch } from 'undici'"],
+    ['migrate-no-r2 (@aws-sdk)', checkMigrateNoR2, "import { S3Client } from '@aws-sdk/client-s3'", "import { readFile } from 'node:fs/promises'"],
+    ['migrate-no-credentials (JWT)', checkMigrateNoCredentials, `const t = "${fakeJwt}"`, 'const t = process.env.TOKEN'],
+    ['migrate-no-credentials (sk_)', checkMigrateNoCredentials, `const k = "${['sk', 'live', 'a1B2c3D4e5F6g7H8i9'].join('_')}"`, 'const k = "sk"'],
+    ['migrate-no-credentials (long value)', checkMigrateNoCredentials, `const apiKey = "${'aB3'.repeat(12)}"`, 'const apiKey = env.KEY'],
+    ['migrate-no-credentials (private key)', checkMigrateNoCredentials, 'x = "-----BEGIN PRIVATE KEY-----"', 'x = "begin"'],
+  ];
+  for (const [name, check, bad, good] of cases) {
+    it(`${name}: fails on a violating fixture, passes a clean one`, () => {
+      expect(status(check(src(bad)))).toBe('FAIL');
+      expect(status(check(src(good)))).toBe('PASS');
+    });
+  }
+  it('scans scripts/migrate-legacy.ts, ignores tests and other files', () => {
+    expect(status(checkMigrateNoSignUp(src('auth.signUp()', 'scripts/migrate-legacy.ts')))).toBe('FAIL');
+    expect(status(checkMigrateNoSignUp(src('auth.signUp()', 'scripts/migrate-legacy/x.test.ts')))).toBe('PASS');
+    expect(status(checkMigrateNoSignUp(src('auth.signUp()', 'scripts/migrate-legacy.test.ts')))).toBe('PASS');
+    expect(status(checkMigrateNoSignUp(src('auth.signUp()', 'scripts/other.ts')))).toBe('PASS');
+  });
+  it('the HttpBackend calls (PATCH albums, POST categories/albums, GET photos) are allowed', () => {
+    const http = [
+      "rest<AlbumRow>('PATCH', 'albums', { id: `eq.${albumId}` }, { cover_photo_id: photoId })",
+      "rest<CategoryRow>('POST', 'categories', {}, { id })",
+      "rest<AlbumRow>('POST', 'albums', {}, input)",
+      "rest<PhotoRow>('GET', 'photos', { select: '*' })",
+      'const res = await send(`${supabase}/rest/v1/${table}${qs}`, init)',
+    ].join('\n');
+    for (const c of [checkMigrateNoServiceKey, checkMigrateNoSignUp, checkMigrateNoPhotoWrites, checkMigrateNoR2, checkMigrateNoCredentials]) {
+      expect(status(c(src(http)))).toBe('PASS');
+    }
   });
 });
 

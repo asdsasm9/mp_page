@@ -9,7 +9,7 @@ import { GALLERIES_DIR, hasExif } from '../dev-images';
 import { JPEG_QUALITY, MASTER_QUALITY, OG_QUALITY, WEBP_QUALITY, processImage } from './image';
 
 /** Synthetic JPEG with a horizontal gradient so resizing has something to do. */
-async function synth(w: number, h: number, extra?: (p: sharp.Sharp) => sharp.Sharp): Promise<Buffer> {
+async function synth(w: number, h: number, extra?: (p: ReturnType<typeof sharp>) => ReturnType<typeof sharp>): Promise<Buffer> {
   const raw = Buffer.alloc(w * h * 3);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {

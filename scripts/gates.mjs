@@ -337,6 +337,47 @@ export function envUrlHosts(env = process.env) {
     .filter(Boolean);
 }
 
+// ---------------------------------------------------------------------------------------------- migration script (WP6-13)
+// scripts/migrate-legacy.ts and scripts/migrate-legacy/** (tests excluded) run on the photographer's machine with the
+// anon key and her JWT: no service key, no sign-up, no direct writes to `photos` (the Worker commit does those; the
+// HttpBackend may PATCH albums, POST categories/albums and read photos), no R2/S3 hosts or SDKs (presigned PUTs only),
+// and no committed credentials.
+const isMigrateSrc = (p) =>
+  (p === 'scripts/migrate-legacy.ts' || p.startsWith('scripts/migrate-legacy/')) && /\.(ts|mjs|js)$/.test(p) && !/\.test\.(ts|mjs|js)$/.test(p);
+const migrateRule = (patterns) => (files) => {
+  const src = files.filter((f) => isMigrateSrc(f.path));
+  return result(findMatches(src, () => false, patterns), `${src.length} migrate-legacy sources clean`);
+};
+const WRITE_METHOD = `['"\`](POST|PATCH|PUT|DELETE)['"\`]`;
+
+export const checkMigrateNoServiceKey = migrateRule([
+  ['service_role', /service[_-]?role/i],
+  ['service key name', /service[_-]?key/i],
+]);
+export const checkMigrateNoSignUp = migrateRule([
+  ['signUp', /\bsign_?up\s*\(/i],
+  ['auth signup endpoint', /auth\/v1\/signup/i],
+  ['admin user creation', /auth\.admin|auth\/v1\/admin|createUser\s*\(/],
+]);
+export const checkMigrateNoPhotoWrites = migrateRule([
+  ['photos write via rest helper', new RegExp(`\\brest\\s*(<[^>(]*>)?\\(\\s*${WRITE_METHOD}\\s*,\\s*${Q}photos${Q}`)],
+  ['photos insert/delete via helper', new RegExp(`\\b(insert|remove|delete|upsert)\\s*(<[^>(]*>)?\\(\\s*${Q}photos${Q}`)],
+  ['photos write via from()', new RegExp(`from\\(\\s*${Q}photos${Q}\\s*\\)\\s*\\.\\s*(insert|update|delete|upsert)`)],
+  ['photos via REST path literal', /rest\/v1\/photos/],
+]);
+export const checkMigrateNoR2 = migrateRule([
+  ['r2.cloudflarestorage.com', /r2\.cloudflarestorage\.com/i],
+  ['r2.dev', /\.r2\.dev\b/i],
+  ['R2/S3 SDK', /@aws-sdk|aws4fetch|R2Bucket/],
+]);
+export const checkMigrateNoCredentials = migrateRule([
+  ['JWT', /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/],
+  ['sk_ key', /\bsk_(live_|test_)?[A-Za-z0-9]{16,}/],
+  ['AWS access key id', /\b(AKIA|ASIA)[0-9A-Z]{16}\b/],
+  ['private key block', /-----BEGIN [A-Z ]*PRIVATE KEY/],
+  ['key-named long value', /(key|secret|token|password)[\w"' ]{0,20}[:=]\s*["'][A-Za-z0-9+/_-]{32,}["']/i],
+]);
+
 const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
 
 export const CHECKS = [
@@ -362,6 +403,11 @@ export const CHECKS = [
   { name: 'admin-dist-no-fake', input: 'admindist', run: checkAdminDistNoFakeMarker },
   { name: 'admin-dist-no-keys', input: 'admindist', run: checkAdminDistNoKeyStrings },
   { name: 'admin-dist-hosts', input: 'admindist', run: (d) => checkAdminDistExternalHosts(d) },
+  { name: 'migrate-no-service-key', input: 'files', run: checkMigrateNoServiceKey },
+  { name: 'migrate-no-signup', input: 'files', run: checkMigrateNoSignUp },
+  { name: 'migrate-no-photo-writes', input: 'files', run: checkMigrateNoPhotoWrites },
+  { name: 'migrate-no-r2', input: 'files', run: checkMigrateNoR2 },
+  { name: 'migrate-no-credentials', input: 'files', run: checkMigrateNoCredentials },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
 ];
 

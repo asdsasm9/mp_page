@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p scripts/tsconfig.json",
     "build": "npm run build -w apps/web -w apps/admin",
     "gates": "node scripts/gates.mjs",
     "bench:snapshot": "tsx scripts/bench-snapshot.ts",

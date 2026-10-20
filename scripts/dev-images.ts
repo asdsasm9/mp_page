@@ -109,7 +109,7 @@ export async function generateDevImages(
       if (masterBuf) color = await dominantColorOf(masterBuf);
       for (const k of missing) {
         const target = join(outDir, ...k.key.split('/'));
-        let pipe: sharp.Sharp;
+        let pipe: ReturnType<typeof sharp>;
         if (masterBuf) {
           pipe = sharp(masterBuf);
           if (k.kind === 'og') pipe = pipe.extract({ left: plan.og.crop.x, top: plan.og.crop.y, width: plan.og.crop.w, height: plan.og.crop.h });

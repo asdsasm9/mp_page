@@ -1,4 +1,8 @@
-# Admin: screens and flows (spec, not implemented)
+# Admin: screens and flows (spec)
+
+**As built (WP-5):** the admin is implemented in `apps/admin`. Where the build differs from this spec on purpose, the
+list is in [ADMIN.md](ADMIN.md) "Deviations" (inline buttons, two album badges, no "use the real value" step, and so on);
+deploy steps and the photographer's guide are there too. The text below is the original spec.
 
 Task T-4. Source: VISION.md goal 3, T-6 (storage quota guard). This is a spec for the admin SPA (`apps/admin`, planned at admin.mullnyphotos.cz). Nothing here is built yet; the MASTERPLAN may change technical details, but not the goals mapped below.
 

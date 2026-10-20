@@ -20,6 +20,7 @@ The mode comes from three public variables (names only in `.env.example`; the bu
 no preflight, no credentials are allowed and there is never a wildcard. Unset means no CORS header (the admin then falls
 back to "build triggered"). A malformed value (wildcard, path, trailing slash, query, credentials, not a URL, or `http`
 in a production build) fails the build with a message naming the variable. The CSP and all other headers are unchanged.
+Admin deploy steps, including setting this variable: [ADMIN.md](ADMIN.md) "Deploying the admin" (VERIFY row 28).
 
 | Mode | Data | Images | Indexing |
 |---|---|---|---|

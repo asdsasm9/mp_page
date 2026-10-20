@@ -1,6 +1,6 @@
 # Mullny Photos
 
-Monorepo for the new mullnyphotos.cz: a static Astro public site, a React admin, a Cloudflare Worker API and shared contracts. The public site (WP-3 and the image-loading package WP-3b) is built; admin features arrive in later work packages.
+Monorepo for the new mullnyphotos.cz: a static Astro public site, a React admin, a Cloudflare Worker API and shared contracts. The public site (WP-3 and WP-3b), the API Worker (WP-4) and the admin (WP-5) are built; nothing is deployed from the repo.
 
 The old CRA site lives on the `main` branch and the git tag `legacy-cra` (a hotfix to it means checking out that tag). Old photos are kept in `legacy/`.
 
@@ -10,7 +10,7 @@ The old CRA site lives on the `main` branch and the git tag `legacy-cra` (a hotf
 |------|------|
 | `apps/web` | Astro static public site (lang `cs`) |
 | `apps/admin` | Vite + React 18 admin |
-| `apps/api` | Cloudflare Worker stub (`/health`), never deployed from here |
+| `apps/api` | Cloudflare Worker API, never deployed from here |
 | `packages/shared` | `@mp/shared` contracts, consumed as TypeScript source |
 | `supabase/tests` | PGlite helpers and capability tests |
 | `scripts` | `gates.mjs` and image audit |
@@ -39,4 +39,5 @@ Copy `.env.example` for local settings; never commit real values. The web build 
 
 - Plan: MASTERPLAN (kept in the autopilot project state folder).
 - Public site: [docs/WEB.md](docs/WEB.md); design-check baseline: [docs/DESIGN-CHECK.md](docs/DESIGN-CHECK.md).
+- Admin app (architecture, env, deploy steps, check commands, deviations, Czech guide): [docs/ADMIN.md](docs/ADMIN.md); spec: [docs/ADMIN-UX.md](docs/ADMIN-UX.md); Worker deploy: [docs/DEPLOY-API.md](docs/DEPLOY-API.md).
 - Unconfirmed platform facts and human to-dos: [docs/VERIFY.md](docs/VERIFY.md).

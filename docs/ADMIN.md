@@ -1,7 +1,154 @@
 # Admin app
 
-(T-146 completes this file; so far only the sections below: the 21-goal map, the deviations, the accessibility
-audit and the browser encode check.)
+The photographer's tool for categories, albums and photos (`apps/admin`, Vite + React 18, Czech UI). Spec:
+[ADMIN-UX.md](ADMIN-UX.md) (built as described there except for the deviations below). Worker contract:
+[API.md](API.md), Worker deploy: [DEPLOY-API.md](DEPLOY-API.md), public site: [WEB.md](WEB.md), unconfirmed platform
+facts and human steps: [VERIFY.md](VERIFY.md). Page texts (Home, About, Contact) are not editable here.
+
+## Architecture
+
+- A static single-page app. It talks to three services only: Supabase (auth, and PostgREST reads and writes of
+  categories, albums and photo metadata with her JWT and the anon key), the API Worker (`VITE_API_BASE_URL`: photo
+  upload slots, commit, delete, publish, storage and reconcile) and R2 (direct `PUT` of the encoded files to the
+  presigned URLs the Worker hands out). It also reads `<site>/_publish.json` to follow a publish.
+- The browser resizes and converts photos before upload (`src/encode`): master up to 3000 px, WebP tiers 480 to 2400,
+  a 1200x630 OG image, EXIF and GPS removed, dominant colour computed. See "Browser encode check" below.
+- Every adapter (auth, data, upload, publish, storage) has a real and a fake implementation behind one interface in
+  `src/adapters`. `VITE_BACKEND=fake` swaps in an in-memory world; the fake build carries the marker
+  `MP_ADMIN_FAKE_WORLD_7f3a9c`, which a gate keeps out of any production build.
+- No service-role key, no sign-up, no direct writes to `photos` (the Worker does that), no R2 host in the source, no
+  hard-coded limits (they come from the Worker's `app_config`). `npm run gates` enforces this (section "Security gates").
+
+### Routes
+
+| Route | Screen |
+|---|---|
+| `/prihlaseni` | Login, forgotten and new password (the only public route) |
+| `/` | Categories |
+| `/kategorie/:id` | One category and its albums |
+| `/alba/:id` | One album and its photos |
+| `/alba/:id/foto/:photoId` | Photo detail (alt text, caption) |
+| `/zverejnit` | Publish the site |
+| `/ulozeni` | Storage and reconcile |
+| `/nahravani` | Upload page (the queue also shows as a drawer) |
+| `*` | 404 |
+
+`a11y/scope.test.tsx` fixes this table as the information architecture; there is no pages or settings screen.
+
+### Environment variables
+
+All are build-time (`VITE_*`, baked into the bundle, so they are public; the anon key is meant to be public). Names
+only live in `.env.example`; real values go into the Cloudflare Pages project settings, never into the repo. In real
+mode a missing or malformed value makes the app show "Správa není nastavená" with the variable names (never values).
+
+| Name | Meaning |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | the anon (publishable) key, never the service-role key |
+| `VITE_API_BASE_URL` | origin of the API Worker (`docs/DEPLOY-API.md` section 8) |
+| `VITE_IMG_BASE_URL` | public photo host (the same as `R2_PUBLIC_BASE_URL` of the Worker and `PUBLIC_IMG_BASE_URL` of the web) |
+| `VITE_PUBLIC_SITE_URL` | public site origin, where `/_publish.json` is read |
+| `VITE_R2_UPLOAD_ORIGIN` | origin of the presigned upload URLs (`https://<account-id>.r2.cloudflarestorage.com`, or the bucket host in use) |
+| `VITE_BACKEND` | `real` (default, unset) or `fake` (in-memory; tests and autopilot only, never in production) |
+
+The five URLs also decide the CSP (section "Production build, CSP and bundle budget"): they become the allowed origins.
+On the public web project the one related variable is `PUBLIC_ADMIN_ORIGIN` (`docs/WEB.md`).
+
+### Fake mode
+
+Starting the Vite dev server with `VITE_BACKEND=fake` set in the environment (the checks below set it themselves)
+runs the app against an in-memory world. The seeded accounts are in `apps/admin/src/adapters/fake/auth.ts` (test
+data only, not real credentials). Nothing leaves the browser. All unit tests use it, so `npm test` needs no services.
+
+## Deploying the admin (human steps)
+
+Nothing here was run by the builder (no Cloudflare or Supabase login). Do the Worker first (`docs/DEPLOY-API.md`),
+because the admin needs its origin. Dashboard menu names are from memory and may have moved. Use a stable admin
+origin, for example `https://admin.mullnyphotos.cz`; a Pages preview URL changes with each deploy and would never
+match the CORS and redirect lists below.
+
+1. **Pages project.** In Cloudflare, Workers & Pages, create a Pages project from the git repository (or upload
+   `apps/admin/dist`). Build command `npm run build -w apps/admin`, output directory `apps/admin/dist`, root the
+   repository root, Node version from `.nvmrc` (`NODE_VERSION` variable if needed). Add the custom domain.
+2. **Environment variables** (Settings, Variables, production): the six `VITE_*` values from the table above;
+   leave `VITE_BACKEND` unset. They are read at build time, so a change needs a new deployment. Set the same
+   variables for the preview environment only if previews are used.
+3. **Check the build output.** `dist/_headers` (CSP and cache rules, generated) and `dist/_redirects`
+   (`/* /index.html 200`, the SPA fallback) must be in the deployment. A deep link such as `/zverejnit` must open the app
+   (VERIFY row 31).
+4. **Worker and bucket.** Add the admin origin to the Worker's `ALLOWED_ORIGINS` and to the R2 bucket CORS policy
+   (`docs/DEPLOY-API.md` sections 5 and 6; the policy allows `PUT` with `content-type`, `content-length`,
+   `cache-control`). Without the R2 CORS entry every upload fails in the browser (VERIFY row 27).
+5. **Supabase.** In the dashboard:
+   - Authentication, Sign In / Providers: turn **sign-ups off** (no "Allow new users to sign up"). Email sign-in stays on.
+   - Authentication, Users: create the two users (the photographer and Adam) with "Add user", confirmed, with a strong
+     password each. Then insert one row per user into `admins` (SQL editor: `insert into admins (user_id) values ('<auth user id>');`,
+     check the column name against `supabase/migrations`). A user without that row can sign in but the app refuses her.
+   - Authentication, URL Configuration: add `<admin origin>/prihlaseni` to the redirect URLs (for example
+     `https://admin.mullnyphotos.cz/prihlaseni`; it is where the password reset mail sends her), and set the site URL to the admin origin.
+   - Optional, VERIFY row 5: TOTP if the plan allows it.
+6. **Public site.** On the web Pages project set `PUBLIC_ADMIN_ORIGIN` to the exact admin origin (no path, no trailing
+   slash) and redeploy, so the admin may read `/_publish.json` (`docs/WEB.md`, VERIFY row 28).
+7. **First run.** Sign in, create a test category and album, upload 3 photos, publish. Then do VERIFY rows 25 to 32
+   that apply. Nothing in the repo may contain the real values; `npm run gates` checks the built bundle for keys.
+
+If the CSP blocks something after deploy, the browser console names the blocked origin; fix the matching `VITE_*`
+value and rebuild (the five origins in `connect-src` / `img-src` must equal what the app really calls).
+
+## Using it: short guide for the photographer (Czech)
+
+Přihlášení: otevři adresu správy, zadej e-mail a heslo. Heslo zapomenuté? Klikni na „Zapomenuté heslo“ a přijde ti odkaz.
+
+- **Kategorie** (úvodní stránka): „Nová kategorie“, přejmenování, skrytí, smazání a pořadí. Pořadí měníš šipkami nebo
+  přetažením za úchyt vlevo.
+- **Album**: v kategorii „Nové album“. Vyplň název, místo, datum a text. Album je nejdřív „Nezveřejněno“.
+- **Fotky**: v albu přetáhni fotky do okna nebo klikni na „Vybrat fotky“. Aplikace je sama zmenší. Pokud se fotka
+  nenahraje, klikni na „Zkusit znovu“. Zavřít stránku během nahrávání nejde bez varování; po obnovení stránky se
+  fronta ztratí a chybějící fotky se nahrají znovu.
+- **Titulní fotka, pořadí, přesun, smazání**: v nabídce u každé fotky. Podrobnosti fotky: popisek a alternativní text.
+- **Zveřejnit web**: všechny úpravy se ukládají hned, ale návštěvníci je uvidí až po „Zveřejnit web“ (chvíli to trvá, stránka ukazuje průběh).
+  Tečka s popiskem „Nezveřejněné změny“ říká, že na webu ještě nejsou všechny úpravy.
+- **Úložiště**: ukazuje, kolik místa zbývá. Při varování zbývá málo, při plném úložišti se nahrávání zastaví. Tlačítko
+  „Zkontrolovat úložiště“ najde zbytky po přerušeném nahrávání a po potvrzení je smaže.
+- Texty stránek (Domů, O mně, Kontakt) se tady nemění; ty upravuje správce webu.
+- Něco nejde? Poznamenej si, co jsi dělala a co se zobrazilo, a napiš správci webu.
+
+## Check commands
+
+Browser checks need Chrome, run one at a time and never during `npm test` (details further down):
+
+| Command | Proves |
+|---|---|
+| `npm test`, `npm run typecheck`, `npm run gates` | units (fake world), types, repository and security gates |
+| `npm run admin-encode-check` | the real in-browser encoder on fixtures |
+| `npm run admin-check` | the full flow in a real browser against the fake world, a11y, targets, console |
+| `npm run admin-prod-check` | the production bundle with the generated CSP against mock origins |
+| `npm run design-check` | the visual check (screenshots, axe, Lighthouse) |
+
+## Security gates
+
+`npm run gates` (`scripts/gates.mjs`, tested by `scripts/gates.test.mjs`) scans `apps/admin/src` (not tests, not
+`src/a11y/`) for: `service_role` / service key names, sign-up calls (`signUp`, `auth/v1/signup`, `auth.admin`,
+`createUser`), HTML injection (`dangerouslySetInnerHTML`, `innerHTML`, `insertAdjacentHTML`, `document.write`,
+`eval`, `new Function`), direct writes to `photos`, R2 hosts and SDKs, and hard-coded limits (8 GB, 10 GB, 12 MB).
+When a production build exists on disk (`apps/admin/dist` or `.tmp/admin-prod/site`) it also scans the built files for
+the fake-world marker, key-like strings (JWT, `sk_`, AWS ids, private keys, long secret values) and for any URL host
+that is neither a known library host nor a host in the current `VITE_*_URL` / `*_ORIGIN` environment. With no build the
+dist rules print SKIP; they are not made on the fly.
+
+Known evasions (the gates are pattern checks, a guard against mistakes, not a proof):
+
+- Anything built at run time slips through the source rules: `'pho' + 'tos'`, `el['inner' + 'HTML']`,
+  `window['ev' + 'al']`, a limit written as `1e10`, `10 * 1000 ** 3` or `10_000 * 1_000_000`.
+- Aliased imports or helper wrappers around the `photos` write patterns; only the literal `'photos'` next to
+  `insert/delete/upsert` or `from('photos')` is seen.
+- Only `.ts` and `.tsx` files under `apps/admin/src` are scanned; a `.js`, `.mjs` or JSON file, or code outside that
+  folder, is not.
+- Dist host check: protocol-relative `//host` URLs and hosts assembled from parts are not matched; the allowed list is
+  taken from the environment of the run, so with the `VITE_*` values unset it is stricter, and a host that is also a
+  library host (for example `github.com`) is always allowed. Key checks match known shapes only; an unusual key format
+  or an encoded one (base64, split) is not found.
+- The dist rules only run when a build is on disk; a clean `npm run gates` before any build says SKIP, not PASS.
 
 ## The 21 goals and the tests that prove them
 
@@ -86,6 +233,17 @@ Recorded where the build differs from the spec on purpose. None of them removes 
 10. **Publish status polling.** `/_publish.json` is polled every 5 s for at most 6 minutes. There is no separate
     request timeout (about 10 s was suggested) and no retry of a single failed poll; an unreadable file (CORS)
     degrades to "build triggered".
+11. **Zod runs in `jitless` mode.** Zod 4 probes dynamic code compilation, which the admin CSP (no `unsafe-eval`)
+    refuses and reports as a violation on every load. `src/zodCsp.ts` sets `jitless` first, so validation is slightly
+    slower and the CSP stays free of `unsafe-*`. `zod` is a direct dependency of `apps/admin` for this reason
+    (section "Production build, CSP and bundle budget").
+12. **The public site origin is in `connect-src`.** Plan 4.1 listed Supabase, the Worker and R2 only; the publish
+    screen reads `<site>/_publish.json` from script, so `VITE_PUBLIC_SITE_URL` is allowed too (exactly that origin).
+13. **Security gates are pattern checks with known evasions** (run-time built strings, aliasing, non-`.ts` files,
+    protocol-relative hosts, dist rules skipped without a build); see "Security gates".
+14. **No real-device or live-service proof.** Phone layout, Safari/Firefox WebP, phone
+    memory, live Supabase, R2 and Worker behaviour are covered by mocks and Chrome only; the open items are
+    `docs/VERIFY.md` rows 4, 5, 9 and 25 to 32.
 
 ## Accessibility and keyboard audit (WP5-27)
 

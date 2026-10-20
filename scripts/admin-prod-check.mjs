@@ -247,7 +247,9 @@ try {
 // Probe requests to 127.0.0.1:9 are expected to fail; everything else must stay within the page and mock origins.
 const appRequests = requests.filter((u) => !mockOrigins.some((o) => u.startsWith(o)) && !u.includes('127.0.0.1:9/'));
 failures.push(...judgeOrigins(appRequests, origin));
-failures.push(...judgeConsole(messages.filter((m) => !/127\.0\.0\.1:9|Content Security Policy|Refused to (connect|load|execute)|ERR_BLOCKED_BY_CSP|ERR_CONNECTION_REFUSED|ERR_FAILED/.test(m.text))).map((f) => f));
+const probeNoise = /127\.0\.0\.1:9|Content Security Policy|Refused to (connect|load|execute)|ERR_BLOCKED_BY_CSP|ERR_CONNECTION_REFUSED|ERR_FAILED/;
+failures.push(...judgeConsole(messages.filter((m) => !probeNoise.test(m.text))).map((f) => f));
 console.log(`requests: ${requests.length}, console messages: ${messages.length}`);
+for (const m of messages) console.log(`  [${probeNoise.test(m.text) ? 'expected: deliberate CSP probe' : 'JUDGED'}] ${m.type}: ${m.text.slice(0, 200)}`);
 console.log(failures.length ? `ADMIN_PROD_CHECK: FAIL\n${failures.map((f) => `- ${f}`).join('\n')}` : `ADMIN_PROD_CHECK: PASS (JS ${kb(bundle.totals.jsGzip)} gzip, entry chunk ${kb(bundle.totals.initialJsGzip)})`);
 process.exit(failures.length ? 1 : 0);

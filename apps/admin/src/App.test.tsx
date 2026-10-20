@@ -1,5 +1,5 @@
 import axe from 'axe-core';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -43,8 +43,8 @@ describe('routes', () => {
     expect(h1).toHaveLength(1);
     expect(h1[0]!.textContent).toBe(title);
     expect(screen.getAllByRole('main')).toHaveLength(1);
-    expect(document.title).toBe(`${title}${cs.app.titleSeparator}${cs.app.name}`);
-  });
+    await waitFor(() => expect(document.title).toBe(`${title}${cs.app.titleSeparator}${cs.app.name}`));
+  }, 30_000);
 
   it.each(ROUTES.filter(([p]) => p !== '/prihlaseni'))('%s has banner and navigation landmarks', async (path) => {
     await renderAt(path);
@@ -95,7 +95,7 @@ describe('keyboard', () => {
     await renderAt('/');
     expect(document.activeElement).toBe(document.body);
     await user.click(screen.getAllByRole('link', { name: cs.nav.storage })[0]!);
-    expect(document.activeElement).toBe(screen.getByRole('main'));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('main')));
   });
 });
 

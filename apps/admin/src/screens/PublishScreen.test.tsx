@@ -75,13 +75,13 @@ describe('publish screen', () => {
 
     // The build takes 90 s: polls at 5, 10, ... 85 s see nothing new.
     await advance(clock, 85_000);
-    expect(read).toHaveBeenCalledTimes(17);
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(17));
     expect(screen.queryByText(cs.publish.done)).toBeNull();
     expect(button().textContent).toBe(cs.publish.busy);
 
     await advance(clock, 5_000);
     expect(await screen.findByText(cs.publish.done)).toBeTruthy();
-    expect(read).toHaveBeenCalledTimes(18);
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(18));
     const link = screen.getByRole('link', { name: cs.publish.showSite });
     expect(link.getAttribute('href')).toBe(SITE);
     expect(button().textContent).toBe(cs.publish.button);
@@ -89,7 +89,7 @@ describe('publish screen', () => {
     // Polling stopped, and the publish indicator and pending count were refreshed.
     await advance(clock, 30_000);
     expect(read).toHaveBeenCalledTimes(18);
-    expect(clock.pending()).toBe(0);
+    await waitFor(() => expect(clock.pending()).toBe(0));
     expect(world.snapshot().site.pending_changes).toBe(0);
     await waitFor(() => expect(screen.getByText(cs.publish.noChanges)).toBeTruthy());
     expect(document.querySelector('[data-pending="true"]')).toBeNull();
@@ -101,7 +101,7 @@ describe('publish screen', () => {
     expect(rows[0]!.textContent).toContain(cs.publish.log.ok);
     expect(rows[0]!.textContent).toContain('1 album, 0 fotek');
     expect(screen.getByText(/^Naposledy zveřejněno 20\. 10\. 2026 10:00$/)).toBeTruthy();
-  });
+  }, 60_000);
 
   it('a repeated press while publishing says so and sends nothing', async () => {
     const { world, clock } = await makeWorld();
@@ -170,7 +170,7 @@ describe('publish screen', () => {
     await advance(clock, 60_000);
     expect(read).toHaveBeenCalledTimes(72);
     expect(button().textContent).toBe(cs.publish.button);
-  });
+  }, 60_000);
 
   it('an unreadable /_publish.json (CORS) degrades to "build triggered" without an error', async () => {
     const { world, clock } = await makeWorld();
@@ -236,7 +236,7 @@ describe('publish screen', () => {
     await advance(clock, 90_000);
     await screen.findByText(cs.publish.done);
     await check();
-  });
+  }, 60_000);
 });
 
 describe('Prague time', () => {

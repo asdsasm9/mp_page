@@ -363,6 +363,36 @@ contentful paint 108 / 84 ms; encoding and fake-uploading 5 photos takes 2.9 s d
 photo at a time); a publish with a 1.5 s fake build takes about 6 s because the status is polled every 5 s. Initial JS is
 520 kB (159 kB gzip) plus 223 kB (58 kB gzip) for the adapter chunk of this fake build; the real budget belongs to WP5-29.
 
+### Design pass (WP-08a, T-173 to T-180)
+
+A CSS-only pass over `apps/admin/src/styles/app.css` to give the tool a clearer hierarchy. No token value, new token,
+markup, class name, route, role or Czech text changed; brand colour (H-3), dark mode and fonts are untouched. Guarded by
+`apps/admin/src/styles/design-pass.test.ts` (no literal colours or px in `app.css`, plus one check per step below).
+
+- Type and rhythm (step 2): h1 is `--font-size-2`, h2 gets a rule at `--font-size-1`, and h2 in a page or section has
+  `--space-6` space above, so sections separate. The header row still fits one line at 1280.
+- Surfaces and tables (step 3): `.panel`, `.storage-large`, `.finding` and `.publish-card` use the `.card` recipe
+  (`--shadow-sm`); table header cells are muted and small, and body rows highlight on hover.
+- Buttons and badges (step 4): "Smazat album" in the page header is an outline button with danger text; the solid red
+  stays only inside confirm dialogs. Row buttons are transparent with a surface hover, badges get a fill per
+  `data-state` (text stays the signal), `.button:active` darkens without moving.
+- Forms and login (step 5): the login card is clear of the top edge, inputs darken their border on hover; the 3 px
+  focus ring is unchanged.
+- Photo grid and upload (step 6): tile controls and badges carry `--shadow-sm`, a hovered tile `--shadow-md`;
+  dropzone and upload-row spacing use `--space-*`; the gallery toolbar wraps with a gap on the phone.
+- Phone and shell (step 7): the row actions have a top divider, the active bottom-nav item is clearer (still 44 px),
+  and the shell header has `--shadow-sm` (not sticky).
+- Motion: only border-color, box-shadow and background-color transitions, all inside `prefers-reduced-motion: no-preference`.
+
+Measured 2026-10-20 (headless Chrome on macOS, after step 7): `npm test` 133 files, 2427 passed, 5 skipped;
+`npm run typecheck` and `npm run gates` clean; `ADMIN_CHECK: PASS` on 57 page states (25 desktop 1280, 25 phone 390,
+7 at 320) with 0 axe serious/critical, 0 px overflow, smallest target 44 px, 0 console messages, worst layout shift
+0.031 desktop / 0.074 phone; `ADMIN_PROD_CHECK: PASS` (0 CSP violations, JS 210.2 kB gzip unchanged, CSS 4.6 to
+4.9 kB gzip, +0.3 kB against the 1 kB allowance, 50 kB limit); `DESIGN_CHECK: PASS` (apps/web, unaffected). The
+before/after screenshots are in the gitignored `.tmp/admin-check/shots`.
+
+Open observations above: both stay open (the pass changed neither the upload queue behaviour nor the brand colour).
+
 ## Production build, CSP and bundle budget (WP5-29)
 
 `npm run build -w apps/admin` emits `dist/_headers` next to `index.html` (Vite plugin `admin-headers` in

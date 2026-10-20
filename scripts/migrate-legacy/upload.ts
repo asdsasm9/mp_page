@@ -18,6 +18,7 @@ import {
   type StorageResponse,
   type UploadTarget,
 } from '../../packages/shared/src';
+import { defaultAlt } from '../../packages/shared/src/alt';
 import { BackendError, type MigrationBackend } from './backend';
 import { processImage, type ProcessedPhoto } from './image';
 import { discoverSources, type DiscoverOptions, type SourceAlbum, type SourcePhoto } from './sources';
@@ -37,6 +38,8 @@ export interface UploadDeps extends DiscoverOptions {
   retries?: number;
   /** --repair: re-upload and re-commit the photos reported missing. */
   repair?: boolean;
+  /** --alt default stores the generated default alt; otherwise alt is left null. */
+  alt?: 'null' | 'default';
 }
 
 export class UploadError extends Error {
@@ -369,6 +372,16 @@ export async function uploadPhotos(
           height: p.master.h,
           dominant_color: p.dominantColor,
           legacy_key: c.photo.legacyKey,
+          ...(deps.alt === 'default'
+            ? {
+                alt: defaultAlt({
+                  albumTitle: work.source.album.title,
+                  categoryKey: work.source.album.categorySlug,
+                  n: c.photo.n,
+                  total: work.source.album.photoCount,
+                }),
+              }
+            : {}),
           variants: p.variants,
           bytes_total: p.bytesTotal,
         };

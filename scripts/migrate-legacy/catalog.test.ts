@@ -1,4 +1,7 @@
 // Catalog upsert (plan WP-06 step 8) against the FakeBackend only.
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import sharp from 'sharp';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { main } from '../migrate-legacy';
@@ -97,7 +100,7 @@ describe('migrate-legacy --live catalog phase', () => {
     const err: string[] = [];
     // Synthetic tiny sources keep the photo phase fast; the real legacy files are never read here.
     const upload = { exists: () => true, read: async () => tiny, sleep: async () => {} };
-    const code = await main(['--live', '--confirm-project', 'abcdefgh', ...extra], (l) => out.push(l), (l) => err.push(l), { env, backend, upload });
+    const code = await main(['--live', '--confirm-project', 'abcdefgh', ...extra], (l) => out.push(l), (l) => err.push(l), { env, backend, upload, reportDir: mkdtempSync(join(tmpdir(), 'mig-cat-')) });
     return { code, out: out.join('\n'), err: err.join('\n') };
   };
   let tiny: Buffer;

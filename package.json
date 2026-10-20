@@ -27,7 +27,8 @@
     "admin-prod-check": "node scripts/admin-prod-check.mjs",
     "fixtures": "tsx scripts/gen-fixtures.ts",
     "site-images:import": "node scripts/site-images-import.mjs",
-    "dev-images": "tsx scripts/dev-images.ts"
+    "dev-images": "tsx scripts/dev-images.ts",
+    "migrate-legacy": "tsx scripts/migrate-legacy.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.10",
@@ -36,6 +37,7 @@
     "jsdom": "30.1.3",
     "lighthouse": "13.5.0",
     "puppeteer-core": "25.14.0",
+    "sharp": "0.35.5",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
     "vitest": "5.0.5"

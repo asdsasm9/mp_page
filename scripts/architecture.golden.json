@@ -1,0 +1,17 @@
+{
+  "_note": "Authority: this file is the machine-readable form of the approved MASTERPLAN architecture (section 3 and decision D-2). Changing it needs an architect-approved decision recorded in DECISIONS.md, not a builder edit to make a gate green. Keep it small. It holds names and shapes only, never secrets or secret-shaped strings.",
+  "components": {
+    "rootWorkspaces": ["apps/*", "packages/*"],
+    "directories": ["apps/web", "apps/admin", "apps/api", "packages/shared", "supabase/migrations", "scripts", "docs"],
+    "requiredDeps": {
+      "apps/web": ["astro", "@mp/shared"],
+      "apps/admin": ["react", "react-dom", "react-router-dom", "@supabase/supabase-js", "@tanstack/react-query", "@dnd-kit/core", "@dnd-kit/sortable", "zod", "@mp/shared"],
+      "apps/api": ["aws4fetch", "@mp/shared"],
+      "packages/shared": ["zod"]
+    },
+    "forbiddenDeps": ["@astrojs/cloudflare", "@astrojs/node"],
+    "webConfig": "apps/web/astro.config.mjs",
+    "forbiddenAstroOutputs": ["server", "hybrid"],
+    "pinnedExactly": ["astro"]
+  }
+}

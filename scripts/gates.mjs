@@ -6,7 +6,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { scanEnvUsage } from './lib/env-scan.mjs';
-import { attrsOf,checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
+import { attrsOf, checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
 
 const SELF = ['scripts/gates.mjs', 'scripts/gates.test.mjs'];
 const isSelf = (p) => SELF.includes(p);
@@ -170,6 +170,7 @@ export function checkNoDirectR2(files) {
       files,
       (p) =>
         isSelf(p) ||
+        p === 'scripts/architecture.golden.json' || // names the required Worker dependency, makes no R2 call
         isLockfile(p) ||
         p.endsWith('/package.json') ||
         under(p, 'docs/', 'legacy/', ...allowed),
@@ -486,6 +487,69 @@ export const checkMigrateNoCredentials = migrateRule([
   ['key-named long value', /(key|secret|token|password)[\w"' ]{0,20}[:=]\s*["'][A-Za-z0-9+/_-]{32,}["']/i],
 ]);
 
+// ---------------------------------------------------------------------------------------------- architecture (WP8-3)
+export const ARCH_GOLDEN = 'scripts/architecture.golden.json';
+const EXACT_VERSION = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
+
+/**
+ * Component layout against scripts/architecture.golden.json (MASTERPLAN section 3, D-2): the workspace directories
+ * exist, the root workspaces are exactly the golden globs, each workspace declares its required dependencies, no
+ * SSR adapter dependency anywhere, the Astro config is not server/hybrid output, and the pinned packages use an
+ * exact version (no ^ or ~). Static text checks: they catch drift, behaviour stays in the test suites.
+ */
+export function checkArchComponents(files, golden) {
+  if (!golden) {
+    const g = files.find((x) => x.path === ARCH_GOLDEN);
+    if (!g) return { status: 'FAIL', details: `${ARCH_GOLDEN} missing` };
+    try {
+      golden = JSON.parse(g.text);
+    } catch {
+      return { status: 'FAIL', details: `${ARCH_GOLDEN} is not valid JSON` };
+    }
+  }
+  const c = golden.components ?? {};
+  const bad = [];
+  const manifests = new Map();
+  const parse = (path) => {
+    const f = files.find((x) => x.path === path);
+    if (!f) return (bad.push(`${path} missing`), null);
+    try {
+      return JSON.parse(f.text);
+    } catch {
+      return (bad.push(`${path} is not valid JSON`), null);
+    }
+  };
+  for (const dir of c.directories ?? []) {
+    if (!files.some((x) => x.path.startsWith(`${dir}/`))) bad.push(`workspace ${dir} missing`);
+  }
+  const root = parse('package.json');
+  if (root && JSON.stringify(root.workspaces ?? null) !== JSON.stringify(c.rootWorkspaces)) {
+    bad.push(`root workspaces are not ${JSON.stringify(c.rootWorkspaces)}`);
+  }
+  if (root) manifests.set('package.json', root);
+  const deps = (m) => ({ ...m?.optionalDependencies, ...m?.peerDependencies, ...m?.devDependencies, ...m?.dependencies });
+  for (const [dir, required] of Object.entries(c.requiredDeps ?? {})) {
+    const m = parse(`${dir}/package.json`);
+    if (!m) continue;
+    manifests.set(`${dir}/package.json`, m);
+    for (const d of required) if (!(d in deps(m))) bad.push(`${dir} lacks dependency ${d}`);
+  }
+  for (const [path, m] of manifests) {
+    for (const d of c.forbiddenDeps ?? []) if (d in deps(m)) bad.push(`${path} depends on ${d} (static site, no SSR adapter)`);
+    for (const d of c.pinnedExactly ?? []) {
+      const v = deps(m)[d];
+      if (v !== undefined && !EXACT_VERSION.test(v)) bad.push(`${path} pins ${d} as "${v}" (exact version required)`);
+    }
+  }
+  for (const cfg of files.filter((x) => /^apps\/web\/astro\.config\.[cm]?[jt]s$/.test(x.path))) {
+    const code = cfg.text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+    const m = /\boutput\s*:\s*['"`](\w+)['"`]/.exec(code);
+    if (m && (c.forbiddenAstroOutputs ?? []).includes(m[1])) bad.push(`${cfg.path} sets output '${m[1]}' (must be static)`);
+    if (/\badapter\s*:/.test(code)) bad.push(`${cfg.path} sets an adapter (must be static)`);
+  }
+  return result(bad.slice(0, 3).concat(bad.length > 3 ? [`and ${bad.length - 3} more`] : []), 'workspaces, deps, static astro as in the golden file');
+}
+
 const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
 
 export const CHECKS = [
@@ -520,6 +584,7 @@ export const CHECKS = [
   { name: 'migrate-no-photo-writes', input: 'files', run: checkMigrateNoPhotoWrites },
   { name: 'migrate-no-r2', input: 'files', run: checkMigrateNoR2 },
   { name: 'migrate-no-credentials', input: 'files', run: checkMigrateNoCredentials },
+  { name: 'arch-components', input: 'files', run: (f) => checkArchComponents(f) },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
 ];
 

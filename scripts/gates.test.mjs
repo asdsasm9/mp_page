@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  ARCH_GOLDEN,
   CHECKS,
   ENV_DOCS_ONLY,
   FAKE_WORLD_MARKER,
@@ -28,6 +29,7 @@ import {
   checkMigrateNoSignUp,
   envUrlHosts,
   checkApiHygiene,
+  checkArchComponents,
   checkQuotaGuardTests,
   checkEnvExampleSane,
   checkEnvExampleComplete,
@@ -419,9 +421,99 @@ describe('admin dist rules (WP5-30)', () => {
   });
 });
 
+const archGolden = {
+  components: {
+    rootWorkspaces: ['apps/*', 'packages/*'],
+    directories: ['apps/web', 'scripts', 'docs'],
+    requiredDeps: { 'apps/web': ['astro', '@mp/shared'], 'packages/shared': ['zod'] },
+    forbiddenDeps: ['@astrojs/cloudflare', '@astrojs/node'],
+    forbiddenAstroOutputs: ['server', 'hybrid'],
+    pinnedExactly: ['astro'],
+  },
+};
+const pkg = (o) => JSON.stringify(o);
+const archFiles = (over = {}) => {
+  const base = {
+    'package.json': pkg({ workspaces: ['apps/*', 'packages/*'] }),
+    'apps/web/package.json': pkg({ dependencies: { astro: '7.4.0', '@mp/shared': '0.0.0' } }),
+    'packages/shared/package.json': pkg({ dependencies: { zod: '4.6.7' } }),
+    'apps/web/astro.config.mjs': "export default defineConfig({ output: 'static' });",
+    'scripts/a.mjs': '',
+    'docs/a.md': '',
+    ...over,
+  };
+  return Object.entries(base)
+    .filter(([, t]) => t !== null)
+    .map(([p, t]) => f(p, t));
+};
+
+describe('arch-components', () => {
+  const run = (over) => checkArchComponents(archFiles(over), archGolden);
+  it('passes on a conforming layout', () => expect(run().status).toBe('PASS'));
+  it('fails when a workspace directory is missing and names it', () => {
+    const r = checkArchComponents(archFiles({ 'docs/a.md': null }), archGolden);
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('docs');
+  });
+  it('fails when a workspace package.json is missing', () => {
+    expect(run({ 'packages/shared/package.json': null }).status).toBe('FAIL');
+  });
+  it('fails when the root workspaces differ', () => {
+    expect(run({ 'package.json': pkg({ workspaces: ['apps/*'] }) }).status).toBe('FAIL');
+  });
+  it('fails when a required dependency is missing', () => {
+    const r = run({ 'packages/shared/package.json': pkg({ dependencies: {} }) });
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('zod');
+  });
+  it('fails on an SSR adapter dependency', () => {
+    const r = run({ 'apps/web/package.json': pkg({ dependencies: { astro: '7.4.0', '@mp/shared': '0.0.0', '@astrojs/cloudflare': '1.0.0' } }) });
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('@astrojs/cloudflare');
+  });
+  it('fails on astro server or hybrid output, but not when only a comment says so', () => {
+    expect(run({ 'apps/web/astro.config.mjs': "export default { output: 'server' };" }).status).toBe('FAIL');
+    expect(run({ 'apps/web/astro.config.mjs': 'export default { output: "hybrid" };' }).status).toBe('FAIL');
+    expect(run({ 'apps/web/astro.config.mjs': "// output: 'server'\nexport default { output: 'static' };" }).status).toBe('PASS');
+  });
+  it('fails on an adapter in the astro config', () => {
+    expect(run({ 'apps/web/astro.config.mjs': 'export default { adapter: node() };' }).status).toBe('FAIL');
+  });
+  it('fails when astro uses a ^ or ~ range', () => {
+    for (const v of ['^7.4.0', '~7.4.0']) {
+      const r = run({ 'apps/web/package.json': pkg({ dependencies: { astro: v, '@mp/shared': '0.0.0' } }) });
+      expect(r.status).toBe('FAIL');
+      expect(r.details).toContain('astro');
+    }
+  });
+  it('does not gate ranges on other dependencies', () => {
+    expect(run({ 'packages/shared/package.json': pkg({ dependencies: { zod: '^4.6.7' } }) }).status).toBe('PASS');
+  });
+  it('fails when the golden file is missing or broken', () => {
+    expect(checkArchComponents(archFiles()).status).toBe('FAIL');
+    expect(checkArchComponents([...archFiles(), f(ARCH_GOLDEN, '{nope')]).status).toBe('FAIL');
+  });
+  it('reads the golden file from the file list', () => {
+    expect(checkArchComponents([...archFiles(), f(ARCH_GOLDEN, JSON.stringify(archGolden))]).status).toBe('PASS');
+  });
+  it('the golden file has an authority note and no secret-shaped strings', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+    const g = loadFiles(root, [ARCH_GOLDEN]);
+    expect(JSON.parse(g[0].text)._note).toMatch(/architect/i);
+    expect(checkNoSecrets(g).status).toBe('PASS');
+  });
+  it('the real repo is green', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+    const r = checkArchComponents(loadFiles(root, gitPaths(root)));
+    expect(r.status, r.details).toBe('PASS');
+  });
+});
+
 describe('registry and runner', () => {
   const inputs = {
     files: [
+      ...archFiles(),
+      f(ARCH_GOLDEN, JSON.stringify(archGolden)),
       f('.env.example', Object.keys(ENV_DOCS_ONLY).map((n) => `# docs-only: test\n# ${n}=\n`).join('')),
       f('supabase/migrations/20261019100000_a.sql', 'create table public.t (id int);'),
       f('supabase/tests/lint.test.ts'),

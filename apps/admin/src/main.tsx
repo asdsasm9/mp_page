@@ -1,9 +1,13 @@
 import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import './styles/tokens.css';
+import './styles/app.css';
 import { loadPorts } from './adapters/select';
 import { App } from './App';
 import { ConfigError } from './ConfigError';
 import { readEnv } from './env';
+import { messageForCode } from './i18n/messages';
 import { PortsProvider } from './ports-context';
 
 const container = document.getElementById('root');
@@ -19,9 +23,11 @@ if (!env.ok) {
     (ports) =>
       show(
         <PortsProvider ports={ports}>
-          <App />
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
         </PortsProvider>,
       ),
-    (error: unknown) => show(<ConfigError problems={[error instanceof Error ? error.message : 'Neznámá chyba']} />),
+    (error: unknown) => show(<ConfigError problems={[error instanceof Error ? error.message : messageForCode('UNKNOWN')]} />),
   );
 }

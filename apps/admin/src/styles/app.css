@@ -1,0 +1,199 @@
+/* Admin shell styles. Tokens only (tokens.css); plain CSS, no frameworks, no external requests. */
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body,
+  h1,
+  h2,
+  p,
+  ul {
+    margin: 0;
+  }
+
+  ul {
+    padding: 0;
+    list-style: none;
+  }
+}
+
+@layer base {
+  html {
+    scroll-padding-block-end: var(--bottom-nav-height);
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--font-size-ui);
+    line-height: var(--line-height-body);
+  }
+
+  h1 {
+    font-size: var(--font-size-3);
+    line-height: var(--line-height-heading);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  a {
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: var(--focus-width) solid var(--color-focus);
+    outline-offset: var(--focus-offset);
+  }
+
+  [tabindex='-1']:focus {
+    outline: none;
+  }
+}
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    inset-inline-start: var(--space-4);
+    inset-block-start: var(--space-4);
+    z-index: var(--z-skip);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    transform: translateY(-200%);
+  }
+
+  .skip-link:focus {
+    transform: none;
+  }
+
+  .shell {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 100dvh;
+  }
+
+  .shell-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-block: var(--space-2);
+    padding-inline: var(--layout-gutter);
+    background: var(--color-surface-raised);
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  .brand {
+    font-weight: 700;
+    text-decoration: none;
+    min-block-size: var(--target-min);
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .nav-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--target-min);
+    min-inline-size: var(--target-min);
+    padding-inline: var(--space-4);
+    border-radius: var(--radius-md);
+    border-block-end: var(--bar-thickness) solid transparent;
+    text-decoration: none;
+  }
+
+  .nav-link:hover {
+    background: var(--color-surface);
+  }
+
+  .nav-link[aria-current='page'] {
+    border-block-end-color: var(--color-border-strong);
+    font-weight: 700;
+  }
+
+  .shell-main,
+  .auth-main {
+    flex: 1;
+    inline-size: 100%;
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-6) var(--layout-gutter);
+  }
+
+  .auth-main {
+    display: grid;
+    align-content: start;
+    justify-items: center;
+    max-inline-size: 24rem;
+  }
+
+  .page > * + * {
+    margin-block-start: var(--space-4);
+  }
+
+  .page-note {
+    color: var(--color-text-muted);
+    max-inline-size: var(--measure);
+  }
+
+  .bottom-nav {
+    display: none;
+  }
+
+  .desktop-nav {
+    display: block;
+  }
+
+  @media (max-width: 39.99rem) {
+    .desktop-nav {
+      display: none;
+    }
+
+    .shell-main {
+      padding-block-end: calc(var(--bottom-nav-height) + var(--space-6));
+    }
+
+    .bottom-nav {
+      display: block;
+      position: fixed;
+      inset-inline: 0;
+      inset-block-end: 0;
+      z-index: var(--z-header);
+      background: var(--color-surface-raised);
+      border-block-start: var(--border-width) solid var(--color-border);
+      padding-block-end: env(safe-area-inset-bottom);
+    }
+
+    .bottom-nav .nav-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+
+    .bottom-nav .nav-link {
+      inline-size: 100%;
+      min-block-size: var(--bottom-nav-height);
+      padding-inline: var(--space-2);
+      border-radius: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .nav-link {
+      transition: background-color var(--motion-fast) var(--motion-ease);
+    }
+  }
+}

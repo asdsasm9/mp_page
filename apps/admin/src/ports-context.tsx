@@ -13,6 +13,17 @@ export function usePorts(): Ports {
   return ports;
 }
 
+const SiteUrlContext = createContext('');
+
+/** Origin of the public site (VITE_PUBLIC_SITE_URL) for the "Zobrazit web" link; empty text links to "/". */
+export function SiteUrlProvider({ url, children }: { url: string; children: ReactNode }) {
+  return <SiteUrlContext.Provider value={url}>{children}</SiteUrlContext.Provider>;
+}
+
+export function useSiteUrl(): string {
+  return useContext(SiteUrlContext);
+}
+
 const ImageBaseContext = createContext('');
 
 /** Origin of the public image host (VITE_IMG_BASE_URL, no trailing slash); empty text gives relative URLs. */

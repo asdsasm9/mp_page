@@ -7,6 +7,7 @@ import { createRealApi } from './api';
 import { createRealAuth, type SupabaseAuthLike, type SupabaseErrorLike } from './auth';
 import { createRealCatalog } from './catalog';
 import { createRest, type FetchFn } from './http';
+import { createRealPublishStatus } from './publishStatus';
 import { createRealPorts } from './index';
 import { createXhrUpload } from './upload';
 
@@ -429,10 +430,47 @@ describe('createRealPorts', () => {
     for (const call of calls) expect(call.headers.authorization).toBe(`Bearer ${TOKEN}`);
   });
 
-  it('publish status says "not available" until its work package lands; the upload port is the XHR one', async () => {
-    const ports = createRealPorts(env, { auth: authStub(), fetch: stubFetch({}).fetch });
+  it('the upload port is the XHR one and the publish status reads the public site', async () => {
+    const reply = { snapshotGeneratedAt: '2026-10-20T08:00:00.000Z', builtAt: '2026-10-20T08:01:30.000Z', counts: { categories: 1, albums: 2, photos: 3 } };
+    const { fetch, calls } = stubFetch({ json: reply });
+    const ports = createRealPorts(env, { auth: authStub(), fetch });
     expect(typeof ports.upload.put).toBe('function');
-    await expect(ports.publishStatus.read()).rejects.toThrow(/Připojení k serveru/);
+    await expect(ports.publishStatus.read()).resolves.toEqual(reply);
+    expect(calls[0]!.url).toBe('https://site.example.test/_publish.json');
+  });
+});
+
+describe('real publish status', () => {
+  const SITE = 'https://site.example.test/';
+  const good = { snapshotGeneratedAt: '2026-10-20T08:00:00.000Z', builtAt: '2026-10-20T08:01:30.000Z', counts: { categories: 1, albums: 2, photos: 3 } };
+
+  it('asks with cache no-store, no credentials and no token, on the trimmed site URL', async () => {
+    const seen: { url: string; init: RequestInit | undefined }[] = [];
+    const fetch: FetchFn = async (url, init) => {
+      seen.push({ url, init });
+      return new Response(JSON.stringify(good), { status: 200 });
+    };
+    await createRealPublishStatus({ siteUrl: SITE, fetch }).read();
+    expect(seen[0]!.url).toBe('https://site.example.test/_publish.json');
+    expect(seen[0]!.init).toMatchObject({ method: 'GET', cache: 'no-store', credentials: 'omit' });
+    expect(JSON.stringify(seen[0]!.init)).not.toMatch(/authorization|bearer/i);
+  });
+
+  it('404 is null; a transport failure (CORS), a 5xx and a non-JSON body are NetworkError', async () => {
+    const read = (reply: Reply | (() => Response)) =>
+      createRealPublishStatus({
+        siteUrl: SITE,
+        fetch: async () => {
+          if (typeof reply === 'function') return reply();
+          if (reply instanceof Error) throw reply;
+          return new Response(JSON.stringify(reply.json ?? {}), { status: reply.status ?? 200 });
+        },
+      }).read();
+    await expect(read({ status: 404 })).resolves.toBeNull();
+    await expect(read(new TypeError('Failed to fetch'))).rejects.toBeInstanceOf(NetworkError);
+    await expect(read({ status: 503 })).rejects.toBeInstanceOf(NetworkError);
+    await expect(read(() => new Response('<html>', { status: 200 }))).rejects.toBeInstanceOf(NetworkError);
+    await expect(read({ json: { builtAt: 'x' } })).rejects.toBeInstanceOf(NetworkError);
   });
 });
 

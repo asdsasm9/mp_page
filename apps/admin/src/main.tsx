@@ -22,7 +22,7 @@ if (!env.ok) {
   loadPorts(env.env).then(
     (ports) =>
       show(
-        <AppProviders ports={ports} imgBaseUrl={env.env.imgBaseUrl}>
+        <AppProviders ports={ports} imgBaseUrl={env.env.imgBaseUrl} siteUrl={env.env.publicSiteUrl}>
           <BrowserRouter>
             <App />
           </BrowserRouter>

@@ -1234,3 +1234,43 @@
     }
   }
 }
+
+/* Publish screen (WP5-25). */
+@layer components {
+  .publish-card {
+    max-inline-size: 32rem;
+  }
+
+  .publish-card > * + * {
+    margin-block-start: var(--space-3);
+  }
+
+  .publish-live:empty {
+    display: none;
+  }
+
+  .publish-history {
+    list-style: none;
+    padding: 0;
+    margin-block-start: var(--space-3);
+    max-inline-size: 40rem;
+  }
+
+  .publish-history-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    padding-block: var(--space-2);
+    border-block-end: var(--border-width) solid var(--color-border);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .publish-history-status {
+    font-weight: 700;
+  }
+
+  .publish-history-row[data-status='failed'] .publish-history-status {
+    color: var(--color-danger);
+  }
+}

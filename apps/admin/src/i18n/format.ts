@@ -46,6 +46,23 @@ export function formatDateTime(value: Date | string | number): string {
   return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} ${two(d.getHours())}:${two(d.getMinutes())}`;
 }
 
+/** Last Sunday of a month (UTC date of month `m`, 0-based) at 01:00 UTC: the EU summer-time switch instant. */
+function euSwitch(year: number, month: number): number {
+  const lastDay = new Date(Date.UTC(year, month + 1, 0));
+  return Date.UTC(year, month, lastDay.getUTCDate() - lastDay.getUTCDay(), 1);
+}
+
+/** "19. 10. 2026 14:32" in Prague time (CET/CEST by the EU rule), whatever the browser's zone is. */
+export function formatPragueDateTime(value: Date | string | number): string {
+  const d = value instanceof Date ? value : new Date(value);
+  const ms = d.getTime();
+  if (Number.isNaN(ms)) return '';
+  const year = d.getUTCFullYear();
+  const summer = ms >= euSwitch(year, 2) && ms < euSwitch(year, 9);
+  const p = new Date(ms + (summer ? 2 : 1) * 3_600_000);
+  return `${p.getUTCDate()}. ${p.getUTCMonth() + 1}. ${p.getUTCFullYear()} ${two(p.getUTCHours())}:${two(p.getUTCMinutes())}`;
+}
+
 /** A stored calendar date "2026-06-14" as "14. 6. 2026" (no time zone involved); other text is returned unchanged. */
 export function formatShotOn(value: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);

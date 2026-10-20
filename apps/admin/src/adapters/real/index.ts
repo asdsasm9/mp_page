@@ -1,11 +1,11 @@
 /**
  * Real adapter set: supabase-js (anon key) for sign-in, PostgREST for the catalog, fetch for the Worker.
- * The publish status reader belongs to a later work package (WP5-25); until then it answers with the Czech
- * "not available" error instead of pretending to work.
+ * The publish status reader fetches the public site's `/_publish.json`.
  */
 import { createClient } from '@supabase/supabase-js';
 import type { AdminEnv } from '../../env';
-import { AdapterUnavailableError, systemClock, systemIds, type Ports } from '../../ports';
+import { systemClock, systemIds, type Ports } from '../../ports';
+import { createRealPublishStatus } from './publishStatus';
 import { createRealApi } from './api';
 import { createRealAuth, type SupabaseAuthLike } from './auth';
 import { createRealCatalog } from './catalog';
@@ -42,9 +42,7 @@ export function createRealPorts(env: AdminEnv, deps: RealPortsDeps = {}): Ports 
     catalog: createRealCatalog(rest),
     api: createRealApi({ baseUrl: env.apiBaseUrl, getToken, ...fetchDep }),
     upload: createXhrUpload(),
-    publishStatus: {
-      read: () => Promise.reject(new AdapterUnavailableError()),
-    },
+    publishStatus: createRealPublishStatus({ siteUrl: env.publicSiteUrl, ...fetchDep }),
     clock: systemClock,
     ids: systemIds,
   };

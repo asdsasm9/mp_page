@@ -49,7 +49,7 @@ const WORKER: Record<WorkerErrorCode, Entry> = {
   UPSTREAM_ERROR: 'Správa je dočasně nedostupná. Veřejný web funguje dál.',
   CONFIG_ERROR: 'Server není správně nastavený. Obraťte se na správce webu.',
   PUBLISH_FAILED: 'Zveřejnění se nepodařilo. Web zůstává ve stavu před touto změnou. Zkusit znovu.',
-  SNAPSHOT_EMPTY: 'Zveřejnění bylo zastaveno, protože by na webu nezůstal žádný obsah. Web zůstává ve stavu před touto změnou.',
+  SNAPSHOT_EMPTY: 'Nelze zveřejnit web bez jediného zveřejněného alba.',
   INTERNAL: 'Na serveru došlo k chybě. Zkuste to znovu.',
 };
 

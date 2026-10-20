@@ -154,6 +154,31 @@ export const cs = {
   publishIndicator: {
     pending: 'Nezveřejněné změny',
   },
+  /** Publish screen (ADMIN-UX 3.6). */
+  publish: {
+    button: glossary.publishSite,
+    busy: 'Zveřejňuji…',
+    alreadyRunning: 'Zveřejnění už probíhá.',
+    noChanges: 'Žádné nové změny.',
+    /** One, few, many forms of "{count} úprava". */
+    pending: ['{count} úprava od posledního zveřejnění', '{count} úpravy od posledního zveřejnění', '{count} úprav od posledního zveřejnění'],
+    building: 'Web se aktualizuje, trvá to asi 1 až 2 minuty.',
+    triggered: 'Zveřejnění bylo spuštěno. Web se aktualizuje během několika minut.',
+    done: 'Web je aktualizovaný.',
+    showSite: 'Zobrazit web',
+    timeout: 'Web se zatím neaktualizoval. Zkontrolujte ho za chvíli, případně zkuste zveřejnit znovu.',
+    failed: 'Zveřejnění se nepodařilo. Web zůstává ve stavu před touto změnou. Zkusit znovu.',
+    lastPublished: 'Naposledy zveřejněno {date}',
+    neverPublished: 'Web zatím nebyl zveřejněn.',
+    statusLabel: 'Stav zveřejnění',
+    historyTitle: 'Poslední zveřejnění',
+    historyLabel: 'Seznam posledních zveřejnění',
+    historyEmpty: 'Zatím žádné zveřejnění.',
+    historyLoadFailed: 'Historii zveřejnění se nepodařilo načíst.',
+    loadFailed: 'Stav zveřejnění se nepodařilo načíst.',
+    log: { started: 'Probíhá', ok: 'Zveřejněno', failed: 'Nepodařilo se' },
+    logCounts: '{albums}, {photos}',
+  },
   /** Reorderable lists (ADMIN-UX F2, 3.2). {name}, {position}, {total}, {max} are filled in by the component. */
   reorder: {
     saved: 'Pořadí uloženo',

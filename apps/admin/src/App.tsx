@@ -8,6 +8,7 @@ import { AlbumScreen } from './screens/AlbumScreen';
 import { CategoriesScreen } from './screens/CategoriesScreen';
 import { CategoryScreen } from './screens/CategoryScreen';
 import { PhotoDetailScreen } from './screens/PhotoDetailScreen';
+import { PublishScreen } from './screens/PublishScreen';
 import { UploadScreen } from './screens/UploadScreen';
 
 function NotFound() {
@@ -36,7 +37,7 @@ export function App() {
           <Route path="/kategorie/:id" element={<CategoryScreen />} />
           <Route path="/alba/:id" element={<AlbumScreen />} />
           <Route path="/alba/:id/foto/:photoId" element={<PhotoDetailScreen />} />
-          <Route path="/zverejnit" element={<Placeholder title={cs.routes.publish.title} />} />
+          <Route path="/zverejnit" element={<PublishScreen />} />
           <Route path="/ulozeni" element={<Placeholder title={cs.routes.storage.title} storageBar />} />
           <Route path="/nahravani" element={<UploadScreen />} />
           <Route path="*" element={<NotFound />} />

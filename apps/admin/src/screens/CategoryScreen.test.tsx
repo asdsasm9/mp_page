@@ -96,8 +96,7 @@ describe('album list', () => {
     expect(within(first).getByRole('button', { name: 'Skrýt album: Novákovi' })).toBeTruthy();
     expect(within(row('Dvořákovi')).getByRole('button', { name: 'Zveřejnit album: Dvořákovi' })).toBeTruthy();
     expect(within(first).getByRole('button', { name: 'Přesunout do jiné kategorie: Novákovi' })).toBeTruthy();
-    // Delete belongs to a later step: no such control here.
-    expect(within(first).queryByRole('button', { name: /Smazat/ })).toBeNull();
+    expect(within(first).getByRole('button', { name: /^Smazat album: / })).toBeTruthy();
     // Breadcrumb: Kategorie / Svatby.
     const crumbs = screen.getByRole('navigation', { name: cs.categoryDetail.breadcrumbLabel });
     expect(within(crumbs).getByRole('link', { name: 'Kategorie' }).getAttribute('href')).toBe('/');

@@ -20,6 +20,8 @@ import { fill, formatCount, plural } from '../i18n/format';
 import { errorMessage } from '../i18n/messages';
 import { useImageBase } from '../ports-context';
 import { planDragEnd } from '../components/SortableList';
+import { usePhotoDeleter, type DeleteOutcome } from '../data/deleteActions';
+import { DeletePhotosDialog } from './DeleteDialogs';
 import { MovePhotosDialog } from './MovePhotosDialog';
 
 interface Props {
@@ -88,6 +90,7 @@ interface MenuProps {
   onEnd: () => void;
   onPosition: (n: number) => void;
   onMoveAlbum: () => void;
+  onDelete: () => void;
   detailPath: string;
 }
 
@@ -141,6 +144,9 @@ function TileMenu(props: MenuProps) {
             </button>
           </>
         ) : null}
+        <button type="button" className="button button-danger" disabled={!canMutate} onClick={props.onDelete}>
+          {cs.delete.photo}
+        </button>
         <button type="button" className="button" onClick={props.onClose}>
           {cs.photos.close}
         </button>
@@ -161,6 +167,11 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [moveIds, setMoveIds] = useState<string[] | null>(null);
   const [actionError, setActionError] = useState<unknown>(null);
+  const deleter = usePhotoDeleter();
+  /** Rows to delete, fixed when the dialog opens (the list refreshes while the chunks run). */
+  const [deleteTarget, setDeleteTarget] = useState<PhotoRow[] | null>(null);
+  const [deleteFailedIds, setDeleteFailedIds] = useState<string[]>([]);
+  const [retrying, setRetrying] = useState(false);
 
   const displayed = reorder.displayed;
   const missing = photos.filter(hasNoAlt);
@@ -209,7 +220,41 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
   const menuPhoto = menuFor ? displayed.find((p) => p.id === menuFor) : undefined;
   const selectedIds = displayed.filter((p) => selected.has(p.id)).map((p) => p.id);
 
-  if (photos.length === 0) return <p className="page-note">{cs.album.photosEmpty}</p>;
+  function finishDelete(outcome: DeleteOutcome) {
+    setDeleteTarget(null);
+    setDeleteFailedIds(outcome.failedIds);
+    if (outcome.failedIds.length === 0) stopSelecting();
+    else setSelected((current) => new Set([...current].filter((id) => outcome.failedIds.includes(id))));
+  }
+
+  async function retryDelete() {
+    setRetrying(true);
+    const outcome = await deleter.deletePhotos(
+      album,
+      deleteFailedIds.map((id) => ({ id, bytes_total: 0 })),
+    );
+    setRetrying(false);
+    setDeleteFailedIds(outcome.failedIds);
+    if (outcome.failedIds.length === 0) toast.show(cs.delete.retried);
+  }
+
+  const deleteFailure =
+    deleteFailedIds.length > 0 ? (
+      <div className="notice notice-error" role="alert">
+        <p>{cs.delete.failed}</p>
+        <button type="button" className="button" disabled={!canMutate || retrying} onClick={() => void retryDelete()}>
+          {retrying ? cs.delete.progress : glossary.retry}
+        </button>
+      </div>
+    ) : null;
+
+  if (photos.length === 0)
+    return (
+      <>
+        <p className="page-note">{cs.album.photosEmpty}</p>
+        {deleteFailure}
+      </>
+    );
 
   return (
     <div className="gallery">
@@ -236,6 +281,7 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
         selecting={selecting}
         selected={selected}
         busy={reorder.busy}
+        failedIds={new Set(deleteFailedIds)}
         onToggle={toggle}
         onLongPress={(id) => startSelecting(id)}
         onMenu={setMenuFor}
@@ -262,6 +308,7 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
           </div>
         )
       ) : null}
+      {deleteFailure}
       {actionError === null ? null : isStale(actionError) ? (
         <StaleNotice entity="album" onReload={() => setActionError(null)} />
       ) : (
@@ -281,6 +328,14 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
             onClick={() => setMoveIds(selectedIds)}
           >
             {glossary.moveToAlbum}
+          </button>
+          <button
+            type="button"
+            className="button button-danger"
+            disabled={!canMutate || selected.size === 0}
+            onClick={() => setDeleteTarget(displayed.filter((p) => selected.has(p.id)))}
+          >
+            {fill(cs.delete.selected, { count: selected.size })}
           </button>
           <button type="button" className="button" onClick={stopSelecting}>
             {cs.photos.clearSelection}
@@ -313,7 +368,14 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
             setMenuFor(null);
             setMoveIds([menuPhoto.id]);
           }}
+          onDelete={() => {
+            setMenuFor(null);
+            setDeleteTarget([menuPhoto]);
+          }}
         />
+      ) : null}
+      {deleteTarget && deleteTarget.length > 0 ? (
+        <DeletePhotosDialog album={album} photos={deleteTarget} onClose={() => setDeleteTarget(null)} onFinished={finishDelete} />
       ) : null}
       {moveIds ? (
         <MovePhotosDialog

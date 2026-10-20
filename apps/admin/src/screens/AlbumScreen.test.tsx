@@ -81,7 +81,7 @@ describe('screen', () => {
     expect(screen.getByRole('button', { name: 'Přesunout do jiné kategorie' })).toBeTruthy();
     expect(screen.getByText('Přetáhněte sem fotky nebo klikněte pro výběr')).toBeTruthy();
     await screen.findByText('V albu zatím nejsou žádné fotky.');
-    expect(screen.queryByRole('button', { name: /Smazat/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Smazat album' })).toBeTruthy();
   });
 
   it('says drafts are unlisted, not private, and drops the hint once published', async () => {

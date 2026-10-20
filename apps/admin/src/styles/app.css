@@ -908,6 +908,11 @@
     border-radius: var(--radius-full);
   }
 
+  .photo-badge-danger {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+  }
+
   .photo-dot {
     inline-size: var(--space-4);
     block-size: var(--space-4);

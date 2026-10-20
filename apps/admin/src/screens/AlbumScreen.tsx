@@ -1,7 +1,7 @@
 /** Album detail (`/alba/:id`, ADMIN-UX 3.4): inline title, status and actions, data panel, drop zone placeholder. */
 import type { AlbumRow, CategoryRow } from '@mp/shared';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { LoadFailure } from '../components/LoadFailure';
 import { useDocumentTitle } from '../components/Page';
@@ -14,6 +14,7 @@ import { useCanMutate } from '../data/health';
 import { cs, glossary } from '../i18n/cs';
 import { AlbumDataPanel, SaveStatus } from './AlbumDataPanel';
 import { HideAlbumDialog, MoveAlbumDialog } from './AlbumDialogs';
+import { DeleteAlbumDialog } from './DeleteDialogs';
 import { PhotoGallery } from './PhotoGallery';
 import { useAlbumAutosave } from './useAlbumAutosave';
 
@@ -89,7 +90,8 @@ function AlbumBody({
   const actions = useAlbumActions();
   const canMutate = useCanMutate();
   const photos = usePhotos(album.id);
-  const [dialog, setDialog] = useState<'hide' | 'move' | null>(null);
+  const navigate = useNavigate();
+  const [dialog, setDialog] = useState<'hide' | 'move' | 'delete' | null>(null);
   const [actionError, setActionError] = useState<unknown>(null);
   const status = albumStatus(album);
 
@@ -134,6 +136,14 @@ function AlbumBody({
           >
             {cs.categoryDetail.moveToCategory}
           </button>
+          <button
+            type="button"
+            className="button button-danger"
+            disabled={!canMutate || !photos.data}
+            onClick={() => setDialog('delete')}
+          >
+            {cs.delete.album}
+          </button>
         </div>
       </div>
       {actionError === null ? null : isStale(actionError) ? (
@@ -159,6 +169,14 @@ function AlbumBody({
         ) : null}
       </section>
       {dialog === 'hide' ? <HideAlbumDialog album={album} onClose={() => setDialog(null)} /> : null}
+      {dialog === 'delete' ? (
+        <DeleteAlbumDialog
+          album={album}
+          photoCount={photos.data?.length ?? 0}
+          onClose={() => setDialog(null)}
+          onDeleted={() => navigate(category ? `/kategorie/${category.id}` : '/')}
+        />
+      ) : null}
       {dialog === 'move' ? (
         <MoveAlbumDialog album={album} categories={categories} albums={allAlbums} onClose={() => setDialog(null)} />
       ) : null}

@@ -51,6 +51,8 @@ export interface PhotoGridProps {
   selecting: boolean;
   selected: ReadonlySet<string>;
   busy: boolean;
+  /** Photos whose deletion did not finish; their tiles say "Mazání selhalo". */
+  failedIds?: ReadonlySet<string>;
   onToggle: (id: string) => void;
   onLongPress: (id: string) => void;
   onMenu: (id: string) => void;
@@ -68,6 +70,7 @@ interface TileProps {
   checked: boolean;
   reorderable: boolean;
   busy: boolean;
+  deleteFailed: boolean;
   onToggle: (id: string) => void;
   onLongPress: (id: string) => void;
   onMenu: (id: string) => void;
@@ -169,6 +172,7 @@ function Tile(props: TileProps) {
       </div>
       <div className="photo-badges">
         {isCover ? <span className="photo-badge">{cs.photos.cover}</span> : null}
+        {props.deleteFailed ? <span className="photo-badge photo-badge-danger">{cs.delete.tileFailed}</span> : null}
         {hasNoAlt(photo) ? (
           <span className="photo-dot" role="img" aria-label={cs.photos.altMissingDot} title={cs.photos.altMissingDot} />
         ) : null}
@@ -283,6 +287,7 @@ export function PhotoGrid(props: PhotoGridProps) {
               checked={props.selected.has(photo.id)}
               reorderable={reorderable && canMutate}
               busy={busy}
+              deleteFailed={props.failedIds?.has(photo.id) ?? false}
               onToggle={props.onToggle}
               onLongPress={props.onLongPress}
               onMenu={props.onMenu}

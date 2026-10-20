@@ -321,6 +321,37 @@ export const cs = {
       unsavedBlocked: 'Úpravy se nepodařilo uložit, proto zůstáváte u této fotky. Opravte je, nebo zkuste uložit znovu.',
     },
   },
+  /** Delete flows (ADMIN-UX F5). {count} is a counted noun ("5 fotek"), {freed} a size ("12 MB"). */
+  delete: {
+    progress: 'Mažu…',
+    /** One, few, many forms. */
+    photosTitle: ['Smazat fotku?', 'Smazat {count} fotky?', 'Smazat {count} fotek?'],
+    photosBodyOne: 'Fotka se nenávratně smaže z úložiště a nelze ji vrátit.',
+    photosBodyMany: 'Fotky se nenávratně smažou z úložiště a nelze je vrátit.',
+    photosDone: ['Smazána {count}. Uvolněno {freed}.', 'Smazány {count}. Uvolněno {freed}.', 'Smazáno {count}. Uvolněno {freed}.'],
+    failed: 'Smazání se nepodařilo dokončit.',
+    tileFailed: 'Mazání selhalo',
+    retried: 'Smazání dokončeno.',
+    photo: 'Smazat fotku',
+    selected: 'Smazat vybrané ({count})',
+    albumTitleEmpty: 'Smazat album {title}? Tuto akci nelze vrátit.',
+    albumTitleOne: 'Smazat album {title} a jeho 1 fotku? Tuto akci nelze vrátit.',
+    albumTitleMany: 'Smazat album {title} a všech {photos}? Tuto akci nelze vrátit.',
+    albumConfirmLabel: 'Pro potvrzení napište název alba nebo SMAZAT',
+    confirmWord: 'SMAZAT',
+    album: 'Smazat album',
+    albumDone: 'Album smazáno. Uvolněno {freed}.',
+    category: 'Smazat kategorii',
+    categoryDone: 'Kategorie smazána.',
+  },
+  /** Upload queue (ADMIN-UX 3.5): per-file failure texts and waiting state. */
+  upload: {
+    unsupported: 'Nepodporovaný formát (JPEG, PNG, HEIC, WebP).',
+    tooLarge: 'Soubor je příliš velký.',
+    corrupt: 'Fotku se nepodařilo zpracovat.',
+    waiting: 'Čekám na připojení…',
+    cancelled: 'Zrušeno.',
+  },
   placeholder: {
     body: 'Tato obrazovka se připravuje.',
   },

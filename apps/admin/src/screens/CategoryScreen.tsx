@@ -20,9 +20,13 @@ import { cs, glossary } from '../i18n/cs';
 import { formatCount, formatShotOn } from '../i18n/format';
 import { useImageBase } from '../ports-context';
 import { HideAlbumDialog, MoveAlbumDialog, NewAlbumDialog } from './AlbumDialogs';
-import { CategoryFormDialog } from './CategoryDialogs';
+import { CategoryFormDialog, DeleteCategoryDialog } from './CategoryDialogs';
+import { DeleteAlbumDialog } from './DeleteDialogs';
 
-type DialogState = { kind: 'new' | 'edit' } | { kind: 'hide' | 'move'; id: string } | null;
+type DialogState =
+  | { kind: 'new' | 'edit' | 'deleteCategory' }
+  | { kind: 'hide' | 'move' | 'delete'; id: string }
+  | null;
 
 function CategoryBody({ category }: { category: CategoryRow }) {
   useDocumentTitle(category.name);
@@ -84,7 +88,9 @@ function CategoryBody({ category }: { category: CategoryRow }) {
   }
 
   const current =
-    dialog && (dialog.kind === 'hide' || dialog.kind === 'move') ? own.find((a) => a.id === dialog.id) : undefined;
+    dialog && (dialog.kind === 'hide' || dialog.kind === 'move' || dialog.kind === 'delete')
+      ? own.find((a) => a.id === dialog.id)
+      : undefined;
   const closeDialog = () => setDialog(null);
 
   let list;
@@ -167,6 +173,15 @@ function CategoryBody({ category }: { category: CategoryRow }) {
             >
               {cs.categoryDetail.moveToCategory}
             </button>
+            <button
+              type="button"
+              className="button button-danger"
+              aria-label={`${cs.delete.album}: ${a.title}`}
+              disabled={!canMutate || !photos.get(a.id)}
+              onClick={() => setDialog({ kind: 'delete', id: a.id })}
+            >
+              {glossary.delete}
+            </button>
           </>
         )}
       />
@@ -184,6 +199,14 @@ function CategoryBody({ category }: { category: CategoryRow }) {
           </span>
           <button type="button" className="button" disabled={!canMutate} onClick={() => setDialog({ kind: 'edit' })}>
             {cs.categoryDetail.edit}
+          </button>
+          <button
+            type="button"
+            className="button button-danger"
+            disabled={!canMutate || !albums.data}
+            onClick={() => setDialog({ kind: 'deleteCategory' })}
+          >
+            {cs.delete.category}
           </button>
           <button
             type="button"
@@ -214,6 +237,22 @@ function CategoryBody({ category }: { category: CategoryRow }) {
       ) : null}
       {dialog?.kind === 'edit' ? (
         <CategoryFormDialog category={category} categories={categories.data ?? [category]} onClose={closeDialog} />
+      ) : null}
+      {dialog?.kind === 'deleteCategory' ? (
+        <DeleteCategoryDialog
+          category={category}
+          albumCount={own.length}
+          onClose={closeDialog}
+          onDeleted={() => navigate('/')}
+        />
+      ) : null}
+      {dialog?.kind === 'delete' && current ? (
+        <DeleteAlbumDialog
+          album={current}
+          photoCount={photos.get(current.id)?.length ?? 0}
+          onClose={closeDialog}
+          onDeleted={closeDialog}
+        />
       ) : null}
       {dialog?.kind === 'hide' && current ? <HideAlbumDialog album={current} onClose={closeDialog} /> : null}
       {dialog?.kind === 'move' && current ? (

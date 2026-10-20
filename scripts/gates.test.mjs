@@ -47,6 +47,7 @@ import {
   runChecks,
   walk,
 } from './gates.mjs';
+import { apiDefaults, apiFiles, apiGolden } from './api-surface.fixtures.mjs';
 
 const f = (path, text = '') => ({ path, text });
 // Fake secrets are assembled at runtime so this file never contains a secret-shaped literal.
@@ -664,8 +665,9 @@ describe('registry and runner', () => {
   const inputs = {
     files: [
       ...archFiles(),
-      f(ARCH_GOLDEN, JSON.stringify({ ...archGolden, dataModel: dmGolden })),
-      f('.env.example', Object.keys(ENV_DOCS_ONLY).map((n) => `# docs-only: test\n# ${n}=\n`).join('')),
+      f(ARCH_GOLDEN, JSON.stringify({ ...archGolden, dataModel: dmGolden, api: apiGolden })),
+      ...apiFiles({ 'apps/api/wrangler.toml': apiDefaults['apps/api/wrangler.toml'] }),
+      f('.env.example', Object.keys(ENV_DOCS_ONLY).map((n) => `# docs-only: test\n# ${n}=\n`).join('') + '# worker url\nSUPABASE_URL=\n# worker secret\n# R2_SECRET_ACCESS_KEY=\n'),
       f('supabase/migrations/20261019100000_a.sql', dmSql),
       f('supabase/tests/lint.test.ts'),
       f('supabase/tests/golden/privilege-matrix.json'),

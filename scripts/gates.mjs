@@ -5,16 +5,15 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { checkArchApiSurface, checkArchComponents, checkArchDataModel } from './gates-arch.mjs';
 import { scanEnvUsage } from './lib/env-scan.mjs';
+import { MIGRATION_RE, result, stripSqlComments } from './lib/gate-utils.mjs';
 import { attrsOf, checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
 
 const SELF = ['scripts/gates.mjs', 'scripts/gates.test.mjs'];
 const isSelf = (p) => SELF.includes(p);
 const under = (p, ...prefixes) => prefixes.some((x) => p.startsWith(x));
 const isLockfile = (p) => p.endsWith('package-lock.json');
-
-const result = (offenders, passMsg = 'ok') =>
-  offenders.length ? { status: 'FAIL', details: offenders.join('; ') } : { status: 'PASS', details: passMsg };
 
 function findMatches(files, skip, patterns) {
   const out = [];
@@ -255,8 +254,6 @@ export function checkAnalyticsNotInAdminOrApi(files) {
   return result(findMatches(src, () => false, [['analytics beacon', ANALYTICS_RE]]), `${src.length} admin and api sources clean`);
 }
 
-const MIGRATION_RE = /^supabase\/migrations\/(\d{14})_[a-z0-9_]+\.sql$/;
-const stripSqlComments = (sql) => sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
 
 /**
  * Static migration lint: files are named <14 digits>_<name>.sql with strictly ascending timestamps,
@@ -487,219 +484,9 @@ export const checkMigrateNoCredentials = migrateRule([
   ['key-named long value', /(key|secret|token|password)[\w"' ]{0,20}[:=]\s*["'][A-Za-z0-9+/_-]{32,}["']/i],
 ]);
 
-// ---------------------------------------------------------------------------------------------- architecture (WP8-3)
-export const ARCH_GOLDEN = 'scripts/architecture.golden.json';
-const EXACT_VERSION = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
-
-/**
- * Component layout against scripts/architecture.golden.json (MASTERPLAN section 3, D-2): the workspace directories
- * exist, the root workspaces are exactly the golden globs, each workspace declares its required dependencies, no
- * SSR adapter dependency anywhere, the Astro config is not server/hybrid output, and the pinned packages use an
- * exact version (no ^ or ~). Static text checks: they catch drift, behaviour stays in the test suites.
- */
-export function checkArchComponents(files, golden) {
-  if (!golden) {
-    const g = files.find((x) => x.path === ARCH_GOLDEN);
-    if (!g) return { status: 'FAIL', details: `${ARCH_GOLDEN} missing` };
-    try {
-      golden = JSON.parse(g.text);
-    } catch {
-      return { status: 'FAIL', details: `${ARCH_GOLDEN} is not valid JSON` };
-    }
-  }
-  const c = golden.components ?? {};
-  const bad = [];
-  const manifests = new Map();
-  const parse = (path) => {
-    const f = files.find((x) => x.path === path);
-    if (!f) return (bad.push(`${path} missing`), null);
-    try {
-      return JSON.parse(f.text);
-    } catch {
-      return (bad.push(`${path} is not valid JSON`), null);
-    }
-  };
-  for (const dir of c.directories ?? []) {
-    if (!files.some((x) => x.path.startsWith(`${dir}/`))) bad.push(`workspace ${dir} missing`);
-  }
-  const root = parse('package.json');
-  if (root && JSON.stringify(root.workspaces ?? null) !== JSON.stringify(c.rootWorkspaces)) {
-    bad.push(`root workspaces are not ${JSON.stringify(c.rootWorkspaces)}`);
-  }
-  if (root) manifests.set('package.json', root);
-  const deps = (m) => ({ ...m?.optionalDependencies, ...m?.peerDependencies, ...m?.devDependencies, ...m?.dependencies });
-  for (const [dir, required] of Object.entries(c.requiredDeps ?? {})) {
-    const m = parse(`${dir}/package.json`);
-    if (!m) continue;
-    manifests.set(`${dir}/package.json`, m);
-    for (const d of required) if (!(d in deps(m))) bad.push(`${dir} lacks dependency ${d}`);
-  }
-  for (const [path, m] of manifests) {
-    for (const d of c.forbiddenDeps ?? []) if (d in deps(m)) bad.push(`${path} depends on ${d} (static site, no SSR adapter)`);
-    for (const d of c.pinnedExactly ?? []) {
-      const v = deps(m)[d];
-      if (v !== undefined && !EXACT_VERSION.test(v)) bad.push(`${path} pins ${d} as "${v}" (exact version required)`);
-    }
-  }
-  for (const cfg of files.filter((x) => /^apps\/web\/astro\.config\.[cm]?[jt]s$/.test(x.path))) {
-    const code = cfg.text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
-    const m = /\boutput\s*:\s*['"`](\w+)['"`]/.exec(code);
-    if (m && (c.forbiddenAstroOutputs ?? []).includes(m[1])) bad.push(`${cfg.path} sets output '${m[1]}' (must be static)`);
-    if (/\badapter\s*:/.test(code)) bad.push(`${cfg.path} sets an adapter (must be static)`);
-  }
-  return result(bad.slice(0, 3).concat(bad.length > 3 ? [`and ${bad.length - 3} more`] : []), 'workspaces, deps, static astro as in the golden file');
-}
-
-// ------------------------------------------------------------------------------------------ data model (WP8-4)
-const roleList = (s) => s.split(',').map((x) => x.trim().replace(/^public\./, '').replace(/"/g, '')).filter(Boolean);
-const NOT_A_TABLE = /^(function|schema|sequence|all|type|database)\b/;
-
-/** All migration statements in order: comments and dollar-quoted bodies removed, lower case, one line each. */
-function migrationStatements(files) {
-  const sql = files.filter((f) => MIGRATION_RE.test(f.path)).sort((a, b) => (a.path < b.path ? -1 : 1));
-  return sql
-    .map((f) => stripSqlComments(f.text))
-    .join(';\n')
-    .replace(/\$(\w*)\$[\s\S]*?\$\1\$/g, () => '$$')
-    .split(';')
-    .map((s) => s.replace(/\s+/g, ' ').trim().toLowerCase())
-    .filter(Boolean);
-}
-
-/** Splits a create-table body at top-level commas into column items. */
-function topLevelItems(body) {
-  const items = [];
-  let depth = 0;
-  let cur = '';
-  for (const ch of body) {
-    if (ch === '(') depth++;
-    if (ch === ')') depth--;
-    if (ch === ',' && depth === 0) (items.push(cur.trim()), (cur = ''));
-    else cur += ch;
-  }
-  if (cur.trim()) items.push(cur.trim());
-  return items;
-}
-
-/**
- * Database layout against the dataModel section of scripts/architecture.golden.json (MASTERPLAN section 3, D-5):
- * exact table set, row level security and an initial revoke from anon/authenticated on every table, no table grant
- * to anon, no insert/delete on photos for authenticated (only register_photo/delete_photos), the MASTERPLAN columns,
- * the app_config defaults, function privileges, and the behavioural suites that prove it. Static text checks over the
- * migrations: they catch drift, the PGlite suites remain the proof of behaviour.
- */
-export function checkArchDataModel(files, golden) {
-  if (!golden) {
-    const g = files.find((x) => x.path === ARCH_GOLDEN);
-    if (!g) return { status: 'FAIL', details: `${ARCH_GOLDEN} missing` };
-    try {
-      golden = JSON.parse(g.text);
-    } catch {
-      return { status: 'FAIL', details: `${ARCH_GOLDEN} is not valid JSON` };
-    }
-  }
-  const dm = golden.dataModel;
-  if (!dm) return { status: 'FAIL', details: `${ARCH_GOLDEN} has no dataModel section` };
-  const stmts = migrationStatements(files);
-  if (stmts.length === 0) return { status: 'FAIL', details: 'no migrations found in supabase/migrations' };
-  const bad = [];
-  const tables = new Map();
-  const funcs = new Map();
-  const fn = (n) => funcs.get(n) ?? funcs.set(n, { created: false, definer: false, revoked: new Set(), granted: new Set() }).get(n);
-  const anonOk = new Set(dm.anonExecute ?? []);
-  stmts.forEach((s, i) => {
-    let m;
-    if ((m = /^create table (?:if not exists )?(?:public\.)?"?(\w+)"?/.exec(s))) {
-      const t = { columns: new Set(), defaults: {}, rls: false, revokeAt: -1, grantAt: -1 };
-      const open = s.indexOf('(');
-      const close = s.lastIndexOf(')');
-      for (const item of open >= 0 ? topLevelItems(s.slice(open + 1, close)) : []) {
-        if (/^(constraint|primary|unique|check|foreign|exclude|like)\b/.test(item)) continue;
-        const c = /^"?(\w+)"?/.exec(item)[1];
-        t.columns.add(c);
-        const d = /\bdefault (-?\d+)\b/.exec(item);
-        if (d) t.defaults[c] = Number(d[1]);
-      }
-      tables.set(m[1], t);
-    } else if ((m = /^drop table (?:if exists )?(?:public\.)?"?(\w+)"?/.exec(s))) {
-      tables.delete(m[1]);
-    } else if ((m = /^alter table (?:only )?(?:public\.)?"?(\w+)"? enable row level security$/.exec(s))) {
-      if (tables.has(m[1])) tables.get(m[1]).rls = true;
-    } else if ((m = /^alter table (?:only )?(?:public\.)?"?(\w+)"? add column (?:if not exists )?"?(\w+)"?(.*)$/.exec(s))) {
-      const t = tables.get(m[1]);
-      if (t) {
-        t.columns.add(m[2]);
-        const d = /\bdefault (-?\d+)\b/.exec(m[3]);
-        if (d) t.defaults[m[2]] = Number(d[1]);
-      }
-    } else if ((m = /^alter table (?:only )?(?:public\.)?"?(\w+)"? alter column "?(\w+)"? set default (-?\d+)$/.exec(s))) {
-      if (tables.has(m[1])) tables.get(m[1]).defaults[m[2]] = Number(m[3]);
-    } else if ((m = /^revoke (?:all|execute)(?: privileges)? on function (?:public\.)?(\w+)\(.*?\) from (.+)$/.exec(s))) {
-      for (const r of roleList(m[2])) fn(m[1]).revoked.add(r);
-    } else if ((m = /^grant (?:all|execute)(?: privileges)? on function (?:public\.)?(\w+)\(.*?\) to (.+)$/.exec(s))) {
-      const roles = roleList(m[2].replace(/ with grant option$/, ''));
-      for (const r of roles) fn(m[1]).granted.add(r);
-      if (roles.includes('anon') && !anonOk.has(m[1])) bad.push(`function ${m[1]} is executable by anon`);
-    } else if ((m = /^create (?:or replace )?function (?:public\.)?"?(\w+)"?\(/.exec(s))) {
-      const f = fn(m[1]);
-      f.created = true;
-      f.definer = /\bsecurity definer\b/.test(s);
-    } else if ((m = /^revoke all(?: privileges)? on (?:table )?(.+) from (.+)$/.exec(s)) && !NOT_A_TABLE.test(m[1])) {
-      const roles = roleList(m[2]);
-      if (roles.includes('anon') && roles.includes('authenticated')) {
-        for (const n of roleList(m[1])) if (tables.has(n) && tables.get(n).revokeAt < 0) tables.get(n).revokeAt = i;
-      }
-    } else if ((m = /^grant (.+?) on (?:table )?(.+) to (.+)$/.exec(s)) && !NOT_A_TABLE.test(m[2])) {
-      const roles = roleList(m[3].replace(/ with grant option$/, ''));
-      for (const n of roleList(m[2])) {
-        const t = tables.get(n);
-        if (t && t.grantAt < 0) t.grantAt = i;
-        if (roles.includes('anon')) bad.push(`table ${n} is granted to anon`);
-        if (n === 'photos' && roles.includes('authenticated') && /\b(insert|delete|all)\b/.test(m[1])) {
-          bad.push(`table photos: authenticated may ${/\bdelete\b/.test(m[1]) ? 'delete' : 'insert'} directly (use ${dm.photoWriteFunctions.join('/')})`);
-        }
-      }
-    } else if ((m = /^create policy \S+ on (?:public\.)?"?(\w+)"? (?:as \w+ )?for (insert|delete|all)\b/.exec(s))) {
-      if (m[1] === 'photos') bad.push(`table photos has a ${m[2]} policy (writes go through ${dm.photoWriteFunctions.join('/')})`);
-    } else if (/^alter default privileges .*\bgrant\b.*\bto\b.*\banon\b/.test(s)) {
-      bad.push('default privileges grant to anon');
-    }
-  });
-
-  const golden_ = new Set(dm.tables);
-  for (const n of tables.keys()) if (!golden_.has(n)) bad.push(`table ${n} is not in the golden set`);
-  for (const n of golden_) {
-    const t = tables.get(n);
-    if (!t) {
-      bad.push(`table ${n} missing`);
-      continue;
-    }
-    if (!t.rls) bad.push(`table ${n} has no row level security`);
-    if (t.revokeAt < 0) bad.push(`table ${n} has no initial revoke from anon, authenticated`);
-    else if (t.grantAt >= 0 && t.grantAt < t.revokeAt) bad.push(`table ${n} is granted before its revoke`);
-    for (const c of dm.columns?.[n] ?? []) if (!t.columns.has(c)) bad.push(`table ${n} lacks column ${c}`);
-  }
-  const cfg = tables.get('app_config');
-  if (cfg) {
-    for (const [c, v] of Object.entries(dm.appConfigDefaults ?? {})) {
-      if (cfg.defaults[c] !== v) bad.push(`table app_config default ${c} is ${cfg.defaults[c] ?? 'unset'}, golden ${v}`);
-    }
-  }
-  for (const [name, want] of Object.entries(dm.functions ?? {})) {
-    const f = funcs.get(name);
-    if (!f?.created) {
-      bad.push(`function ${name} missing`);
-      continue;
-    }
-    for (const r of want.revokeFrom) if (!f.revoked.has(r)) bad.push(`function ${name} is not revoked from ${r}`);
-    for (const r of f.granted) if (!want.grantTo.includes(r)) bad.push(`function ${name} is granted to ${r}`);
-    for (const r of want.grantTo) if (!f.granted.has(r)) bad.push(`function ${name} is not granted to ${r}`);
-    if ((dm.photoWriteFunctions ?? []).includes(name) && !f.definer) bad.push(`function ${name} is not security definer`);
-  }
-  for (const [name, f] of funcs) if (f.created && !(name in (dm.functions ?? {}))) bad.push(`function ${name} is not in the golden set`);
-  for (const p of dm.requiredFiles ?? []) if (!files.some((x) => x.path === p)) bad.push(`${p} missing`);
-  return result(bad.slice(0, 3).concat(bad.length > 3 ? [`and ${bad.length - 3} more`] : []), `${tables.size} tables, ${funcs.size} functions as in the golden file`);
-}
+// ---------------------------------------------------------------------------------------------- architecture (WP8-3..5)
+// The arch-* gate functions live in scripts/gates-arch.mjs; re-exported here so imports of gates.mjs keep working.
+export { ARCH_GOLDEN, checkArchApiSurface, checkArchComponents, checkArchDataModel } from './gates-arch.mjs';
 
 const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
 
@@ -737,6 +524,7 @@ export const CHECKS = [
   { name: 'migrate-no-credentials', input: 'files', run: checkMigrateNoCredentials },
   { name: 'arch-components', input: 'files', run: (f) => checkArchComponents(f) },
   { name: 'arch-data-model', input: 'files', run: (f) => checkArchDataModel(f) },
+  { name: 'arch-api-surface', input: 'files', run: (f) => checkArchApiSurface(f) },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
 ];
 

@@ -30,6 +30,7 @@ import {
   envUrlHosts,
   checkApiHygiene,
   checkArchComponents,
+  checkArchDataModel,
   checkQuotaGuardTests,
   checkEnvExampleSane,
   checkEnvExampleComplete,
@@ -509,13 +510,163 @@ describe('arch-components', () => {
   });
 });
 
+const dmGolden = {
+  tables: ['categories', 'photos', 'app_config', 'keepalive'],
+  columns: { categories: ['id', 'slug'], photos: ['id', 'album_id', 'bytes_total'] },
+  appConfigDefaults: { quota_hard_bytes: 9500000000, max_files_per_batch: 200 },
+  photoWriteFunctions: ['register_photo', 'delete_photos'],
+  anonExecute: ['keepalive'],
+  functions: {
+    register_photo: { revokeFrom: ['public', 'anon'], grantTo: ['authenticated'] },
+    delete_photos: { revokeFrom: ['public', 'anon'], grantTo: ['authenticated'] },
+    keepalive: { revokeFrom: ['public'], grantTo: ['anon', 'authenticated'] },
+    bump: { revokeFrom: ['public', 'anon', 'authenticated'], grantTo: [] },
+  },
+  requiredFiles: ['supabase/tests/lint.test.ts'],
+};
+const dmSql = `
+-- comment: create table public.ghost (id int);
+create table public.categories (id uuid primary key, slug text not null unique, constraint c1 check (char_length(slug) > 1));
+create table public.photos (id uuid primary key, album_id uuid not null, bytes_total bigint not null);
+create table public.app_config (id boolean primary key default true, quota_hard_bytes bigint not null default 9500000000,
+  max_files_per_batch integer not null default 200);
+create table public.keepalive (id boolean primary key default true);
+alter table public.categories enable row level security;
+alter table public.photos enable row level security;
+alter table public.app_config enable row level security;
+alter table public.keepalive enable row level security;
+revoke all on table public.categories, public.photos, public.app_config, public.keepalive from anon, authenticated;
+grant select, insert, update, delete on table public.categories to authenticated;
+grant select on table public.photos to authenticated;
+grant update (album_id) on table public.photos to authenticated;
+grant select on table public.app_config to authenticated;
+create function public.bump() returns trigger language plpgsql security definer as $$ begin return null; end $$;
+revoke execute on function public.bump() from public, anon, authenticated;
+create function public.register_photo(p_id uuid, p_album uuid) returns jsonb language plpgsql security definer as $$ begin return '{}'; end $$;
+revoke execute on function public.register_photo(uuid, uuid) from public, anon;
+grant execute on function public.register_photo(uuid, uuid) to authenticated;
+create function public.delete_photos(p_ids uuid[]) returns jsonb language plpgsql security definer as $$ begin return '{}'; end $$;
+revoke execute on function public.delete_photos(uuid[]) from public, anon;
+grant execute on function public.delete_photos(uuid[]) to authenticated;
+create function public.keepalive() returns jsonb language plpgsql security definer as $$ begin return '{}'; end $$;
+revoke execute on function public.keepalive() from public;
+grant execute on function public.keepalive() to anon, authenticated;
+`;
+const dmFiles = (sql = dmSql, extra = []) => [
+  f('supabase/migrations/20261019100000_a.sql', sql),
+  f('supabase/tests/lint.test.ts'),
+  ...extra,
+];
+const dmRun = (sql, extra) => checkArchDataModel(dmFiles(sql, extra), { dataModel: dmGolden });
+const edit = (from, to) => dmSql.replace(from, to);
+
+describe('arch-data-model', () => {
+  it('passes on a conforming schema (comments, constraints and function bodies do not confuse it)', () => {
+    const r = dmRun();
+    expect(r.status, r.details).toBe('PASS');
+  });
+  it('fails on an unknown table and names it', () => {
+    const r = dmRun(`${dmSql}\ncreate table public.page_texts (id int);\nalter table public.page_texts enable row level security;`);
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('page_texts');
+  });
+  it('fails on a missing golden table', () => {
+    const r = dmRun(edit(/create table public\.keepalive[^;]*;/.exec(dmSql)[0], ''));
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('keepalive');
+  });
+  it('fails on a table without row level security and names it', () => {
+    const r = dmRun(edit('alter table public.photos enable row level security;', ''));
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('table photos has no row level security');
+  });
+  it('fails on a table without the initial revoke and names it', () => {
+    const r = dmRun(edit('public.app_config, public.keepalive from anon', 'public.app_config from anon'));
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('table keepalive has no initial revoke');
+  });
+  it('fails when a revoke covers only one of the roles', () => {
+    const r = dmRun(edit('public.keepalive from anon, authenticated', 'public.keepalive from anon'));
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('no initial revoke');
+  });
+  it('fails when a table is granted before its revoke', () => {
+    const r = dmRun(`${dmSql.replace('revoke all on table public.categories, public.photos, public.app_config, public.keepalive from anon, authenticated;', '')}\nrevoke all on table public.categories, public.photos, public.app_config, public.keepalive from anon, authenticated;`);
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('before its revoke');
+  });
+  it('fails on a table grant to anon and names the table', () => {
+    const r = dmRun(`${dmSql}\ngrant select on table public.categories to anon;`);
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('table categories is granted to anon');
+  });
+  it('fails on default privileges for anon', () => {
+    expect(dmRun(`${dmSql}\nalter default privileges in schema public grant select on tables to anon;`).status).toBe('FAIL');
+  });
+  it('allows only keepalive() to be executable by anon', () => {
+    const r = dmRun(edit('grant execute on function public.delete_photos(uuid[]) to authenticated;', 'grant execute on function public.delete_photos(uuid[]) to authenticated, anon;'));
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('function delete_photos is executable by anon');
+  });
+  it('fails on direct insert or delete on photos for authenticated', () => {
+    expect(dmRun(`${dmSql}\ngrant insert on table public.photos to authenticated;`).details).toContain('table photos');
+    expect(dmRun(`${dmSql}\ngrant delete on table public.photos to authenticated;`).details).toContain('delete directly');
+    expect(dmRun(`${dmSql}\ngrant all on table public.photos to authenticated;`).status).toBe('FAIL');
+    expect(dmRun(`${dmSql}\ngrant insert (album_id) on table public.photos to authenticated;`).status).toBe('FAIL');
+    expect(dmRun(`${dmSql}\ncreate policy p on public.photos for delete to authenticated using (true);`).details).toContain('table photos');
+  });
+  it('fails when a MASTERPLAN column is missing and names table and column', () => {
+    const r = dmRun(edit('album_id uuid not null, ', ''));
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('table photos lacks column album_id');
+  });
+  it('fails when an app_config default changed, also through alter table', () => {
+    const r = dmRun(edit('default 9500000000', 'default 9900000000'));
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('app_config default quota_hard_bytes');
+    expect(dmRun(`${dmSql}\nalter table public.app_config alter column max_files_per_batch set default 500;`).status).toBe('FAIL');
+  });
+  it('fails when register_photo is missing and names it', () => {
+    const r = dmRun(edit(/create function public\.register_photo[^\n]*\n[^\n]*\n[^\n]*\n/.exec(dmSql)[0], ''));
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('function register_photo missing');
+  });
+  it('fails on function privilege drift and unknown functions', () => {
+    expect(dmRun(edit('revoke execute on function public.register_photo(uuid, uuid) from public, anon;', '')).details).toContain('register_photo is not revoked');
+    expect(dmRun(`${dmSql}\ncreate function public.sneaky() returns int language sql as $$ select 1 $$;`).details).toContain('function sneaky is not in the golden set');
+    expect(dmRun(edit('returns jsonb language plpgsql security definer as $$ begin return \'{}\'; end $$;\nrevoke execute on function public.register', 'returns jsonb language plpgsql as $$ begin return \'{}\'; end $$;\nrevoke execute on function public.register')).details).toContain('register_photo is not security definer');
+  });
+  it('fails when a required behavioural test file is missing', () => {
+    const r = checkArchDataModel([f('supabase/migrations/20261019100000_a.sql', dmSql)], { dataModel: dmGolden });
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('supabase/tests/lint.test.ts missing');
+  });
+  it('fails without migrations, without a dataModel section, and with a missing or broken golden file', () => {
+    expect(checkArchDataModel([f('supabase/tests/lint.test.ts')], { dataModel: dmGolden }).status).toBe('FAIL');
+    expect(checkArchDataModel(dmFiles(), {}).status).toBe('FAIL');
+    expect(checkArchDataModel(dmFiles()).status).toBe('FAIL');
+    expect(checkArchDataModel(dmFiles(dmSql, [f(ARCH_GOLDEN, '{nope')])).status).toBe('FAIL');
+    expect(checkArchDataModel(dmFiles(dmSql, [f(ARCH_GOLDEN, JSON.stringify({ dataModel: dmGolden }))])).status).toBe('PASS');
+  });
+  it('the golden file lists the MASTERPLAN tables', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+    const g = JSON.parse(loadFiles(root, [ARCH_GOLDEN])[0].text);
+    expect([...g.dataModel.tables].sort()).toEqual(['admins', 'albums', 'app_config', 'categories', 'keepalive', 'photos', 'publish_log', 'site_state', 'upload_reservations', 'url_history']);
+  });
+  it('the real repo is green', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+    const r = checkArchDataModel(loadFiles(root, gitPaths(root)));
+    expect(r.status, r.details).toBe('PASS');
+  });
+});
+
 describe('registry and runner', () => {
   const inputs = {
     files: [
       ...archFiles(),
-      f(ARCH_GOLDEN, JSON.stringify(archGolden)),
+      f(ARCH_GOLDEN, JSON.stringify({ ...archGolden, dataModel: dmGolden })),
       f('.env.example', Object.keys(ENV_DOCS_ONLY).map((n) => `# docs-only: test\n# ${n}=\n`).join('')),
-      f('supabase/migrations/20261019100000_a.sql', 'create table public.t (id int);'),
+      f('supabase/migrations/20261019100000_a.sql', dmSql),
       f('supabase/tests/lint.test.ts'),
       f('supabase/tests/golden/privilege-matrix.json'),
       f(QUOTA_GUARD_FILE, quotaSuite()),

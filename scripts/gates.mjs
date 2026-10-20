@@ -550,6 +550,157 @@ export function checkArchComponents(files, golden) {
   return result(bad.slice(0, 3).concat(bad.length > 3 ? [`and ${bad.length - 3} more`] : []), 'workspaces, deps, static astro as in the golden file');
 }
 
+// ------------------------------------------------------------------------------------------ data model (WP8-4)
+const roleList = (s) => s.split(',').map((x) => x.trim().replace(/^public\./, '').replace(/"/g, '')).filter(Boolean);
+const NOT_A_TABLE = /^(function|schema|sequence|all|type|database)\b/;
+
+/** All migration statements in order: comments and dollar-quoted bodies removed, lower case, one line each. */
+function migrationStatements(files) {
+  const sql = files.filter((f) => MIGRATION_RE.test(f.path)).sort((a, b) => (a.path < b.path ? -1 : 1));
+  return sql
+    .map((f) => stripSqlComments(f.text))
+    .join(';\n')
+    .replace(/\$(\w*)\$[\s\S]*?\$\1\$/g, () => '$$')
+    .split(';')
+    .map((s) => s.replace(/\s+/g, ' ').trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/** Splits a create-table body at top-level commas into column items. */
+function topLevelItems(body) {
+  const items = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of body) {
+    if (ch === '(') depth++;
+    if (ch === ')') depth--;
+    if (ch === ',' && depth === 0) (items.push(cur.trim()), (cur = ''));
+    else cur += ch;
+  }
+  if (cur.trim()) items.push(cur.trim());
+  return items;
+}
+
+/**
+ * Database layout against the dataModel section of scripts/architecture.golden.json (MASTERPLAN section 3, D-5):
+ * exact table set, row level security and an initial revoke from anon/authenticated on every table, no table grant
+ * to anon, no insert/delete on photos for authenticated (only register_photo/delete_photos), the MASTERPLAN columns,
+ * the app_config defaults, function privileges, and the behavioural suites that prove it. Static text checks over the
+ * migrations: they catch drift, the PGlite suites remain the proof of behaviour.
+ */
+export function checkArchDataModel(files, golden) {
+  if (!golden) {
+    const g = files.find((x) => x.path === ARCH_GOLDEN);
+    if (!g) return { status: 'FAIL', details: `${ARCH_GOLDEN} missing` };
+    try {
+      golden = JSON.parse(g.text);
+    } catch {
+      return { status: 'FAIL', details: `${ARCH_GOLDEN} is not valid JSON` };
+    }
+  }
+  const dm = golden.dataModel;
+  if (!dm) return { status: 'FAIL', details: `${ARCH_GOLDEN} has no dataModel section` };
+  const stmts = migrationStatements(files);
+  if (stmts.length === 0) return { status: 'FAIL', details: 'no migrations found in supabase/migrations' };
+  const bad = [];
+  const tables = new Map();
+  const funcs = new Map();
+  const fn = (n) => funcs.get(n) ?? funcs.set(n, { created: false, definer: false, revoked: new Set(), granted: new Set() }).get(n);
+  const anonOk = new Set(dm.anonExecute ?? []);
+  stmts.forEach((s, i) => {
+    let m;
+    if ((m = /^create table (?:if not exists )?(?:public\.)?"?(\w+)"?/.exec(s))) {
+      const t = { columns: new Set(), defaults: {}, rls: false, revokeAt: -1, grantAt: -1 };
+      const open = s.indexOf('(');
+      const close = s.lastIndexOf(')');
+      for (const item of open >= 0 ? topLevelItems(s.slice(open + 1, close)) : []) {
+        if (/^(constraint|primary|unique|check|foreign|exclude|like)\b/.test(item)) continue;
+        const c = /^"?(\w+)"?/.exec(item)[1];
+        t.columns.add(c);
+        const d = /\bdefault (-?\d+)\b/.exec(item);
+        if (d) t.defaults[c] = Number(d[1]);
+      }
+      tables.set(m[1], t);
+    } else if ((m = /^drop table (?:if exists )?(?:public\.)?"?(\w+)"?/.exec(s))) {
+      tables.delete(m[1]);
+    } else if ((m = /^alter table (?:only )?(?:public\.)?"?(\w+)"? enable row level security$/.exec(s))) {
+      if (tables.has(m[1])) tables.get(m[1]).rls = true;
+    } else if ((m = /^alter table (?:only )?(?:public\.)?"?(\w+)"? add column (?:if not exists )?"?(\w+)"?(.*)$/.exec(s))) {
+      const t = tables.get(m[1]);
+      if (t) {
+        t.columns.add(m[2]);
+        const d = /\bdefault (-?\d+)\b/.exec(m[3]);
+        if (d) t.defaults[m[2]] = Number(d[1]);
+      }
+    } else if ((m = /^alter table (?:only )?(?:public\.)?"?(\w+)"? alter column "?(\w+)"? set default (-?\d+)$/.exec(s))) {
+      if (tables.has(m[1])) tables.get(m[1]).defaults[m[2]] = Number(m[3]);
+    } else if ((m = /^revoke (?:all|execute)(?: privileges)? on function (?:public\.)?(\w+)\(.*?\) from (.+)$/.exec(s))) {
+      for (const r of roleList(m[2])) fn(m[1]).revoked.add(r);
+    } else if ((m = /^grant (?:all|execute)(?: privileges)? on function (?:public\.)?(\w+)\(.*?\) to (.+)$/.exec(s))) {
+      const roles = roleList(m[2].replace(/ with grant option$/, ''));
+      for (const r of roles) fn(m[1]).granted.add(r);
+      if (roles.includes('anon') && !anonOk.has(m[1])) bad.push(`function ${m[1]} is executable by anon`);
+    } else if ((m = /^create (?:or replace )?function (?:public\.)?"?(\w+)"?\(/.exec(s))) {
+      const f = fn(m[1]);
+      f.created = true;
+      f.definer = /\bsecurity definer\b/.test(s);
+    } else if ((m = /^revoke all(?: privileges)? on (?:table )?(.+) from (.+)$/.exec(s)) && !NOT_A_TABLE.test(m[1])) {
+      const roles = roleList(m[2]);
+      if (roles.includes('anon') && roles.includes('authenticated')) {
+        for (const n of roleList(m[1])) if (tables.has(n) && tables.get(n).revokeAt < 0) tables.get(n).revokeAt = i;
+      }
+    } else if ((m = /^grant (.+?) on (?:table )?(.+) to (.+)$/.exec(s)) && !NOT_A_TABLE.test(m[2])) {
+      const roles = roleList(m[3].replace(/ with grant option$/, ''));
+      for (const n of roleList(m[2])) {
+        const t = tables.get(n);
+        if (t && t.grantAt < 0) t.grantAt = i;
+        if (roles.includes('anon')) bad.push(`table ${n} is granted to anon`);
+        if (n === 'photos' && roles.includes('authenticated') && /\b(insert|delete|all)\b/.test(m[1])) {
+          bad.push(`table photos: authenticated may ${/\bdelete\b/.test(m[1]) ? 'delete' : 'insert'} directly (use ${dm.photoWriteFunctions.join('/')})`);
+        }
+      }
+    } else if ((m = /^create policy \S+ on (?:public\.)?"?(\w+)"? (?:as \w+ )?for (insert|delete|all)\b/.exec(s))) {
+      if (m[1] === 'photos') bad.push(`table photos has a ${m[2]} policy (writes go through ${dm.photoWriteFunctions.join('/')})`);
+    } else if (/^alter default privileges .*\bgrant\b.*\bto\b.*\banon\b/.test(s)) {
+      bad.push('default privileges grant to anon');
+    }
+  });
+
+  const golden_ = new Set(dm.tables);
+  for (const n of tables.keys()) if (!golden_.has(n)) bad.push(`table ${n} is not in the golden set`);
+  for (const n of golden_) {
+    const t = tables.get(n);
+    if (!t) {
+      bad.push(`table ${n} missing`);
+      continue;
+    }
+    if (!t.rls) bad.push(`table ${n} has no row level security`);
+    if (t.revokeAt < 0) bad.push(`table ${n} has no initial revoke from anon, authenticated`);
+    else if (t.grantAt >= 0 && t.grantAt < t.revokeAt) bad.push(`table ${n} is granted before its revoke`);
+    for (const c of dm.columns?.[n] ?? []) if (!t.columns.has(c)) bad.push(`table ${n} lacks column ${c}`);
+  }
+  const cfg = tables.get('app_config');
+  if (cfg) {
+    for (const [c, v] of Object.entries(dm.appConfigDefaults ?? {})) {
+      if (cfg.defaults[c] !== v) bad.push(`table app_config default ${c} is ${cfg.defaults[c] ?? 'unset'}, golden ${v}`);
+    }
+  }
+  for (const [name, want] of Object.entries(dm.functions ?? {})) {
+    const f = funcs.get(name);
+    if (!f?.created) {
+      bad.push(`function ${name} missing`);
+      continue;
+    }
+    for (const r of want.revokeFrom) if (!f.revoked.has(r)) bad.push(`function ${name} is not revoked from ${r}`);
+    for (const r of f.granted) if (!want.grantTo.includes(r)) bad.push(`function ${name} is granted to ${r}`);
+    for (const r of want.grantTo) if (!f.granted.has(r)) bad.push(`function ${name} is not granted to ${r}`);
+    if ((dm.photoWriteFunctions ?? []).includes(name) && !f.definer) bad.push(`function ${name} is not security definer`);
+  }
+  for (const [name, f] of funcs) if (f.created && !(name in (dm.functions ?? {}))) bad.push(`function ${name} is not in the golden set`);
+  for (const p of dm.requiredFiles ?? []) if (!files.some((x) => x.path === p)) bad.push(`${p} missing`);
+  return result(bad.slice(0, 3).concat(bad.length > 3 ? [`and ${bad.length - 3} more`] : []), `${tables.size} tables, ${funcs.size} functions as in the golden file`);
+}
+
 const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
 
 export const CHECKS = [
@@ -585,6 +736,7 @@ export const CHECKS = [
   { name: 'migrate-no-r2', input: 'files', run: checkMigrateNoR2 },
   { name: 'migrate-no-credentials', input: 'files', run: checkMigrateNoCredentials },
   { name: 'arch-components', input: 'files', run: (f) => checkArchComponents(f) },
+  { name: 'arch-data-model', input: 'files', run: (f) => checkArchDataModel(f) },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
 ];
 

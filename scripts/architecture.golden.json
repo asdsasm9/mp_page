@@ -13,5 +13,48 @@
     "webConfig": "apps/web/astro.config.mjs",
     "forbiddenAstroOutputs": ["server", "hybrid"],
     "pinnedExactly": ["astro"]
+  },
+  "dataModel": {
+    "tables": ["admins", "categories", "albums", "photos", "url_history", "app_config", "site_state", "publish_log", "upload_reservations", "keepalive"],
+    "columns": {
+      "categories": ["id", "slug", "name", "description", "seo_title", "seo_description", "sort", "visible"],
+      "albums": ["id", "category_id", "slug", "title", "place", "shot_on", "description", "seo_title", "seo_description", "cover_photo_id", "sort", "published", "legacy_id"],
+      "photos": ["id", "album_id", "master_key", "width", "height", "variants", "bytes_total", "dominant_color", "alt", "caption", "sort", "legacy_key"]
+    },
+    "appConfigDefaults": {
+      "quota_hard_bytes": 9500000000,
+      "quota_warn_bytes": 8000000000,
+      "max_upload_bytes": 41943040,
+      "max_files_per_batch": 200,
+      "reservation_ttl_min": 60
+    },
+    "photoWriteFunctions": ["register_photo", "delete_photos"],
+    "anonExecute": ["keepalive"],
+    "functions": {
+      "set_updated_at": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "bump_pending": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "check_album_cover": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "clear_cover_on_photo_change": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "variants_bytes_sum": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "record_slug_redirect": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "albums_slug_history": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "categories_slug_history": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "albums_delete_history": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "is_admin": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "storage_usage": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "reserve_uploads": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "register_photo": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "delete_photos": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "request_publish": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "record_publish": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "keepalive": { "revokeFrom": ["public"], "grantTo": ["anon", "authenticated"] }
+    },
+    "requiredFiles": [
+      "supabase/tests/lint.test.ts",
+      "supabase/tests/golden/privilege-matrix.json",
+      "supabase/tests/hardening.test.ts",
+      "supabase/tests/photos-rpc.test.ts",
+      "supabase/tests/quota.test.ts"
+    ]
   }
 }

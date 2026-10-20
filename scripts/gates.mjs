@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
+import { attrsOf, checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
 
 const SELF = ['scripts/gates.mjs', 'scripts/gates.test.mjs'];
 const isSelf = (p) => SELF.includes(p);
@@ -147,7 +147,65 @@ export function checkNoGaInDist(distFiles) {
   );
 }
 
-const MIGRATION_RE = /^supabase\/migrations\/(\d{14})_[a-z0-9_]+\.sql$/;
+// ---------------------------------------------------------------------------------------------- analytics isolation (WP7-5)
+// Cloudflare Web Analytics lives on the public site only, as one exact beacon tag. Everything else stays clean.
+export const BEACON_SRC = 'https://static.cloudflareinsights.com/beacon.min.js';
+export const ANALYTICS_RE = /cloudflareinsights|data-cf-beacon|beacon\.min\.js/i;
+
+/** True for the one allowed tag: type=module, the beacon src, a data-cf-beacon holding only a token, no body. */
+function isExactBeaconTag(attrString, body) {
+  if (body.trim() !== '') return false;
+  const a = attrsOf(`<script ${attrString}>`);
+  if (Object.keys(a).sort().join() !== 'data-cf-beacon,src,type') return false;
+  if (a.type !== 'module' || a.src !== BEACON_SRC) return false;
+  try {
+    const cfg = JSON.parse(a['data-cf-beacon']);
+    return Object.keys(cfg).join() === 'token' && /^[A-Za-z0-9]{16,64}$/.test(cfg.token);
+  } catch {
+    return false;
+  }
+}
+
+/** Removes exact beacon tags from html; returns the rest and how many were removed. */
+export function stripBeaconTags(html) {
+  let count = 0;
+  const rest = html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi, (all, attrs, body) => {
+    if (!isExactBeaconTag(attrs, body)) return all;
+    count += 1;
+    return '';
+  });
+  return { rest, count };
+}
+
+/**
+ * Built html: apps/web/dist may contain the beacon words only as one exact beacon tag per page; any other app's
+ * dist html (the admin) may not contain them at all.
+ */
+export function checkAnalyticsInDist(distFiles) {
+  const html = (distFiles ?? []).filter((f) => /^apps\/[^/]+\/dist\/.*\.html$/.test(f.path));
+  if (html.length === 0) return { status: 'SKIP', details: 'no dist html found' };
+  const bad = [];
+  for (const f of html) {
+    if (f.path.startsWith('apps/web/dist/')) {
+      const { rest, count } = stripBeaconTags(f.text);
+      if (ANALYTICS_RE.test(rest)) bad.push(`${f.path} (beacon text outside the one exact beacon tag)`);
+      if (count > 1) bad.push(`${f.path} (${count} beacon tags)`);
+    } else if (ANALYTICS_RE.test(f.text)) {
+      bad.push(`${f.path} (analytics beacon outside the public site)`);
+    }
+  }
+  return result(bad, `${html.length} html files, beacon only as the exact tag on the public site`);
+}
+
+/** Admin source and the Worker never mention the beacon (tests excluded: they may assert the absence). */
+export function checkAnalyticsNotInAdminOrApi(files) {
+  const src = files.filter(
+    (f) => (f.path.startsWith('apps/admin/src/') || f.path.startsWith('apps/api/')) && !/\.test\.[cm]?[jt]sx?$/.test(f.path) && !f.path.endsWith('package-lock.json'),
+  );
+  return result(findMatches(src, () => false, [['analytics beacon', ANALYTICS_RE]]), `${src.length} admin and api sources clean`);
+}
+
+const MIGRATION_RE =/^supabase\/migrations\/(\d{14})_[a-z0-9_]+\.sql$/;
 const stripSqlComments = (sql) => sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
 
 /**
@@ -298,7 +356,8 @@ export const checkAdminDistNoFakeMarker = adminDistRule([
   ['fake world marker', new RegExp(FAKE_WORLD_MARKER)],
   ['fake world marker name', /MP_ADMIN_FAKE_WORLD/],
 ]);
-export const checkAdminDistNoKeyStrings = adminDistRule([
+export const checkAdminDistNoAnalytics = adminDistRule([['analytics beacon', ANALYTICS_RE]]);
+export const checkAdminDistNoKeyStrings =adminDistRule([
   ['JWT', /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/],
   ['sk_ key', /\bsk_(live_|test_)?[A-Za-z0-9]{16,}/],
   ['AWS access key id', /\b(AKIA|ASIA)[0-9A-Z]{16}\b/],
@@ -389,6 +448,8 @@ export const CHECKS = [
   { name: 'no-dead-deps', input: 'files', run: checkNoDeadDeps },
   { name: 'no-direct-r2', input: 'files', run: checkNoDirectR2 },
   { name: 'no-ga-in-dist', input: 'dist', run: checkNoGaInDist },
+  { name: 'analytics-in-dist', input: 'dist', run: checkAnalyticsInDist },
+  { name: 'analytics-not-admin', input: 'files', run: checkAnalyticsNotInAdminOrApi },
   { name: 'migrations-lint', input: 'files', run: checkMigrationsLint },
   { name: 'page-checks', input: 'site', run: checkPageChecks },
   { name: 'budget', input: 'site', run: checkBudget },
@@ -402,6 +463,7 @@ export const CHECKS = [
   { name: 'admin-no-limit-literals', input: 'files', run: checkAdminNoLimitLiterals },
   { name: 'admin-dist-no-fake', input: 'admindist', run: checkAdminDistNoFakeMarker },
   { name: 'admin-dist-no-keys', input: 'admindist', run: checkAdminDistNoKeyStrings },
+  { name: 'admin-dist-no-analytics', input: 'admindist', run: checkAdminDistNoAnalytics },
   { name: 'admin-dist-hosts', input: 'admindist', run: (d) => checkAdminDistExternalHosts(d) },
   { name: 'migrate-no-service-key', input: 'files', run: checkMigrateNoServiceKey },
   { name: 'migrate-no-signup', input: 'files', run: checkMigrateNoSignUp },

@@ -367,9 +367,19 @@ export function resourceHosts(html) {
   return hosts;
 }
 
-/** Hosts the site may load resources from: itself and the image host. */
-export const allowedHosts = (imageHost) =>
-  new Set([new URL(SITE_ORIGIN).host, ...(imageHost ? [imageHost.toLowerCase()] : [])]);
+export const BEACON_HOST = 'static.cloudflareinsights.com';
+const TOKEN_RE = /^[A-Za-z0-9]{16,64}$/;
+
+/** True for a production build with a valid analytics token (mirrors apps/web `analyticsToken`). */
+export const hasBeacon = (siteEnv, token) => siteEnv === 'production' && TOKEN_RE.test(token ?? '');
+
+/** Hosts the site may load resources from: itself, the image host and, with the beacon, the beacon host. */
+export const allowedHosts = (imageHost, analytics = false) =>
+  new Set([
+    new URL(SITE_ORIGIN).host,
+    ...(imageHost ? [imageHost.toLowerCase()] : []),
+    ...(analytics ? [BEACON_HOST] : []),
+  ]);
 
 const kb = (n) => `${(n / KB).toFixed(1)} KB`;
 
@@ -381,7 +391,7 @@ export function runBudget(site) {
   const errors = [];
   const warnings = [];
   const lines = [];
-  const allowed = allowedHosts(site.imageHost);
+  const allowed = allowedHosts(site.imageHost, site.analytics === true);
   const pages = [...site.pages].sort((a, b) => (a.path === 'index.html' ? -1 : b.path === 'index.html' ? 1 : 0));
   for (const page of pages) {
     // The 404 page is not at <route>/index.html, which measureFirstLoad expects; it is a bare page without images.
@@ -460,7 +470,8 @@ export function loadSite(distDir, walkFn = listFiles) {
   } catch {
     imageHost = null;
   }
-  return { pages, files, sitemapXml: read('sitemap.xml'), redirectsText: read('_redirects') ?? '', siteEnv, distDir, imageHost };
+  const analytics = hasBeacon(siteEnv, process.env.PUBLIC_CF_ANALYTICS_TOKEN);
+  return { pages, files, sitemapXml: read('sitemap.xml'), redirectsText: read('_redirects') ?? '', siteEnv, distDir, imageHost, analytics };
 }
 
 export function main() {

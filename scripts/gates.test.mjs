@@ -9,8 +9,11 @@ import {
   QUOTA_GUARD_TITLES,
   WRANGLER_TOML,
   checkAdminDistExternalHosts,
+  checkAdminDistNoAnalytics,
   checkAdminDistNoFakeMarker,
   checkAdminDistNoKeyStrings,
+  checkAnalyticsInDist,
+  checkAnalyticsNotInAdminOrApi,
   checkAdminNoHtmlInjection,
   checkAdminNoLimitLiterals,
   checkAdminNoPhotoWrites,
@@ -134,6 +137,56 @@ describe('no-ga-in-dist', () => {
     expect(
       status(checkNoGaInDist([f('apps/web/dist/a/index.html', '<script src="//www.googletagmanager.com/x">')])),
     ).toBe('FAIL'));
+});
+
+describe('analytics isolation (WP7-5)', () => {
+  const tok = 'a1B2c3D4e5F6g7H8';
+  const beacon = `<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;:&quot;${tok}&quot;}"></script>`;
+  const beaconSingle = `<script data-cf-beacon='{"token": "${tok}"}' src="https://static.cloudflareinsights.com/beacon.min.js" type="module"></script>`;
+  const web = (text, path = 'apps/web/dist/index.html') => [f(path, `<html><head>${text}</head></html>`)];
+  it('web dist may carry exactly the one beacon tag', () => {
+    expect(status(checkAnalyticsInDist(web('')))).toBe('PASS');
+    expect(status(checkAnalyticsInDist(web(beacon)))).toBe('PASS');
+    expect(status(checkAnalyticsInDist(web(beaconSingle)))).toBe('PASS');
+    expect(status(checkAnalyticsInDist([]))).toBe('SKIP');
+  });
+  it('web dist fails on a second tag, a changed tag or the words elsewhere', () => {
+    expect(status(checkAnalyticsInDist(web(beacon + beacon)))).toBe('FAIL');
+    expect(status(checkAnalyticsInDist(web(beacon.replace('beacon.min.js', 'other.js'))))).toBe('FAIL');
+    expect(status(checkAnalyticsInDist(web(beacon.replace('<script ', '<script async '))))).toBe('FAIL');
+    expect(status(checkAnalyticsInDist(web(beacon.replace('></script>', '>x=1</script>'))))).toBe('FAIL');
+    expect(status(checkAnalyticsInDist(web('<img src="https://static.cloudflareinsights.com/p.png">')))).toBe('FAIL');
+    expect(status(checkAnalyticsInDist(web('<p>cloudflareinsights</p>')))).toBe('FAIL');
+    expect(status(checkAnalyticsInDist(web(beacon.replace(tok, 'x'))))).toBe('FAIL');
+  });
+  it('admin dist html fails on any beacon text, even the exact tag', () => {
+    expect(status(checkAnalyticsInDist(web(beacon, 'apps/admin/dist/index.html')))).toBe('FAIL');
+    expect(status(checkAnalyticsInDist(web('<script data-cf-beacon="{}"></script>', 'apps/admin/dist/index.html')))).toBe('FAIL');
+    expect(status(checkAnalyticsInDist(web('', 'apps/admin/dist/index.html')))).toBe('PASS');
+  });
+  it('google strings still fail no-ga-in-dist next to the beacon', () => {
+    expect(status(checkNoGaInDist(web(beacon)))).toBe('PASS');
+    expect(status(checkNoGaInDist(web(beacon + '<script src="//www.googletagmanager.com/x"></script>')))).toBe('FAIL');
+  });
+  it('admin dist js, css and html fail on beacon strings', () => {
+    for (const text of ['x="cloudflareinsights"', 'data-cf-beacon', 'import "beacon.min.js"']) {
+      expect(status(checkAdminDistNoAnalytics([f('apps/admin/dist/assets/a.js', text)]))).toBe('FAIL');
+      expect(status(checkAdminDistNoAnalytics([f('.tmp/admin-prod/site/index.html', text)]))).toBe('FAIL');
+    }
+    expect(status(checkAdminDistNoAnalytics([f('apps/admin/dist/assets/a.js', 'x=1')]))).toBe('PASS');
+    expect(status(checkAdminDistNoAnalytics([f('apps/web/dist/a.js', 'cloudflareinsights')]))).toBe('SKIP');
+  });
+  it('admin source and api fail on the beacon, tests and web are ignored', () => {
+    expect(status(checkAnalyticsNotInAdminOrApi([f('apps/admin/src/a.tsx', 'const h = "data-cf-beacon"')]))).toBe('FAIL');
+    expect(status(checkAnalyticsNotInAdminOrApi([f('apps/api/src/a.ts', 'https://static.cloudflareinsights.com')]))).toBe('FAIL');
+    expect(status(checkAnalyticsNotInAdminOrApi([f('apps/api/wrangler.toml', 'beacon.min.js')]))).toBe('FAIL');
+    expect(status(checkAnalyticsNotInAdminOrApi([f('apps/admin/src/a.test.tsx', 'cloudflareinsights')]))).toBe('PASS');
+    expect(status(checkAnalyticsNotInAdminOrApi([f('apps/web/src/lib/beacon.ts', 'cloudflareinsights')]))).toBe('PASS');
+  });
+  it('the rules are registered', () => {
+    const names = CHECKS.map((c) => c.name);
+    for (const n of ['analytics-in-dist', 'analytics-not-admin', 'admin-dist-no-analytics']) expect(names).toContain(n);
+  });
 });
 
 describe('migrations-lint', () => {

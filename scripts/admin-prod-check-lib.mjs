@@ -38,6 +38,12 @@ export function judgeBundle(rows) {
   return { totals, failures };
 }
 
+/** The admin must never carry the public site's analytics beacon (plan WP-7 section 5). files: [{ file, text }]. */
+export const ANALYTICS_RE = /cloudflareinsights|data-cf-beacon|beacon\.min\.js/i;
+export function judgeNoAnalytics(files) {
+  return files.filter((f) => ANALYTICS_RE.test(f.text)).map((f) => `${f.file} references the Cloudflare analytics beacon`);
+}
+
 /** The document's response headers: the CSP must be there and carry the hardening directives. */
 export function judgeDocumentHeaders(headers) {
   const bad = [];

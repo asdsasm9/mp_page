@@ -44,6 +44,23 @@ describe('checkAnalyticsOutput', () => {
     expect(errors.join()).toContain('exactly one');
   });
 
+  it('fails with a token and zero pages', () => {
+    const errors = checkAnalyticsOutput({ pages: [], headersText: headersOn, token: TOKEN });
+    expect(errors.join()).toContain('no html pages');
+    expect(checkAnalyticsOutput({ pages: [], headersText: headersOff, token: null })).toEqual([]);
+  });
+
+  it('with a token flags a non-script beacon reference next to the one expected tag', () => {
+    for (const extra of [
+      `<link rel="preload" href="${BEACON_SRC}" as="script">`,
+      '<img src="https://static.cloudflareinsights.com/x.png" alt="">',
+      '<p>data-cf-beacon</p>',
+    ]) {
+      const errors = checkAnalyticsOutput({ pages: [{ path: 'index.html', html: page(BEACON + extra) }], headersText: headersOn, token: TOKEN });
+      expect(errors.join()).toContain('outside the one expected beacon tag');
+    }
+  });
+
   it('fails on a page without a beacon', () => {
     const pages = [{ path: 'index.html', html: page() }];
     expect(checkAnalyticsOutput({ pages, headersText: headersOn, token: TOKEN })).not.toEqual([]);

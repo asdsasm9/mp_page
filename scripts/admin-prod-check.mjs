@@ -14,7 +14,7 @@ import sharp from 'sharp';
 import { findChrome } from './design-check.mjs';
 import { SKIPPED_MESSAGE } from './design-check-lib.mjs';
 import { judgeConsole, judgeOrigins } from './admin-check-lib.mjs';
-import { gzipSize, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders } from './admin-prod-check-lib.mjs';
+import { gzipSize, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders, judgeNoAnalytics } from './admin-prod-check-lib.mjs';
 import { createDistServer, listen } from './serve-dist.mjs';
 
 const args = process.argv.slice(2);
@@ -122,6 +122,13 @@ const rows = walk(site)
   .sort((a, b) => b.gzip - a.gzip);
 const bundle = judgeBundle(rows);
 failures.push(...bundle.failures);
+failures.push(
+  ...judgeNoAnalytics(
+    walk(site)
+      .filter((f) => /\.(js|css|html)$/.test(f))
+      .map((file) => ({ file, text: readFileSync(join(site, file), 'utf8') })),
+  ),
+);
 const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
 console.log('bundle report (gzip is what the host sends):');
 for (const r of rows) console.log(`  ${r.initial ? 'initial' : 'lazy   '}  ${r.file.padEnd(34)} raw ${kb(r.raw).padStart(9)}  gzip ${kb(r.gzip).padStart(8)}`);

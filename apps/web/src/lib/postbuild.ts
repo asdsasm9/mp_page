@@ -98,6 +98,17 @@ function beaconTags(html: string): Array<{ src: string | null; token: string | n
   return out;
 }
 
+const BEACON_WORDS_RE = /cloudflareinsights|data-cf-beacon|beacon\.min\.js/i;
+
+/** Page html with the beacon script start tags removed (what is left must not mention the beacon at all). */
+function withoutBeaconTags(html: string): string {
+  return html.replace(BEACON_TAG_RE, (tag) => {
+    const src = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(tag);
+    const srcValue = src ? unescapeEntities(src[1] ?? src[2] ?? '') : '';
+    return /cloudflareinsights/i.test(srcValue) || /\bdata-cf-beacon\s*=/i.test(tag) ? '' : tag;
+  });
+}
+
 export interface AnalyticsOutputInput {
   pages: ReadonlyArray<{ path: string; html: string }>;
   /** Text of the written `_headers` file. */
@@ -121,6 +132,8 @@ export function checkAnalyticsOutput({ pages, headersText, token, scripts = [] }
     if (!directive('connect-src').includes(ANALYTICS_CONNECT_HOST)) errors.push(`CSP connect-src lacks ${ANALYTICS_CONNECT_HOST}`);
   }
 
+  if (token !== null && pages.length === 0) errors.push('a build with an analytics token has no html pages to carry the beacon');
+
   for (const page of pages) {
     const tags = beaconTags(page.html);
     if (token === null) {
@@ -134,6 +147,9 @@ export function checkAnalyticsOutput({ pages, headersText, token, scripts = [] }
         const tag = tags[0]!;
         if (tag.src !== BEACON_SRC) errors.push(`${page.path}: beacon src is not ${BEACON_SRC}`);
         if (tag.token !== token) errors.push(`${page.path}: beacon data-cf-beacon token does not match the build token`);
+      }
+      if (BEACON_WORDS_RE.test(withoutBeaconTags(page.html))) {
+        errors.push(`${page.path}: beacon reference outside the one expected beacon tag`);
       }
     }
     if (FORBIDDEN_GOOGLE_RE.test(page.html)) errors.push(`${page.path}: Google analytics reference (googletagmanager, google-analytics or gtag()`);

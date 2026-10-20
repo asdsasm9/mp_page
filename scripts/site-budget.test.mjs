@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { CHECKS, runChecks } from './gates.mjs';
-import { allowedHosts, checkBudget, resourceHosts, runBudget } from './site-checks.mjs';
+import { allowedHosts, checkBudget, hasBeacon, resourceHosts, runBudget } from './site-checks.mjs';
 
 const dirs = [];
 afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })));
@@ -111,5 +111,29 @@ describe('resourceHosts', () => {
   });
   it('allows the site itself and the image host', () => {
     expect(allowedHosts('IMG.example.cz')).toEqual(new Set(['www.mullnyphotos.cz', 'img.example.cz']));
+  });
+  it('adds the beacon host only when analytics is on', () => {
+    expect(allowedHosts(null, true)).toEqual(new Set(['www.mullnyphotos.cz', 'static.cloudflareinsights.com']));
+    expect(allowedHosts(null, false).has('static.cloudflareinsights.com')).toBe(false);
+  });
+  it('hasBeacon needs production and a valid token', () => {
+    const token = 'a1B2c3D4e5F6g7H8';
+    expect(hasBeacon('production', token)).toBe(true);
+    expect(hasBeacon('preview', token)).toBe(false);
+    expect(hasBeacon('local', token)).toBe(false);
+    expect(hasBeacon('production', '')).toBe(false);
+    expect(hasBeacon('production', undefined)).toBe(false);
+    expect(hasBeacon('production', 'short')).toBe(false);
+  });
+  it('budget: the beacon host passes with the flag, any other host still fails, without the flag it fails', () => {
+    const tag = '<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\'{"token":"x"}\'></script>';
+    const evil = '<script src="https://cdn.evil.example/x.js"></script>';
+    const on = { ...dist('', {}, tag + evil), analytics: true };
+    const msg = runBudget(on).errors.join();
+    expect(msg).toContain('cdn.evil.example');
+    expect(msg).not.toContain('cloudflareinsights');
+    const off = { ...dist('', {}, tag), analytics: false };
+    expect(runBudget(off).errors.join()).toContain('static.cloudflareinsights.com');
+    expect(runBudget({ ...dist('', {}, tag), analytics: true }).errors).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { INITIAL_JS_GZIP_LIMIT, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders } from './admin-prod-check-lib.mjs';
+import { INITIAL_JS_GZIP_LIMIT, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders, judgeNoAnalytics } from './admin-prod-check-lib.mjs';
 
 describe('admin-prod-check judges', () => {
   it('finds the initial script, modulepreloads and stylesheet in index.html', () => {
@@ -28,6 +28,13 @@ describe('admin-prod-check judges', () => {
     expect(judgeDocumentHeaders({ ...good, 'content-security-policy': "connect-src https://x.test; frame-ancestors 'none'; img-src *" })[0]).toMatch(/wildcard/);
     expect(judgeDocumentHeaders({ ...good, 'content-security-policy': "default-src 'none'" })[0]).toMatch(/frame-ancestors/);
     expect(judgeDocumentHeaders({ ...good, 'x-robots-tag': '' })[0]).toMatch(/noindex/);
+  });
+
+  it('fails when the admin dist carries the analytics beacon', () => {
+    expect(judgeNoAnalytics([{ file: 'index.html', text: '<script src="/assets/a.js"></script>' }])).toEqual([]);
+    for (const text of ['x="https://static.cloudflareinsights.com/"', '<script data-cf-beacon=\'{}\'>', 'import("beacon.min.js")']) {
+      expect(judgeNoAnalytics([{ file: 'index.html', text }])[0]).toMatch(/index\.html references/);
+    }
   });
 
   it('fails on an app violation, a refused allowed origin and an unenforced policy', () => {

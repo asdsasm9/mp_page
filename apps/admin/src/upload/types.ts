@@ -23,8 +23,8 @@ export interface EncodedFile {
 export interface EncodedPhoto {
   width: number;
   height: number;
-  /** `#rrggbb`. */
-  dominantColor: string;
+  /** `#rrggbb`; absent when the colour could not be computed (the photo still uploads). */
+  dominantColor?: string;
   variants: PhotoVariants;
   files: EncodedFile[];
 }

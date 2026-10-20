@@ -262,8 +262,17 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
       run.encoded = encoded;
       dispatch({ type: 'status', id, status: 'encoded' });
       restartIdleTimer();
-    } catch {
-      if (!signal.aborted) fail(id, { kind: 'corrupt', message: cs.upload.corrupt });
+    } catch (error) {
+      if (!signal.aborted) {
+        // The browser encoder throws errors that carry their own Czech text (src/encode/errors.ts).
+        const text = (error as { userMessage?: unknown } | null)?.userMessage;
+        const code = (error as { code?: unknown } | null)?.code;
+        fail(id, {
+          kind: 'corrupt',
+          message: typeof text === 'string' ? text : cs.upload.corrupt,
+          ...(typeof code === 'string' ? { code } : {}),
+        });
+      }
     }
     pump();
   }
@@ -518,7 +527,7 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
       album_id: itemOf(id)!.albumId,
       width: encoded.width,
       height: encoded.height,
-      dominant_color: encoded.dominantColor,
+      ...(encoded.dominantColor === undefined ? {} : { dominant_color: encoded.dominantColor }),
       variants: encoded.variants,
       bytes_total: sumBytes(encoded.variants),
     };

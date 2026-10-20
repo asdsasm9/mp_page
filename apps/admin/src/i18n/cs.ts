@@ -352,6 +352,13 @@ export const cs = {
     waiting: 'Čekám na připojení…',
     cancelled: 'Zrušeno.',
   },
+  /** Browser encoder failures (plan 4.7, 4.8). */
+  encode: {
+    noWebp: 'Tento prohlížeč neumí vytvářet formát WebP. Použijte Chrome, Edge nebo Firefox.',
+    heic: 'Tento formát fotka v tomto prohlížeči nejde zpracovat. Zkuste ji uložit jako JPEG.',
+    tooLarge: 'Soubor je příliš velký.',
+    corrupt: 'Fotku se nepodařilo zpracovat.',
+  },
   placeholder: {
     body: 'Tato obrazovka se připravuje.',
   },

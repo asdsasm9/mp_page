@@ -32,6 +32,8 @@ described in rule zero above, for the same reason: it's a read outside your
 granted directories. If output is genuinely too long to read directly, filter
 it in the same command instead of a second one (`-t "name"`, `--reporter=dot`).
 
+**Never put environment variables in front of a command** (`env X=1 npm run ...`, `CHROME_PATH=... node ...`). The permission check cannot verify an assignment and asks the human every time. The Chrome-based checks (`design-check`, `admin-check`, `admin-prod-check`, `admin-encode-check`, `image-fit`, `lightbox-a11y`, `lightbox-network`) find Chrome on their own (`findChrome` in `scripts/design-check.mjs` falls back to `/Applications/Google Chrome.app/...`). Run them as a plain `npm run admin-prod-check`, even though the usage comment at the top of a script mentions `CHROME_PATH=`. If a script really needs a variable, make it read a default inside the script, not on the command line.
+
 **Never pipe a script into an interpreter.** No `python3 - <<'PY'`, no
 `bash <<'SH'`, no `node -e '<multi-line program>'`, no `python3 -c` holding
 more than a one-liner, no `sed -i`. These are opaque arbitrary code: nothing

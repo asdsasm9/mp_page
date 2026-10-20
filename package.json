@@ -24,6 +24,7 @@
     "lightbox-a11y": "node scripts/lightbox-a11y.mjs",
     "admin-encode-check": "node scripts/admin-encode-check.mjs",
     "admin-check": "node scripts/admin-check.mjs",
+    "admin-prod-check": "node scripts/admin-prod-check.mjs",
     "fixtures": "tsx scripts/gen-fixtures.ts",
     "site-images:import": "node scripts/site-images-import.mjs",
     "dev-images": "tsx scripts/dev-images.ts"

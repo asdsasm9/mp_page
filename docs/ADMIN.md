@@ -204,3 +204,45 @@ Timing note (no Lighthouse, fake backend, headless): first contentful paint 92 m
 contentful paint 108 / 84 ms; encoding and fake-uploading 5 photos takes 2.9 s desktop / 3.1 s phone (phone encodes one
 photo at a time); a publish with a 1.5 s fake build takes about 6 s because the status is polled every 5 s. Initial JS is
 520 kB (159 kB gzip) plus 223 kB (58 kB gzip) for the adapter chunk of this fake build; the real budget belongs to WP5-29.
+
+## Production build, CSP and bundle budget (WP5-29)
+
+`npm run build -w apps/admin` emits `dist/_headers` next to `index.html` (Vite plugin `admin-headers` in
+`apps/admin/vite.config.ts`, text from `apps/admin/headers.ts`). The CSP is built from the build-time `VITE_*` origins,
+so it changes with the env and never contains a wildcard or `unsafe-*`:
+
+| Directive | Value |
+| --- | --- |
+| `default-src` | `'none'` |
+| `script-src`, `style-src` | `'self'` |
+| `img-src` | `'self' blob: data:` + origin of `VITE_IMG_BASE_URL` |
+| `connect-src` | origins of `VITE_SUPABASE_URL`, `VITE_API_BASE_URL`, `VITE_PUBLIC_SITE_URL`, `VITE_R2_UPLOAD_ORIGIN` (`'none'` when the env is empty) |
+| `base-uri`, `object-src`, `frame-ancestors` | `'none'` |
+| `form-action` | `'self'` |
+
+Also `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`,
+`X-Robots-Tag: noindex, nofollow`, a locked-down `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`;
+`/assets/*` is `immutable` for a year, `/` and `/index.html` are `no-cache`.
+
+Deviation from plan 4.1: `connect-src` also lists the public site origin, because the publish screen reads
+`<site>/_publish.json` (WP5-25) from script. The origin is exactly `VITE_PUBLIC_SITE_URL`.
+
+`zod` is now a direct dependency of `apps/admin` (same version 4.6.7 as `packages/shared`, no new bytes): Zod 4 probes
+dynamic code compilation while schemas are built, which the CSP refuses and reports as a violation on every load.
+`src/zodCsp.ts` (first import of `main.tsx`) sets `jitless`, so the probe never runs.
+
+`npm run admin-prod-check` (alone, never during `npm test`; exit 0 pass, 1 fail, 2 skipped without Chrome) builds the
+production bundle (real adapters, `VITE_BACKEND` unset) into the gitignored `.tmp/admin-prod/site` with the five origins
+pointing at mock servers on localhost ports (Supabase auth and PostgREST, Worker, image host, public site, R2), serves
+it with the generated `_headers` and drives Chrome: sign in, categories, publish, storage. It fails on any
+`securitypolicyviolation`, console error or warning, request outside the page and the mocks, a document without the
+hardened CSP/noindex headers, or JS over budget. Probes prove the policy is enforced: the five allowed origins work
+(fetch x3, XHR PUT to R2, image), and a foreign fetch, a foreign image and an inline script are each reported as a
+violation. The pure judges are in `scripts/admin-prod-check-lib.mjs` (`scripts/admin-prod-check.test.mjs`).
+
+Bundle budget: JS fetched at start-up under 300 kB gzip (CSS under 50 kB gzip). Measured 2026-10-20: entry chunk
+508.4 kB raw / 154.0 kB gzip, real-adapter chunk (supabase-js, always fetched) 217.6 kB raw / 56.2 kB gzip, total
+726 kB raw / 210.2 kB gzip; CSS 23.6 kB raw / 4.6 kB gzip. Vite's raw 500 kB chunk warning is raised to 600 kB
+(`build.chunkSizeWarningLimit`) because the gzip budget is the real constraint. This is above the 170 kB gzip default
+of the perf-budget skill for public pages; the admin is a logged-in tool used by one person, so routes are not split
+yet. Proposed follow-up if the number grows: `React.lazy` for the storage, publish and photo-detail screens.

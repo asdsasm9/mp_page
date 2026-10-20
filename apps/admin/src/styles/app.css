@@ -202,6 +202,58 @@
 @layer components {
   .shell-header {
     flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  /* admin-check: at 1280 px the top bar (brand, four links, storage, queue, sign out) wrapped to two rows. */
+  .desktop-nav .nav-link {
+    padding-inline: var(--space-2);
+  }
+
+  .desktop-nav .nav-list {
+    gap: 0;
+  }
+
+  /* admin-check: the collapsed upload queue is fixed at the bottom right and covered the last lines of the page
+     (the "Zpět na album" link on photo detail could not be clicked). Leave room for it. */
+  .shell:has(.upload-drawer) .shell-main {
+    padding-block-end: 12rem;
+  }
+
+  /* Focus and scrolling to a control must not park it under the fixed queue (WCAG 2.4.11). */
+  html:has(.upload-drawer) {
+    scroll-padding-block-end: 12rem;
+  }
+
+  /* Phone top bar: brand and sign-out on the first row, storage and queue below (was three rows of mostly empty space). */
+  @media (max-width: 39.99rem) {
+    .shell-header .brand {
+      order: 1;
+      flex: 1;
+    }
+
+    .shell-header > .button:not(.upload-indicator) {
+      order: 2;
+    }
+
+    .shell-header .storage-mini,
+    .shell-header .upload-indicator {
+      order: 3;
+    }
+
+    .shell:has(.upload-drawer) .shell-main {
+      padding-block-end: calc(var(--bottom-nav-height) + 12rem);
+    }
+  }
+
+  /* admin-check: a link that is the whole line is a target of its own, so it gets the 44 px target too (WCAG 2.5.8). */
+  .row-title,
+  .page > p > a:only-child,
+  .photo-side p > a:only-child {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-min);
+    min-inline-size: var(--target-min);
   }
 
   .card {
@@ -325,6 +377,22 @@
 
   .notice-error {
     border-color: var(--color-danger);
+  }
+
+  /* admin-check: display:flex removed the native marker, so a closed panel looked like a plain label. Draw a chevron. */
+  .details summary::before {
+    content: '';
+    flex: none;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    margin-inline-end: var(--space-3);
+    border-inline-end: var(--bar-thickness) solid currentColor;
+    border-block-end: var(--bar-thickness) solid currentColor;
+    transform: rotate(-45deg);
+  }
+
+  .details[open] > summary::before {
+    transform: rotate(45deg);
   }
 
   .details summary {
@@ -1299,10 +1367,16 @@
     border-block-end: 0;
   }
 
+  /* admin-check: the button of "Kontrola úložiště" touched its intro line and the result box. */
+  .page > section[aria-labelledby] > * + * {
+    margin-block-start: var(--space-3);
+  }
+
   .data-table a {
     display: inline-flex;
     align-items: center;
     min-block-size: var(--target-min);
+    min-inline-size: var(--target-min);
   }
 
   .findings,

@@ -151,3 +151,56 @@ peak time per photo: 399 ms (photo-6000x4000.jpg); total 1336 ms
 
 The encoder needed no fix: orientation, `convertToBlob` types, OffscreenCanvas drawing and quality all behaved. Only
 the `createImageBitmap` decode path is exercised here (the `<img>` fallback is not).
+
+## Full-flow browser check (WP5-28)
+
+`npm run admin-check` builds `apps/admin` with `VITE_BACKEND=fake` into the gitignored `.tmp/admin-check/site` (never
+into `apps/admin/dist`), serves it from a local static server with SPA fallback and drives system Chrome
+(puppeteer-core) through the fake world at desktop 1280 and phone 390 (touch emulation, `isMobile`). Exit 0 pass,
+1 fail, 2 skipped without Chrome. Run it alone, never during `npm test`. Options: `--out <dir>` (screenshots, default
+`.tmp/admin-check/shots`; the paths are printed), `--no-build` (reuse the last build), `--break button,origin,axe`
+(deliberately break the page; the run must exit 1).
+
+Flows (docs/ADMIN-UX.md): login with injected failures (offline, wrong password, a non-admin account), create a
+category and an album (F1, F4), upload 5 generated JPEGs through the real in-browser encoder with one PUT failing once,
+tile menu and photo detail with alt text and caption saved (F7), set cover (F3), move to start (F2), delete a photo
+(F5), publish and hide the album (F4), publish the site with one injected failure first (F6), storage screen with
+reconcile, sign out. Phone also visits every route at 320 px.
+
+At every page and state it asserts: axe-core (wcag2a/2aa/21/22aa tags, colour contrast on; serious and critical fail),
+no horizontal overflow, interactive targets at least 44 px on the phone and 24 px on the desktop (inline links in a
+sentence are exempt), a clean console (no errors, warnings, page errors, failed or 4xx/5xx requests), an origin
+allowlist (only the page's own origin, `data:` and `blob:`) and the worst layout-shift window at most 0.1. The pure
+judges live in `scripts/admin-check-lib.mjs`; `scripts/admin-check.test.mjs` runs them on synthetic input and, with
+`ADMIN_CHECK_BROWSER=1`, proves that a 30 px button, a fetch to another origin and an axe violation each make the real
+run exit 1. Not covered (the fake world has no network): CSP, real Supabase/Worker/R2 timing, real image hosts (photo
+URLs are answered with a placeholder from the same origin).
+
+What the first real-browser run found, all fixed in `apps/admin` and guarded by
+`apps/admin/src/styles/browser-findings.test.ts`:
+
+| Finding | Fix |
+| --- | --- |
+| `/favicon.ico` 404 showed as a console error on every load | inline `data:` icon in `index.html` |
+| Desktop top bar wrapped to two rows at 1280 px ("Odhlásit se" alone on the second row) | tighter nav link padding, no gap in the link list, smaller header gap |
+| Phone top bar used three mostly empty rows | brand and sign-out on one row, storage and queue below |
+| Collapsed upload queue (fixed, bottom right) covered the "Zpět na album" link and tiles at the bottom; scrolling parked controls under it | room under `.shell-main` and `scroll-padding-block-end` while the queue exists |
+| "Zpět na album" link 18 px high; list titles (categories, albums) 26 px high on the phone | whole-line links and `.row-title` get the 44 px target |
+| Storage table links of short album names ("Mia", "Pati", "Anež") only 28 to 39 px wide on the phone | `min-inline-size: var(--target-min)` |
+| Closed `<details>` ("Pro vyhledávače") looked like a plain label: `display:flex` had removed the marker | CSS chevron that turns when open |
+| "Zkontrolovat úložiště" button touched its intro line and the result box | spacing in sections with a heading |
+
+Open observations (not changed): the upload queue stays open after a batch until it is collapsed (by design, 3.5),
+and its top-bar button then reads "Nahrávání: 0". The accent button colour is a muted tan; brand colour stays H-3.
+
+Final run (2026-10-20, headless Chrome on macOS, fake world), `ADMIN_CHECK: PASS`, 57 page states:
+
+| Profile | States checked | axe serious/critical | Overflow | Smallest target | Console and requests | Worst layout shift |
+| --- | --- | --- | --- | --- | --- | --- |
+| desktop 1280 | 25 | 0 | 0 px | 44 px | 0 messages, 16 requests, all same origin | 0.032 |
+| phone 390 (+320 sweep) | 25 (+7 at 320) | 0 | 0 px | 44 px | 0 messages, 16 requests, all same origin | 0.074 |
+
+Timing note (no Lighthouse, fake backend, headless): first contentful paint 92 ms desktop / 68 ms phone, largest
+contentful paint 108 / 84 ms; encoding and fake-uploading 5 photos takes 2.9 s desktop / 3.1 s phone (phone encodes one
+photo at a time); a publish with a 1.5 s fake build takes about 6 s because the status is polled every 5 s. Initial JS is
+520 kB (159 kB gzip) plus 223 kB (58 kB gzip) for the adapter chunk of this fake build; the real budget belongs to WP5-29.

@@ -97,15 +97,17 @@ export function checkNoDeadDeps(files) {
       bad.push(`${f.path} (invalid JSON)`);
       continue;
     }
+    // D-9: react-router-dom is approved for the admin workspace only.
     const manifests =
       base === 'package.json'
-        ? [json]
-        : Object.entries(json.packages ?? {})
-            .filter(([k]) => !k.includes('node_modules'))
-            .map(([, v]) => v);
-    for (const m of manifests) {
+        ? [[f.path.replace(/package\.json$/, '').replace(/\/$/, ''), json]]
+        : Object.entries(json.packages ?? {}).filter(([k]) => !k.includes('node_modules'));
+    for (const [dir, m] of manifests) {
       for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
-        for (const d of dead) if (m?.[field] && d in m[field]) bad.push(`${f.path} (${d})`);
+        for (const d of dead) {
+          if (d === 'react-router-dom' && dir === 'apps/admin') continue;
+          if (m?.[field] && d in m[field]) bad.push(`${f.path} (${d})`);
+        }
       }
     }
   }

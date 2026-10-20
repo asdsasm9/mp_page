@@ -85,6 +85,13 @@ describe('no-dead-deps', () => {
   it.each(['react-scripts', 'react-ga4', 'gh-pages', 'react-router-dom'])('fails on %s', (d) =>
     expect(status(checkNoDeadDeps([pkg({ [d]: '1.0.0' })]))).toBe('FAIL'),
   );
+  it('allows react-router-dom in apps/admin only (D-9)', () => {
+    const admin = f('apps/admin/package.json', JSON.stringify({ dependencies: { 'react-router-dom': '7.18.4' } }));
+    const lock = (k) => f('package-lock.json', JSON.stringify({ packages: { [k]: { dependencies: { 'react-router-dom': '7' } } } }));
+    expect(status(checkNoDeadDeps([admin]))).toBe('PASS');
+    expect(status(checkNoDeadDeps([lock('apps/admin')]))).toBe('PASS');
+    expect(status(checkNoDeadDeps([lock('apps/web')]))).toBe('FAIL');
+  });
   it('checks lockfile workspace entries but not node_modules entries', () => {
     const ok = f('package-lock.json', JSON.stringify({ packages: { 'node_modules/x': { dependencies: { 'gh-pages': '1' } } } }));
     const bad = f('package-lock.json', JSON.stringify({ packages: { '': { dependencies: { 'gh-pages': '1' } } } }));

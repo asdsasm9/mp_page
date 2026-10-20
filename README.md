@@ -1,6 +1,6 @@
 # Mullny Photos
 
-Monorepo for the new mullnyphotos.cz: a static Astro public site, a React admin, a Cloudflare Worker API and shared contracts. This is a scaffold; features arrive in later work packages.
+Monorepo for the new mullnyphotos.cz: a static Astro public site, a React admin, a Cloudflare Worker API and shared contracts. The public site (WP-3 and the image-loading package WP-3b) is built; admin features arrive in later work packages.
 
 The old CRA site lives on the `main` branch and the git tag `legacy-cra` (a hotfix to it means checking out that tag). Old photos are kept in `legacy/`.
 
@@ -24,9 +24,19 @@ The old CRA site lives on the `main` branch and the git tag `legacy-cra` (a hotf
 - `npm run build` builds web and admin.
 - `npm run gates` runs the repo gate checks (`-- --strict` also fails on pending ones).
 
-Copy `.env.example` for local settings; never commit real values.
+Public site (details in [docs/WEB.md](docs/WEB.md)):
+
+- `npm run dev-images` generates local dev photos (once), then `npm run build -w apps/web` builds in fixture mode (noindex).
+- `npm run check:site` builds and runs the page and budget checks.
+- Browser checks, each needs Chrome and a built `apps/web/dist`, run one at a time and never during `npm test`:
+  `npm run design-check`, `npm run image-fit`, `npm run lightbox-network`, `npm run lightbox-a11y`, `npm run phone-bytes`.
+- Images come in WebP tiers 480, 720, 960, 1600 and 2400; the album lightbox loads the fit tier first and the master only on zoom.
+
+Copy `.env.example` for local settings; never commit real values. The web build reads only `PUBLIC_SITE_ENV`,
+`PUBLIC_SNAPSHOT_URL` and `PUBLIC_IMG_BASE_URL` (all unset means fixture mode).
 
 ## More
 
 - Plan: MASTERPLAN (kept in the autopilot project state folder).
+- Public site: [docs/WEB.md](docs/WEB.md); design-check baseline: [docs/DESIGN-CHECK.md](docs/DESIGN-CHECK.md).
 - Unconfirmed platform facts and human to-dos: [docs/VERIFY.md](docs/VERIFY.md).

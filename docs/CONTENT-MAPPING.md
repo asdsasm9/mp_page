@@ -80,7 +80,8 @@ Fields that cannot be derived from the old data (alt text, captions, dates, desc
 
 One `photos` row per legacy file `public/fotky_web/galleries/<cat>/<id>/<n>.jpg`, n = 1..numOfImages (all counts verified against disk in AUDIT).
 
-- `sort` = n (display order = file number, as today; no gaps).
+- `sort` = 10, 20, 30, ... in file-number order (`register_photo` gives max+10 and the script commits in file-number order, so display order = file number, as today; gaps of 10 are left for later reordering, D-10). The sort value is never the bare file number.
+- `id` = UUIDv5 of the `legacy_key` with a dedicated migration namespace, so ids are deterministic and the redirect file is identical between a dry-run and a live run. Masters are not the legacy bytes: they are re-encoded (JPEG q85, within 3000 px, metadata stripped). How to run it: `docs/MIGRATION.md`.
 - `legacy_key` = `<cat>/<id>/<n>.jpg` using the legacy category (`weddings`, `portraits`, `couples`), e.g. `weddings/sedlakovi/42.jpg`. Unique, so a second migration run finds the row and skips it (idempotent; report counts per album: found, inserted, skipped).
 - `width`, `height` read from the file at migration (AUDIT lists the ranges 964 to 3162 px).
 - `alt`, `caption` = null.

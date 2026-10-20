@@ -40,4 +40,5 @@ Copy `.env.example` for local settings; never commit real values. The web build 
 - Plan: MASTERPLAN (kept in the autopilot project state folder).
 - Public site: [docs/WEB.md](docs/WEB.md); design-check baseline: [docs/DESIGN-CHECK.md](docs/DESIGN-CHECK.md).
 - Admin app (architecture, env, deploy steps, check commands, deviations, Czech guide): [docs/ADMIN.md](docs/ADMIN.md); spec: [docs/ADMIN-UX.md](docs/ADMIN-UX.md); Worker deploy: [docs/DEPLOY-API.md](docs/DEPLOY-API.md).
+- Legacy photo migration (usage, flags, human run checklist, rollback): [docs/MIGRATION.md](docs/MIGRATION.md).
 - Unconfirmed platform facts and human to-dos: [docs/VERIFY.md](docs/VERIFY.md).

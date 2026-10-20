@@ -147,6 +147,15 @@ COVER_NOT_IN_ALBUM (SQLSTATE 23514) comes from the cover trigger.
 UUIDv5-style ids. A drift test regenerates them in memory and compares. The seed runs as the database owner,
 creates no admin and leaves `pending_changes` at 0.
 
+## Legacy migration notes (WP-6)
+
+`npm run migrate-legacy` (see `docs/MIGRATION.md`) creates the legacy rows only through the Worker and
+`register_photo`, never by direct insert. Its photo ids are UUIDv5 of the `legacy_key` in a migration namespace
+different from the fixture namespace, so they are deterministic across runs. `photos.sort` is stored as 10, 20, 30
+(`register_photo` assigns max+10 in call order, and the script commits in file-number order). Masters are re-encoded
+JPEG q85 within 3000 px with metadata stripped, not the legacy bytes. `alt` is null by default (default text at render
+time).
+
 ## Snapshot `updatedAt` (WP3-3)
 
 Each snapshot album and category carries `updatedAt` (ISO date-time, UTC). `buildSnapshot` sets an album's value to

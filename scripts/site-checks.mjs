@@ -131,6 +131,32 @@ export function checkImages(page) {
   return p;
 }
 
+const HEAVY_URL = /(?:^|\/)(?:master\.jpe?g|2400\.[a-z0-9]+)(?=$|[?#\s,])/i;
+// Attributes that name exactly one URL, or a list of candidates, to be fetched whatever the viewport.
+const FIXED_ATTRS = { img: ['src'], source: ['src'], link: ['href', 'imagesrcset'], video: ['poster'] };
+
+/**
+ * No master and no 2400 tier may be requested by the initial HTML (plan WP3b-18). Checked: every fixed URL
+ * (img/source src, link href and imagesrcset incl. preloads, video poster, inline style url()) and the candidate
+ * an eager image picks for the design-check phone (slot x DPR). Lazy srcset lists may name 2400 as a candidate for
+ * big screens, and data-* attributes and plain `<a href>` are read by the lightbox script only.
+ */
+export function checkHeavyImages(page) {
+  const p = [];
+  const hit = (what, value) => {
+    for (const part of String(value ?? '').split(',')) {
+      const url = part.trim().split(/\s+/)[0] ?? '';
+      if (HEAVY_URL.test(url)) p.push(`${what} loads ${url}, a master or 2400 URL, in the initial HTML`);
+    }
+  };
+  for (const [name, names] of Object.entries(FIXED_ATTRS)) {
+    for (const tag of tagsOf(page.html, name)) for (const n of names) hit(`<${name} ${n}>`, attrsOf(tag)[n]);
+  }
+  for (const url of aboveFoldImageUrls(page.html)) hit('eager image', url);
+  for (const m of page.html.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi)) hit('css url()', m[1]);
+  return p;
+}
+
 /** Required (all must appear) and allowed (nothing else may appear) top-level JSON-LD types, docs/SEO.md 5.6. */
 export function jsonLdMatrix(page) {
   if (is404(page)) return { required: [], allowed: [] };
@@ -285,6 +311,7 @@ export function runSiteChecks(site) {
   for (const page of site.pages) {
     add('head', checkHead(page), `${where(page)} `);
     add('images', checkImages(page), `${where(page)} `);
+    add('heavy-images', checkHeavyImages(page), `${where(page)} `);
     add('json-ld', checkJsonLd(page), `${where(page)} `);
     add('robots', checkRobots(page, site.siteEnv), `${where(page)} `);
   }
@@ -364,7 +391,6 @@ export function runBudget(site) {
       distDir: site.distDir,
       page: route,
       imageBytes: site.imageBytes,
-      slotWidth: 390,
     });
     const scope = `${where(page)}: `;
     for (const m of checkWeight(w)) (m.startsWith('unknown size') ? warnings : errors).push(`budget: ${scope}${m}`);

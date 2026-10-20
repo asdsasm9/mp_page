@@ -6,9 +6,11 @@ import { SnapshotSchema } from '../packages/shared/src/snapshot';
 import {
   GALLERIES_DIR,
   SNAPSHOT_FIXTURE,
+  devMasterOf,
   devPhotosFromSnapshot,
   dominantColorOf,
   generateDevImages,
+  hasExif,
   publicKeys,
   type DevImageRow,
 } from './dev-images';
@@ -67,6 +69,31 @@ describe('generateDevImages', () => {
   it('dominantColorOf returns the colour of a solid image', async () => {
     const buf = await sharp({ create: { width: 64, height: 48, channels: 3, background: '#336699' } }).png().toBuffer();
     expect(await dominantColorOf(buf)).toBe('#336699');
+  });
+
+  it('masters carry no EXIF or GPS: dev masters and every generated file are clean', async () => {
+    const real = photos.filter((p) => p.legacyKey !== null && p.id !== missing.id && existsSync(join(galleries, ...p.legacyKey.split('/'))));
+    expect(real.length).toBeGreaterThan(0);
+    for (const p of real.slice(0, 6)) {
+      const master = await devMasterOf(readFileSync(join(galleries, ...p.legacyKey!.split('/'))), p.variants.master.w, p.variants.master.h);
+      expect(await hasExif(master), `${p.id} master`).toBe(false);
+    }
+    for (const p of photos) {
+      for (const k of publicKeys(p)) expect(await hasExif(readFileSync(join(out, ...k.key.split('/')))), k.key).toBe(false);
+    }
+  });
+
+  it('negative: the check detects EXIF in a sample, and the master step strips it', async () => {
+    const raw = await sharp({ create: { width: 64, height: 48, channels: 3, background: '#336699' } }).raw().toBuffer();
+    const withExif = await sharp(raw, { raw: { width: 64, height: 48, channels: 3 } })
+      .jpeg()
+      .withExif({ IFD0: { Copyright: 'Someone', Make: 'Camera' } })
+      .toBuffer();
+    expect((await sharp(withExif).metadata()).exif, 'sample really has EXIF').toBeDefined();
+    expect(await hasExif(withExif)).toBe(true);
+    const plain = await sharp(raw, { raw: { width: 64, height: 48, channels: 3 } }).jpeg().toBuffer();
+    expect(await hasExif(plain)).toBe(false);
+    expect(await hasExif(await devMasterOf(withExif, 64, 48))).toBe(false);
   });
 
   it('a second run creates no files', () => {

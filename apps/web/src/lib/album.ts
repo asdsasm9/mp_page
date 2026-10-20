@@ -3,7 +3,13 @@
  * effectiveAlt, loading priority by position) and the Czech date. Plan WP-3 sections 4.2 to 4.6.
  */
 import { effectiveAlt, type SnapshotAlbum, type SnapshotCategory, type SnapshotPhoto } from '@mp/shared';
-import { FIRST_ROW } from './category';
+
+/**
+ * Only the first photo is eager (the LCP candidate). Lazy photos that sit inside the first viewport still load
+ * at once, so a phone may fetch two or three; the budget gate counts only eager images. T-115 checks real
+ * LCP and CLS on an album page.
+ */
+export const ALBUM_EAGER = 1;
 
 export interface AlbumThumb {
   photo: SnapshotPhoto;
@@ -12,13 +18,13 @@ export interface AlbumThumb {
   priority: boolean;
 }
 
-/** Every photo of the album in sort order; the first row (FIRST_ROW) is eager, the very first has high priority. */
+/** Every photo of the album in sort order; only the first (ALBUM_EAGER) is eager, and it has high priority. */
 export function albumThumbs(category: Pick<SnapshotCategory, 'slug'>, album: SnapshotAlbum): AlbumThumb[] {
   const total = album.photos.length;
   return album.photos.map((photo, i) => ({
     photo,
     alt: effectiveAlt(photo, { albumTitle: album.title, categoryKey: category.slug, n: i + 1, total }),
-    eager: i < FIRST_ROW,
+    eager: i < ALBUM_EAGER,
     priority: i === 0,
   }));
 }

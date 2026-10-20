@@ -6,6 +6,7 @@ import { checkPageChecks as gate } from './site-checks.mjs';
 import { CHECKS, runChecks } from './gates.mjs';
 import {
   checkHead,
+  checkHeavyImages,
   checkImages,
   checkInternalLinks,
   checkJsonLd,
@@ -119,6 +120,32 @@ describe('images', () => {
   it.each(['IMG_1234.jpg', 'photo.webp', 'DSC00123', 'x.PNG'])('filename-like alt %s', (alt) =>
     expect(imgs(`<img src="a" alt="${alt}" width="1" height="2">`)).toMatch(/filename-like/));
   it('ignores the lightbox dialog image', () => expect(imgs('<dialog><img alt=""></dialog>')).toBe(''));
+});
+
+describe('heavy images in the initial HTML', () => {
+  const heavy = (html) => checkHeavyImages({ path: 'svatby/x/index.html', html });
+  const u = 'https://i.example/photos/0000/';
+  it.each([
+    `<img src="${u}master.jpg">`,
+    `<img src="${u}1600.jpg" srcset="${u}2400.webp 2400w" loading="eager">`,
+    `<picture><source srcset="${u}2400.webp 2400w"><img src="${u}480.webp" fetchpriority="high"></picture>`,
+    `<link rel="preload" as="image" href="${u}2400.webp">`,
+    `<div style="background:url('${u}master.jpg')"></div>`,
+  ])('fails %s', (html) => expect(heavy(html)).not.toEqual([]));
+  it('also fails through the whole-site run', () => {
+    const s = goodSite();
+    s.pages[2] = page('svatby/x/index.html', { extra: ld({ '@type': 'ImageGallery' }) + ld(crumbs), body: `<img src="${u}master.jpg" alt="x" width="1" height="1">` });
+    expect(run(s).errors.join()).toMatch(/heavy-images: \/svatby\/x\/index.html .*master/);
+  });
+  it('allows fit tiers, lazy candidate lists, data-lb attributes and plain links', () => {
+    expect(
+      heavy(
+        `<img src="${u}1600.jpg" srcset="${u}480.webp 480w, ${u}720.webp 720w, ${u}2400.webp 2400w" loading="eager" alt="" width="1" height="1">` +
+          `<img src="${u}1600.jpg" srcset="${u}960.webp 960w, ${u}2400.webp 2400w" loading="lazy" alt="" width="1" height="1">` +
+          `<a href="${u}1600.jpg" data-lb-set="${u}1600.webp 1600w, ${u}2400.webp 2400w" data-lb-master="${u}master.jpg">x</a>`,
+      ),
+    ).toEqual([]);
+  });
 });
 
 describe('json-ld', () => {

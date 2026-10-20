@@ -2,7 +2,16 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { BUDGET, aboveFoldImageUrls, checkWeight, measureFirstLoad, pickCandidate } from './weight';
+import {
+  BUDGET,
+  DEFAULT_DPR,
+  DEFAULT_VIEWPORT,
+  aboveFoldImageUrls,
+  checkWeight,
+  measureFirstLoad,
+  neededWidth,
+  pickCandidate,
+} from './weight';
 
 const dirs: string[] = [];
 afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })));
@@ -30,17 +39,42 @@ describe('pickCandidate', () => {
   });
 });
 
+describe('weight model', () => {
+  it('needs slot x DPR with the design-check defaults (~663 px)', () => {
+    expect(DEFAULT_VIEWPORT).toBe(412);
+    expect(DEFAULT_DPR).toBe(1.75);
+    expect(neededWidth()).toBeCloseTo(663.3, 1);
+    expect(neededWidth(300, 2)).toBe(600);
+  });
+  it('picks the 720 variant for the default phone', () => {
+    const set = 'a 480w, b 720w, c 960w, d 1600w';
+    expect(pickCandidate(set, neededWidth())).toBe('b');
+    expect(pickCandidate(set, neededWidth(412, 2))).toBe('c');
+  });
+  it('measureFirstLoad honours slotWidth and dpr', () => {
+    const dir = site('<img src="/c.webp" srcset="/a.webp 480w, /b.webp 720w, /c.webp 960w" loading="eager">', {
+      'a.webp': 'a'.repeat(10),
+      'b.webp': 'b'.repeat(20),
+      'c.webp': 'c'.repeat(30),
+    });
+    expect(measureFirstLoad({ distDir: dir, page: '/p/' }).images).toBe(20);
+    expect(measureFirstLoad({ distDir: dir, page: '/p/', slotWidth: 300, dpr: 1 }).images).toBe(10);
+    expect(measureFirstLoad({ distDir: dir, page: '/p/', slotWidth: 412, dpr: 2.5 }).images).toBe(30);
+  });
+});
+
 describe('aboveFoldImageUrls', () => {
   it('lists only eager or high-priority images, through their picture', () => {
     const html = picture('x1', 'loading="eager"') + picture('x2', 'loading="lazy"') + picture('x3', 'fetchpriority="high" loading="eager"');
-    expect(aboveFoldImageUrls(html)).toEqual(['https://i/photos/x1/480.webp', 'https://i/photos/x3/480.webp']);
+    expect(aboveFoldImageUrls(html)).toEqual(['https://i/photos/x1/960.webp', 'https://i/photos/x3/960.webp']);
+    expect(aboveFoldImageUrls(html, 400)).toEqual(['https://i/photos/x1/480.webp', 'https://i/photos/x3/480.webp']);
   });
 });
 
 describe('aboveFoldImageUrls with a bare img srcset', () => {
   it('picks the srcset candidate for the slot, not the src fallback', () => {
-    const html = '<img src="/big.webp" srcset="/s.webp 480w, /m.webp 960w, /big.webp 1600w" loading="eager">';
-    expect(aboveFoldImageUrls(html)).toEqual(['/s.webp']);
+    const html = '<img src="/big.webp" srcset="/s.webp 480w, /m.webp 720w, /big.webp 1600w" loading="eager">';
+    expect(aboveFoldImageUrls(html)).toEqual(['/m.webp']);
   });
 });
 

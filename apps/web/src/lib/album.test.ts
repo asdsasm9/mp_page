@@ -14,12 +14,13 @@ describe('formatShotOn', () => {
 });
 
 describe('albumThumbs', () => {
-  it('numbers the alt text, makes the first row eager and the rest lazy', () => {
+  it('numbers the alt text, makes only the first photo eager (high priority) and the rest lazy', () => {
     const category = fixture.categories.find((c) => c.slug === 'svatby')!;
     const album = category.albums.find((a) => a.slug === 'sedlakovi')!;
     const thumbs = albumThumbs(category, album);
     expect(thumbs).toHaveLength(44);
-    expect(thumbs.map((t) => t.eager)).toEqual(thumbs.map((_, i) => i < 3));
+    expect(thumbs.map((t) => t.eager)).toEqual(thumbs.map((_, i) => i === 0));
+    expect(thumbs[0]!.priority).toBe(true);
     expect(thumbs.filter((t) => t.priority)).toHaveLength(1);
     expect(thumbs[11]!.alt).toMatch(/fotografie 12 z 44$/);
   });

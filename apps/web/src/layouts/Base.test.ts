@@ -185,13 +185,13 @@ describe('Album pages (built, shared build)', () => {
     }
   });
 
-  it('sedlakovi: 44 photos with real alt, dimensions, first row eager, rest lazy, links to the 1600 JPEG', () => {
+  it('sedlakovi: 44 photos with real alt, dimensions, first photo eager, rest lazy, links to the 1600 JPEG', () => {
     const page = read('svatby', 'sedlakovi');
     const grid = page.slice(page.indexOf('<ul class="grid'), page.indexOf('</ul>', page.indexOf('<ul class="grid')));
     const imgs = imgTags(grid);
     expect(imgs).toHaveLength(44);
     expect(imgs.map((t) => /loading="(\w+)"/.exec(t)?.[1])).toEqual(
-      imgs.map((_, i) => (i < 3 ? 'eager' : 'lazy')),
+      imgs.map((_, i) => (i === 0 ? 'eager' : 'lazy')),
     );
     for (const t of imgs) {
       const alt = /\salt="([^"]+)"/.exec(t)?.[1];

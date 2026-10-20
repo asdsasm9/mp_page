@@ -3,7 +3,7 @@
  * the budget gate). Counts: gzip size of the HTML, the linked local stylesheets and scripts, the raw size of
  * preloaded fonts, and the images that load at once (eager or fetchpriority=high). Local images are read from
  * `dist`; images on the image host are not in `dist`, so their size comes from `imageBytes` (the snapshot's
- * stored variant sizes). For a `<picture>` the smallest WebP candidate that covers `slotWidth` is assumed.
+ * stored variant sizes). For a `<picture>` the smallest WebP candidate that covers the need (slot x DPR) is assumed.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -42,9 +42,20 @@ export interface WeightOptions {
   page: string;
   /** Size in bytes of an image URL that is not in `dist`; undefined when unknown. */
   imageBytes?: (url: string) => number | undefined;
-  /** CSS pixels the image slot is assumed to need when choosing a srcset candidate. Default 390 (phone). Assumes 1x density, so image weight is a lower bound; real 2x phones fetch the next candidate up. */
+  /** CSS pixels of the image slot. Default: the design-check phone (412 px wide, 4vw gutter each side). */
   slotWidth?: number;
+  /** Device pixel ratio. Default 1.75 (the design-check phone). */
+  dpr?: number;
 }
+
+/** Design-check defaults: viewport 412 px, gutter 4vw per side, DPR 1.75 -> need ~663 px. */
+export const DEFAULT_VIEWPORT = 412;
+export const DEFAULT_GUTTER_VW = 0.04;
+export const DEFAULT_SLOT_WIDTH = DEFAULT_VIEWPORT * (1 - 2 * DEFAULT_GUTTER_VW);
+export const DEFAULT_DPR = 1.75;
+
+/** Device pixels an image must supply: slot (CSS px) x DPR. */
+export const neededWidth = (slotWidth: number = DEFAULT_SLOT_WIDTH, dpr: number = DEFAULT_DPR): number => slotWidth * dpr;
 
 const gz = (buf: Buffer | string): number => gzipSync(buf, { level: 9 }).length;
 
@@ -74,7 +85,7 @@ export function pickCandidate(srcset: string, slotWidth: number): string | undef
 }
 
 /** Image URLs that load at once on the page: eager or high-priority `<img>`, resolved through their `<picture>`. */
-export function aboveFoldImageUrls(html: string, slotWidth = 390): string[] {
+export function aboveFoldImageUrls(html: string, need: number = neededWidth()): string[] {
   const urls: string[] = [];
   const re = /<picture\b[\s\S]*?<\/picture>|<img\b[^>]*>/g;
   for (const m of html.matchAll(re)) {
@@ -86,14 +97,15 @@ export function aboveFoldImageUrls(html: string, slotWidth = 390): string[] {
     const source = /<source\b[^>]*\ssrcset="([^"]+)"/.exec(block)?.[1];
     // A bare `<img srcset>` (Astro's static images) is resolved like a `<source>`; `src` is only its fallback.
     const set = source ?? attr(img, 'srcset');
-    const url = (set && pickCandidate(set, slotWidth)) || attr(img, 'src');
+    const url = (set && pickCandidate(set, need)) || attr(img, 'src');
     if (url) urls.push(url);
   }
   return urls;
 }
 
 export function measureFirstLoad(opts: WeightOptions): Weight {
-  const { distDir, page, imageBytes, slotWidth = 390 } = opts;
+  const { distDir, page, imageBytes, slotWidth, dpr } = opts;
+  const need = neededWidth(slotWidth, dpr);
   const htmlBuf = readFileSync(join(distDir, page, 'index.html'));
   const html = htmlBuf.toString('utf8');
   const w: Weight = { html: gz(htmlBuf), css: 0, js: 0, fonts: 0, fontFiles: 0, images: 0, unknownImages: [], total: 0 };
@@ -111,7 +123,7 @@ export function measureFirstLoad(opts: WeightOptions): Weight {
     const src = attr(tag, 'src');
     if (src && isLocal(src)) w.js += gz(readLocal(distDir, src) ?? '');
   }
-  for (const url of aboveFoldImageUrls(html, slotWidth)) {
+  for (const url of aboveFoldImageUrls(html, need)) {
     const size = isLocal(url) ? readLocal(distDir, url)?.length : imageBytes?.(url);
     if (size === undefined) w.unknownImages.push(url);
     else w.images += size;

@@ -68,10 +68,17 @@ describe('budget gate', () => {
     expect(runBudget(lazyOnly).errors).toEqual([]);
   });
 
-  it('picks the srcset candidate of a bare img for the phone slot', () => {
-    const files = { 's.webp': randomBytes(10 * 1024), 'l.webp': randomBytes(400 * 1024) };
-    const site = dist('<img src="/l.webp" srcset="/s.webp 480w, /l.webp 1600w" loading="eager" alt="" width="1" height="1">', files);
+  it('picks the 720 candidate of a bare img for the phone slot x DPR, not the 1600 one', () => {
+    const files = { 's.webp': randomBytes(10 * 1024), 'm.webp': randomBytes(100 * 1024), 'l.webp': randomBytes(400 * 1024) };
+    const site = dist('<img src="/l.webp" srcset="/s.webp 480w, /m.webp 720w, /l.webp 1600w" loading="eager" alt="" width="1" height="1">', files);
     expect(runBudget(site).errors).toEqual([]);
+    expect(runBudget(site).lines[0]).toMatch(/lcp image 100\.0 KB \/ 150\.0 KB;/);
+  });
+
+  it('fails an LCP image over 150 KB (the 720 variant must fit)', () => {
+    const files = { 'm.webp': randomBytes(160 * 1024), 's.webp': randomBytes(10) };
+    const site = dist('<img src="/m.webp" srcset="/s.webp 480w, /m.webp 720w" loading="eager" alt="" width="1" height="1">', files);
+    expect(runBudget(site).errors.join()).toContain('largest above-the-fold image');
   });
 
   it('warns, not fails, for an eager image on the image host with unknown size', () => {

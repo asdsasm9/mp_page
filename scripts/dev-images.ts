@@ -78,6 +78,20 @@ export async function dominantColorOf(input: Buffer): Promise<string> {
   return `#${hex(channels[0])}${hex(channels[1])}${hex(channels[2])}`;
 }
 
+/**
+ * The master-sized dev copy of a source file. It is always re-encoded by sharp, which drops EXIF/GPS/ICC
+ * metadata unless asked to keep it (never do that here: the master is publicly linked, see T-114).
+ */
+export async function devMasterOf(source: Buffer, width: number, height: number): Promise<Buffer> {
+  return sharp(source).rotate().resize({ width, height, fit: 'fill' }).toBuffer();
+}
+
+/** True when an image buffer carries an EXIF block (camera data, GPS). Used by the master privacy test. */
+export async function hasExif(image: Buffer): Promise<boolean> {
+  const meta = await sharp(image).metadata();
+  return meta.exif !== undefined && meta.exif.length > 0;
+}
+
 export async function generateDevImages(
   photos: DevPhoto[],
   { galleriesDir = GALLERIES_DIR, outDir = DEV_IMG_OUT, force = false } = {},
@@ -94,12 +108,7 @@ export async function generateDevImages(
       const { master } = photo.variants;
       const plan = variantPlan(master.w, master.h);
       // Master-sized copy first (sharp applies extract before resize inside one pipeline).
-      const masterBuf = hasSource
-        ? await sharp(readFileSync(source))
-            .rotate()
-            .resize({ width: master.w, height: master.h, fit: 'fill' })
-            .toBuffer()
-        : null;
+      const masterBuf = hasSource ? await devMasterOf(readFileSync(source), master.w, master.h) : null;
       if (masterBuf) color = await dominantColorOf(masterBuf);
       for (const k of missing) {
         const target = join(outDir, ...k.key.split('/'));

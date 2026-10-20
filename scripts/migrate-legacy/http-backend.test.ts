@@ -280,13 +280,13 @@ describe('migrate-legacy --live entry', () => {
     expect(h.calls.some((c) => c.method !== 'GET' && !c.url.includes('/auth/v1/'))).toBe(false);
   });
 
-  it('an admin signs in, the catalog phase starts (here the fake API refuses it); sentinel password in no output', async () => {
+  it('an admin signs in, the read-only pre-flight starts (here the fake API refuses it); sentinel password in no output', async () => {
     const h = fakeHttp();
     const r = await run(live, baseEnv, h.fetch);
     expect(r.code).toBe(1);
     expect(r.text).toContain('signed in as admin');
-    expect(r.text).toContain('catalog phase failed');
-    expect(h.calls.some((c) => c.url.includes('/rest/v1/photos'))).toBe(false);
+    expect(r.text).toContain('pre-flight failed');
+    expect(h.calls.some((c) => c.url.includes('/rest/v1/photos') && c.method !== 'GET')).toBe(false);
     for (const secret of [SENTINEL_PASSWORD, SENTINEL_TOKEN]) expect(r.text).not.toContain(secret);
   });
 

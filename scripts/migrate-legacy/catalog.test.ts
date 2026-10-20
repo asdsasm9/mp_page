@@ -1,5 +1,6 @@
 // Catalog upsert (plan WP-06 step 8) against the FakeBackend only.
-import { describe, expect, it } from 'vitest';
+import sharp from 'sharp';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { main } from '../migrate-legacy';
 import { LEGACY_ALBUMS, LEGACY_CATEGORIES } from '../../packages/shared/src/legacy/albums';
 import { albumIdOf, categoryIdOf, formatCatalog, syncCatalog } from './catalog';
@@ -94,23 +95,26 @@ describe('migrate-legacy --live catalog phase', () => {
   const run = async (backend: ReturnType<typeof createFakeBackend>, extra: string[] = []) => {
     const out: string[] = [];
     const err: string[] = [];
-    const code = await main(['--live', '--confirm-project', 'abcdefgh', ...extra], (l) => out.push(l), (l) => err.push(l), { env, backend });
+    // Synthetic tiny sources keep the photo phase fast; the real legacy files are never read here.
+    const upload = { exists: () => true, read: async () => tiny, sleep: async () => {} };
+    const code = await main(['--live', '--confirm-project', 'abcdefgh', ...extra], (l) => out.push(l), (l) => err.push(l), { env, backend, upload });
     return { code, out: out.join('\n'), err: err.join('\n') };
   };
+  let tiny: Buffer;
+  beforeAll(async () => {
+    tiny = await sharp({ create: { width: 48, height: 32, channels: 3, background: '#336699' } }).jpeg().toBuffer();
+  });
 
-  it('writes the catalog, then stops with the photos-not-implemented message', async () => {
+  it('writes the catalog, then the photos (details in upload.test.ts)', async () => {
     const b = createFakeBackend();
     const r = await run(b);
-    expect(r.code).toBe(1);
+    expect(r.code).toBe(0);
     expect(r.out).toContain('categories created 3 existing 0, albums created 13 existing 0, drift 0');
-    expect(r.err).toContain('photos not implemented yet');
+    expect(r.out).toContain('RESULT: OK');
     expect(b.albums()).toHaveLength(13);
-    expect(b.photos()).toHaveLength(0);
-    expect(b.calls).not.toContain('reserve');
-    expect(b.calls).not.toContain('put');
-    expect(b.calls).not.toContain('commit');
+    expect(b.photos()).toHaveLength(141);
     expect(`${r.out}${r.err}`).not.toContain('SENTINEL-pw');
-  });
+  }, 60_000);
 
   it('a second run reports existing rows', async () => {
     const b = createFakeBackend();
@@ -118,14 +122,14 @@ describe('migrate-legacy --live catalog phase', () => {
     const r = await run(b);
     expect(r.out).toContain('created 0 existing 3, albums created 0 existing 13, drift 0');
     expect(b.albums()).toHaveLength(13);
-  });
+  }, 60_000);
 
   it('a non-admin writes nothing', async () => {
     const b = createFakeBackend({ isAdmin: false });
     const r = await run(b);
     expect(r.code).toBe(1);
     expect(b.calls).toEqual(['signIn']);
-  });
+  }, 60_000);
 
   it('a catalog failure prints only the code and exits 1', async () => {
     const b = createFakeBackend();
@@ -133,5 +137,5 @@ describe('migrate-legacy --live catalog phase', () => {
     const r = await run(b);
     expect(r.code).toBe(1);
     expect(r.err).toContain('catalog phase failed (SERVER_ERROR)');
-  });
+  }, 60_000);
 });

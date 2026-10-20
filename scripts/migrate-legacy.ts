@@ -10,6 +10,7 @@ import { UsageError, type MigrateOptions } from './migrate-legacy/types';
 import { BackendError, type MigrationBackend } from './migrate-legacy/backend';
 import { createHttpBackend, type FetchLike } from './migrate-legacy/http-backend';
 import { formatCatalog, syncCatalog } from './migrate-legacy/catalog';
+import { formatUpload, preflight, uploadComplete, uploadPhotos, type UploadDeps } from './migrate-legacy/upload';
 import { checkLive, LiveGuardError, type Env } from './migrate-legacy/live-guard';
 
 export interface MainDeps {
@@ -20,6 +21,8 @@ export interface MainDeps {
   /** Replaces the HttpBackend entirely (tests). */
   backend?: MigrationBackend;
   plan?: PlanDeps;
+  /** Live photo phase: source dir, file reader, backoff sleep (tests). */
+  upload?: UploadDeps;
   /** Where migration-report/ goes. Default: <repo>/migration-report. */
   reportDir?: string;
   now?: () => Date;
@@ -67,15 +70,37 @@ async function runLive(
     return 1;
   }
   out(`signed in as admin for project ${config.projectLabel}`);
+  // Pre-flight first: read-only. A refusal leaves the backend untouched (not even the catalog is written).
+  let pre;
   try {
-    for (const line of formatCatalog(await syncCatalog(backend, options))) out(line);
+    pre = await preflight(backend, options, deps.upload);
+  } catch (e) {
+    err(`migrate-legacy: pre-flight failed (${e instanceof BackendError ? e.code : (e as Error).message}). Nothing was written.`);
+    return 1;
+  }
+  out(`pre-flight: ${pre.albums.reduce((s, a) => s + a.pending.length, 0)} photo(s) to upload, need ${pre.need} bytes, used ${pre.storage.used_bytes} of hard ${pre.storage.hard}`);
+  if (pre.refusal !== null) {
+    err(`migrate-legacy: refused, nothing was written: ${pre.refusal}`);
+    return 1;
+  }
+  if (pre.warn) out(`WARNING: this run crosses the storage warn level (${pre.storage.warn} bytes)`);
+  let catalog;
+  try {
+    catalog = await syncCatalog(backend, options);
+    for (const line of formatCatalog(catalog)) out(line);
   } catch (e) {
     const code = e instanceof BackendError ? e.code : 'UNKNOWN';
     err(`migrate-legacy: catalog phase failed (${code}).`);
     return 1;
   }
-  err('migrate-legacy: photos not implemented yet (T-156). Only the catalog was written.');
-  return 1;
+  try {
+    const report = await uploadPhotos(backend, pre, catalog.albumIds, deps.upload);
+    for (const line of formatUpload(report)) out(line);
+    return uploadComplete(report) ? 0 : 1;
+  } catch (e) {
+    err(`migrate-legacy: upload phase failed (${e instanceof BackendError ? e.code : (e as Error).message}).`);
+    return 1;
+  }
 }
 
 /** Returns the process exit code. */

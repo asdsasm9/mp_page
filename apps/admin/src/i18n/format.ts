@@ -46,6 +46,12 @@ export function formatDateTime(value: Date | string | number): string {
   return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} ${two(d.getHours())}:${two(d.getMinutes())}`;
 }
 
+/** A stored calendar date "2026-06-14" as "14. 6. 2026" (no time zone involved); other text is returned unchanged. */
+export function formatShotOn(value: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return m ? `${Number(m[3])}. ${Number(m[2])}. ${m[1]}` : value;
+}
+
 /** "19. 10. 2026". */
 export function formatDate(value: Date | string | number): string {
   const d = value instanceof Date ? value : new Date(value);

@@ -1,6 +1,7 @@
 /** Dialogs of the categories screen: create / edit (ADMIN-UX 3.2), hide (F4) and delete (F5). */
 import { isReservedCategorySlug, isValidSlug, slugify, uniqueSlug, type CategoryRow } from '@mp/shared';
-import { useId, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react';
+import { useId, useRef, useState, type FormEvent } from 'react';
+import { Field } from '../components/Field';
 import { Modal } from '../components/Modal';
 import { StaleNotice } from '../components/StaleNotice';
 import { useCreateCategory, useDeleteCategory, useUpdateCategory } from '../data/catalog';
@@ -12,85 +13,24 @@ import { fill, formatCount } from '../i18n/format';
 import { errorMessage } from '../i18n/messages';
 import { CatalogError } from '../ports';
 
-function ErrorLine({ error, onReload }: { error: unknown; onReload: () => void }) {
+/** The failure of a dialog's save: "changed elsewhere" with a reload button, or the Czech error text. */
+export function ErrorLine({
+  error,
+  onReload,
+  entity = 'category',
+  message = errorMessage,
+}: {
+  error: unknown;
+  onReload: () => void;
+  entity?: 'album' | 'category';
+  message?: (error: unknown) => string;
+}) {
   if (error === null) return null;
-  if (isStale(error)) return <StaleNotice entity="category" onReload={onReload} />;
+  if (isStale(error)) return <StaleNotice entity={entity} onReload={onReload} />;
   return (
     <p className="notice notice-error" role="alert">
-      {errorMessage(error)} {cs.categories.saveFailedHint}
+      {message(error)} {cs.categories.saveFailedHint}
     </p>
-  );
-}
-
-interface FieldProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  required?: boolean;
-  error?: string | undefined;
-  hint?: ReactNode;
-  hintId?: string;
-  multiline?: boolean;
-  maxLength?: number;
-  inputRef?: RefObject<HTMLInputElement>;
-  autofocus?: boolean;
-  autoCapitalize?: string;
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  required,
-  error,
-  hint,
-  hintId,
-  multiline,
-  maxLength,
-  inputRef,
-  autofocus,
-  autoCapitalize,
-}: FieldProps) {
-  const id = useId();
-  const errorId = `${id}-error`;
-  const describedBy = [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(' ') || undefined;
-  const common = {
-    id,
-    value,
-    maxLength,
-    'aria-invalid': error ? true : undefined,
-    'aria-describedby': describedBy,
-    'data-autofocus': autofocus ? '' : undefined,
-  } as const;
-  return (
-    <div className="field">
-      <label htmlFor={id}>
-        {label}
-        {required ? <span className="required"> {cs.categories.required}</span> : null}
-      </label>
-      {multiline ? (
-        <textarea {...common} rows={3} onChange={(event) => onChange(event.target.value)} />
-      ) : (
-        <input
-          {...common}
-          ref={inputRef}
-          type="text"
-          autoCapitalize={autoCapitalize}
-          spellCheck={false}
-          onChange={(event) => onChange(event.target.value)}
-        />
-      )}
-      {error ? (
-        <p id={errorId} className="field-error">
-          {error}
-        </p>
-      ) : null}
-      {hint ? (
-        <div id={hintId} className="field-hint">
-          {hint}
-        </div>
-      ) : null}
-    </div>
   );
 }
 

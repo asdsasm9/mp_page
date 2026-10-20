@@ -4,6 +4,7 @@
  * after login). Mutations refuse to run offline and refresh every catalog query afterwards.
  */
 import { useMutation, useQueries, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import type { PhotoRow } from '@mp/shared';
 import { useSession } from '../auth/session';
 import {
   NetworkError,
@@ -54,17 +55,27 @@ export const usePhoto = (id: string) => useCatalogQuery(catalogKeys.photo(id), (
  * still loading or failed to load, so a screen never shows a wrong total.
  */
 export function usePhotoCounts(albumIds: readonly string[]): ReadonlyMap<string, number | undefined> {
+  const photos = usePhotosByAlbum(albumIds);
+  return new Map(albumIds.map((id) => [id, photos.get(id)?.length] as const));
+}
+
+/**
+ * The photos of several albums (counts and covers of a list), one cached request per album. PostgREST
+ * aggregates are off on Supabase and a cover needs its photo row anyway, so no separate count call exists.
+ * `undefined` while an album's photos are loading or failed.
+ */
+export function usePhotosByAlbum(albumIds: readonly string[]): ReadonlyMap<string, PhotoRow[] | undefined> {
   const { catalog } = usePorts();
   const { status, runAuthed } = useSession();
-  const lengths = useQueries({
+  const lists = useQueries({
     queries: albumIds.map((id) => ({
       queryKey: catalogKeys.photos(id),
       queryFn: () => runAuthed(() => catalog.listPhotos(id)),
       enabled: status === 'ready',
     })),
-    combine: (results) => results.map((r) => r.data?.length),
+    combine: (results) => results.map((r) => r.data),
   });
-  return new Map(albumIds.map((id, i) => [id, lengths[i]] as const));
+  return new Map(albumIds.map((id, i) => [id, lists[i]] as const));
 }
 
 export const useSiteState = () => useCatalogQuery(catalogKeys.siteState(), (c) => c.getSiteState());

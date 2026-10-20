@@ -27,7 +27,7 @@ describe('token parity with apps/web', () => {
 
   it('keeps the admin-only extras small and named', () => {
     const extras = [...admin.keys()].filter((k) => !web.has(k)).sort();
-    expect(extras).toEqual(['--bottom-nav-height', '--font-size-ui', '--font-ui']);
+    expect(extras).toEqual(['--bottom-nav-height', '--cover-size', '--font-size-ui', '--font-ui']);
   });
 });
 

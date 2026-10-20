@@ -12,3 +12,14 @@ export function usePorts(): Ports {
   if (!ports) throw new Error('usePorts outside PortsProvider');
   return ports;
 }
+
+const ImageBaseContext = createContext('');
+
+/** Origin of the public image host (VITE_IMG_BASE_URL, no trailing slash); empty text gives relative URLs. */
+export function ImageBaseProvider({ base, children }: { base: string; children: ReactNode }) {
+  return <ImageBaseContext.Provider value={base}>{children}</ImageBaseContext.Provider>;
+}
+
+export function useImageBase(): string {
+  return useContext(ImageBaseContext);
+}

@@ -104,7 +104,7 @@ export function LoginForm({ defaultEmail = '', onForgot }: Props) {
           </p>
         ) : null}
       </div>
-      <button type="submit" className="button button-primary" disabled={submitting}>
+      <button type="submit" className="button button-primary" aria-disabled={submitting || undefined}>
         {submitting ? cs.login.submitting : cs.login.submit}
       </button>
       {onForgot ? (

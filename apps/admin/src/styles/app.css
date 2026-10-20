@@ -1273,4 +1273,56 @@
   .publish-history-row[data-status='failed'] .publish-history-status {
     color: var(--color-danger);
   }
+
+  /* Storage screen (WP5-26): breakdown table and reconcile report. */
+  .data-table {
+    inline-size: 100%;
+    max-inline-size: 40rem;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--space-2) var(--space-3);
+    border-block-end: var(--border-width) solid var(--color-border);
+    text-align: start;
+  }
+
+  .data-table .num {
+    text-align: end;
+  }
+
+  .data-table tfoot th,
+  .data-table tfoot td {
+    font-weight: 700;
+    border-block-end: 0;
+  }
+
+  .data-table a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-min);
+  }
+
+  .findings,
+  .finding {
+    display: grid;
+    gap: var(--space-3);
+    max-inline-size: 40rem;
+  }
+
+  .finding {
+    padding: var(--space-4);
+    background: var(--color-surface-raised);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    justify-items: start;
+  }
+
+  .finding-rows {
+    display: grid;
+    gap: var(--space-1);
+    font-variant-numeric: tabular-nums;
+  }
 }

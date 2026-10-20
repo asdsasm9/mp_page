@@ -36,7 +36,10 @@ export function Modal({ title, onClose, busy = false, variant, children }: Props
     return () => {
       if (typeof dialog.close === 'function') dialog.close();
       else dialog.removeAttribute('open');
-      if (opener?.isConnected) opener.focus();
+      // The opener can be gone (the row it belonged to was created, moved or deleted): the main region then
+      // takes focus, so keyboard users never start again from the top of the page.
+      if (opener?.isConnected && opener !== document.body) opener.focus();
+      else document.querySelector<HTMLElement>('main')?.focus();
     };
   }, []);
 

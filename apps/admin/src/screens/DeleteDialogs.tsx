@@ -26,6 +26,7 @@ export function DeletePhotosDialog({ album, photos, onClose, onFinished }: Photo
   const count = photos.length;
 
   async function confirm() {
+    if (deleting) return;
     setDeleting(true);
     const outcome = await deleter.deletePhotos(album, photos);
     if (outcome.removedIds.length > 0 && outcome.failedIds.length === 0) {
@@ -47,13 +48,14 @@ export function DeletePhotosDialog({ album, photos, onClose, onFinished }: Photo
         <button
           type="button"
           className="button button-danger"
-          disabled={!canMutate || deleting}
+          disabled={!canMutate}
+          aria-disabled={deleting || undefined}
           aria-busy={deleting}
           onClick={() => void confirm()}
         >
           {deleting ? cs.delete.progress : glossary.delete}
         </button>
-        <button type="button" className="button" data-autofocus="" disabled={deleting} onClick={onClose}>
+        <button type="button" className="button" data-autofocus="" aria-disabled={deleting || undefined} onClick={() => !deleting && onClose()}>
           {glossary.cancel}
         </button>
       </div>
@@ -97,6 +99,7 @@ export function DeleteAlbumDialog({ album, photoCount: openedWith, onClose, onDe
         : fill(cs.delete.albumTitleMany, { title: album.title, photos: formatCount(photoCount, cs.units.photo) });
 
   async function confirm() {
+    if (deleting) return;
     setDeleting(true);
     setFailure(false);
     setError(null);
@@ -117,6 +120,7 @@ export function DeleteAlbumDialog({ album, photoCount: openedWith, onClose, onDe
   }
 
   async function hide() {
+    if (deleting) return;
     setDeleting(true);
     try {
       await albumActions.hide(album);
@@ -139,7 +143,7 @@ export function DeleteAlbumDialog({ album, photoCount: openedWith, onClose, onDe
           autoCapitalize="off"
           spellCheck={false}
           data-autofocus=""
-          disabled={deleting}
+          readOnly={deleting}
           onChange={(event) => setTyped(event.target.value)}
         />
       </div>
@@ -153,18 +157,25 @@ export function DeleteAlbumDialog({ album, photoCount: openedWith, onClose, onDe
         <button
           type="button"
           className="button button-danger"
-          disabled={!canMutate || deleting || !confirmsAlbumDelete(typed, album.title)}
+          disabled={!canMutate || !confirmsAlbumDelete(typed, album.title)}
+          aria-disabled={deleting || undefined}
           aria-busy={deleting}
           onClick={() => void confirm()}
         >
           {deleting ? cs.delete.progress : failure ? glossary.retry : cs.delete.album}
         </button>
         {album.published ? (
-          <button type="button" className="button" disabled={!canMutate || deleting} onClick={() => void hide()}>
+          <button
+            type="button"
+            className="button"
+            disabled={!canMutate}
+            aria-disabled={deleting || undefined}
+            onClick={() => void hide()}
+          >
             {glossary.hideAlbum}
           </button>
         ) : null}
-        <button type="button" className="button" disabled={deleting} onClick={onClose}>
+        <button type="button" className="button" aria-disabled={deleting || undefined} onClick={() => !deleting && onClose()}>
           {glossary.cancel}
         </button>
       </div>

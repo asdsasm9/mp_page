@@ -2,6 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { ExpiredDialog } from './auth/ExpiredDialog';
 import { SessionProvider } from './auth/session';
+import { FocusRescue } from './components/FocusRescue';
 import { ToastProvider } from './components/Toast';
 import { createHealthStore, HealthProvider } from './data/health';
 import { createQueryClient } from './data/queryClient';
@@ -38,6 +39,7 @@ export function AppProviders({ ports, retry, imgBaseUrl = '', siteUrl = '', enco
                   <UploadProvider {...(encoder ? { encoder } : {})}>{children}</UploadProvider>
                 </ToastProvider>
                 <ExpiredDialog />
+                <FocusRescue />
               </SessionProvider>
             </QueryClientProvider>
           </HealthProvider>

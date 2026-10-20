@@ -193,10 +193,10 @@ export function CategoryFormDialog({ category, categories, onClose }: FormProps)
         </details>
         <ErrorLine error={failure} onReload={onClose} />
         <div className="dialog-actions">
-          <button type="submit" className="button button-primary" disabled={!canMutate || saving}>
+          <button type="submit" className="button button-primary" disabled={!canMutate} aria-disabled={saving || undefined}>
             {saving ? cs.categories.saving : editing ? glossary.save : cs.categories.create}
           </button>
-          <button type="button" className="button" disabled={saving} onClick={onClose}>
+          <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
             {glossary.cancel}
           </button>
         </div>
@@ -219,6 +219,7 @@ export function HideCategoryDialog({ category, albumCount, onClose }: ConfirmPro
   const [saving, setSaving] = useState(false);
 
   async function confirm() {
+    if (saving) return;
     setSaving(true);
     setFailure(null);
     try {
@@ -243,13 +244,14 @@ export function HideCategoryDialog({ category, albumCount, onClose }: ConfirmPro
           type="button"
           className="button button-primary"
           data-autofocus=""
-          disabled={!canMutate || saving}
+          disabled={!canMutate}
+          aria-disabled={saving || undefined}
           aria-busy={saving}
           onClick={() => void confirm()}
         >
           {saving ? cs.categories.saving : cs.categories.hide}
         </button>
-        <button type="button" className="button" disabled={saving} onClick={onClose}>
+        <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
           {glossary.cancel}
         </button>
       </div>
@@ -287,6 +289,7 @@ export function DeleteCategoryDialog({
   }
 
   async function confirm() {
+    if (deleting) return;
     setDeleting(true);
     setFailure(null);
     try {
@@ -307,13 +310,14 @@ export function DeleteCategoryDialog({
         <button
           type="button"
           className="button button-danger"
-          disabled={!canMutate || deleting}
+          disabled={!canMutate}
+          aria-disabled={deleting || undefined}
           aria-busy={deleting}
           onClick={() => void confirm()}
         >
           {deleting ? cs.categories.deleting : glossary.delete}
         </button>
-        <button type="button" className="button" data-autofocus="" disabled={deleting} onClick={onClose}>
+        <button type="button" className="button" data-autofocus="" aria-disabled={deleting || undefined} onClick={() => !deleting && onClose()}>
           {glossary.cancel}
         </button>
       </div>

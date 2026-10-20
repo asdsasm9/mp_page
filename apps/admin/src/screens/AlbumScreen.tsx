@@ -1,6 +1,6 @@
 /** Album detail (`/alba/:id`, ADMIN-UX 3.4): inline title, status and actions, data panel, drop zone placeholder. */
 import type { AlbumRow, CategoryRow } from '@mp/shared';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { LoadFailure } from '../components/LoadFailure';
@@ -26,16 +26,30 @@ function InlineTitle({ album, autosave }: { album: AlbumRow; autosave: Autosave 
   const [editing, setEditing] = useState(false);
   const canMutate = useCanMutate();
   const error = autosave.errors.title;
+  const renameRef = useRef<HTMLButtonElement>(null);
+  // Enter and Escape end the edit with the keyboard on the field: focus goes back to the button that opened it.
+  // A blur (the user went elsewhere) leaves focus where they put it.
+  const restoreFocus = useRef(false);
 
-  function finish() {
-    if (autosave.commit('title')) setEditing(false);
+  useEffect(() => {
+    if (!editing && restoreFocus.current) {
+      restoreFocus.current = false;
+      renameRef.current?.focus();
+    }
+  }, [editing]);
+
+  function finish(viaKeyboard = false) {
+    if (autosave.commit('title')) {
+      restoreFocus.current = viaKeyboard;
+      setEditing(false);
+    }
   }
 
   if (!editing) {
     return (
       <div className="inline-title">
         <h1>{album.title}</h1>
-        <button type="button" className="button" disabled={!canMutate} onClick={() => setEditing(true)}>
+        <button ref={renameRef} type="button" className="button" disabled={!canMutate} onClick={() => setEditing(true)}>
           {cs.album.rename}
         </button>
       </div>
@@ -53,14 +67,15 @@ function InlineTitle({ album, autosave }: { album: AlbumRow; autosave: Autosave 
         maxLength={120}
         autoFocus
         onChange={(event) => autosave.setValue('title', event.target.value)}
-        onBlur={finish}
+        onBlur={() => finish()}
         onKeyDown={(event) => {
           if (event.key === 'Enter') {
             event.preventDefault();
-            finish();
+            finish(true);
           } else if (event.key === 'Escape') {
             event.preventDefault();
             autosave.revert('title');
+            restoreFocus.current = true;
             setEditing(false);
           }
         }}

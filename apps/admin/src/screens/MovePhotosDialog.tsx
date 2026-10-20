@@ -36,6 +36,7 @@ export function MovePhotosDialog({ album, photoIds, categories, albums, onClose,
   const groups = groupAlbums(categories, albums, album.id, query);
 
   async function confirm() {
+    if (saving) return;
     setSaving(true);
     setFailure(null);
     try {
@@ -105,13 +106,14 @@ export function MovePhotosDialog({ album, photoIds, categories, albums, onClose,
             <button
               type="button"
               className="button button-primary"
-              disabled={!canMutate || saving || targetId === ''}
+              disabled={!canMutate || targetId === ''}
+              aria-disabled={saving || undefined}
               aria-busy={saving}
               onClick={() => void confirm()}
             >
               {saving ? cs.categories.saving : glossary.move}
             </button>
-            <button type="button" className="button" disabled={saving} onClick={onClose}>
+            <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
               {glossary.cancel}
             </button>
           </div>

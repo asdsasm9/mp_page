@@ -86,7 +86,7 @@ export function RecoveryForm() {
           </p>
         ) : null}
       </div>
-      <button type="submit" className="button button-primary" disabled={submitting}>
+      <button type="submit" className="button button-primary" aria-disabled={submitting || undefined}>
         {submitting ? cs.login.recovery.submitting : cs.login.recovery.submit}
       </button>
     </form>

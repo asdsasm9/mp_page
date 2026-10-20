@@ -150,6 +150,52 @@ export const cs = {
     fullShort: 'Plné',
     percent: '{percent} % využito',
   },
+  /**
+   * Storage screen (ADMIN-UX 3.7 as amended by docs/API.md): per-album breakdown and the reconcile check.
+   * There is no "use the real value" action: the database total is the sum of the photo rows.
+   */
+  storageScreen: {
+    breakdownTitle: 'Využití podle alb',
+    breakdownCaption: 'Využití úložiště podle alb, od největšího',
+    colAlbum: glossary.album,
+    colPhotos: glossary.photos,
+    colSize: 'Velikost',
+    breakdownEmpty: 'Zatím tu nejsou žádné fotky.',
+    breakdownFailed: 'Přehled podle alb se nepodařilo načíst.',
+    total: 'Celkem',
+    reservedNote: 'Rozpracovaná nahrávání mají rezervováno {size}. Do součtu se započítají, až se dokončí.',
+    checkTitle: 'Kontrola úložiště',
+    checkIntro: 'Porovná fotky v databázi se soubory, které jsou skutečně uložené.',
+    checking: 'Kontroluji úložiště… Zkontrolováno souborů: {objects}.',
+    checkFailed: 'Kontrola úložiště se nepodařila.',
+    matches: 'Součet souhlasí.',
+    matchesDetail: 'Zkontrolováno: {photos}, {size}.',
+    inFlight:
+      'Fotky v databázi zabírají {db}, v úložišti je {r2}. Rozdíl tvoří nejspíš nahrávání, která právě probíhají. Zkontrolujte znovu za chvíli.',
+    findingsTitle: 'Nalezené rozdíly',
+    orphansTitle: 'Nepotřebné soubory',
+    orphansBody:
+      'Soubory ({files}, {size}) nepatří k žádné fotce v albech. Zbyly po přerušeném nahrávání nebo mazání. Můžete je bezpečně smazat, fotky v albech se nezmění.',
+    missingTitle: 'Chybějící soubory',
+    missingBody:
+      'U fotek ({photos}) chybí v úložišti soubory, takže se na webu nemusejí zobrazit. Automaticky se to opravit nedá: fotku nahrajte znovu, nebo ji smažte.',
+    missingRow: '{where}: chybí {files}',
+    mismatchTitle: 'Soubory s jinou velikostí',
+    mismatchBody:
+      'U souborů ({files}) se velikost v úložišti liší od zapsané, fotka může být poškozená. Automaticky se to opravit nedá: fotku nahrajte znovu, nebo ji smažte.',
+    mismatchRow: '{where}: zapsáno {expected}, v úložišti {actual}',
+    unknownTitle: 'Neznámé soubory',
+    unknownBody: 'V úložišti je {files}, které správa nevytvořila. Nic se s nimi nestane.',
+    whereKnown: 'Fotka {n} v albu {album}',
+    whereUnknown: 'Neznámá fotka',
+    more: '… a dalších {count}',
+    cleanup: 'Smazat nepotřebné soubory',
+    cleanupTitle: 'Smazat nepotřebné soubory?',
+    cleanupBody: 'Smaže se {files} ({size}), které nepatří k žádné fotce. Fotky v albech se nezmění. Tuto akci nelze vrátit.',
+    cleaning: 'Mažu…',
+    cleaned: ['Smazán {files}. Uvolněno {size}.', 'Smazány {files}. Uvolněno {size}.', 'Smazáno {files}. Uvolněno {size}.'],
+    cleanupFailed: 'Smazání nepotřebných souborů se nepodařilo dokončit.',
+  },
   /** Publish indicator in the shell (ADMIN-UX 3.1 top bar). */
   publishIndicator: {
     pending: 'Nezveřejněné změny',
@@ -433,6 +479,7 @@ export const cs = {
     photo: ['fotka', 'fotky', 'fotek'],
     album: ['album', 'alba', 'alb'],
     second: ['sekunda', 'sekundy', 'sekund'],
+    file: ['soubor', 'soubory', 'souborů'],
   },
 } as const;
 

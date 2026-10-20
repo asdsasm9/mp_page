@@ -75,7 +75,7 @@ export function ForgotPasswordForm({ defaultEmail = '', onBack }: Props) {
           </p>
         ) : null}
       </div>
-      <button type="submit" className="button button-primary" disabled={submitting}>
+      <button type="submit" className="button button-primary" aria-disabled={submitting || undefined}>
         {submitting ? cs.login.forgot.submitting : cs.login.forgot.submit}
       </button>
       <button type="button" className="button button-link" onClick={onBack}>

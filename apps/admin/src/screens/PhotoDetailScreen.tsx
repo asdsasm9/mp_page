@@ -152,7 +152,12 @@ function TextForm({ photo, flushRef }: { photo: PhotoRow; flushRef: Flush }) {
         </div>
       )}
       <div className="dialog-actions">
-        <button type="submit" className="button button-primary" disabled={!canMutate || state === 'saving'}>
+        <button
+          type="submit"
+          className="button button-primary"
+          disabled={!canMutate}
+          aria-disabled={state === 'saving' || undefined}
+        >
           {state === 'saving' ? cs.photos.detail.saving : glossary.save}
         </button>
         <p className="save-status" role="status">

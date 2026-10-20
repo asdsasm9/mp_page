@@ -138,10 +138,10 @@ export function NewAlbumDialog({ categories, albums, defaultCategoryId, onClose,
         />
         <ErrorLine error={failure} entity="album" onReload={onClose} message={albumActionMessage} />
         <div className="dialog-actions">
-          <button type="submit" className="button button-primary" disabled={!canMutate || saving}>
+          <button type="submit" className="button button-primary" disabled={!canMutate} aria-disabled={saving || undefined}>
             {saving ? cs.categories.saving : cs.albums.create}
           </button>
-          <button type="button" className="button" disabled={saving} onClick={onClose}>
+          <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
             {glossary.cancel}
           </button>
         </div>
@@ -158,6 +158,7 @@ export function HideAlbumDialog({ album, onClose }: { album: AlbumRow; onClose: 
   const [saving, setSaving] = useState(false);
 
   async function confirm() {
+    if (saving) return;
     setSaving(true);
     setFailure(null);
     try {
@@ -178,13 +179,14 @@ export function HideAlbumDialog({ album, onClose }: { album: AlbumRow; onClose: 
           type="button"
           className="button button-primary"
           data-autofocus=""
-          disabled={!canMutate || saving}
+          disabled={!canMutate}
+          aria-disabled={saving || undefined}
           aria-busy={saving}
           onClick={() => void confirm()}
         >
           {saving ? cs.categories.saving : glossary.hideAlbum}
         </button>
-        <button type="button" className="button" disabled={saving} onClick={onClose}>
+        <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
           {glossary.cancel}
         </button>
       </div>
@@ -210,6 +212,7 @@ export function MoveAlbumDialog({ album, categories, albums, onClose }: MoveProp
   const [saving, setSaving] = useState(false);
 
   async function confirm() {
+    if (saving) return;
     setSaving(true);
     setFailure(null);
     try {
@@ -245,13 +248,14 @@ export function MoveAlbumDialog({ album, categories, albums, onClose }: MoveProp
             <button
               type="button"
               className="button button-primary"
-              disabled={!canMutate || saving || categoryId === ''}
+              disabled={!canMutate || categoryId === ''}
+              aria-disabled={saving || undefined}
               aria-busy={saving}
               onClick={() => void confirm()}
             >
               {saving ? cs.categories.saving : glossary.move}
             </button>
-            <button type="button" className="button" disabled={saving} onClick={onClose}>
+            <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
               {glossary.cancel}
             </button>
           </div>

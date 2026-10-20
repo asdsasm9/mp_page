@@ -166,7 +166,9 @@ describe('login screen', () => {
     await screen.findByLabelText(glossary.password);
     await fillAndSubmit(user, FAKE_ADMIN.email, FAKE_ADMIN.password);
     const busy = await screen.findByRole('button', { name: cs.login.submitting });
-    expect((busy as HTMLButtonElement).disabled).toBe(true);
+    // aria-disabled, not disabled: the button keeps keyboard focus while it works.
+    expect(busy.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(busy);
     release();
     await screen.findByRole('heading', { level: 1, name: cs.routes.categories.title });
   });

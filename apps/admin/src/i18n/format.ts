@@ -32,7 +32,12 @@ export function formatCount(n: number, forms: readonly [string, string, string])
   return `${n} ${plural(n, forms)}`;
 }
 
-const two = (n: number) => String(n).padStart(2, '0');
+/** Fills `{name}` placeholders of a dictionary sentence; unknown names become empty text. */
+export function fill(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? ''));
+}
+
+const two =(n: number) => String(n).padStart(2, '0');
 
 /** "19. 10. 2026 14:32" in the browser's local time; empty text for an invalid date. */
 export function formatDateTime(value: Date | string | number): string {

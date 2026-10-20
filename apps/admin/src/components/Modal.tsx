@@ -1,0 +1,63 @@
+import { useEffect, useId, useRef, type ReactNode } from 'react';
+
+interface Props {
+  title: string;
+  /** Escape and the close paths call this; ignored while `busy`. */
+  onClose: () => void;
+  busy?: boolean;
+  children: ReactNode;
+}
+
+const FOCUSABLE = 'input, textarea, select, button, a[href], [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Modal dialog on the native <dialog>: showModal() traps focus and makes the page behind inert; Escape asks
+ * onClose; when it unmounts, focus returns to the element that opened it (done explicitly so it also holds
+ * where showModal is missing, as in jsdom). The first field (or `[data-autofocus]`) receives focus.
+ */
+export function Modal({ title, onClose, busy = false, children }: Props) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const closeRef = useRef(onClose);
+  const busyRef = useRef(busy);
+  closeRef.current = onClose;
+  busyRef.current = busy;
+
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+    const target = dialog.querySelector<HTMLElement>('[data-autofocus]') ?? dialog.querySelector<HTMLElement>(FOCUSABLE);
+    target?.focus();
+    return () => {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+      if (opener?.isConnected) opener.focus();
+    };
+  }, []);
+
+  return (
+    <dialog
+      ref={ref}
+      className="dialog"
+      aria-labelledby={titleId}
+      aria-busy={busy || undefined}
+      onKeyDown={(event) => {
+        // Where the native cancel event does not fire (jsdom) Escape still closes.
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          if (!busyRef.current) closeRef.current();
+        }
+      }}
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!busyRef.current) closeRef.current();
+      }}
+    >
+      <h2 id={titleId}>{title}</h2>
+      {children}
+    </dialog>
+  );
+}

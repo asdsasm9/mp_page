@@ -3,7 +3,7 @@
  * fetched before login) and go through runAuthed (a 401 opens the expiry modal and the call is repeated
  * after login). Mutations refuse to run offline and refresh every catalog query afterwards.
  */
-import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useSession } from '../auth/session';
 import {
   NetworkError,
@@ -49,6 +49,24 @@ export const useAlbums = (categoryId?: string) =>
 export const useAlbum = (id: string) => useCatalogQuery(catalogKeys.album(id), (c) => c.getAlbum(id));
 export const usePhotos = (albumId: string) => useCatalogQuery(catalogKeys.photos(albumId), (c) => c.listPhotos(albumId));
 export const usePhoto = (id: string) => useCatalogQuery(catalogKeys.photo(id), (c) => c.getPhoto(id));
+/**
+ * Number of photos per album id (same cache entries as usePhotos). `undefined` while an album's photos are
+ * still loading or failed to load, so a screen never shows a wrong total.
+ */
+export function usePhotoCounts(albumIds: readonly string[]): ReadonlyMap<string, number | undefined> {
+  const { catalog } = usePorts();
+  const { status, runAuthed } = useSession();
+  const lengths = useQueries({
+    queries: albumIds.map((id) => ({
+      queryKey: catalogKeys.photos(id),
+      queryFn: () => runAuthed(() => catalog.listPhotos(id)),
+      enabled: status === 'ready',
+    })),
+    combine: (results) => results.map((r) => r.data?.length),
+  });
+  return new Map(albumIds.map((id, i) => [id, lengths[i]] as const));
+}
+
 export const useSiteState = () => useCatalogQuery(catalogKeys.siteState(), (c) => c.getSiteState());
 export const usePublishLog = (limit: number) =>
   useCatalogQuery(catalogKeys.publishLog(limit), (c) => c.listPublishLog(limit));

@@ -4,6 +4,7 @@ import { RequireAuth } from './auth/RequireAuth';
 import { AuthLayout, ShellLayout } from './components/Layouts';
 import { Placeholder, useDocumentTitle } from './components/Page';
 import { cs } from './i18n/cs';
+import { CategoriesScreen } from './screens/CategoriesScreen';
 
 function NotFound() {
   useDocumentTitle(cs.notFound.title);
@@ -27,7 +28,7 @@ export function App() {
       </Route>
       <Route element={<RequireAuth />}>
         <Route element={<ShellLayout />}>
-          <Route path="/" element={<Placeholder title={cs.routes.categories.title} storageBar />} />
+          <Route path="/" element={<CategoriesScreen />} />
           <Route path="/kategorie/:id" element={<Placeholder title={cs.routes.category.title} />} />
           <Route path="/alba/:id" element={<Placeholder title={cs.routes.album.title} />} />
           <Route path="/alba/:id/foto/:photoId" element={<Placeholder title={cs.routes.photo.title} />} />

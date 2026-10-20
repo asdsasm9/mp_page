@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { cs } from '../i18n/cs';
+import { useSession } from '../auth/session';
+import { cs, glossary } from '../i18n/cs';
+import { StatusBanners } from './StatusBanners';
 
 export const MAIN_ID = 'obsah';
 
@@ -42,6 +44,7 @@ export function AuthLayout() {
 /** Shell of every screen after login: top bar, main region, phone bottom navigation. */
 export function ShellLayout() {
   const mainRef = useFocusMainOnNavigation();
+  const { signOut } = useSession();
   return (
     <div className="shell">
       <SkipLink />
@@ -73,7 +76,11 @@ export function ShellLayout() {
             </li>
           </ul>
         </nav>
+        <button type="button" className="button" onClick={() => void signOut()}>
+          {glossary.logOut}
+        </button>
       </header>
+      <StatusBanners />
       <main id={MAIN_ID} ref={mainRef} tabIndex={-1} className="shell-main">
         <Outlet />
       </main>

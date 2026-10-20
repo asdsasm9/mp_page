@@ -44,7 +44,7 @@ export class CatalogError extends Error {
   }
 }
 
-export type AuthErrorCode = 'INVALID_CREDENTIALS' | 'TOO_MANY_ATTEMPTS';
+export type AuthErrorCode = 'INVALID_CREDENTIALS' | 'TOO_MANY_ATTEMPTS' | 'WEAK_PASSWORD';
 
 export class AuthError extends Error {
   constructor(readonly code: AuthErrorCode) {

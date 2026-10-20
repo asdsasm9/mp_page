@@ -5,10 +5,10 @@ import './styles/tokens.css';
 import './styles/app.css';
 import { loadPorts } from './adapters/select';
 import { App } from './App';
+import { AppProviders } from './AppProviders';
 import { ConfigError } from './ConfigError';
 import { readEnv } from './env';
 import { messageForCode } from './i18n/messages';
-import { PortsProvider } from './ports-context';
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Missing #root');
@@ -22,11 +22,11 @@ if (!env.ok) {
   loadPorts(env.env).then(
     (ports) =>
       show(
-        <PortsProvider ports={ports}>
+        <AppProviders ports={ports}>
           <BrowserRouter>
             <App />
           </BrowserRouter>
-        </PortsProvider>,
+        </AppProviders>,
       ),
     (error: unknown) => show(<ConfigError problems={[error instanceof Error ? error.message : messageForCode('UNKNOWN')]} />),
   );

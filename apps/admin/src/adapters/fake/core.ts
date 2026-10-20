@@ -23,6 +23,7 @@ export type FakeOp =
   | 'auth.getSession'
   | 'auth.isAdmin'
   | 'auth.requestPasswordReset'
+  | 'auth.updatePassword'
   | `catalog.${Extract<keyof CatalogPort, string>}`
   | `api.${Extract<keyof ApiPort, string>}`
   | 'upload.put'
@@ -100,6 +101,8 @@ export interface Core {
   guard(op: FakeOp, options?: { auth?: boolean }): void;
   /** Auth-change subscribers (one function per AuthPort.onAuthChange call). */
   listeners: Set<() => void>;
+  /** Password-recovery subscribers; `pending` replays the event to late subscribers. */
+  recovery: { pending: boolean; listeners: Set<() => void> };
 }
 
 export function createCore(clock: Clock, ids: Ids, state: State): Core {
@@ -108,6 +111,7 @@ export function createCore(clock: Clock, ids: Ids, state: State): Core {
     ids,
     state,
     listeners: new Set(),
+    recovery: { pending: false, listeners: new Set() },
     iso: () => new Date(clock.now()).toISOString(),
     stamp(prev) {
       let ms = clock.now();

@@ -1,4 +1,4 @@
-import { AuthError, type AuthPort, type AuthSession } from '../../ports';
+import { ApiError, AuthError, type AuthPort, type AuthSession } from '../../ports';
 import type { Core } from './core';
 
 /** Accounts of the fake world. Fake values only; the real adapter never sees these. */
@@ -61,6 +61,21 @@ export function createFakeAuth(core: Core): AuthPort {
       return () => {
         core.listeners.delete(fn);
       };
+    },
+    onPasswordRecovery(listener) {
+      core.recovery.listeners.add(listener);
+      if (core.recovery.pending) listener();
+      return () => {
+        core.recovery.listeners.delete(listener);
+      };
+    },
+    async updatePassword(newPassword) {
+      core.guard('auth.updatePassword');
+      const s = state.session;
+      if (!s || s.expired) throw new ApiError('UNAUTHENTICATED');
+      if (newPassword.length < 8) throw new AuthError('WEAK_PASSWORD');
+      s.user.password = newPassword;
+      core.recovery.pending = false;
     },
   };
 }

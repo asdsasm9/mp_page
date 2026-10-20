@@ -20,11 +20,18 @@ const env = (backend: 'real' | 'fake'): AdminEnv => ({
 afterEach(() => vi.unstubAllEnvs());
 
 describe('adapter selection', () => {
-  it('real mode throws a Czech error until the real adapters exist', async () => {
+  it('real mode builds the real adapters for a valid environment, with no stored session at first', async () => {
     vi.stubEnv('VITE_BACKEND', '');
-    const error = await loadPorts(env('real')).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(AdapterUnavailableError);
-    expect((error as Error).message).toMatch(/Připojení k serveru zatím není k dispozici/);
+    const ports = await loadPorts({
+      ...env('real'),
+      supabaseUrl: 'https://project.example.test',
+      supabaseAnonKey: 'anon-for-tests',
+      apiBaseUrl: 'https://api.example.test',
+    });
+    expect(await ports.auth.getSession()).toBeNull();
+    expect((globalThis as Record<string, unknown>)[FAKE_WORLD_MARKER]).toBeUndefined();
+    // Without a session the catalog does not even attempt a request.
+    await expect(ports.catalog.listCategories()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   });
 
   it('fake mode loads the fake world when the build allows it', async () => {

@@ -7,10 +7,13 @@ import type { AdminEnv } from '../env';
 import { AdapterUnavailableError, type Ports } from '../ports';
 
 export async function loadPorts(env: AdminEnv): Promise<Ports> {
-  if (import.meta.env.VITE_BACKEND === 'fake' && env.backend === 'fake') {
+  if (import.meta.env.VITE_BACKEND === 'fake') {
+    if (env.backend !== 'fake') throw new AdapterUnavailableError();
     const { createFakePorts } = await import('./fake');
     return createFakePorts();
   }
-  // Real adapters (supabase-js, fetch, XHR) arrive in later tasks; until then real mode cannot start.
-  throw new AdapterUnavailableError();
+  // A real build never serves the fake world, even if the environment asks for it.
+  if (env.backend === 'fake') throw new AdapterUnavailableError();
+  const { createRealPorts } = await import('./real');
+  return createRealPorts(env);
 }

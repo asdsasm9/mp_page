@@ -83,6 +83,54 @@ export const cs = {
     storage: { title: glossary.storage },
     upload: { title: glossary.uploading },
   },
+  /** Login screen, set-new-password mode and the expiry modal (ADMIN-UX 3.1). */
+  login: {
+    submit: glossary.logIn,
+    submitting: 'Přihlašuji…',
+    showPassword: 'Zobrazit heslo',
+    hidePassword: 'Skrýt heslo',
+    emailRequired: 'Vyplňte e-mail.',
+    passwordRequired: 'Vyplňte heslo.',
+    forgot: {
+      title: glossary.forgotPassword,
+      intro: 'Zadejte e-mail, na který pošleme odkaz pro nastavení nového hesla.',
+      submit: 'Poslat odkaz',
+      submitting: 'Odesílám…',
+      neutral:
+        'Pokud je tento e-mail ve správě zaregistrovaný, poslali jsme na něj odkaz pro nastavení nového hesla. Zkontrolujte schránku.',
+      back: 'Zpět na přihlášení',
+    },
+    recovery: {
+      title: 'Nové heslo',
+      intro: 'Zvolte si nové heslo pro přihlášení do správy.',
+      newPassword: 'Nové heslo',
+      repeat: 'Nové heslo znovu',
+      hint: 'Aspoň 8 znaků.',
+      tooShort: 'Heslo musí mít aspoň 8 znaků.',
+      mismatch: 'Hesla se neshodují.',
+      submit: 'Nastavit heslo',
+      submitting: 'Ukládám…',
+    },
+    expired: {
+      title: 'Přihlášení vypršelo',
+      body: 'Přihlaste se znovu. Rozpracované změny zůstávají zachované a po přihlášení se dokončí.',
+    },
+  },
+  session: {
+    checking: 'Ověřuji přihlášení…',
+    checkFailed: 'Přihlášení se nepodařilo ověřit.',
+  },
+  /** Data layer: load failures, banners, concurrency (ADMIN-UX section 6). */
+  data: {
+    loading: 'Načítám…',
+    loadFailed: 'Nepodařilo se načíst data.',
+    saveFailed: 'Změny se nepodařilo uložit.',
+    offline: 'Jste offline. Změny se neuloží.',
+    unavailable: 'Správa je dočasně nedostupná. Veřejný web funguje dál.',
+    staleSentence: 'Toto album bylo změněno jinde.',
+    reload: 'Načíst znovu',
+    bannersLabel: 'Stav připojení',
+  },
   placeholder: {
     body: 'Tato obrazovka se připravuje.',
   },

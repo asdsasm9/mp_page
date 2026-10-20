@@ -197,3 +197,174 @@
     }
   }
 }
+
+/* Forms, buttons, notices, banners and the expiry dialog (WP5-05, WP5-06). */
+@layer components {
+  .shell-header {
+    flex-wrap: wrap;
+  }
+
+  .card {
+    inline-size: 100%;
+    padding: var(--space-5);
+    background: var(--color-surface-raised);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .login-card {
+    max-inline-size: 24rem;
+    margin-block-start: var(--space-6);
+  }
+
+  .login-card > * + *,
+  .dialog > * + * {
+    margin-block-start: var(--space-4);
+  }
+
+  .form {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .form > * {
+    margin-block-start: 0;
+  }
+
+  .field {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .field-row {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .field-row input {
+    flex: 1;
+    min-inline-size: 0;
+  }
+
+  input {
+    min-block-size: var(--target-min);
+    padding-inline: var(--space-3);
+    font: inherit;
+    color: var(--color-text);
+    background: var(--color-surface-raised);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+  }
+
+  input[aria-invalid='true'] {
+    border-color: var(--color-danger);
+  }
+
+  .field-error {
+    color: var(--color-danger);
+  }
+
+  .field-hint {
+    margin-block-start: var(--space-1);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-small);
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--target-min);
+    min-inline-size: var(--target-min);
+    padding-inline: var(--space-4);
+    font: inherit;
+    color: var(--color-text);
+    background: var(--color-surface-raised);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+  }
+
+  .button:hover {
+    background: var(--color-surface);
+  }
+
+  .button:disabled {
+    cursor: not-allowed;
+    color: var(--color-text-muted);
+  }
+
+  .button-primary {
+    font-weight: 700;
+    color: var(--color-on-accent);
+    background: var(--color-accent);
+    border-color: var(--color-border-strong);
+  }
+
+  .button-primary:hover {
+    background: var(--color-accent-hover);
+  }
+
+  .button-link {
+    border-color: transparent;
+    background: transparent;
+    text-decoration: underline;
+  }
+
+  .notice {
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+  }
+
+  .notice > * + * {
+    margin-block-start: var(--space-2);
+  }
+
+  .notice-error {
+    border-color: var(--color-danger);
+  }
+
+  .details summary {
+    cursor: pointer;
+    min-block-size: var(--target-min);
+    display: flex;
+    align-items: center;
+  }
+
+  .banners:empty {
+    display: none;
+  }
+
+  .banner {
+    padding: var(--space-3) var(--layout-gutter);
+    background: var(--color-surface);
+    border-block-end: var(--border-width) solid var(--color-border-strong);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .dialog {
+    inline-size: min(100% - 2 * var(--space-4), 26rem);
+    padding: var(--space-5);
+    color: var(--color-text);
+    background: var(--color-surface-raised);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+  }
+
+  .dialog::backdrop {
+    background: color-mix(in srgb, var(--color-overlay) 60%, transparent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .button {
+      transition: background-color var(--motion-fast) var(--motion-ease);
+    }
+  }
+}

@@ -21,6 +21,7 @@ export type ExtraErrorCode =
   | 'INVALID'
   | 'INVALID_CREDENTIALS'
   | 'TOO_MANY_ATTEMPTS'
+  | 'WEAK_PASSWORD'
   | 'UPLOAD_FAILED';
 
 type Entry = string | ((options: MessageOptions) => string);
@@ -63,6 +64,7 @@ const EXTRA: Record<ExtraErrorCode, Entry> = {
   INVALID: 'Některá hodnota není platná. Zkontrolujte ji a zkuste to znovu.',
   INVALID_CREDENTIALS: 'Nesprávný e-mail nebo heslo.',
   TOO_MANY_ATTEMPTS: 'Příliš mnoho pokusů, zkuste to za chvíli.',
+  WEAK_PASSWORD: 'Heslo nevyhovuje požadavkům. Zvolte delší nebo složitější heslo.',
   UPLOAD_FAILED: 'Nahrávání selhalo. Zkusit znovu',
 };
 

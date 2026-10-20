@@ -3,17 +3,25 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
+import { createFakeWorld } from './adapters/fake';
 import { App } from './App';
+import { AppProviders } from './AppProviders';
 import { cs } from './i18n/cs';
 
 afterEach(cleanup);
 
-function renderAt(path: string) {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
+/** The app on the fake world, signed in unless the test is about the login screen. */
+async function renderAt(path: string, signedIn = path !== '/prihlaseni') {
+  const world = createFakeWorld({ signedIn });
+  const view = render(
+    <AppProviders ports={world.ports} retry={false}>
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>
+    </AppProviders>,
   );
+  await screen.findByRole('heading', { level: 1 });
+  return { world, ...view };
 }
 
 const ROUTES: Array<[string, string]> = [
@@ -29,8 +37,8 @@ const ROUTES: Array<[string, string]> = [
 ];
 
 describe('routes', () => {
-  it.each(ROUTES)('%s renders exactly one h1 and a main landmark', (path, title) => {
-    renderAt(path);
+  it.each(ROUTES)('%s renders exactly one h1 and a main landmark', async (path, title) => {
+    await renderAt(path);
     const h1 = screen.getAllByRole('heading', { level: 1 });
     expect(h1).toHaveLength(1);
     expect(h1[0]!.textContent).toBe(title);
@@ -38,27 +46,27 @@ describe('routes', () => {
     expect(document.title).toBe(`${title}${cs.app.titleSeparator}${cs.app.name}`);
   });
 
-  it.each(ROUTES.filter(([p]) => p !== '/prihlaseni'))('%s has banner and navigation landmarks', (path) => {
-    renderAt(path);
+  it.each(ROUTES.filter(([p]) => p !== '/prihlaseni'))('%s has banner and navigation landmarks', async (path) => {
+    await renderAt(path);
     expect(screen.getAllByRole('banner')).toHaveLength(1);
     expect(screen.getByRole('navigation', { name: cs.nav.main })).toBeTruthy();
     expect(screen.getByRole('navigation', { name: cs.nav.bottom })).toBeTruthy();
   });
 
-  it('the 404 offers a way back', () => {
-    renderAt('/nic');
+  it('the 404 offers a way back', async () => {
+    await renderAt('/nic');
     expect(screen.getByRole('link', { name: cs.notFound.back }).getAttribute('href')).toBe('/');
   });
 
-  it('phone bottom nav has Kategorie, Nahrávání, Zveřejnit', () => {
-    renderAt('/');
+  it('phone bottom nav has Kategorie, Nahrávání, Zveřejnit', async () => {
+    await renderAt('/');
     const nav = screen.getByRole('navigation', { name: cs.nav.bottom });
     const labels = Array.from(nav.querySelectorAll('a')).map((a) => a.textContent);
     expect(labels).toEqual([cs.nav.categories, cs.nav.upload, cs.nav.publish]);
   });
 
-  it('marks the current page in the navigation', () => {
-    renderAt('/zverejnit');
+  it('marks the current page in the navigation', async () => {
+    await renderAt('/zverejnit');
     const current = screen.getAllByRole('link', { current: 'page' });
     expect(current.length).toBeGreaterThan(0);
     for (const a of current) expect(a.getAttribute('href')).toBe('/zverejnit');
@@ -68,7 +76,7 @@ describe('routes', () => {
 describe('keyboard', () => {
   it('the first Tab stop is the skip link and it targets main', async () => {
     const user = userEvent.setup();
-    renderAt('/');
+    await renderAt('/');
     await user.tab();
     const skip = screen.getByRole('link', { name: cs.skipLink });
     expect(document.activeElement).toBe(skip);
@@ -77,14 +85,14 @@ describe('keyboard', () => {
 
   it('login page also starts at the skip link', async () => {
     const user = userEvent.setup();
-    renderAt('/prihlaseni');
+    await renderAt('/prihlaseni');
     await user.tab();
     expect(document.activeElement).toBe(screen.getByRole('link', { name: cs.skipLink }));
   });
 
   it('moves focus to main after navigating, not on first render', async () => {
     const user = userEvent.setup();
-    renderAt('/');
+    await renderAt('/');
     expect(document.activeElement).toBe(document.body);
     await user.click(screen.getAllByRole('link', { name: cs.nav.storage })[0]!);
     expect(document.activeElement).toBe(screen.getByRole('main'));
@@ -93,7 +101,7 @@ describe('keyboard', () => {
 
 describe('axe', () => {
   it.each(ROUTES)('%s has no serious or critical violations', async (path) => {
-    const { container } = renderAt(path);
+    const { container } = await renderAt(path);
     const result = await axe.run(container, {
       runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'],
       rules: { 'color-contrast': { enabled: false }, region: { enabled: false } },

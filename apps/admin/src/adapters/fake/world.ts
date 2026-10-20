@@ -61,6 +61,8 @@ export interface FakeWorld {
   expireSession(): void;
   /** Each PUT takes `ms` on the clock (and can be aborted meanwhile); null = instant. */
   slowPut(ms: number | null): void;
+  /** The user follows the reset-mail link: a recovery session opens and the set-new-password event fires. */
+  startPasswordRecovery(email: string): void;
   /** Changes the configuration the way editing app_config would. */
   setLimits(limits: Partial<Limits>): void;
   setBuildDelay(ms: number | null): void;
@@ -129,6 +131,13 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
     },
     slowPut(ms) {
       state.slowPutMs = ms;
+    },
+    startPasswordRecovery(email) {
+      const user = state.users.find((u) => u.email === email.trim().toLowerCase());
+      if (!user) return;
+      state.session = { user, token: `fake-token-${++state.tokenCounter}`, expired: false };
+      core.recovery.pending = true;
+      for (const fn of [...core.recovery.listeners]) fn();
     },
     setLimits(limits) {
       state.limits = { ...state.limits, ...limits };

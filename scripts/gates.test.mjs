@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   CHECKS,
+  ENV_DOCS_ONLY,
   FAKE_WORLD_MARKER,
   QUOTA_GUARD_FILE,
   QUOTA_GUARD_TITLES,
@@ -29,6 +30,8 @@ import {
   checkApiHygiene,
   checkQuotaGuardTests,
   checkEnvExampleSane,
+  checkEnvExampleComplete,
+  gitPaths,
   checkMigrationsLint,
   checkNoDeadDeps,
   checkNoDirectR2,
@@ -88,6 +91,54 @@ describe('env-example-sane', () => {
   it('allows an explicitly allowed default', () =>
     expect(status(checkEnvExampleSane([f('.env.example', 'MODE=dev\n')], { MODE: 'dev' }))).toBe('PASS'));
   it('fails when the file is missing', () => expect(status(checkEnvExampleSane([]))).toBe('FAIL'));
+});
+
+describe('env-example-complete', () => {
+  const code = f('apps/web/src/lib/env.ts', 'export const a = import.meta.env.PUBLIC_ONE;\nexport const b = import.meta.env.PUBLIC_TWO;\n');
+  const example = '# one\nPUBLIC_ONE=\n# two\nPUBLIC_TWO=\n';
+  const run = (text, extra = [], docsOnly = {}) =>
+    checkEnvExampleComplete([code, ...extra, f('.env.example', text)], docsOnly);
+  it('passes when documented names equal the names the code reads', () => expect(run(example).status).toBe('PASS'));
+  it('fails when a read name is removed from the example and names it', () => {
+    const r = run('# one\nPUBLIC_ONE=\n');
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('PUBLIC_TWO');
+  });
+  it('fails when a documented name is read by nothing', () => {
+    const r = run(`${example}# ghost\nGHOST_NAME=\n`);
+    expect(r.status).toBe('FAIL');
+    expect(r.details).toContain('GHOST_NAME');
+  });
+  it('fails on a name without a comment above, and on a duplicate', () => {
+    expect(run('# one\nPUBLIC_ONE=\nPUBLIC_TWO=\n').status).toBe('FAIL');
+    expect(run(`${example}# again\nPUBLIC_ONE=\n`).details).toContain('twice');
+  });
+  it('ignores names read only in tests', () => {
+    const t = f('apps/web/src/lib/env.test.ts', 'process.env.ONLY_TEST');
+    expect(run(example, [t]).status).toBe('PASS');
+  });
+  it('accepts a commented secret name with a comment above', () => {
+    const w = f('apps/api/src/env.ts', "const names = ['SECRET_ONE']");
+    expect(run(`${example}# secret\n# SECRET_ONE=\n`, [w]).status).toBe('PASS');
+  });
+  it('docs-only exception passes with a reason comment and the listed entry', () => {
+    const text = `${example}# docs-only: read by a test only\n# TEST_ONLY=\n`;
+    expect(run(text, [], { TEST_ONLY: 'tests' }).status).toBe('PASS');
+  });
+  it('docs-only exception fails without the reason comment, when unlisted, or when stale', () => {
+    expect(run(`${example}# plain comment\n# TEST_ONLY=\n`, [], { TEST_ONLY: 'tests' }).status).toBe('FAIL');
+    expect(run(`${example}# docs-only: x\n# TEST_ONLY=\n`).status).toBe('FAIL');
+    expect(run(example, [], { TEST_ONLY: 'tests' }).details).toContain('TEST_ONLY');
+    expect(run(example, [], { PUBLIC_ONE: 'tests' }).status).toBe('FAIL');
+  });
+  it('fails when .env.example is missing', () => expect(checkEnvExampleComplete([code]).status).toBe('FAIL'));
+  it('the real repo is green', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+    const files = loadFiles(root, gitPaths(root));
+    const r = checkEnvExampleComplete(files);
+    expect(r.status, r.details).toBe('PASS');
+    expect(checkEnvExampleSane(files).status).toBe('PASS');
+  });
 });
 
 describe('no-legacy-ids', () => {
@@ -371,7 +422,7 @@ describe('admin dist rules (WP5-30)', () => {
 describe('registry and runner', () => {
   const inputs = {
     files: [
-      f('.env.example', 'A=\n'),
+      f('.env.example', Object.keys(ENV_DOCS_ONLY).map((n) => `# docs-only: test\n# ${n}=\n`).join('')),
       f('supabase/migrations/20261019100000_a.sql', 'create table public.t (id int);'),
       f('supabase/tests/lint.test.ts'),
       f('supabase/tests/golden/privilege-matrix.json'),

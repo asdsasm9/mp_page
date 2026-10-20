@@ -5,7 +5,8 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { attrsOf, checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
+import { scanEnvUsage } from './lib/env-scan.mjs';
+import { attrsOf,checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
 
 const SELF = ['scripts/gates.mjs', 'scripts/gates.test.mjs'];
 const isSelf = (p) => SELF.includes(p);
@@ -73,6 +74,54 @@ export function checkEnvExampleSane(files, allowedDefaults = {}) {
     if (m[2] !== '' && allowedDefaults[m[1]] !== m[2]) bad.push(`line ${i + 1}: ${m[1]} has a value`);
   });
   return result(bad);
+}
+
+// ---------------------------------------------------------------------------------------------- env completeness (WP8-2)
+/**
+ * Names that .env.example documents although no production code reads them. Keep this list small: every entry needs a
+ * reason here and a `# docs-only: <reason>` comment line directly above the name in .env.example.
+ */
+export const ENV_DOCS_ONLY = {
+  ADMIN_CHECK_BROWSER: 'read only by scripts/admin-check.test.mjs (browser mutation test)',
+  ADMIN_ENCODE_BROWSER: 'read only by scripts/admin-encode-check.test.mjs (browser mutation test)',
+};
+
+/**
+ * .env.example lists exactly the names production code reads (scripts/lib/env-scan.mjs), each once, each with a
+ * comment line directly above it. A documented name nothing reads must be a ENV_DOCS_ONLY entry with a matching
+ * `# docs-only:` comment; a stale exception (the code now reads it) fails too.
+ */
+export function checkEnvExampleComplete(files, docsOnly = ENV_DOCS_ONLY) {
+  const ex = files.find((x) => x.path === '.env.example');
+  if (!ex) return { status: 'FAIL', details: '.env.example missing' };
+  const bad = [];
+  const documented = new Map();
+  const lines = ex.text.split('\n');
+  lines.forEach((line, i) => {
+    const m = /^\s*(?:#\s*)?([A-Z][A-Z0-9_]+)=/.exec(line);
+    if (!m) return;
+    const name = m[1];
+    if (documented.has(name)) bad.push(`${name} listed twice (line ${i + 1})`);
+    documented.set(name, i);
+    const above = (lines[i - 1] ?? '').trim();
+    if (!above.startsWith('#') || /^#\s*[A-Z][A-Z0-9_]+=/.test(above) || above.replace(/^#+\s*/, '') === '') {
+      bad.push(`${name} has no comment line above it`);
+    } else if (name in docsOnly && !/^#\s*docs-only:\s*\S/.test(above)) {
+      bad.push(`${name} needs a "# docs-only: <reason>" comment`);
+    }
+  });
+  const usage = scanEnvUsage(files);
+  for (const [name, paths] of usage) {
+    if (!documented.has(name)) bad.push(`${name} is read (${paths[0]}) but missing from .env.example`);
+    if (name in docsOnly) bad.push(`${name} is read (${paths[0]}) but listed as docs-only`);
+  }
+  for (const name of documented.keys()) {
+    if (!usage.has(name) && !(name in docsOnly)) bad.push(`${name} is in .env.example but no code reads it`);
+  }
+  for (const name of Object.keys(docsOnly)) {
+    if (!documented.has(name)) bad.push(`${name} is a docs-only exception but missing from .env.example`);
+  }
+  return result(bad.slice(0, 1).concat(bad.length > 1 ? [`and ${bad.length - 1} more`] : []), `${documented.size} names match the code`);
 }
 
 export function checkNoLegacyIds(files) {
@@ -444,6 +493,7 @@ export const CHECKS = [
   { name: 'no-service-role', input: 'files', run: checkNoServiceRole },
   { name: 'no-env-files', input: 'files', run: checkNoEnvFiles },
   { name: 'env-example-sane', input: 'files', run: (f) => checkEnvExampleSane(f) },
+  { name: 'env-example-complete', input: 'files', run: (f) => checkEnvExampleComplete(f) },
   { name: 'no-legacy-ids', input: 'files', run: checkNoLegacyIds },
   { name: 'no-dead-deps', input: 'files', run: checkNoDeadDeps },
   { name: 'no-direct-r2', input: 'files', run: checkNoDirectR2 },

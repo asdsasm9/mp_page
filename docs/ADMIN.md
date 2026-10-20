@@ -38,7 +38,7 @@ facts and human steps: [VERIFY.md](VERIFY.md). Page texts (Home, About, Contact)
 ### Environment variables
 
 All are build-time (`VITE_*`, baked into the bundle, so they are public; the anon key is meant to be public). Names
-only live in `.env.example`; real values go into the Cloudflare Pages project settings, never into the repo. In real
+only live in `.env.example` (class 2, five URLs plus the anon key, and `VITE_BACKEND`; the gate `env-example-complete` keeps it equal to the code); real values go into the Cloudflare Pages project settings, never into the repo. In real
 mode a missing or malformed value makes the app show "Správa není nastavená" with the variable names (never values).
 
 | Name | Meaning |
@@ -70,7 +70,7 @@ match the CORS and redirect lists below.
 1. **Pages project.** In Cloudflare, Workers & Pages, create a Pages project from the git repository (or upload
    `apps/admin/dist`). Build command `npm run build -w apps/admin`, output directory `apps/admin/dist`, root the
    repository root, Node version from `.nvmrc` (`NODE_VERSION` variable if needed). Add the custom domain.
-2. **Environment variables** (Settings, Variables, production): the six `VITE_*` values from the table above;
+2. **Environment variables** (Settings, Variables, production): the five URLs plus the anon key (six `VITE_*` values) from the table above;
    leave `VITE_BACKEND` unset. They are read at build time, so a change needs a new deployment. Set the same
    variables for the preview environment only if previews are used.
 3. **Check the build output.** `dist/_headers` (CSP and cache rules, generated) and `dist/_redirects`

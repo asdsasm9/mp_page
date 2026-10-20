@@ -29,6 +29,9 @@ Default is a dry-run: no network, no writes except `migration-report/` (a `<time
 
 ### Environment variables (names only; values are never written to a file, a report or the log)
 
+These are class 5 of `.env.example`. `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `PUBLIC_IMG_BASE_URL` are listed there once,
+under the Worker and web classes; the table below lists all seven the script reads. You export them in your shell, they are not read from a file.
+
 | Name | Use |
 |------|-----|
 | `SUPABASE_URL` | Public project URL. |

@@ -94,7 +94,7 @@ async function runLive(
     return 1;
   }
   try {
-    const report = await uploadPhotos(backend, pre, catalog.albumIds, deps.upload);
+    const report = await uploadPhotos(backend, pre, catalog.albumIds, { ...deps.upload, repair: options.repair });
     for (const line of formatUpload(report)) out(line);
     return uploadComplete(report) ? 0 : 1;
   } catch (e) {

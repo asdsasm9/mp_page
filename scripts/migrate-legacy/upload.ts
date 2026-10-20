@@ -3,9 +3,14 @@
 // Upload: sequential per album in file-number order; one reserve per album (exact files and bytes), PUT with
 // bounded concurrency and retries, one re-reserve on an expired presign, one commit per photo in order.
 // The first STORAGE_FULL / FILE_TOO_LARGE aborts the whole run. Never logs bodies, URLs or tokens.
-// Existing rows (found by legacy_key) are skipped; repair/resume of half-done photos is T-157 and plugs in at `existing`.
+// Existing rows (found by legacy_key) are skipped. Rows whose objects are gone are reported `missing` and, with
+// --repair, re-uploaded and re-committed through the idempotent commit (already_existed). LIMITATION: this only
+// works against a Worker that re-presigns existing ids; today's reserve refuses them (CONFLICT), so live --repair
+// fails per photo and recovery is deleting the photo in the admin and re-running. A crash between PUT
+// and commit leaves objects without a row; the next run simply reserves, PUTs and commits those photos again.
 import { readFile } from 'node:fs/promises';
 import {
+  allKeys,
   planUploadFiles,
   type CommitRequest,
   type PhotoRow,
@@ -30,6 +35,8 @@ export interface UploadDeps extends DiscoverOptions {
   backoffMs?: number;
   concurrency?: number;
   retries?: number;
+  /** --repair: re-upload and re-commit the photos reported missing. */
+  repair?: boolean;
 }
 
 export class UploadError extends Error {
@@ -57,6 +64,8 @@ export interface AlbumWork {
   pending: SourcePhoto[];
   /** Photos that already have a row (matched by legacy_key). */
   existing: SourcePhoto[];
+  /** Subset of `existing` whose row is there but at least one object is missing from the bucket. */
+  missing: SourcePhoto[];
 }
 
 export interface Preflight {
@@ -73,7 +82,7 @@ export interface Preflight {
 /** Reads the state (listing, GET /storage), encodes every pending photo for its real size, decides. Writes nothing. */
 export async function preflight(
   backend: MigrationBackend,
-  options: Pick<MigrateOptions, 'album' | 'limitBytes'>,
+  options: Pick<MigrateOptions, 'album' | 'limitBytes'> & { repair?: boolean },
   deps: UploadDeps = {},
 ): Promise<Preflight> {
   const discovery = discoverSources({ galleriesDir: deps.galleriesDir, album: options.album, exists: deps.exists });
@@ -81,17 +90,29 @@ export async function preflight(
     throw new UploadError(`missing ${discovery.missing.length} source file(s): ${discovery.missing.slice(0, 5).join(', ')}`);
   }
   const read = deps.read ?? ((p: string) => readFile(p));
-  const known = new Set((await backend.listPhotosByLegacyKey()).map((p: PhotoRow) => p.legacy_key));
-  const albums: AlbumWork[] = discovery.albums.map((source) => ({
-    source,
-    pending: source.photos.filter((p) => !known.has(p.legacyKey)),
-    existing: source.photos.filter((p) => known.has(p.legacyKey)),
-  }));
+  const rows = new Map((await backend.listPhotosByLegacyKey()).map((p: PhotoRow) => [p.legacy_key, p] as const));
+  const albums: AlbumWork[] = [];
+  for (const source of discovery.albums) {
+    const existing = source.photos.filter((p) => rows.has(p.legacyKey));
+    const missing: SourcePhoto[] = [];
+    for (const p of existing) {
+      const row = rows.get(p.legacyKey)!;
+      let complete = true;
+      for (const key of allKeys(row.id, row.variants)) {
+        if (!(await backend.objectExists(key))) {
+          complete = false;
+          break;
+        }
+      }
+      if (!complete) missing.push(p);
+    }
+    albums.push({ source, pending: source.photos.filter((p) => !rows.has(p.legacyKey)), existing, missing });
+  }
 
   let need = 0;
   const errors: string[] = [];
   for (const a of albums) {
-    for (const p of a.pending) {
+    for (const p of options.repair === true ? [...a.pending, ...a.missing] : a.pending) {
       try {
         need += (await processImage(await read(p.path))).bytesTotal;
       } catch (e) {
@@ -116,6 +137,9 @@ export interface AlbumUpload {
   inserted: number;
   skipped: number;
   failed: number;
+  /** Rows whose objects are gone and that are still not restored at the end of the run. */
+  missing: number;
+  repaired: number;
   bytes: number;
   errors: string[];
 }
@@ -125,6 +149,8 @@ export interface UploadReport {
   inserted: number;
   skipped: number;
   failed: number;
+  missing: number;
+  repaired: number;
   bytes: number;
   aborted: 'STORAGE_FULL' | 'FILE_TOO_LARGE' | null;
   quotaBefore: number;
@@ -142,6 +168,8 @@ interface Prepared {
   processed: ProcessedPhoto;
   files: FileJob[];
   targets: Map<string, UploadTarget>;
+  /** True for a photo that already has a row (repair of missing objects). */
+  repair: boolean;
   reReserved: Promise<void> | null;
   error: string | null;
 }
@@ -189,22 +217,37 @@ export async function uploadPhotos(
     }
   }
 
-  /** Reserve a batch; a refusal stops the run. Returns the targets by photo id. */
-  async function reserve(albumId: string, items: ReserveRequest['items']): Promise<Map<string, UploadTarget[]>> {
+  /**
+   * Reserve a batch. STORAGE_FULL / FILE_TOO_LARGE stop the run; any other per-item refusal (or an item the
+   * answer leaves out) fails only that photo with a generic label. Returns targets by photo id, or a refusal text.
+   */
+  async function reserve(albumId: string, items: ReserveRequest['items']): Promise<Map<string, UploadTarget[] | string>> {
     const res = await withRetry(() => backend.reserve({ album_id: albumId, items }));
-    const out = new Map<string, UploadTarget[]>();
+    const out = new Map<string, UploadTarget[] | string>();
     for (const it of res.items) {
-      if (!it.ok) throw new RunAbort(it.code!);
-      out.set(it.photo_id, it.uploads!);
+      if (it.ok) out.set(it.photo_id, it.uploads ?? []);
+      else if (typeof it.code === 'string' && isAbortCode(it.code)) throw new RunAbort(it.code);
+      else out.set(it.photo_id, `reserve refused (${typeof it.code === 'string' ? it.code : 'no code'})`);
     }
     return out;
   }
+  const applyTargets = (c: Prepared, got: Map<string, UploadTarget[] | string>) => {
+    const t = got.get(c.photo.id);
+    if (t === undefined) c.error = 'reserve gave no answer for this photo';
+    else if (typeof t === 'string') c.error = t;
+    else {
+      c.targets.clear();
+      for (const x of t) c.targets.set(x.key, x);
+    }
+  };
 
   const report: UploadReport = {
     albums: [],
     inserted: 0,
     skipped: 0,
     failed: 0,
+    missing: 0,
+    repaired: 0,
     bytes: 0,
     aborted: null,
     quotaBefore: pre.storage.used_bytes,
@@ -218,13 +261,18 @@ export async function uploadPhotos(
         id: work.source.album.id,
         found: work.source.photos.length,
         inserted: 0,
-        skipped: work.existing.length,
+        // Rows with missing objects are not "skipped": they are reported as missing (and repaired with --repair).
+        skipped: work.existing.length - work.missing.length,
         failed: 0,
+        missing: work.missing.length,
+        repaired: 0,
         bytes: 0,
         errors: [],
       };
       report.albums.push(entry);
-      if (work.pending.length === 0) continue;
+      const repairSet = new Set(deps.repair === true ? work.missing.map((p) => p.legacyKey) : []);
+      const todo = work.source.photos.filter((p) => work.pending.includes(p) || repairSet.has(p.legacyKey));
+      if (todo.length === 0) continue;
       const albumId = albumIds[entry.id];
       if (!albumId) throw new UploadError(`no stored album id for ${entry.id}`);
       const fail = (p: Prepared | SourcePhoto, why: string) => {
@@ -233,34 +281,48 @@ export async function uploadPhotos(
       };
 
       const prepared: Prepared[] = [];
-      for (const photo of work.pending) {
+      for (const photo of todo) {
         try {
           const processed = await processImage(await read(photo.path));
-          prepared.push({ photo, processed, files: fileBodies(photo.id, processed), targets: new Map(), reReserved: null, error: null });
+          prepared.push({
+            photo,
+            processed,
+            files: fileBodies(photo.id, processed),
+            targets: new Map(),
+            repair: repairSet.has(photo.legacyKey),
+            reReserved: null,
+            error: null,
+          });
         } catch (e) {
           fail(photo, (e as Error).message);
         }
       }
 
-      // 1. reserve (exact files and bytes), at most RESERVE_MAX_ITEMS per call
-      for (let i = 0; i < prepared.length; i += RESERVE_MAX_ITEMS) {
-        const chunk = prepared.slice(i, i + RESERVE_MAX_ITEMS);
-        try {
-          const got = await reserve(albumId, chunk.map((c) => reserveItem(c.photo.id, c.processed)));
-          for (const c of chunk) for (const t of got.get(c.photo.id) ?? []) c.targets.set(t.key, t);
-        } catch (e) {
-          if (e instanceof RunAbort) throw e;
-          if (e instanceof BackendError && isAbortCode(e.code)) throw new RunAbort(e.code);
-          for (const c of chunk) c.error = e instanceof BackendError ? e.code : (e as Error).message;
+      // 1. reserve (exact files and bytes), at most RESERVE_MAX_ITEMS per call; repairs in their own calls so a
+      // refusal of an existing id cannot take new photos down with it
+      const groups = [prepared.filter((c) => !c.repair), prepared.filter((c) => c.repair)];
+      for (const group of groups) {
+        for (let i = 0; i < group.length; i += RESERVE_MAX_ITEMS) {
+          const chunk = group.slice(i, i + RESERVE_MAX_ITEMS);
+          try {
+            const got = await reserve(albumId, chunk.map((c) => reserveItem(c.photo.id, c.processed)));
+            for (const c of chunk) applyTargets(c, got);
+          } catch (e) {
+            if (e instanceof RunAbort) throw e;
+            if (e instanceof BackendError && isAbortCode(e.code)) throw new RunAbort(e.code);
+            for (const c of chunk) {
+              const code = e instanceof BackendError ? e.code : (e as Error).message;
+              c.error = c.repair && code === 'CONFLICT' ? 'repair refused: reserve will not presign an existing photo (CONFLICT)' : code;
+            }
+          }
         }
       }
 
       // 2. PUT every file, bounded concurrency, retry on retryable errors, one re-reserve on an expired presign
       const reReserve = (c: Prepared): Promise<void> => {
         c.reReserved ??= (async () => {
-          const got = await reserve(albumId, [reserveItem(c.photo.id, c.processed)]);
-          c.targets.clear();
-          for (const t of got.get(c.photo.id) ?? []) c.targets.set(t.key, t);
+          applyTargets(c, await reserve(albumId, [reserveItem(c.photo.id, c.processed)]));
+          if (c.error !== null) throw new UploadError(c.error);
         })();
         return c.reReserved;
       };
@@ -312,7 +374,10 @@ export async function uploadPhotos(
         };
         try {
           const res = await withRetry(() => backend.commit(request));
-          if (res.already_existed) entry.skipped++;
+          if (res.already_existed && c.repair) {
+            entry.repaired++;
+            entry.missing--;
+          } else if (res.already_existed) entry.skipped++;
           else {
             entry.inserted++;
             entry.bytes += p.bytesTotal;
@@ -332,6 +397,8 @@ export async function uploadPhotos(
     report.inserted += a.inserted;
     report.skipped += a.skipped;
     report.failed += a.failed;
+    report.missing += a.missing;
+    report.repaired += a.repaired;
     report.bytes += a.bytes;
   }
   report.quotaAfter = (await backend.storage()).used_bytes;
@@ -339,15 +406,20 @@ export async function uploadPhotos(
 }
 
 /** True when everything expected is present (no failure, no abort). */
-export const uploadComplete = (r: UploadReport): boolean => r.aborted === null && r.failed === 0;
+export const uploadComplete = (r: UploadReport): boolean => r.aborted === null && r.failed === 0 && r.missing === 0;
 
 export function formatUpload(r: UploadReport): string[] {
   const lines: string[] = [];
   for (const a of r.albums) {
-    lines.push(`${a.id.padEnd(13)} found ${a.found} inserted ${a.inserted} skipped ${a.skipped} failed ${a.failed} bytes ${a.bytes}`);
+    lines.push(`${a.id.padEnd(13)} found ${a.found} inserted ${a.inserted} skipped ${a.skipped} failed ${a.failed} missing ${a.missing} repaired ${a.repaired} bytes ${a.bytes}`);
     for (const e of a.errors) lines.push(`  ERROR ${e}`);
   }
-  lines.push(`photos inserted ${r.inserted}, skipped ${r.skipped}, failed ${r.failed}, bytes ${r.bytes}`);
+  lines.push(`photos inserted ${r.inserted}, skipped ${r.skipped}, failed ${r.failed}, missing ${r.missing}, repaired ${r.repaired}, bytes ${r.bytes}`);
+  if (r.missing > 0) {
+    lines.push(
+      `${r.missing} photo(s) have a row but missing objects; --repair cannot restore them against the live Worker (reserve refuses existing ids), recover by deleting the photo in the admin and re-running`,
+    );
+  }
   lines.push(`quota used before ${r.quotaBefore}, after ${r.quotaAfter ?? 'unknown'}`);
   if (r.aborted) lines.push(`ABORTED: ${r.aborted} (run stopped at the first refusal)`);
   lines.push(`RESULT: ${uploadComplete(r) ? 'OK' : 'INCOMPLETE'}`);

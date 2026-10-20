@@ -11,7 +11,8 @@ Options:
   --confirm-project <ref>   Must equal the host label of SUPABASE_URL
   --album <id>              Only this legacy album (for example lucka_filip)
   --limit-bytes <n>         Stop before the run would write more than n bytes
-  --repair                  Re-upload photos whose objects are missing
+  --repair                  Re-upload photos whose objects are missing (only works against a
+                            Worker that allows re-presigning existing ids; not the case today)
   --alt default             Store the generated alt text (default: store null)
   --allow-host              Accept a Supabase host outside *.supabase.co and localhost
 

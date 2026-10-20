@@ -68,6 +68,11 @@ export interface FakeBackendOptions {
   startMs?: number;
   /** R2 may not enforce the signed content-length (VERIFY row 4). Default true. */
   enforceContentLength?: boolean;
+  /**
+   * Lets reserve presign an id that already has a row. The real Worker refuses it (CONFLICT), so live
+   * --repair does not work today; this is off by default; tests switch it on to exercise the --repair logic of the script.
+   */
+  reserveExisting?: boolean;
 }
 
 interface Failure {
@@ -262,7 +267,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
       const { album_id, items } = parseRequest(ReserveRequestSchema, request);
       if (items.length > limits.maxFilesPerBatch) throw new BackendError('BATCH_TOO_LARGE');
       if (!albums.has(album_id)) throw new BackendError('ALBUM_NOT_FOUND');
-      if (items.some((i) => photos.has(i.photo_id))) throw new BackendError('CONFLICT');
+      if (options.reserveExisting !== true && items.some((i) => photos.has(i.photo_id))) throw new BackendError('CONFLICT');
 
       // A repeated reserve for the same photo replaces its old reservation (re-reserve after expiry).
       for (const i of items) reservations.delete(i.photo_id);

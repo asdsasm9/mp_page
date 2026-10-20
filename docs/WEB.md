@@ -109,6 +109,40 @@ Human steps; the autopilot cannot do them.
 6. Run Google Rich Results Test and the Schema.org validator once on the home page and an album.
 7. Apex to www redirect and HSTS in Cloudflare (H-5).
 8. Phone check of the lightbox gestures on a real iPhone and Android (VERIFY row 24).
+9. Analytics: do the five human steps in [Analytics](#analytics), human steps below (WP-8 links here).
+
+## Analytics
+
+Cloudflare Web Analytics only (D-3 option C): no cookies, no banner, no Google, no GTM. Nothing else is measured.
+
+- Variable: `PUBLIC_CF_ANALYTICS_TOKEN` (public value, it appears in every page's HTML; never committed, `.env.example` has the name only).
+- Production only: it is read only when `PUBLIC_SITE_ENV=production`. Local and preview builds ignore it even if set. A blank value
+  means off. A value that is not 16 to 64 letters and digits fails the build (the message names the variable, not the value).
+- Tag: one `<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "..."}'></script>`
+  at the end of `<head>` on every page of `apps/web` (including 404). The form is `type="module"` as in Cloudflare's docs, not `defer`.
+- CSP hosts, added only when on: `script-src https://static.cloudflareinsights.com` and `connect-src https://cloudflareinsights.com`.
+  Exact hosts, no wildcard. When off the CSP is unchanged.
+- Beacon size: TO VERIFY at the first deploy (expected about 5 to 6 KB gzip; not counted by the first-load budget). Record the real
+  figure here after the first deploy.
+- Switch it off: unset `PUBLIC_CF_ANALYTICS_TOKEN` in the Pages production environment and redeploy.
+- What the page shows when off: no beacon tag, no Cloudflare host in the CSP, and `/cookies/` has no analytics paragraph (it only says
+  the site stores nothing).
+- The Pages "automatic setup / Web Analytics" toggle must stay OFF on both Pages projects (`web` and `admin`); otherwise a second beacon
+  is injected and the admin is measured.
+- Checks: a render test (`Analytics.render.test.ts`, Astro container API) pins the tag; `checkAnalyticsOutput` in the postbuild step
+  fails the deploy if there is not exactly one beacon tag per page, if the CSP lacks the hosts, or if `gtag`/Google appears; gates fail if
+  the beacon shows up in the admin dist or the API. An injected tag outside `dist` is only caught by the human check.
+
+### Analytics: human steps
+
+1. Adam, Cloudflare dashboard: create a Web Analytics site for `www.mullnyphotos.cz` using the manual snippet option and copy the token.
+   Keep the Pages automatic setup toggle OFF on both the `web` and `admin` Pages projects.
+2. Adam, Pages `web` project, Production environment only (not Preview): set `PUBLIC_CF_ANALYTICS_TOKEN`, then redeploy.
+3. Adam, after the first production deploy: the browser check (VERIFY row 10). View-source shows one beacon tag; the network panel shows
+   only the two Cloudflare hosts; the Application tab shows no cookies and empty local and session storage after three pages; the dashboard
+   shows the visit. If a cookie or storage entry appears: remove the variable, redeploy, tell the architect (option C premise broken).
+4. The photographer approves the Czech analytics paragraph and gives the controller details (H-7) that replace the `[doplnit]` lines.
+5. Optional: read the dashboard monthly; no alerting by design.
 
 ## Photographer checklist: keyboard and phone
 

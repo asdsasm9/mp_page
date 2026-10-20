@@ -1,5 +1,7 @@
 # Analytics and cookie consent spec (T-5)
 
+Status: D-3: option C chosen; option A material is the upgrade path, not built. See [WEB.md](WEB.md#analytics).
+
 Date: 2026-10-19. Input for the MASTERPLAN and decision D-3. Legal statements are my reading of public rules and are marked **(to verify)** where I could not confirm them against a current source (no web access in this task); this is not legal advice.
 
 ## Part 1. Audit of today's setup

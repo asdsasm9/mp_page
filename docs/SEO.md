@@ -220,7 +220,7 @@ Image rules (supports VISION constraint "never load a full-size file in grids"):
 - The nav is `position: sticky/fixed` without shifting content; the mobile menu opens without reflow of the page.
 - INP: no long tasks over 50 ms on interaction; lightbox and menu use native elements (`<dialog>`, `<details>`/popover) where possible.
 
-Gate: `npm run design-check` (Lighthouse and axe per the visual-check skill) runs on the five page types and fails on a metric above budget; the weight budget is checked by a small script over the built output (HTML, CSS, JS sizes, count of `<img>` without width/height, count of third-party hosts before consent). Field data: Cloudflare Web Analytics or Search Console Core Web Vitals report after launch (depends on D-3).
+Gate: `npm run design-check` (Lighthouse and axe per the visual-check skill) runs on the five page types and fails on a metric above budget; the weight budget is checked by a small script over the built output (HTML, CSS, JS sizes, count of `<img>` without width/height, count of third-party hosts before consent). Field data: Cloudflare Web Analytics, from launch.
 
 ## 10. Technical SEO checklist for the build (acceptance for later tasks)
 

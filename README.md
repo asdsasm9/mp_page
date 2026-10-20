@@ -41,4 +41,5 @@ Copy `.env.example` for local settings; never commit real values. The web build 
 - Public site: [docs/WEB.md](docs/WEB.md); design-check baseline: [docs/DESIGN-CHECK.md](docs/DESIGN-CHECK.md).
 - Admin app (architecture, env, deploy steps, check commands, deviations, Czech guide): [docs/ADMIN.md](docs/ADMIN.md); spec: [docs/ADMIN-UX.md](docs/ADMIN-UX.md); Worker deploy: [docs/DEPLOY-API.md](docs/DEPLOY-API.md).
 - Legacy photo migration (usage, flags, human run checklist, rollback): [docs/MIGRATION.md](docs/MIGRATION.md).
+- Analytics (Cloudflare Web Analytics, env variable, switch-off, human steps): [docs/WEB.md](docs/WEB.md#analytics).
 - Unconfirmed platform facts and human to-dos: [docs/VERIFY.md](docs/VERIFY.md).

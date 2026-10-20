@@ -8,7 +8,7 @@ import { loadSnapshot } from '../src/lib/catalog';
 import { assertProductionOutput, readRawEnv, resolveEnv } from '../src/lib/env';
 import { buildHeaders, cspOfHeaders } from '../src/lib/headers';
 import { SITE_ORIGIN } from '../src/lib/jsonld';
-import { collectScriptHashes, missingScriptHashes, ogImagePathOf, PostbuildError } from '../src/lib/postbuild';
+import { checkAnalyticsOutput, collectScriptHashes, missingScriptHashes, ogImagePathOf, PostbuildError } from '../src/lib/postbuild';
 import { buildPublishJson } from '../src/lib/publish-json';
 import { buildRedirects } from '../src/lib/redirects';
 
@@ -47,6 +47,16 @@ async function main(): Promise<void> {
   if (missing.length > 0) {
     throw new PostbuildError(`inline scripts not covered by the CSP: ${missing.map((m) => `${m.path} ${m.hash}`).join(', ')}`);
   }
+  const scripts = readdirSync(dist, { recursive: true, encoding: 'utf8' })
+    .filter((f) => f.endsWith('.js'))
+    .map((f) => ({ path: f, text: readFileSync(join(dist, f), 'utf8') }));
+  const analyticsErrors = checkAnalyticsOutput({
+    pages,
+    headersText: readFileSync(join(dist, '_headers'), 'utf8'),
+    token: env.analyticsToken,
+    scripts,
+  });
+  if (analyticsErrors.length > 0) throw new PostbuildError(`analytics output check failed: ${analyticsErrors.join('; ')}`);
   console.log(`postbuild: _redirects, _headers, _publish.json written (${env.siteEnv}, ${env.source}).`);
 }
 

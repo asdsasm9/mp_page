@@ -5,6 +5,7 @@ import { buildCsp, buildHeaders, cspOfHeaders } from './headers';
 import { SITE_ORIGIN } from './jsonld';
 import {
   PostbuildError,
+  checkAnalyticsOutput,
   collectScriptHashes,
   inlineScripts,
   missingScriptHashes,

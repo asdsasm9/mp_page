@@ -21,6 +21,58 @@
     "secrets": ["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "PAGES_DEPLOY_HOOK_URL"],
     "plainVars": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "R2_ACCOUNT_ID", "R2_BUCKET", "R2_BACKUP_BUCKET", "R2_PUBLIC_BASE_URL", "ALLOWED_ORIGINS"]
   },
+  "storageKeys": {
+    "file": "packages/shared/src/keys.ts",
+    "testFile": "packages/shared/src/keys.test.ts",
+    "tiersFile": "packages/shared/src/variants.ts",
+    "webpTiers": [480, 720, 960, 1600, 2400],
+    "snippets": [
+      "export const SNAPSHOT_KEY = 'catalog/published.json'",
+      "return `photos/${id}/`",
+      "`${photoPrefix(id)}master.jpg`",
+      "`${photoPrefix(id)}${tier}.webp`",
+      "`${photoPrefix(id)}1600.jpg`",
+      "`${photoPrefix(id)}og.jpg`",
+      "return `full-${stamp}.json`"
+    ]
+  },
+  "hosting": {
+    "web": {
+      "generators": [
+        { "name": "web _headers generator", "path": "apps/web/src/lib/headers.ts", "test": "apps/web/src/lib/headers.test.ts", "contains": ["export function buildHeaders", "block('/_publish.json'"] },
+        { "name": "web _redirects generator", "path": "apps/web/src/lib/redirects.ts", "test": "apps/web/src/lib/redirects.test.ts", "contains": ["export function buildRedirects"] },
+        { "name": "web _publish.json generator", "path": "apps/web/src/lib/publish-json.ts", "test": "apps/web/src/lib/postbuild.test.ts", "contains": ["export function buildPublishJson"] }
+      ],
+      "postbuild": { "path": "apps/web/scripts/postbuild.ts", "contains": ["'_redirects'", "'_headers'", "'_publish.json'"] }
+    },
+    "admin": {
+      "headers": {
+        "path": "apps/admin/headers.ts",
+        "test": "apps/admin/src/hosting.test.ts",
+        "contains": ["export function buildHeaders", "Content-Security-Policy", "X-Robots-Tag: noindex"]
+      },
+      "spaFallback": { "path": "apps/admin/public/_redirects", "pattern": "^/\\*\\s+/index\\.html\\s+200\\b" },
+      "indexHtml": { "path": "apps/admin/index.html", "pattern": "<meta\\s+name=\"robots\"\\s+content=\"[^\"]*noindex" }
+    },
+    "forbiddenRefs": {
+      "scope": ["package.json", "apps/*/package.json", "apps/*/index.html", "apps/*/public/**", "apps/*/src/**/*.astro", "apps/*/wrangler.toml", "apps/*/astro.config.*"],
+      "patterns": ["github\\.io", "gh-pages", "googletagmanager", "google-analytics", "gtag\\("]
+    }
+  },
+  "requiredSuites": [
+    { "name": "adapter contract", "globs": ["packages/shared/src/storage/*.test.ts"], "mustMention": ["contract"] },
+    { "name": "R2 adapter", "globs": ["apps/api/src/storage/r2.test.ts"] },
+    { "name": "variantPlan", "globs": ["packages/shared/src/variants.test.ts"], "mustMention": ["variantPlan"] },
+    { "name": "snapshot schema", "globs": ["packages/shared/src/snapshot.test.ts"] },
+    { "name": "slug rules", "globs": ["packages/shared/src/slug.test.ts"] },
+    { "name": "alt rules", "globs": ["packages/shared/src/alt.test.ts"] },
+    { "name": "web redirects", "globs": ["apps/web/src/lib/redirects.test.ts"] },
+    { "name": "migration redirects", "globs": ["scripts/migrate-legacy/redirects.test.ts"] },
+    { "name": "migration 13 albums", "globs": ["scripts/migrate-legacy/catalog.test.ts"], "mustMention": ["13 albums"] },
+    { "name": "migration 141 photos and rerun adds nothing", "globs": ["scripts/migrate-legacy/resume.test.ts"], "mustMention": ["141", "second run"] },
+    { "name": "RLS and grants", "globs": ["supabase/tests/hardening.test.ts", "supabase/tests/lint.test.ts"] },
+    { "name": "admin components", "globs": ["apps/admin/src/components/*.test.tsx", "apps/admin/src/screens/*.test.tsx"] }
+  ],
   "dataModel": {
     "tables": ["admins", "categories", "albums", "photos", "url_history", "app_config", "site_state", "publish_log", "upload_reservations", "keepalive"],
     "columns": {

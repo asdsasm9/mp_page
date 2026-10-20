@@ -665,7 +665,18 @@ describe('registry and runner', () => {
   const inputs = {
     files: [
       ...archFiles(),
-      f(ARCH_GOLDEN, JSON.stringify({ ...archGolden, dataModel: dmGolden, api: apiGolden })),
+      f(
+        ARCH_GOLDEN,
+        JSON.stringify({
+          ...archGolden,
+          dataModel: dmGolden,
+          api: apiGolden,
+          storageKeys: { file: 'scripts/a.mjs', testFile: 'scripts/a.mjs', tiersFile: 'scripts/b.mjs', webpTiers: [1], snippets: [] },
+          hosting: {},
+          requiredSuites: [{ name: 'x', globs: ['scripts/a.mjs'] }],
+        }),
+      ),
+      f('scripts/b.mjs', 'const WEBP_TIER_VALUES = [1];'),
       ...apiFiles({ 'apps/api/wrangler.toml': apiDefaults['apps/api/wrangler.toml'] }),
       f('.env.example', Object.keys(ENV_DOCS_ONLY).map((n) => `# docs-only: test\n# ${n}=\n`).join('') + '# worker url\nSUPABASE_URL=\n# worker secret\n# R2_SECRET_ACCESS_KEY=\n'),
       f('supabase/migrations/20261019100000_a.sql', dmSql),

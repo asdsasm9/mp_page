@@ -1,6 +1,15 @@
 // Architecture-conformance gates (WP-8). Pure functions (files, golden?) => {status, details} over
 // scripts/architecture.golden.json. Re-exported by scripts/gates.mjs, which registers them in CHECKS.
-import { ARCH_GOLDEN, MIGRATION_RE, firstOffenders, loadGolden, result, stripSqlComments } from './lib/gate-utils.mjs';
+import {
+  ARCH_GOLDEN,
+  MIGRATION_RE,
+  firstOffenders,
+  globToRegExp,
+  loadGolden,
+  result,
+  stripCodeComments,
+  stripSqlComments,
+} from './lib/gate-utils.mjs';
 
 export { ARCH_GOLDEN };
 
@@ -313,4 +322,118 @@ export function checkArchApiSurface(files, golden) {
     for (const r of api.routes ?? []) if (!headings.some((h) => h.includes(r))) bad.push(`${API_DOC_FILE} has no heading for ${r}`);
   }
   return result(firstOffenders(bad), `${routes.length} routes, bindings, cron, secrets and docs as in the golden file`);
+}
+
+// ------------------------------------------------------------------------------------------ storage keys (WP8-6)
+const goldenSection = (files, golden, name) => {
+  if (!golden) {
+    const g = loadGolden(files);
+    if (g.fail) return { fail: g.fail };
+    golden = g.golden;
+  }
+  const s = golden[name];
+  return s ? { section: s } : { fail: { status: 'FAIL', details: `${ARCH_GOLDEN} has no ${name} section` } };
+};
+
+/**
+ * Storage key templates against the `storageKeys` section of the golden file (MASTERPLAN section 3): each golden
+ * snippet (the SNAPSHOT_KEY constant and the master/webp/1600.jpg/og/backup templates) is still present in
+ * packages/shared/src/keys.ts, the webp tier list in variants.ts equals the golden tiers, and keys.test.ts exists.
+ * Static text check; keys.test.ts is the proof of behaviour.
+ */
+export function checkArchStorageKeys(files, golden) {
+  const s = goldenSection(files, golden, 'storageKeys');
+  if (s.fail) return s.fail;
+  const k = s.section;
+  const text = (p) => files.find((x) => x.path === p)?.text;
+  const bad = [];
+  const src = text(k.file);
+  if (src === undefined) bad.push(`${k.file} missing`);
+  else {
+    const code = stripCodeComments(src);
+    for (const snippet of k.snippets ?? []) if (!code.includes(snippet)) bad.push(`${k.file} lost key template ${snippet}`);
+  }
+  const variants = text(k.tiersFile);
+  if (variants === undefined) bad.push(`${k.tiersFile} missing`);
+  else {
+    const m = /WEBP_TIER_VALUES\s*=\s*\[([^\]]*)\]/.exec(stripCodeComments(variants));
+    const tiers = m ? m[1].split(',').map((x) => x.trim()).filter(Boolean).map(Number) : null;
+    if (!tiers) bad.push(`${k.tiersFile} has no WEBP_TIER_VALUES list`);
+    else if (JSON.stringify(tiers) !== JSON.stringify(k.webpTiers)) bad.push(`webp tiers are [${tiers}], golden [${k.webpTiers}]`);
+  }
+  if (!files.some((x) => x.path === k.testFile)) bad.push(`${k.testFile} missing`);
+  return result(firstOffenders(bad), `${(k.snippets ?? []).length} key templates, ${(k.webpTiers ?? []).length} webp tiers and keys.test.ts as in the golden file`);
+}
+
+// ------------------------------------------------------------------------------------------ hosting files (WP8-6)
+/**
+ * Hosting files against the `hosting` section of the golden file (MASTERPLAN sections 3 and 7): the web generators
+ * for _headers, _redirects and /_publish.json exist with their tests and are all written by the postbuild script;
+ * the admin has a CSP/noindex headers builder, an SPA fallback and an index.html with noindex; no github.io,
+ * gh-pages or Google tag reference in the hosted sources. Presence checks only: dist-level checks (no-ga-in-dist,
+ * page-checks) and the generator tests remain the proof.
+ */
+export function checkArchHostingFiles(files, golden) {
+  const s = goldenSection(files, golden, 'hosting');
+  if (s.fail) return s.fail;
+  const h = s.section;
+  const text = (p) => files.find((x) => x.path === p)?.text;
+  const bad = [];
+  const needs = (path, what, snippets) => {
+    const t = text(path);
+    if (t === undefined) return bad.push(`${what}: ${path} missing`);
+    const code = path.endsWith('.html') || path.includes('/_redirects') ? t : stripCodeComments(t);
+    for (const sn of snippets ?? []) if (!code.includes(sn)) bad.push(`${what}: ${path} lacks ${sn}`);
+  };
+  for (const g of h.web?.generators ?? []) {
+    needs(g.path, g.name, g.contains);
+    if (!files.some((x) => x.path === g.test)) bad.push(`${g.name}: test ${g.test} missing`);
+  }
+  if (h.web?.postbuild) needs(h.web.postbuild.path, 'web postbuild', h.web.postbuild.contains);
+  const a = h.admin;
+  if (a) {
+    needs(a.headers.path, 'admin headers', a.headers.contains);
+    if (!files.some((x) => x.path === a.headers.test)) bad.push(`admin headers: test ${a.headers.test} missing`);
+    const fb = text(a.spaFallback.path);
+    if (fb === undefined) bad.push(`admin SPA fallback: ${a.spaFallback.path} missing`);
+    else if (!new RegExp(a.spaFallback.pattern, 'm').test(fb)) bad.push(`admin SPA fallback: ${a.spaFallback.path} has no /* -> /index.html 200 rule`);
+    const html = text(a.indexHtml.path);
+    if (html === undefined) bad.push(`admin index.html: ${a.indexHtml.path} missing`);
+    else if (!new RegExp(a.indexHtml.pattern, 'i').test(html)) bad.push(`admin index.html: ${a.indexHtml.path} has no noindex robots meta`);
+  }
+  const scope = (h.forbiddenRefs?.scope ?? []).map(globToRegExp);
+  const refs = (h.forbiddenRefs?.patterns ?? []).map((p) => [p, new RegExp(p, 'i')]);
+  for (const f of files) {
+    if (!scope.some((re) => re.test(f.path))) continue;
+    for (const [p, re] of refs) if (re.test(f.text)) bad.push(`${f.path} references ${p}`);
+  }
+  return result(firstOffenders(bad), 'web generators, admin headers/fallback/noindex and clean hosted sources as in the golden file');
+}
+
+// ------------------------------------------------------------------------------------------ required test suites (WP8-6)
+/**
+ * Required test suites against the `requiredSuites` list of the golden file (MASTERPLAN section 7): each entry
+ * (adapter contract, variantPlan, snapshot schema, slug/alt rules, redirects, migration, RLS/grants, admin components)
+ * must match at least one real file by glob, and when it has `mustMention` regexes, at least one matching file must
+ * contain each of them (so the 13 albums / 141 photos / rerun expectations stay asserted somewhere).
+ */
+export function checkArchTestsPresent(files, golden) {
+  const s = goldenSection(files, golden, 'requiredSuites');
+  if (s.fail) return s.fail;
+  const list = Array.isArray(s.section) ? s.section : [];
+  if (list.length === 0) return { status: 'FAIL', details: `${ARCH_GOLDEN} requiredSuites is empty` };
+  const bad = [];
+  for (const suite of list) {
+    const res = (suite.globs ?? []).map(globToRegExp);
+    const hits = files.filter((x) => res.some((re) => re.test(x.path)));
+    if (hits.length === 0) {
+      bad.push(`suite "${suite.name}": no file matches ${(suite.globs ?? []).join(', ')}`);
+      continue;
+    }
+    for (const pat of suite.mustMention ?? []) {
+      const re = new RegExp(pat);
+      if (!hits.some((x) => re.test(x.text))) bad.push(`suite "${suite.name}": no matching test mentions ${pat}`);
+    }
+  }
+  return result(firstOffenders(bad), `${list.length} required suites present`);
 }

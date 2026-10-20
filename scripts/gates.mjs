@@ -5,7 +5,14 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { checkArchApiSurface, checkArchComponents, checkArchDataModel } from './gates-arch.mjs';
+import {
+  checkArchApiSurface,
+  checkArchComponents,
+  checkArchDataModel,
+  checkArchHostingFiles,
+  checkArchStorageKeys,
+  checkArchTestsPresent,
+} from './gates-arch.mjs';
 import { scanEnvUsage } from './lib/env-scan.mjs';
 import { MIGRATION_RE, result, stripSqlComments } from './lib/gate-utils.mjs';
 import { attrsOf, checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
@@ -486,7 +493,15 @@ export const checkMigrateNoCredentials = migrateRule([
 
 // ---------------------------------------------------------------------------------------------- architecture (WP8-3..5)
 // The arch-* gate functions live in scripts/gates-arch.mjs; re-exported here so imports of gates.mjs keep working.
-export { ARCH_GOLDEN, checkArchApiSurface, checkArchComponents, checkArchDataModel } from './gates-arch.mjs';
+export {
+  ARCH_GOLDEN,
+  checkArchApiSurface,
+  checkArchComponents,
+  checkArchDataModel,
+  checkArchHostingFiles,
+  checkArchStorageKeys,
+  checkArchTestsPresent,
+} from './gates-arch.mjs';
 
 const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
 
@@ -525,6 +540,9 @@ export const CHECKS = [
   { name: 'arch-components', input: 'files', run: (f) => checkArchComponents(f) },
   { name: 'arch-data-model', input: 'files', run: (f) => checkArchDataModel(f) },
   { name: 'arch-api-surface', input: 'files', run: (f) => checkArchApiSurface(f) },
+  { name: 'arch-storage-keys', input: 'files', run: (f) => checkArchStorageKeys(f) },
+  { name: 'arch-hosting-files', input: 'files', run: (f) => checkArchHostingFiles(f) },
+  { name: 'arch-tests-present', input: 'files', run: (f) => checkArchTestsPresent(f) },
   { name: 'docs-complete', input: 'files', run: pending('WP-8') },
 ];
 

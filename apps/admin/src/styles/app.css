@@ -1204,6 +1204,30 @@
     justify-content: start;
   }
 
+  .upload-hint {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-block-end: var(--space-3);
+  }
+
+  /* Phone: the open queue is a full-height sheet above the bottom navigation (collapsed it stays a compact card). */
+  @media (max-width: 39.99rem) {
+    .upload-drawer:not([data-collapsed]) {
+      inset: 0;
+      z-index: var(--z-dialog);
+      inline-size: auto;
+      block-size: 100dvh;
+      max-block-size: none;
+      border-radius: 0;
+      border-inline: 0;
+      border-block-end: 0;
+      padding-block-end: calc(var(--space-4) + env(safe-area-inset-bottom));
+    }
+  }
+
   @media (min-width: 40rem) {
     .upload-drawer {
       inset-block-end: var(--space-4);

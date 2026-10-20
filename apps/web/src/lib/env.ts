@@ -22,6 +22,8 @@ export interface WebEnv {
   imgBaseUrl: string;
   /** Every non-production build is noindex (meta, header, robots.txt). */
   noindex: boolean;
+  /** Exact origin of the admin app allowed to read `/_publish.json` cross-origin, or null (no CORS header). */
+  adminOrigin: string | null;
 }
 
 export class BuildConfigError extends Error {
@@ -48,6 +50,26 @@ function parseHttpsUrl(name: string, value: string): URL {
 }
 
 /**
+ * PUBLIC_ADMIN_ORIGIN: unset/blank = null. Otherwise exactly one origin (scheme + host + optional port): no wildcard,
+ * path, query, fragment or credentials, and https for a production build. Anything else fails the build.
+ */
+function parseAdminOrigin(value: string, production: boolean): string | null {
+  if (value === '') return null;
+  const bad = (why: string) => new BuildConfigError(`PUBLIC_ADMIN_ORIGIN ${why} (expected one origin such as https://admin.example.cz)`);
+  if (value.includes('*')) throw bad('must not contain a wildcard');
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw bad('is not a valid URL');
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw bad('must be an http(s) origin');
+  if (url.protocol === 'http:' && production) throw bad('must be https in a production build');
+  if (value !== url.origin) throw bad('must be an origin only, without path, trailing slash, query or credentials');
+  return url.origin;
+}
+
+/**
  * Fixture mode (no PUBLIC_SNAPSHOT_URL): committed fixture, image base defaults to /_dev-img, always noindex.
  * Snapshot mode: https snapshot URL, https image base, and both on the same host.
  * Production additionally needs snapshot mode. The default is the safe direction (noindex).
@@ -58,6 +80,7 @@ export function resolveEnv(raw: RawEnv): WebEnv {
   const production = siteEnv === 'production';
   const snapshotRaw = trimmed(raw.PUBLIC_SNAPSHOT_URL);
   const imgRaw = trimmed(raw.PUBLIC_IMG_BASE_URL);
+  const adminOrigin = parseAdminOrigin(trimmed(raw.PUBLIC_ADMIN_ORIGIN), production);
 
   if (snapshotRaw === '') {
     if (production) {
@@ -70,6 +93,7 @@ export function resolveEnv(raw: RawEnv): WebEnv {
       snapshotUrl: null,
       imgBaseUrl: (imgRaw === '' ? DEV_IMG_BASE : imgRaw).replace(/\/+$/, ''),
       noindex: true,
+      adminOrigin,
     };
   }
 
@@ -86,6 +110,7 @@ export function resolveEnv(raw: RawEnv): WebEnv {
     snapshotUrl: snapshotUrl.href,
     imgBaseUrl: imgUrl.href.replace(/\/+$/, ''),
     noindex: !production,
+    adminOrigin,
   };
 }
 
@@ -98,6 +123,7 @@ export function readRawEnv(): RawEnv {
     PUBLIC_SITE_ENV: pick('PUBLIC_SITE_ENV'),
     PUBLIC_SNAPSHOT_URL: pick('PUBLIC_SNAPSHOT_URL'),
     PUBLIC_IMG_BASE_URL: pick('PUBLIC_IMG_BASE_URL'),
+    PUBLIC_ADMIN_ORIGIN: pick('PUBLIC_ADMIN_ORIGIN'),
   };
 }
 

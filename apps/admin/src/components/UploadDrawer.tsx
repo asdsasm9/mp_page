@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { hasSeenLaptopHint, isPhoneViewport, markLaptopHintSeen } from '../upload/laptopHint';
 import { cs } from '../i18n/cs';
 import { fill } from '../i18n/format';
 import { summarize } from '../upload/reducer';
@@ -33,7 +35,24 @@ export function UploadIndicator() {
   );
 }
 
-/** The queue docked at the bottom right (full width on a phone); collapsible, hidden on /nahravani. */
+/** One-time phone hint: decided when the open sheet first mounts, then remembered so it never returns. */
+export function LaptopHint() {
+  const [visible, setVisible] = useState(() => isPhoneViewport() && !hasSeenLaptopHint());
+  useEffect(() => {
+    if (visible) markLaptopHintSeen();
+  }, [visible]);
+  if (!visible) return null;
+  return (
+    <div className="notice upload-hint" role="note">
+      <p>{cs.upload.laptopHint}</p>
+      <button type="button" className="button" onClick={() => setVisible(false)}>
+        {cs.upload.laptopHintDismiss}
+      </button>
+    </div>
+  );
+}
+
+/** The queue docked at the bottom right; a full-height sheet on a phone. Collapsible, hidden on /nahravani. */
 export function UploadDrawer() {
   const actions = useUploadActions();
   const { queue, rejections, drawerOpen } = useUploadState();
@@ -55,6 +74,7 @@ export function UploadDrawer() {
         </button>
       </div>
       <div id="upload-drawer-body">
+        {drawerOpen ? <LaptopHint /> : null}
         <UploadQueueView collapsed={!drawerOpen} />
       </div>
     </aside>

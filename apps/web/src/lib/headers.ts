@@ -45,6 +45,8 @@ export function buildCsp(options: CspOptions = {}): string {
 export interface HeadersOptions extends CspOptions {
   /** True for every non-production build. */
   noindex: boolean;
+  /** Exact admin origin (already validated by resolveEnv) allowed to GET `/_publish.json`; null/absent = no CORS. */
+  adminOrigin?: string | null;
 }
 
 const HTML_CACHE = 'public, max-age=0, must-revalidate';
@@ -60,11 +62,16 @@ export function buildHeaders(options: HeadersOptions): string {
   ];
   if (options.noindex) all.push('X-Robots-Tag: noindex, nofollow');
   const block = (path: string, lines: string[]) => `${path}\n${lines.map((l) => `  ${l}`).join('\n')}\n`;
+  // CORS only on /_publish.json, only for the one configured admin origin: GET, no credentials, never a wildcard.
+  const publish = ['! Cache-Control', 'Cache-Control: no-store'];
+  if (options.adminOrigin) {
+    publish.push(`Access-Control-Allow-Origin: ${options.adminOrigin}`, 'Vary: Origin');
+  }
   return [
     block('/*', all),
     block('/_astro/*', ['! Cache-Control', `Cache-Control: ${IMMUTABLE}`]),
     block('/fonts/*', ['! Cache-Control', `Cache-Control: ${IMMUTABLE}`]),
-    block('/_publish.json', ['! Cache-Control', 'Cache-Control: no-store', 'Access-Control-Allow-Origin: *']),
+    block('/_publish.json', publish),
   ].join('\n');
 }
 

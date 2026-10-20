@@ -13,6 +13,13 @@ The mode comes from three public variables (names only in `.env.example`; the bu
 | `PUBLIC_SNAPSHOT_URL` | https URL of the published snapshot JSON. Unset means fixture mode. |
 | `PUBLIC_IMG_BASE_URL` | Image host (https). Unset in fixture mode means `/_dev-img`. Required in snapshot mode; its host must equal the snapshot host. |
 | `PUBLIC_SITE_ENV` | `production` or `preview`. Anything else or unset means a non-production build. |
+| `PUBLIC_ADMIN_ORIGIN` | Optional. One exact origin of the admin app (for example `https://admin.example.cz`). See below. |
+
+`PUBLIC_ADMIN_ORIGIN` lets the admin read `/_publish.json` to follow a publish. When set, the `_headers` rule for
+`/_publish.json` (and only that path) gets `Access-Control-Allow-Origin: <origin>` and `Vary: Origin`; a plain GET needs
+no preflight, no credentials are allowed and there is never a wildcard. Unset means no CORS header (the admin then falls
+back to "build triggered"). A malformed value (wildcard, path, trailing slash, query, credentials, not a URL, or `http`
+in a production build) fails the build with a message naming the variable. The CSP and all other headers are unchanged.
 
 | Mode | Data | Images | Indexing |
 |---|---|---|---|

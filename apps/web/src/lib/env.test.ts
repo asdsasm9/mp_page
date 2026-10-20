@@ -14,6 +14,7 @@ describe('resolveEnv', () => {
       snapshotUrl: null,
       imgBaseUrl: DEV_IMG_BASE,
       noindex: true,
+      adminOrigin: null,
     });
   });
 
@@ -66,6 +67,25 @@ describe('resolveEnv', () => {
   it('production without a snapshot URL throws', () => {
     expect(() => resolveEnv({ PUBLIC_SITE_ENV: 'production' })).toThrow(/requires PUBLIC_SNAPSHOT_URL/);
     expect(() => resolveEnv({ PUBLIC_SITE_ENV: 'production', PUBLIC_IMG_BASE_URL: IMG })).toThrow(BuildConfigError);
+  });
+});
+
+describe('PUBLIC_ADMIN_ORIGIN', () => {
+  const prod = { PUBLIC_SITE_ENV: 'production', PUBLIC_SNAPSHOT_URL: SNAP, PUBLIC_IMG_BASE_URL: IMG };
+
+  it('is null when unset or blank, an exact origin when valid', () => {
+    expect(resolveEnv({}).adminOrigin).toBeNull();
+    expect(resolveEnv({ PUBLIC_ADMIN_ORIGIN: '  ' }).adminOrigin).toBeNull();
+    expect(resolveEnv({ ...prod, PUBLIC_ADMIN_ORIGIN: 'https://admin.example.cz' }).adminOrigin).toBe('https://admin.example.cz');
+    expect(resolveEnv({ PUBLIC_ADMIN_ORIGIN: 'http://localhost:5173' }).adminOrigin).toBe('http://localhost:5173');
+  });
+
+  it('fails the build with a clear message on a path, wildcard, garbage or http in production', () => {
+    for (const bad of ['https://admin.example.cz/', 'https://admin.example.cz/app', '*', 'https://*.example.cz', 'admin.example.cz', 'ftp://x.cz', 'https://u:p@admin.example.cz', 'https://admin.example.cz?x=1']) {
+      expect(() => resolveEnv({ ...prod, PUBLIC_ADMIN_ORIGIN: bad }), bad).toThrow(/PUBLIC_ADMIN_ORIGIN/);
+    }
+    expect(() => resolveEnv({ ...prod, PUBLIC_ADMIN_ORIGIN: 'http://admin.example.cz' })).toThrow(/https in a production build/);
+    expect(() => resolveEnv({ PUBLIC_ADMIN_ORIGIN: '*' })).toThrow(BuildConfigError);
   });
 });
 

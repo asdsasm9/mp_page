@@ -19,6 +19,11 @@ function barValue(item: QueueItem): number {
   return 0;
 }
 
+/** "Zpracovávám" has no measurable progress: the bar is indeterminate (no value) while the browser encodes. */
+function processing(item: QueueItem): boolean {
+  return !item.paused && (item.status === 'encoding' || item.status === 'encoded' || item.status === 'reserving');
+}
+
 function Thumb({ id }: { id: string }) {
   const actions = useUploadActions();
   const [broken, setBroken] = useState(false);
@@ -55,7 +60,7 @@ function FileRow({ item, albumTitle }: { item: QueueItem; albumTitle: string | u
           <progress
             className="upload-progress"
             max={1}
-            value={barValue(item)}
+            value={processing(item) ? undefined : barValue(item)}
             aria-label={fill(cs.upload.progressLabel, { step, name: item.name })}
           />
         )}

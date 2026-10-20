@@ -375,6 +375,8 @@ export const cs = {
     donePartial: 'Nahráno {done} z {total}, {failed} se nepodařilo.',
     empty: 'Fronta je prázdná. Fotky přidáte na obrazovce alba.',
     emptyBack: 'Zpět na kategorie',
+    laptopHint: 'Na velké dávky fotek použijte raději notebook.',
+    laptopHintDismiss: 'Rozumím',
     collapse: 'Sbalit frontu',
     expand: 'Rozbalit frontu',
     limitsFailed: 'Limity nahrávání se nepodařilo načíst. Zkuste to znovu.',

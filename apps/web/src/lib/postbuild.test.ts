@@ -98,7 +98,24 @@ describe('_headers', () => {
     expect(t).toContain('Referrer-Policy: strict-origin-when-cross-origin');
     expect(t).toContain('Permissions-Policy: camera=(), microphone=(), geolocation=()');
     expect(t).toContain('/_astro/*\n  ! Cache-Control\n  Cache-Control: public, max-age=31536000, immutable');
-    expect(t).toContain('/_publish.json\n  ! Cache-Control\n  Cache-Control: no-store\n  Access-Control-Allow-Origin: *');
+    expect(t).toContain('/_publish.json\n  ! Cache-Control\n  Cache-Control: no-store\n');
+  });
+
+  it('CORS on /_publish.json only when PUBLIC_ADMIN_ORIGIN is set, exact origin, no wildcard or credentials', () => {
+    const unset = buildHeaders({ noindex: false });
+    expect(unset).not.toContain('Access-Control');
+    expect(unset).not.toContain('Vary');
+
+    const set = buildHeaders({ noindex: false, adminOrigin: 'https://admin.example.cz' });
+    expect(set).toContain(
+      '/_publish.json\n  ! Cache-Control\n  Cache-Control: no-store\n  Access-Control-Allow-Origin: https://admin.example.cz\n  Vary: Origin\n',
+    );
+    expect(set.match(/Access-Control/g)).toHaveLength(1); // nothing else: no credentials, methods or wildcard
+    expect(set).not.toContain('Access-Control-Allow-Origin: *');
+    expect(set).not.toContain('Allow-Credentials');
+    // Everything outside the /_publish.json block (CSP included) is identical with and without the origin.
+    const rest = (text: string) => text.slice(0, text.indexOf('/_publish.json'));
+    expect(rest(set)).toBe(rest(unset));
   });
 });
 

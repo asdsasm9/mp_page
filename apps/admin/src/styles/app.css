@@ -199,6 +199,20 @@
       padding-inline: var(--space-2);
       border-radius: 0;
     }
+
+    .bottom-nav .nav-link[aria-current='page'] {
+      background: var(--color-surface);
+      border-block-end-color: var(--color-text);
+    }
+
+    .shell-header {
+      box-shadow: var(--shadow-sm);
+    }
+
+    .row-actions {
+      padding-block-start: var(--space-3);
+      border-block-start: var(--border-width) solid var(--color-border);
+    }
   }
 
   @media (prefers-reduced-motion: no-preference) {

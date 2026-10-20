@@ -151,6 +151,28 @@ describe('design pass: photo grid and upload surfaces', () => {
   });
 });
 
+describe('design pass: phone and shell polish', () => {
+  const phone = css.match(/@media \(max-width: 39\.99rem\) \{\s*\.desktop-nav \{[\s\S]*?\n  \}\n/)?.[0] ?? '';
+
+  it('divides the stacked row actions from the title inside the phone block', () => {
+    const rule = phone.match(/\.row-actions \{[^}]*\}/)?.[0] ?? '';
+    expect(rule).toContain('border-block-start: var(--border-width) solid var(--color-border)');
+    expect(rule).toContain('padding-block-start: var(--space-3)');
+  });
+
+  it('marks the active bottom-nav item and keeps its 44 px height', () => {
+    const rule = phone.match(/\.bottom-nav \.nav-link\[aria-current='page'\] \{[^}]*\}/)?.[0] ?? '';
+    expect(rule).toContain('background: var(--color-surface)');
+    expect(rule).toContain('border-block-end-color: var(--color-text)');
+    expect(phone).toContain('min-block-size: var(--bottom-nav-height)');
+  });
+
+  it('gives the shell header a small shadow on phone without making it sticky', () => {
+    expect(phone.match(/\.shell-header \{[^}]*\}/)?.[0] ?? '').toContain('box-shadow: var(--shadow-sm)');
+    expect(css).not.toMatch(/\.shell-header[^{]*\{[^}]*position:\s*(?:sticky|fixed)/);
+  });
+});
+
 describe('design pass: existing finding guards remain', () => {
   it('keeps the 44 px target rule for stand-alone links and list titles', () => {
     const rule = css.match(/\.row-title,[^{]*\{[^}]*\}/)?.[0] ?? '';

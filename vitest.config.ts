@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import { getViteConfig } from 'astro/config';
 import { defineConfig } from 'vitest/config';
 
 // One run for the whole repo: `vitest run` (never watch). Each workspace is a project.
@@ -13,7 +14,23 @@ export default defineConfig({
         plugins: [react()],
         test: { name: 'admin', root: './apps/admin', environment: 'jsdom' },
       },
-      { test: { name: 'web', root: './apps/web', environment: 'node' } },
+      {
+        test: {
+          name: 'web',
+          root: './apps/web',
+          environment: 'node',
+          exclude: ['**/node_modules/**', '**/*.render.test.ts'],
+        },
+      },
+      // .astro component render tests (Astro container API) need Astro's own vite plugins.
+      getViteConfig({
+        test: {
+          name: 'web-render',
+          root: './apps/web',
+          environment: 'node',
+          include: ['src/**/*.render.test.ts'],
+        },
+      }),
       {
         test: {
           name: 'scripts',

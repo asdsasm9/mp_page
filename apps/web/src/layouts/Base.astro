@@ -1,6 +1,7 @@
 ---
 // Page shell: head (all tags from seo.ts), skip link, header, the single <main>, footer.
 // JSON-LD goes through serializeJsonLd only; it is the one allowed use of set:html besides the hash script.
+import Analytics from '../components/Analytics.astro';
 import Fonts from '../components/Fonts.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
@@ -84,6 +85,7 @@ const navItems: NavItem[] = [
     <Fonts />
     <slot name="head" />
     {jsonLd.map((data) => <script type="application/ld+json" set:html={serializeJsonLd(data)} />)}
+    <Analytics token={env.analyticsToken} />
   </head>
   <body>
     <a class="skip-link" href="#obsah">Přeskočit na obsah</a>

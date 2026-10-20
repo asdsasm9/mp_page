@@ -11,6 +11,7 @@ import { BackendError, type MigrationBackend } from './migrate-legacy/backend';
 import { createHttpBackend, type FetchLike } from './migrate-legacy/http-backend';
 import { formatCatalog, syncCatalog } from './migrate-legacy/catalog';
 import { formatUpload, preflight, uploadComplete, uploadPhotos, type UploadDeps } from './migrate-legacy/upload';
+import { coversComplete, formatCovers, syncCovers } from './migrate-legacy/cover';
 import { checkLive, LiveGuardError, type Env } from './migrate-legacy/live-guard';
 
 export interface MainDeps {
@@ -95,8 +96,14 @@ async function runLive(
   }
   try {
     const report = await uploadPhotos(backend, pre, catalog.albumIds, { ...deps.upload, repair: options.repair });
-    for (const line of formatUpload(report)) out(line);
-    return uploadComplete(report) ? 0 : 1;
+    const covers = await syncCovers(backend, options);
+    const lines = formatUpload(report);
+    lines.pop(); // the upload-only RESULT line; the final one below also covers cover and order
+    for (const line of lines) out(line);
+    for (const line of formatCovers(covers)) out(line);
+    const ok = uploadComplete(report) && coversComplete(covers);
+    out(ok ? 'RESULT: OK' : 'RESULT: INCOMPLETE');
+    return ok ? 0 : 1;
   } catch (e) {
     err(`migrate-legacy: upload phase failed (${e instanceof BackendError ? e.code : (e as Error).message}).`);
     return 1;

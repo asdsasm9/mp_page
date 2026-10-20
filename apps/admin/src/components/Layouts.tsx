@@ -20,11 +20,13 @@ function SkipLink() {
 function useFocusMainOnNavigation() {
   const ref = useRef<HTMLElement>(null);
   const previous = useRef<string | null>(null);
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
+  // A screen that keeps focus on its own control (photo detail Předchozí / Další) navigates with this state.
+  const keepFocus = (state as { keepFocus?: boolean } | null)?.keepFocus === true;
   useEffect(() => {
-    if (previous.current !== null && previous.current !== pathname) ref.current?.focus();
+    if (previous.current !== null && previous.current !== pathname && !keepFocus) ref.current?.focus();
     previous.current = pathname;
-  }, [pathname]);
+  }, [pathname, keepFocus]);
   return ref;
 }
 

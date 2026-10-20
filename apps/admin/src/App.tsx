@@ -7,6 +7,7 @@ import { cs } from './i18n/cs';
 import { AlbumScreen } from './screens/AlbumScreen';
 import { CategoriesScreen } from './screens/CategoriesScreen';
 import { CategoryScreen } from './screens/CategoryScreen';
+import { PhotoDetailScreen } from './screens/PhotoDetailScreen';
 
 function NotFound() {
   useDocumentTitle(cs.notFound.title);
@@ -33,7 +34,7 @@ export function App() {
           <Route path="/" element={<CategoriesScreen />} />
           <Route path="/kategorie/:id" element={<CategoryScreen />} />
           <Route path="/alba/:id" element={<AlbumScreen />} />
-          <Route path="/alba/:id/foto/:photoId" element={<Placeholder title={cs.routes.photo.title} />} />
+          <Route path="/alba/:id/foto/:photoId" element={<PhotoDetailScreen />} />
           <Route path="/zverejnit" element={<Placeholder title={cs.routes.publish.title} />} />
           <Route path="/ulozeni" element={<Placeholder title={cs.routes.storage.title} storageBar />} />
           <Route path="/nahravani" element={<Placeholder title={cs.routes.upload.title} />} />

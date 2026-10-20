@@ -12,9 +12,9 @@ import { useAlbum, useAlbums, useCategories, useCategory, usePhotos } from '../d
 import { isStale } from '../data/concurrency';
 import { useCanMutate } from '../data/health';
 import { cs, glossary } from '../i18n/cs';
-import { formatCount } from '../i18n/format';
 import { AlbumDataPanel, SaveStatus } from './AlbumDataPanel';
 import { HideAlbumDialog, MoveAlbumDialog } from './AlbumDialogs';
+import { PhotoGallery } from './PhotoGallery';
 import { useAlbumAutosave } from './useAlbumAutosave';
 
 type Autosave = ReturnType<typeof useAlbumAutosave>;
@@ -155,9 +155,7 @@ function AlbumBody({
           </button>
         </div>
         {photos.data ? (
-          <p className="page-note">
-            {photos.data.length === 0 ? cs.album.photosEmpty : formatCount(photos.data.length, cs.units.photo)}
-          </p>
+          <PhotoGallery album={album} photos={photos.data} categories={categories} albums={allAlbums} />
         ) : null}
       </section>
       {dialog === 'hide' ? <HideAlbumDialog album={album} onClose={() => setDialog(null)} /> : null}

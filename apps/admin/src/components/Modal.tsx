@@ -5,6 +5,8 @@ interface Props {
   /** Escape and the close paths call this; ignored while `busy`. */
   onClose: () => void;
   busy?: boolean;
+  /** `sheet`: a bottom sheet on a phone, a normal dialog from 640 px. */
+  variant?: 'sheet';
   children: ReactNode;
 }
 
@@ -15,7 +17,7 @@ const FOCUSABLE = 'input, textarea, select, button, a[href], [tabindex]:not([tab
  * onClose; when it unmounts, focus returns to the element that opened it (done explicitly so it also holds
  * where showModal is missing, as in jsdom). The first field (or `[data-autofocus]`) receives focus.
  */
-export function Modal({ title, onClose, busy = false, children }: Props) {
+export function Modal({ title, onClose, busy = false, variant, children }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const closeRef = useRef(onClose);
@@ -41,7 +43,7 @@ export function Modal({ title, onClose, busy = false, children }: Props) {
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={variant === 'sheet' ? 'dialog dialog-sheet' : 'dialog'}
       aria-labelledby={titleId}
       aria-busy={busy || undefined}
       onKeyDown={(event) => {

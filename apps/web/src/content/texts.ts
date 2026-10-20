@@ -132,8 +132,10 @@ export const COOKIES = {
     complaintLabel: 'Úřad pro ochranu osobních údajů (uoou.gov.cz)',
     complaintHref: UOOU_URL,
   },
-  /** Slot for WP-7: the analytics paragraph is filled here (null until then) and rendered at the marked place on /cookies/. */
-  ANALYTICS_PARAGRAPH: null as string | null,
+  /** Shown on /cookies/ only in a build that has the analytics beacon. Photographer approves the wording (docs/TEXTS-REVIEW.md). */
+  ANALYTICS_TITLE: 'Měření návštěvnosti',
+  ANALYTICS_PARAGRAPH:
+    'Web měří návštěvnost službou Cloudflare Web Analytics. Měření nepoužívá cookies ani místní úložiště prohlížeče a neukládá do vašeho zařízení nic. Zpracovávají se jen souhrnné technické údaje o návštěvě, například zobrazená stránka, odkazující web, země, typ zařízení a prohlížeče a rychlost načtení stránky. Službu poskytuje společnost Cloudflare, která provozuje servery po celém světě. Údaje používám k tomu, abych poznala, které stránky návštěvníky zajímají a zda se web rychle načítá; právním základem je můj oprávněný zájem. Měření můžete zablokovat v prohlížeči nebo blokátorem obsahu, web funguje stejně i bez něj.',
 } as const;
 
 /**

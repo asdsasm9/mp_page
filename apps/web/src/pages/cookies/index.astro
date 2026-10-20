@@ -1,8 +1,10 @@
 ---
-// Cookies and privacy (option C, decision D-3): text only. The site stores nothing; the analytics paragraph is a slot for WP-7.
+// Cookies and privacy (option C, decision D-3): text only. The site stores nothing; the analytics section appears only in a build with the beacon.
+import AnalyticsSection from '../../components/AnalyticsSection.astro';
 import Breadcrumb from '../../components/Breadcrumb.astro';
 import { COOKIES, MAIL_ADDRESS, MAIL_URL } from '../../content/texts';
 import Base from '../../layouts/Base.astro';
+import { readRawEnv, resolveEnv } from '../../lib/env';
 import { breadcrumbList } from '../../lib/jsonld';
 import { cookiesMeta } from '../../lib/seo';
 
@@ -10,7 +12,7 @@ const path = '/cookies/';
 const meta = cookiesMeta();
 const crumbs = [{ name: COOKIES.title, path }];
 const { controller, storage, hosting, fonts, mail, rights } = COOKIES;
-const analytics = COOKIES.ANALYTICS_PARAGRAPH;
+const hasBeacon = resolveEnv(readRawEnv()).analyticsToken !== null;
 ---
 <Base meta={meta} path={path} jsonLd={[breadcrumbList(crumbs)]}>
   <div class="page">
@@ -53,16 +55,7 @@ const analytics = COOKIES.ANALYTICS_PARAGRAPH;
       <p>{mail.body}</p>
     </section>
 
-    <!-- ANALYTICS_PARAGRAPH: WP-7 fills COOKIES.ANALYTICS_PARAGRAPH in content/texts.ts; it appears here. -->
-
-    {
-      analytics && (
-        <section aria-labelledby="mereni">
-          <h2 id="mereni">Měření návštěvnosti</h2>
-          <p>{analytics}</p>
-        </section>
-      )
-    }
+    <AnalyticsSection enabled={hasBeacon} />
 
     <section aria-labelledby="prava">
       <h2 id="prava">{rights.title}</h2>

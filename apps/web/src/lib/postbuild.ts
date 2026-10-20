@@ -3,6 +3,7 @@
  * home page, and the check that every inline script is covered by the CSP.
  */
 import { createHash } from 'node:crypto';
+import { COOKIES } from '../content/texts';
 import { BEACON_SRC } from './beacon';
 import { ANALYTICS_CONNECT_HOST, ANALYTICS_SCRIPT_HOST, cspOfHeaders } from './headers';
 import { SITE_ORIGIN } from './jsonld';
@@ -98,6 +99,7 @@ function beaconTags(html: string): Array<{ src: string | null; token: string | n
   return out;
 }
 
+const COOKIES_PAGE_RE = /(?:^|\/)cookies\/index\.html$/;
 const BEACON_WORDS_RE = /cloudflareinsights|data-cf-beacon|beacon\.min\.js/i;
 
 /** Page html with the beacon script start tags removed (what is left must not mention the beacon at all). */
@@ -151,6 +153,11 @@ export function checkAnalyticsOutput({ pages, headersText, token, scripts = [] }
       if (BEACON_WORDS_RE.test(withoutBeaconTags(page.html))) {
         errors.push(`${page.path}: beacon reference outside the one expected beacon tag`);
       }
+    }
+    if (COOKIES_PAGE_RE.test(page.path)) {
+      const has = page.html.includes(COOKIES.ANALYTICS_PARAGRAPH);
+      if (token !== null && !has) errors.push(`${page.path}: privacy page lacks the analytics paragraph in a build with a beacon`);
+      if (token === null && has) errors.push(`${page.path}: privacy page has the analytics paragraph in a token-less build`);
     }
     if (FORBIDDEN_GOOGLE_RE.test(page.html)) errors.push(`${page.path}: Google analytics reference (googletagmanager, google-analytics or gtag()`);
     for (const s of inlineScripts(page.html)) {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { COOKIES } from '../content/texts';
 import { BEACON_SRC } from './beacon';
 import { HASH_REDIRECT_SCRIPT } from './hash-redirect';
 import { buildHeaders } from './headers';
@@ -21,7 +22,19 @@ describe('collectScriptHashes and the external beacon tag', () => {
 });
 
 describe('checkAnalyticsOutput', () => {
-  const ok = [{ path: 'index.html', html: page(BEACON) }, { path: 'cookies/index.html', html: page(BEACON) }];
+  const ok = [
+    { path: 'index.html', html: page(BEACON) },
+    { path: 'cookies/index.html', html: page(`${BEACON}<p>${COOKIES.ANALYTICS_PARAGRAPH}</p>`) },
+  ];
+
+  it('requires the privacy paragraph on /cookies/ with a token and forbids it token-less', () => {
+    const noParagraph = [{ path: 'cookies/index.html', html: page(BEACON) }];
+    expect(checkAnalyticsOutput({ pages: noParagraph, headersText: headersOn, token: TOKEN }).join()).toContain('lacks the analytics paragraph');
+    const tokenless = [{ path: 'cookies/index.html', html: page(`<p>${COOKIES.ANALYTICS_PARAGRAPH}</p>`) }];
+    expect(checkAnalyticsOutput({ pages: tokenless, headersText: headersOff, token: null }).join()).toContain('token-less build');
+    const plain = [{ path: 'cookies/index.html', html: page() }];
+    expect(checkAnalyticsOutput({ pages: plain, headersText: headersOff, token: null })).toEqual([]);
+  });
 
   it('is green with a token, one beacon per page and both CSP hosts', () => {
     expect(checkAnalyticsOutput({ pages: ok, headersText: headersOn, token: TOKEN })).toEqual([]);

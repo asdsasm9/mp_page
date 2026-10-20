@@ -205,7 +205,7 @@ export function checkAnalyticsNotInAdminOrApi(files) {
   return result(findMatches(src, () => false, [['analytics beacon', ANALYTICS_RE]]), `${src.length} admin and api sources clean`);
 }
 
-const MIGRATION_RE =/^supabase\/migrations\/(\d{14})_[a-z0-9_]+\.sql$/;
+const MIGRATION_RE = /^supabase\/migrations\/(\d{14})_[a-z0-9_]+\.sql$/;
 const stripSqlComments = (sql) => sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
 
 /**
@@ -357,7 +357,7 @@ export const checkAdminDistNoFakeMarker = adminDistRule([
   ['fake world marker name', /MP_ADMIN_FAKE_WORLD/],
 ]);
 export const checkAdminDistNoAnalytics = adminDistRule([['analytics beacon', ANALYTICS_RE]]);
-export const checkAdminDistNoKeyStrings =adminDistRule([
+export const checkAdminDistNoKeyStrings = adminDistRule([
   ['JWT', /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/],
   ['sk_ key', /\bsk_(live_|test_)?[A-Za-z0-9]{16,}/],
   ['AWS access key id', /\b(AKIA|ASIA)[0-9A-Z]{16}\b/],

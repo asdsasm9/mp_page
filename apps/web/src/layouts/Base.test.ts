@@ -384,10 +384,11 @@ describe('Cookies page and 404 (built, shared build)', () => {
   it('/cookies/ implies no banner, claims nothing about analytics, and has [doplnit] markers and the slot', () => {
     const page = cookies();
     const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
-    // The HTML comment that marks the WP-7 slot names ANALYTICS_PARAGRAPH; only visible text is checked.
-    expect(main.replace(/<!--[\s\S]*?-->/g, '')).not.toMatch(/cookiebar|souhlas|analytic|google analytics|měření/i);
+    // The shared build is token-less: no marker comment, no analytics section.
+    expect(main).not.toMatch(/cookiebar|souhlas|analytic|google analytics|měření/i);
     expect((main.match(/\[doplnit\]/g) ?? []).length).toBeGreaterThanOrEqual(3);
-    expect(page).toContain('ANALYTICS_PARAGRAPH');
+    expect(page).not.toContain('ANALYTICS_PARAGRAPH');
+    expect(page).not.toContain('id="mereni"');
     expect(main).toContain('href="mailto:mullnyphotos@gmail.com"');
     expect(main).toContain('href="https://uoou.gov.cz"');
     expect(main).toContain('Cloudflare');

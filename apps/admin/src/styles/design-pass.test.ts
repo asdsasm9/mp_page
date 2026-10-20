@@ -26,6 +26,18 @@ describe('design pass: token-only CSS', () => {
   });
 });
 
+describe('design pass: type hierarchy and rhythm', () => {
+  it('sets h1 to font-size-2 and gives h2 its own smaller rule', () => {
+    expect(css).toMatch(/\n\s*h1\s*\{[^}]*font-size: var\(--font-size-2\)/);
+    expect(css).toMatch(/\n\s*h2\s*\{[^}]*font-size: var\(--font-size-1\)/);
+  });
+
+  it('separates sections with a space-6 top margin on page h2', () => {
+    const rule = css.match(/\.page > h2,\s*\.page > section > h2\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(rule).toContain('margin-block-start: var(--space-6)');
+  });
+});
+
 describe('design pass: existing finding guards remain', () => {
   it('keeps the 44 px target rule for stand-alone links and list titles', () => {
     const rule = css.match(/\.row-title,[^{]*\{[^}]*\}/)?.[0] ?? '';

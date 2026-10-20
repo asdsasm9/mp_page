@@ -35,9 +35,14 @@
   }
 
   h1 {
-    font-size: var(--font-size-3);
+    font-size: var(--font-size-2);
     line-height: var(--line-height-heading);
     letter-spacing: var(--tracking-heading);
+  }
+
+  h2 {
+    font-size: var(--font-size-1);
+    line-height: var(--line-height-heading);
   }
 
   a {
@@ -142,6 +147,11 @@
 
   .page > * + * {
     margin-block-start: var(--space-4);
+  }
+
+  .page > h2,
+  .page > section > h2 {
+    margin-block-start: var(--space-6);
   }
 
   .page-note {

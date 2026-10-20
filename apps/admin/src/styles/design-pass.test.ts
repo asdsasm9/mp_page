@@ -127,6 +127,30 @@ describe('design pass: forms and login', () => {
   });
 });
 
+describe('design pass: photo grid and upload surfaces', () => {
+  it('lifts tile overlay controls and the badge with the small shadow', () => {
+    const controls = css.match(/\n  \.photo-handle,\s*\.photo-menu-button,\s*\.photo-check \{[^}]*\}/)?.[0] ?? '';
+    expect(controls).toContain('box-shadow: var(--shadow-sm)');
+    const badge = css.match(/\n  \.photo-badge \{[^}]*\}/)?.[0] ?? '';
+    expect(badge).toContain('box-shadow: var(--shadow-sm)');
+  });
+
+  it('raises the hovered tile to shadow-md, transitioning only under no-preference', () => {
+    expect(css.match(/\n  \.photo-tile:hover \{[^}]*\}/)?.[0] ?? '').toContain('box-shadow: var(--shadow-md)');
+    const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.photo-tile \{[^}]*\}/)?.[0] ?? '';
+    expect(block).toContain('transition: box-shadow');
+    expect(css.match(/\.photo-tile \{[^}]*transition/g)?.length).toBe(1);
+  });
+
+  it('wraps the gallery toolbar with a space-3 gap and spaces the dropzone and upload rows with tokens', () => {
+    const bar = css.match(/\n  \.gallery-toolbar \{[^}]*\}/)?.[0] ?? '';
+    expect(bar).toContain('flex-wrap: wrap');
+    expect(bar).toContain('gap: var(--space-3)');
+    expect(css.match(/\n  \.dropzone \{[^}]*\}/)?.[0] ?? '').toMatch(/gap: var\(--space-\d\)/);
+    expect(css.match(/\n  \.upload-row \{[^}]*\}/)?.[0] ?? '').toMatch(/gap: var\(--space-\d\) var\(--space-\d\)/);
+  });
+});
+
 describe('design pass: existing finding guards remain', () => {
   it('keeps the 44 px target rule for stand-alone links and list titles', () => {
     const rule = css.match(/\.row-title,[^{]*\{[^}]*\}/)?.[0] ?? '';

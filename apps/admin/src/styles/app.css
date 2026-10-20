@@ -995,6 +995,16 @@
     -webkit-touch-callout: none;
   }
 
+  .photo-tile:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .photo-tile {
+      transition: box-shadow var(--motion-fast) var(--motion-ease);
+    }
+  }
+
   .photo-tile[data-selected] {
     outline: var(--focus-width) solid var(--color-focus);
     outline-offset: calc(-1 * var(--focus-width));
@@ -1036,6 +1046,7 @@
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border-strong);
     border-radius: var(--radius-full);
+    box-shadow: var(--shadow-sm);
   }
 
   .photo-badge-danger {
@@ -1065,6 +1076,7 @@
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border-strong);
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
     cursor: pointer;
   }
 

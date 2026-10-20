@@ -62,6 +62,49 @@ describe('design pass: surfaces and tables', () => {
   });
 });
 
+describe('design pass: buttons, badges, destructive demotion', () => {
+  const ruleOf = (selector: string) => {
+    const esc = selector.replace(/[.[\]()'=>:]/g, '\\$&');
+    return css.match(new RegExp(`\\n  ${esc} \\{[^}]*\\}`))?.[0] ?? '';
+  };
+
+  it('outlines the danger button in page headers with danger text', () => {
+    const rule = ruleOf('.header-actions .button-danger');
+    expect(rule).toContain('color: var(--color-danger)');
+    expect(rule).toContain('background: transparent');
+    expect(ruleOf('.header-actions .button-danger:hover')).toContain('color-mix(in srgb, var(--color-danger) 10%, transparent)');
+  });
+
+  it('keeps the base danger button solid and never demotes it inside dialogs', () => {
+    const base = ruleOf('.button-danger');
+    expect(base).toContain('background: var(--color-danger)');
+    expect(base).toContain('color: var(--color-on-overlay)');
+    expect(css).not.toMatch(/\.dialog[^{]*\.button-danger[^{]*\{[^}]*transparent/);
+  });
+
+  it('gives row buttons a transparent base with a surface hover', () => {
+    expect(ruleOf('.row-actions .button:not(.button-primary):not(.button-danger)')).toContain('background: transparent');
+    expect(ruleOf('.row-actions .button:not(.button-primary):not(.button-danger):hover')).toContain(
+      'background: var(--color-surface)',
+    );
+  });
+
+  it('fills badges per real data-state value and darkens pressed buttons without transform', () => {
+    expect(ruleOf(".badge[data-state='published'],\n  .badge[data-state='visible']")).toContain('background: var(--color-surface)');
+    expect(ruleOf(".badge[data-state='hidden']")).toContain('background: transparent');
+    expect(ruleOf(".badge[data-state='unpublished']")).toContain('background: transparent');
+    const active = ruleOf('.button:active:not(:disabled)');
+    expect(active).toContain('filter: brightness(');
+    expect(active).not.toContain('transform');
+  });
+
+  it('transitions buttons only inside the no-preference block', () => {
+    const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.button \{[^}]*\}/)?.[0] ?? '';
+    expect(block).toContain('border-color');
+    expect(css.match(/\.button \{[^}]*transition/g)?.length).toBe(1);
+  });
+});
+
 describe('design pass: existing finding guards remain', () => {
   it('keeps the 44 px target rule for stand-alone links and list titles', () => {
     const rule = css.match(/\.row-title,[^{]*\{[^}]*\}/)?.[0] ?? '';

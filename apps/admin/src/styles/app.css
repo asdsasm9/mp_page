@@ -558,7 +558,9 @@
 
   @media (prefers-reduced-motion: no-preference) {
     .button {
-      transition: background-color var(--motion-fast) var(--motion-ease);
+      transition:
+        background-color var(--motion-fast) var(--motion-ease),
+        border-color var(--motion-fast) var(--motion-ease);
     }
   }
 }
@@ -632,6 +634,36 @@
   .button-danger:hover {
     background: var(--color-danger);
     filter: brightness(0.9);
+  }
+
+  /* Page-header destructive action is demoted to an outline; the solid red stays inside confirm dialogs. */
+  .header-actions .button-danger {
+    color: var(--color-danger);
+    background: transparent;
+    border-color: var(--color-danger);
+  }
+
+  .header-actions .button-danger:hover {
+    background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+    filter: none;
+  }
+
+  .header-actions .button-danger:disabled {
+    color: var(--color-text-muted);
+    border-color: var(--color-border-strong);
+    background: transparent;
+  }
+
+  .button:active:not(:disabled) {
+    filter: brightness(0.92);
+  }
+
+  .row-actions .button:not(.button-primary):not(.button-danger) {
+    background: transparent;
+  }
+
+  .row-actions .button:not(.button-primary):not(.button-danger):hover {
+    background: var(--color-surface);
   }
 
   .button[aria-disabled='true'] {
@@ -743,12 +775,20 @@
     border-radius: var(--radius-full);
   }
 
+  .badge[data-state='published'],
+  .badge[data-state='visible'] {
+    background: var(--color-surface);
+    font-weight: 700;
+  }
+
   .badge[data-state='hidden'] {
     color: var(--color-text-muted);
+    background: transparent;
     border-style: dashed;
   }
 
   .badge[data-state='unpublished'] {
+    background: transparent;
     border-style: dotted;
   }
 

@@ -27,12 +27,12 @@ export function App() {
       </Route>
       <Route element={<RequireAuth />}>
         <Route element={<ShellLayout />}>
-          <Route path="/" element={<Placeholder title={cs.routes.categories.title} />} />
+          <Route path="/" element={<Placeholder title={cs.routes.categories.title} storageBar />} />
           <Route path="/kategorie/:id" element={<Placeholder title={cs.routes.category.title} />} />
           <Route path="/alba/:id" element={<Placeholder title={cs.routes.album.title} />} />
           <Route path="/alba/:id/foto/:photoId" element={<Placeholder title={cs.routes.photo.title} />} />
           <Route path="/zverejnit" element={<Placeholder title={cs.routes.publish.title} />} />
-          <Route path="/ulozeni" element={<Placeholder title={cs.routes.storage.title} />} />
+          <Route path="/ulozeni" element={<Placeholder title={cs.routes.storage.title} storageBar />} />
           <Route path="/nahravani" element={<Placeholder title={cs.routes.upload.title} />} />
           <Route path="*" element={<NotFound />} />
         </Route>

@@ -128,8 +128,31 @@ export const cs = {
     offline: 'Jste offline. Změny se neuloží.',
     unavailable: 'Správa je dočasně nedostupná. Veřejný web funguje dál.',
     staleSentence: 'Toto album bylo změněno jinde.',
+    /** Same sentence for the other row types (the data layer's STALE error names the entity that was saved). */
+    staleSentenceBy: {
+      album: 'Toto album bylo změněno jinde.',
+      category: 'Tato kategorie byla změněna jinde.',
+      photo: 'Tato fotka byla změněna jinde.',
+    },
     reload: 'Načíst znovu',
     bannersLabel: 'Stav připojení',
+  },
+  /** Storage bar (ADMIN-UX 3.7). {used} and {hard} are filled from GET /storage; nothing is a constant. */
+  storage: {
+    barLabel: 'Využití úložiště',
+    loading: 'Načítám stav úložiště…',
+    loadFailed: 'Stav úložiště se nepodařilo načíst.',
+    ok: 'Úložiště {used} z {hard}',
+    warn: 'Úložiště se plní ({used} z {hard}). Zvažte smazání nepotřebných fotek.',
+    full: 'Úložiště je plné. Nahrávání je zastaveno.',
+    /** Short state words beside the mini bar, so the state is never colour alone. */
+    warnShort: 'Plní se',
+    fullShort: 'Plné',
+    percent: '{percent} % využito',
+  },
+  /** Publish indicator in the shell (ADMIN-UX 3.1 top bar). */
+  publishIndicator: {
+    pending: 'Nezveřejněné změny',
   },
   placeholder: {
     body: 'Tato obrazovka se připravuje.',

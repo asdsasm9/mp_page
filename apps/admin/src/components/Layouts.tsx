@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../auth/session';
 import { cs, glossary } from '../i18n/cs';
+import { PublishLink } from './PublishLink';
 import { StatusBanners } from './StatusBanners';
+import { StorageBar } from './StorageBar';
 
 export const MAIN_ID = 'obsah';
 
@@ -70,12 +72,11 @@ export function ShellLayout() {
               </NavLink>
             </li>
             <li>
-              <NavLink to="/zverejnit" className={linkClass}>
-                {cs.nav.publishSite}
-              </NavLink>
+              <PublishLink label={cs.nav.publishSite} className={linkClass} />
             </li>
           </ul>
         </nav>
+        <StorageBar variant="mini" />
         <button type="button" className="button" onClick={() => void signOut()}>
           {glossary.logOut}
         </button>
@@ -97,9 +98,7 @@ export function ShellLayout() {
             </NavLink>
           </li>
           <li>
-            <NavLink to="/zverejnit" className={linkClass}>
-              {cs.nav.publish}
-            </NavLink>
+            <PublishLink label={cs.nav.publish} className={linkClass} />
           </li>
         </ul>
       </nav>

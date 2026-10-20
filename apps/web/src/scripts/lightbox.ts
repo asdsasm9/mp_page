@@ -5,6 +5,7 @@
  * Nothing is requested before the lightbox is opened.
  */
 import { close, focusIndex, hasNext, hasPrev, initial, keyAction, next, open, prev, type LightboxState } from './lightbox-state';
+import { createGestures } from './lightbox-pointer';
 import { createZoom, photoInfoOf, prefetchFit, type CreateImage } from './lightbox-zoom';
 
 const dialog = document.querySelector<HTMLDialogElement>('dialog[data-lightbox]');
@@ -20,6 +21,7 @@ if (dialog && thumbs.length && typeof dialog.showModal === 'function') {
   const zoom = createZoom(
     {
       stage: part('stage'),
+      level: part('level'),
       front: img,
       back: part<HTMLImageElement>('back'),
       status: part('status'),
@@ -31,15 +33,36 @@ if (dialog && thumbs.length && typeof dialog.showModal === 'function') {
     { create },
   );
   let state: LightboxState = initial(thumbs.length);
+  const stage = part('stage');
+  const gestures = createGestures({
+    get enabled() {
+      return zoom.enabled;
+    },
+    get zoomed() {
+      return zoom.zoomed;
+    },
+    pinchBegin: zoom.pinchBegin,
+    pinchTo: zoom.pinchTo,
+    panByPx: zoom.panByPx,
+    toggleAt: zoom.toggleAt,
+    // While fingers are down the image follows them without the transform transition.
+    setGesture: (on) => stage.toggleAttribute('data-gesture', on),
+  });
+
+  // prev/next use aria-disabled (not disabled), so a focused button keeps focus when its end is reached.
+  const setEnd = (button: HTMLButtonElement, ended: boolean): void => {
+    button.setAttribute('aria-disabled', String(ended));
+  };
 
   const show = (index: number): void => {
+    gestures.reset();
     const link = thumbs[index]!;
     const thumb = link.querySelector('img');
     img.alt = thumb?.alt ?? '';
     zoom.show(photoInfoOf(link), thumb?.currentSrc || thumb?.src || '');
     counter.textContent = `${index + 1} / ${thumbs.length}`;
-    prevButton.disabled = !hasPrev(state);
-    nextButton.disabled = !hasNext(state);
+    setEnd(prevButton, !hasPrev(state));
+    setEnd(nextButton, !hasNext(state));
     // Neighbours: only the fit candidate, never a master, and nothing under Save-Data.
     const neighbours = [index - 1, index + 1].flatMap((n) => (thumbs[n] ? [photoInfoOf(thumbs[n]!)] : []));
     prefetchFit(create, neighbours, (navigator as Navigator & { connection?: { saveData?: boolean } }).connection);
@@ -60,13 +83,47 @@ if (dialog && thumbs.length && typeof dialog.showModal === 'function') {
     }),
   );
 
-  prevButton.addEventListener('click', () => go(prev(state)));
-  nextButton.addEventListener('click', () => go(next(state)));
+  prevButton.addEventListener('click', () => {
+    if (hasPrev(state)) go(prev(state));
+  });
+  nextButton.addEventListener('click', () => {
+    if (hasNext(state)) go(next(state));
+  });
   part('close').addEventListener('click', () => dialog.close());
   part('zoom-in').addEventListener('click', zoom.zoomIn);
   part('zoom-out').addEventListener('click', zoom.zoomOut);
   part('zoom-fit').addEventListener('click', zoom.zoomFit);
-  part('stage').addEventListener('dblclick', (event) => zoom.toggleAt(event.clientX, event.clientY));
+  // Mouse double click; a touch double tap is handled by the pointer gestures, which also suppress this one.
+  stage.addEventListener('dblclick', (event) => {
+    if (!gestures.recentlyDoubleTapped()) zoom.toggleAt(event.clientX, event.clientY);
+  });
+  // Pointer gestures: listeners are attached once to the stage and the gesture state is reset on every photo
+  // change and close, so nothing accumulates across photos. Capture keeps the moves coming outside the stage.
+  stage.addEventListener('pointerdown', (event) => {
+    if (!zoom.enabled) return;
+    try {
+      stage.setPointerCapture(event.pointerId);
+    } catch {
+      // The pointer may already be gone; the gesture then simply ends via pointercancel.
+    }
+    gestures.down(event);
+  });
+  stage.addEventListener('pointermove', (event) => gestures.move(event));
+  stage.addEventListener('pointerup', (event) => {
+    gestures.up(event);
+  });
+  stage.addEventListener('pointercancel', (event) => gestures.cancel(event));
+  stage.addEventListener('lostpointercapture', (event) => gestures.cancel(event));
+  // ctrl+wheel is a trackpad pinch (or ctrl+scroll): zoom. A plain wheel does nothing.
+  stage.addEventListener(
+    'wheel',
+    (event) => {
+      if (!event.ctrlKey || !zoom.enabled) return;
+      event.preventDefault();
+      zoom.wheelAt(event.deltaY, event.deltaMode, event.clientX, event.clientY);
+    },
+    { passive: false },
+  );
   window.addEventListener('resize', () => {
     if (dialog.open) zoom.refresh();
   });
@@ -79,6 +136,11 @@ if (dialog && thumbs.length && typeof dialog.showModal === 'function') {
       event.preventDefault();
       return;
     }
+    // Zoomed: arrows pan. At fit they change photo.
+    if (zoom.handlePanKey(event)) {
+      event.preventDefault();
+      return;
+    }
     const action = keyAction(event.key);
     if (action) go(action === 'next' ? next(state) : prev(state));
   });
@@ -87,6 +149,7 @@ if (dialog && thumbs.length && typeof dialog.showModal === 'function') {
     const back = focusIndex(state);
     state = close(state);
     zoom.close();
+    gestures.reset();
     if (back !== null) thumbs[back]?.focus();
   });
 }

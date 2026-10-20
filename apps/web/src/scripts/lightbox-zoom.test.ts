@@ -281,6 +281,63 @@ describe('zoom controller staged loading', () => {
     expect(parts.status.textContent).toBe('');
   });
 
+  async function ready() {
+    const { made, create } = factory(() => null);
+    const parts = fakeParts();
+    const level = { textContent: '' } as unknown as HTMLElement;
+    parts.level = level;
+    const zoom = createZoom(parts, { create });
+    zoom.show(photo(1), 'thumb');
+    made[0]!.settle(true);
+    await flush();
+    return { zoom, level };
+  }
+
+  it('arrow keys pan only while zoomed, within the clamp', async () => {
+    const { zoom } = await ready();
+    expect(zoom.handlePanKey({ key: 'ArrowRight' })).toBe(false); // at fit the arrows belong to prev/next
+    zoom.toggleAt(500, 400); // 2x at the centre
+    expect(zoom.handlePanKey({ key: 'ArrowRight' })).toBe(true);
+    expect(zoom.view.x).toBe(-160); // step = 20 % of 800
+    expect(zoom.handlePanKey({ key: 'ArrowLeft', ctrlKey: true })).toBe(false);
+    expect(zoom.handlePanKey({ key: 'a' })).toBe(false);
+    for (let i = 0; i < 20; i++) zoom.handlePanKey({ key: 'ArrowRight' });
+    expect(zoom.view.x).toBe(-500); // fit 1000 wide x 2 - stage 1000 = 1000 overflow, half is 500
+  });
+
+  it('announces the zoom level politely, debounced, only when it changed', async () => {
+    const { zoom, level } = await ready();
+    zoom.zoomIn();
+    zoom.zoomIn();
+    expect(level.textContent).toBe(''); // debounced
+    await new Promise((r) => setTimeout(r, 350));
+    expect(level.textContent).toBe('Přiblížení 225 %');
+    zoom.zoomFit();
+    await new Promise((r) => setTimeout(r, 350));
+    expect(level.textContent).toBe('Přiblížení 100 %');
+    zoom.close();
+    expect(level.textContent).toBe('');
+  });
+
+  it('pinch, drag pan and ctrl+wheel go through the clamp and stay inside 1..max', async () => {
+    const { zoom } = await ready();
+    zoom.pinchBegin({ x: 450, y: 400 }, { x: 550, y: 400 });
+    zoom.pinchTo({ x: 400, y: 400 }, { x: 600, y: 400 });
+    expect(zoom.view.scale).toBeCloseTo(2, 5);
+    zoom.pinchTo({ x: 0, y: 400 }, { x: 1000, y: 400 });
+    expect(zoom.view.scale).toBeLessThanOrEqual(3);
+    zoom.panByPx(-100000, 0);
+    expect(zoom.view.x).toBeGreaterThanOrEqual(-1000);
+    zoom.zoomFit();
+    zoom.panByPx(50, 50); // at fit nothing moves
+    expect(zoom.view).toEqual({ scale: 1, x: 0, y: 0 });
+    zoom.wheelAt(-50, 0, 500, 400);
+    expect(zoom.view.scale).toBeCloseTo(Math.exp(0.5), 5);
+    zoom.wheelAt(100000, 0, 500, 400);
+    zoom.wheelAt(100000, 0, 500, 400);
+    expect(zoom.view.scale).toBe(1);
+  });
+
   it('double click zooms at the pointer and a second one returns to fit', async () => {
     const { made, create } = factory(() => null);
     const parts = fakeParts();

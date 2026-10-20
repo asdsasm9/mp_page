@@ -94,9 +94,10 @@ const { prev, next } = catalog.neighbours(album.slug);
     </div>
     <p class="count" data-lb="count" aria-live="polite"></p>
     <p class="lb-status" data-lb="status" role="status" aria-live="polite"></p>
+    <p class="lb-level" data-lb="level" role="status" aria-live="polite"></p>
     <div class="lb-zoom" data-lb="zoom" role="group" aria-label="Přiblížení" hidden>
       <button type="button" class="lb-btn" data-lb="zoom-out" aria-label="Oddálit">&minus;</button>
-      <button type="button" class="lb-btn" data-lb="zoom-fit" aria-label="Přizpůsobit">1&times;</button>
+      <button type="button" class="lb-btn" data-lb="zoom-fit" aria-label="Přizpůsobit 1×">1&times;</button>
       <button type="button" class="lb-btn" data-lb="zoom-in" aria-label="Přiblížit">+</button>
     </div>
     <button type="button" class="lb-btn lb-close" data-lb="close" aria-label="Zavřít">&times;</button>
@@ -248,6 +249,18 @@ const { prev, next } = catalog.neighbours(album.slug);
     display: none;
   }
 
+  /* Zoom level announcement for screen readers only; it never takes focus. */
+  .lb-level {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   /* Zoom buttons: the button alternative to pinch, double tap, wheel and drag (WCAG 2.5.1, 2.5.7). */
   .lb-zoom {
     position: absolute;
@@ -319,9 +332,20 @@ const { prev, next } = catalog.neighbours(album.slug);
     inset-inline-end: var(--space-3);
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .lb-stage img {
+      transition: none;
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .lb-stage img {
       transition: transform var(--motion-fast) var(--motion-ease);
+    }
+
+    /* Fingers or a drag move the image directly; the transition would make it lag behind. */
+    .lb-stage[data-gesture] img {
+      transition: none;
     }
 
     .lightbox[open] {

@@ -214,7 +214,8 @@ describe('Album pages (built, shared build)', () => {
     if (i < list.length - 1) expect(page).toContain(`rel="next" href="/svatby/${list[i + 1]}/"`);
   });
 
-  it('ships the lightbox script under 3 KB gzip, with no inline handlers', () => {
+  // 6 KB: staged loading, zoom and pointer gestures (WP-03b); the page JS budget in site-checks is 60 KB in total.
+  it('ships the lightbox script under 6 KB gzip, with no inline handlers', () => {
     const page = read('svatby', 'sedlakovi');
     expect(page).not.toMatch(/\son(click|keydown|load|error)=/);
     const dir = join(out, '_astro');
@@ -223,7 +224,7 @@ describe('Album pages (built, shared build)', () => {
     expect(lightboxFiles.length).toBeGreaterThan(0);
     for (const f of lightboxFiles) {
       const bytes = gzipSync(readFileSync(join(dir, f))).length;
-      expect(bytes, f).toBeLessThan(3 * 1024);
+      expect(bytes, f).toBeLessThan(6 * 1024);
     }
   });
 });

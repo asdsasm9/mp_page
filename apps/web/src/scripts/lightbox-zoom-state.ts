@@ -158,6 +158,20 @@ export const isZoomed = (view: ZoomView): boolean => view.scale > 1 + 1e-9;
 /** Whole-percent level for the polite status text ("Přiblížení 150 %"). */
 export const zoomPercent = (view: ZoomView): number => Math.round(view.scale * 100);
 
+/**
+ * Scale factor of one wheel event (ctrl+wheel is how a trackpad pinch arrives): exp(-delta/100), pixels; lines and
+ * pages are converted first. Bounded to 0.5..2 per event so one odd delta cannot jump the zoom; 1 for non-finite.
+ */
+export function wheelFactor(deltaY: number, deltaMode = 0): number {
+  if (!Number.isFinite(deltaY)) return 1;
+  const px = deltaY * (deltaMode === 1 ? 16 : deltaMode === 2 ? 400 : 1);
+  return Math.min(2, Math.max(0.5, Math.exp(-px / 100)));
+}
+
+/** One arrow-key pan step: 20 % of the smaller stage side. */
+export const PAN_STEP_RATIO = 0.2;
+export const panStep = (stage: Size): number => Math.round(Math.min(stage.width, stage.height) * PAN_STEP_RATIO);
+
 /** Image point (relative to the image centre, unscaled CSS px) under a stage point; used to verify "fixed point". */
 export function imagePointAt(view: ZoomView, at: Point): Point {
   return { x: (at.x - view.x) / view.scale, y: (at.y - view.y) / view.scale };

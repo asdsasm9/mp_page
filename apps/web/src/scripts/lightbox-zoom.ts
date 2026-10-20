@@ -19,10 +19,18 @@ import {
   identity,
   isZoomed,
   maxScale,
+  panBy,
+  panStep,
+  pinchMove,
+  pinchStart,
   resetOnPhotoChange,
   toggleDoubleTap,
+  wheelFactor,
+  zoomAt,
   zoomEnabled,
+  zoomPercent,
   zoomStep,
+  type PinchStart,
   type Point,
   type Size,
   type ZoomGeometry,
@@ -155,6 +163,9 @@ export function prefetchFit(
   });
 }
 
+export const LEVEL_DELAY_MS = 250;
+export const zoomLevelText = (percent: number): string => `Přiblížení ${percent} %`;
+
 export type ZoomKey = 'in' | 'out' | 'fit';
 
 /** +, - and 0 (also = and the numpad forms); modified keys belong to the browser's own page zoom. */
@@ -176,6 +187,8 @@ export interface ZoomParts {
   zoomIn: HTMLElement;
   zoomOut: HTMLElement;
   zoomFit: HTMLElement;
+  /** Visually hidden polite live region for "Přiblížení 150 %"; optional so older fakes still work. */
+  level?: HTMLElement;
 }
 
 export interface ZoomOptions {
@@ -193,6 +206,9 @@ export function createZoom(parts: ZoomParts, options: ZoomOptions) {
   let masterLoading = false;
   /** Bumped on every photo change, close and reset; a late decode of an older photo is ignored. */
   let epoch = 0;
+  let pinch: PinchStart | null = null;
+  let announced = 100;
+  let levelTimer: ReturnType<typeof setTimeout> | undefined;
 
   /** The rendered image box (CSS px, before the transform) and the stage; the photo is contained in the box. */
   function geometry(): ZoomGeometry | null {
@@ -258,10 +274,34 @@ export function createZoom(parts: ZoomParts, options: ZoomOptions) {
     if (!g || !zoomEnabled(g.max)) return;
     view = change(g);
     apply();
+    announce();
     if (isZoomed(view)) void showMaster();
   }
 
+  /** Polite zoom level text, debounced so a pinch or a key repeat is read once, and only when the level changed. */
+  function announce(): void {
+    if (!parts.level) return;
+    if (levelTimer !== undefined) clearTimeout(levelTimer);
+    levelTimer = setTimeout(() => {
+      levelTimer = undefined;
+      const percent = zoomPercent(view);
+      if (percent === announced || !parts.level) return;
+      announced = percent;
+      parts.level.textContent = zoomLevelText(percent);
+    }, LEVEL_DELAY_MS);
+  }
+
+  const toStage = (p: Point): Point => {
+    const c = (options.stageCentre ?? defaultCentre)(parts);
+    return { x: p.x - c.x, y: p.y - c.y };
+  };
+
   function reset(): void {
+    if (levelTimer !== undefined) clearTimeout(levelTimer);
+    levelTimer = undefined;
+    announced = 100;
+    pinch = null;
+    if (parts.level) parts.level.textContent = '';
     epoch += 1;
     view = resetOnPhotoChange();
     masterShown = false;
@@ -313,6 +353,50 @@ export function createZoom(parts: ZoomParts, options: ZoomOptions) {
     toggleAt(clientX: number, clientY: number): void {
       const c = (options.stageCentre ?? defaultCentre)(parts);
       act((g) => toggleDoubleTap(view, { x: clientX - c.x, y: clientY - c.y }, g));
+    },
+    /** Whether zoom is offered for this photo (the master has headroom). */
+    get enabled(): boolean {
+      const g = geometry();
+      return g !== null && zoomEnabled(g.max);
+    },
+    get zoomed(): boolean {
+      return isZoomed(view);
+    },
+    /** Pinch begin: the two pointers in client coordinates. */
+    pinchBegin(a: Point, b: Point): void {
+      pinch = pinchStart(view, toStage(a), toStage(b));
+    },
+    /** Pinch update: scale follows the distance ratio, the midpoint pans. */
+    pinchTo(a: Point, b: Point): void {
+      const start = pinch;
+      if (!start) return;
+      act((g) => pinchMove(start, toStage(a), toStage(b), g));
+    },
+    /** Drag pan by a client-pixel delta (does nothing at fit). */
+    panByPx(dx: number, dy: number): void {
+      act((g) => (view.scale > 1 ? panBy(view, dx, dy, g) : view));
+    },
+    /** ctrl+wheel (trackpad pinch): zoom around the pointer. */
+    wheelAt(deltaY: number, deltaMode: number, clientX: number, clientY: number): void {
+      act((g) => zoomAt(view, view.scale * wheelFactor(deltaY, deltaMode), toStage({ x: clientX, y: clientY }), g));
+    },
+    /** Arrow keys pan while zoomed; returns true when it consumed the key (otherwise the arrows change photo). */
+    handlePanKey(event: { key: string; ctrlKey?: boolean; metaKey?: boolean; altKey?: boolean }): boolean {
+      if (!isZoomed(view) || event.ctrlKey || event.metaKey || event.altKey) return false;
+      const g = geometry();
+      if (!g) return false;
+      const step = panStep(g.stage);
+      // Arrow right shows more of the right side, so the image moves left.
+      const d: Record<string, [number, number]> = {
+        ArrowLeft: [step, 0],
+        ArrowRight: [-step, 0],
+        ArrowUp: [0, step],
+        ArrowDown: [0, -step],
+      };
+      const delta = d[event.key];
+      if (!delta) return false;
+      act((geo) => panBy(view, delta[0], delta[1], geo));
+      return true;
     },
     /** Handles +, - and 0; returns true when the key was a zoom key (the caller then prevents the default). */
     handleKey(event: Parameters<typeof zoomKeyAction>[0]): boolean {

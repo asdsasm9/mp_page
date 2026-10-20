@@ -53,3 +53,7 @@ coverage/
 # Dev images for fixture mode (npm run dev-images); never committed, never shipped
 _dev-img/
 supabase/.temp/
+
+# Migration dry-run/live reports and the generated old-image redirect table (npm run migrate-legacy)
+migration-report/
+legacy-image-redirects.txt

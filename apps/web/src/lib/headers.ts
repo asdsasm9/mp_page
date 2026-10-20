@@ -15,9 +15,12 @@ export interface CspOptions {
   imgOrigin?: string;
   /** Inline script hashes, as `sha256-<base64>` (without quotes). */
   scriptHashes?: readonly string[];
-  /** WP-7 adds the Cloudflare beacon host here in one place. Not supported yet: always false. */
-  analytics?: false;
+  /** True only in a production build that carries the Cloudflare Web Analytics beacon (WP-7). */
+  analytics?: boolean;
 }
+
+export const ANALYTICS_SCRIPT_HOST = 'https://static.cloudflareinsights.com';
+export const ANALYTICS_CONNECT_HOST = 'https://cloudflareinsights.com';
 
 export function buildCsp(options: CspOptions = {}): string {
   const img = ["'self'"];
@@ -27,6 +30,11 @@ export function buildCsp(options: CspOptions = {}): string {
   }
   img.push('data:');
   const scripts = ["'self'", ...[...new Set(options.scriptHashes ?? [])].sort().map((h) => `'${h}'`)];
+  const connect = ["'self'"];
+  if (options.analytics === true) {
+    scripts.push(ANALYTICS_SCRIPT_HOST);
+    connect.push(ANALYTICS_CONNECT_HOST);
+  }
   return [
     "default-src 'self'",
     `img-src ${img.join(' ')}`,
@@ -34,7 +42,7 @@ export function buildCsp(options: CspOptions = {}): string {
     "style-src 'self'",
     "style-src-attr 'unsafe-inline'",
     `script-src ${scripts.join(' ')}`,
-    "connect-src 'self'",
+    `connect-src ${connect.join(' ')}`,
     "base-uri 'none'",
     "form-action 'none'",
     "frame-ancestors 'none'",

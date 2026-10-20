@@ -24,6 +24,8 @@ export interface WebEnv {
   noindex: boolean;
   /** Exact origin of the admin app allowed to read `/_publish.json` cross-origin, or null (no CORS header). */
   adminOrigin: string | null;
+  /** Cloudflare Web Analytics token (public value), production builds only; null = no beacon, no CSP hosts. */
+  analyticsToken: string | null;
 }
 
 export class BuildConfigError extends Error {
@@ -70,6 +72,20 @@ function parseAdminOrigin(value: string, production: boolean): string | null {
 }
 
 /**
+ * PUBLIC_CF_ANALYTICS_TOKEN: only a production build uses it (local and preview: always null). Blank = null.
+ * Otherwise 16-64 alphanumerics; on failure the message names the variable and never the value.
+ */
+export function analyticsToken(raw: RawEnv, production: boolean): string | null {
+  if (!production) return null;
+  const value = trimmed(raw.PUBLIC_CF_ANALYTICS_TOKEN);
+  if (value === '') return null;
+  if (!/^[A-Za-z0-9]{16,64}$/.test(value)) {
+    throw new BuildConfigError('PUBLIC_CF_ANALYTICS_TOKEN is not a valid token (expected 16-64 letters and digits)');
+  }
+  return value;
+}
+
+/**
  * Fixture mode (no PUBLIC_SNAPSHOT_URL): committed fixture, image base defaults to /_dev-img, always noindex.
  * Snapshot mode: https snapshot URL, https image base, and both on the same host.
  * Production additionally needs snapshot mode. The default is the safe direction (noindex).
@@ -81,6 +97,7 @@ export function resolveEnv(raw: RawEnv): WebEnv {
   const snapshotRaw = trimmed(raw.PUBLIC_SNAPSHOT_URL);
   const imgRaw = trimmed(raw.PUBLIC_IMG_BASE_URL);
   const adminOrigin = parseAdminOrigin(trimmed(raw.PUBLIC_ADMIN_ORIGIN), production);
+  const token = analyticsToken(raw, production);
 
   if (snapshotRaw === '') {
     if (production) {
@@ -94,6 +111,7 @@ export function resolveEnv(raw: RawEnv): WebEnv {
       imgBaseUrl: (imgRaw === '' ? DEV_IMG_BASE : imgRaw).replace(/\/+$/, ''),
       noindex: true,
       adminOrigin,
+      analyticsToken: token,
     };
   }
 
@@ -111,6 +129,7 @@ export function resolveEnv(raw: RawEnv): WebEnv {
     imgBaseUrl: imgUrl.href.replace(/\/+$/, ''),
     noindex: !production,
     adminOrigin,
+    analyticsToken: token,
   };
 }
 
@@ -124,6 +143,7 @@ export function readRawEnv(): RawEnv {
     PUBLIC_SNAPSHOT_URL: pick('PUBLIC_SNAPSHOT_URL'),
     PUBLIC_IMG_BASE_URL: pick('PUBLIC_IMG_BASE_URL'),
     PUBLIC_ADMIN_ORIGIN: pick('PUBLIC_ADMIN_ORIGIN'),
+    PUBLIC_CF_ANALYTICS_TOKEN: pick('PUBLIC_CF_ANALYTICS_TOKEN'),
   };
 }
 

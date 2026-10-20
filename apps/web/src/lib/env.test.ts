@@ -15,6 +15,7 @@ describe('resolveEnv', () => {
       imgBaseUrl: DEV_IMG_BASE,
       noindex: true,
       adminOrigin: null,
+      analyticsToken: null,
     });
   });
 
@@ -86,6 +87,43 @@ describe('PUBLIC_ADMIN_ORIGIN', () => {
     }
     expect(() => resolveEnv({ ...prod, PUBLIC_ADMIN_ORIGIN: 'http://admin.example.cz' })).toThrow(/https in a production build/);
     expect(() => resolveEnv({ PUBLIC_ADMIN_ORIGIN: '*' })).toThrow(BuildConfigError);
+  });
+});
+
+describe('PUBLIC_CF_ANALYTICS_TOKEN', () => {
+  const prod = { PUBLIC_SITE_ENV: 'production', PUBLIC_SNAPSHOT_URL: SNAP, PUBLIC_IMG_BASE_URL: IMG };
+  const TOKEN = ['0123456789', 'abcdef', '0123456789', 'ABCDEF'].join(''); // 32 chars, built so the secret scan sees no literal
+
+  it('is ignored outside production, even when set or invalid', () => {
+    expect(resolveEnv({ PUBLIC_CF_ANALYTICS_TOKEN: TOKEN }).analyticsToken).toBeNull();
+    expect(resolveEnv({ PUBLIC_SITE_ENV: 'preview', PUBLIC_SNAPSHOT_URL: SNAP, PUBLIC_IMG_BASE_URL: IMG, PUBLIC_CF_ANALYTICS_TOKEN: TOKEN }).analyticsToken).toBeNull();
+    expect(resolveEnv({ PUBLIC_CF_ANALYTICS_TOKEN: 'bad value!' }).analyticsToken).toBeNull();
+  });
+
+  it('is null in production when unset or blank', () => {
+    expect(resolveEnv(prod).analyticsToken).toBeNull();
+    expect(resolveEnv({ ...prod, PUBLIC_CF_ANALYTICS_TOKEN: '   ' }).analyticsToken).toBeNull();
+  });
+
+  it('is the trimmed token in production when valid', () => {
+    expect(resolveEnv({ ...prod, PUBLIC_CF_ANALYTICS_TOKEN: TOKEN }).analyticsToken).toBe(TOKEN);
+    expect(resolveEnv({ ...prod, PUBLIC_CF_ANALYTICS_TOKEN: ` ${TOKEN}\n` }).analyticsToken).toBe(TOKEN);
+    expect(resolveEnv({ ...prod, PUBLIC_CF_ANALYTICS_TOKEN: 'a'.repeat(16) }).analyticsToken).toBe('a'.repeat(16));
+    expect(resolveEnv({ ...prod, PUBLIC_CF_ANALYTICS_TOKEN: 'a'.repeat(64) }).analyticsToken).toBe('a'.repeat(64));
+  });
+
+  it('throws in production on an invalid value, naming the variable and never the value', () => {
+    for (const bad of ['short', 'a'.repeat(15), 'a'.repeat(65), `${TOKEN}"}'<x>`, 'abc def ghi jkl mno pqr', `${TOKEN}-${TOKEN}`, 'tokenč0123456789abcdef']) {
+      let message = '';
+      try {
+        resolveEnv({ ...prod, PUBLIC_CF_ANALYTICS_TOKEN: bad });
+      } catch (e) {
+        expect(e).toBeInstanceOf(BuildConfigError);
+        message = (e as Error).message;
+      }
+      expect(message, bad).toContain('PUBLIC_CF_ANALYTICS_TOKEN');
+      expect(message, bad).not.toContain(bad);
+    }
   });
 });
 

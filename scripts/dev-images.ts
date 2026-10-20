@@ -12,6 +12,7 @@ import { jpegKey, ogKey, webpKey, type WebpTier } from '../packages/shared/src/k
 import { LEGACY_ALBUMS, legacyKeysOf } from '../packages/shared/src/legacy/albums';
 import { SnapshotSchema, type Snapshot } from '../packages/shared/src/snapshot';
 import { variantPlan, type PhotoVariants } from '../packages/shared/src/variants';
+import { dominantColorOf } from './dominant-color';
 import { uuidV5 } from './gen-fixtures';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -71,12 +72,8 @@ export function publicKeys(photo: DevPhoto): Array<{ key: string; kind: 'webp' |
   ];
 }
 
-/** Mean colour of an image as #rrggbb (sharp stats on a 32 px downscale); the same idea the WP-5 encoder uses. */
-export async function dominantColorOf(input: Buffer): Promise<string> {
-  const { channels } = await sharp(input).resize({ width: 32, height: 32, fit: 'inside' }).removeAlpha().toColourspace('srgb').stats();
-  const hex = (c: { mean: number } | undefined) => Math.round(c?.mean ?? 0).toString(16).padStart(2, '0');
-  return `#${hex(channels[0])}${hex(channels[1])}${hex(channels[2])}`;
-}
+// dominantColorOf lives in ./dominant-color (shared with migrate-legacy); re-exported for existing importers.
+export { dominantColorOf };
 
 /**
  * The master-sized dev copy of a source file. It is always re-encoded by sharp, which drops EXIF/GPS/ICC

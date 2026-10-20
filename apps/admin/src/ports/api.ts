@@ -20,7 +20,8 @@ import type {
 export interface ApiPort {
   getStorage(): Promise<StorageResponse>;
   reserve(request: ReserveRequest): Promise<ReserveResponse>;
-  commit(request: CommitRequest): Promise<CommitResponse>;
+  /** `signal` aborts the request (cancel in the upload queue); an aborted call rejects with NetworkError. */
+  commit(request: CommitRequest, options?: { signal?: AbortSignal }): Promise<CommitResponse>;
   deletePhotos(request: DeleteRequest): Promise<DeleteResponse>;
   reconcile(request: ReconcileRequest): Promise<ReconcileResponse>;
   publish(): Promise<PublishResponse>;

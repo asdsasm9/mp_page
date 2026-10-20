@@ -6,6 +6,7 @@ import { Breadcrumb } from '../components/Breadcrumb';
 import { LoadFailure } from '../components/LoadFailure';
 import { useDocumentTitle } from '../components/Page';
 import { StaleNotice } from '../components/StaleNotice';
+import { UploadDropZone } from '../components/UploadDropZone';
 import { albumActionMessage, useAlbumActions } from '../data/albumActions';
 import { albumStatus } from '../data/albumStatus';
 import { useAlbum, useAlbums, useCategories, useCategory, usePhotos } from '../data/catalog';
@@ -158,12 +159,7 @@ function AlbumBody({
       <AlbumDataPanel album={album} autosave={autosave} />
       <section className="photos-area" aria-labelledby="album-photos-heading">
         <h2 id="album-photos-heading">{cs.album.photosHeading}</h2>
-        <div className="dropzone">
-          <p>{cs.album.dropZone}</p>
-          <button type="button" className="button" disabled>
-            {glossary.choosePhotos}
-          </button>
-        </div>
+        <UploadDropZone albumId={album.id} large={photos.data?.length === 0} />
         {photos.data ? (
           <PhotoGallery album={album} photos={photos.data} categories={categories} albums={allAlbums} />
         ) : null}

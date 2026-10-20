@@ -5,6 +5,7 @@ import { cs, glossary } from '../i18n/cs';
 import { PublishLink } from './PublishLink';
 import { StatusBanners } from './StatusBanners';
 import { StorageBar } from './StorageBar';
+import { UploadDrawer, UploadDuplicateDialog, UploadIndicator } from './UploadDrawer';
 
 export const MAIN_ID = 'obsah';
 
@@ -79,6 +80,7 @@ export function ShellLayout() {
           </ul>
         </nav>
         <StorageBar variant="mini" />
+        <UploadIndicator />
         <button type="button" className="button" onClick={() => void signOut()}>
           {glossary.logOut}
         </button>
@@ -87,6 +89,8 @@ export function ShellLayout() {
       <main id={MAIN_ID} ref={mainRef} tabIndex={-1} className="shell-main">
         <Outlet />
       </main>
+      <UploadDrawer />
+      <UploadDuplicateDialog />
       <nav className="bottom-nav" aria-label={cs.nav.bottom}>
         <ul className="nav-list">
           <li>

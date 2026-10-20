@@ -19,13 +19,14 @@ import {
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { PhotoRow } from '@mp/shared';
-import { useRef, type PointerEvent } from 'react';
+import { useRef, useState, type PointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { hasNoAlt } from '../data/altText';
 import { photoWebpUrl } from '../data/images';
 import { useCanMutate } from '../data/health';
 import { cs } from '../i18n/cs';
 import { fill } from '../i18n/format';
+import { useUploadActionsOptional } from '../upload/UploadProvider';
 
 /** How long a finger must rest on a tile to start selection mode. */
 export const LONG_PRESS_MS = 500;
@@ -116,6 +117,10 @@ function Tile(props: TileProps) {
     if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > MOVE_TOLERANCE_PX) clearTimer();
   };
 
+  // A photo just uploaded shows the local file until the public image (CDN) has loaded.
+  const uploads = useUploadActionsOptional();
+  const [publicLoaded, setPublicLoaded] = useState(false);
+  const preview = publicLoaded ? undefined : uploads?.previewFor(photo.id);
   const src = photoWebpUrl(imgBase, photo.id, 480);
   const size = tileSize(photo);
   const color = photo.dominant_color && COLOR_RE.test(photo.dominant_color) ? photo.dominant_color : undefined;
@@ -166,7 +171,14 @@ function Tile(props: TileProps) {
               alt={alt}
               loading="lazy"
               decoding="async"
+              onLoad={() => {
+                setPublicLoaded(true);
+                uploads?.releasePreview(photo.id);
+              }}
             />
+          ) : null}
+          {preview && !publicLoaded ? (
+            <img className="photo-img photo-local" src={preview} alt="" aria-hidden="true" width={size.width} height={size.height} />
           ) : null}
         </Link>
       </div>

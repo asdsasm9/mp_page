@@ -4,7 +4,7 @@
  * removed by /photos/delete. Updates carry `updated_at=eq.<value read earlier>` as optimistic
  * concurrency: no matching row means somebody else changed it (STALE) or it is gone (NOT_FOUND).
  */
-import type { AlbumRow, CategoryRow, PhotoRow, PublishLogRow, SiteStateRow } from '@mp/shared';
+import type { AlbumRow, AppConfigRow, CategoryRow, PhotoRow, PublishLogRow, SiteStateRow } from '@mp/shared';
 import { CatalogError, type CatalogPort } from '../../ports';
 import type { Rest } from './http';
 
@@ -65,6 +65,11 @@ export function createRealCatalog(rest: Rest): CatalogPort {
       return update<PhotoRow>('photos', id, patch, options?.expectedUpdatedAt);
     },
 
+    async getAppConfig() {
+      const rows = await rest.select<AppConfigRow>('app_config', { select: '*', limit: '1' });
+      if (!rows[0]) throw new CatalogError('NOT_FOUND');
+      return rows[0];
+    },
     async getSiteState() {
       const rows = await rest.select<SiteStateRow>('site_state', { select: '*', limit: '1' });
       if (!rows[0]) throw new CatalogError('NOT_FOUND');

@@ -52,5 +52,14 @@ function useApiMutation<V, R>(write: (api: ReturnType<typeof usePorts>['api'], v
 /** POST /photos/delete: the storage bar and the publish dot refresh afterwards. */
 export const useDeletePhotos = () => useApiMutation((api, request: DeleteRequest) => api.deletePhotos(request));
 
-/** POST /uploads/commit: the storage bar and the publish dot refresh afterwards. */
-export const useCommitUpload = () => useApiMutation((api, request: CommitRequest) => api.commit(request));
+export interface CommitInput {
+  request: CommitRequest;
+  /** Aborts the request (cancel in the upload queue). */
+  signal?: AbortSignal;
+}
+
+/** POST /uploads/commit: the storage bar, the publish dot and the photo lists refresh afterwards. */
+export const useCommitUpload = () =>
+  useApiMutation((api, input: CommitInput) =>
+    api.commit(input.request, input.signal === undefined ? undefined : { signal: input.signal }),
+  );

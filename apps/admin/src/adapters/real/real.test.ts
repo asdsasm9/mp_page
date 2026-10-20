@@ -2,12 +2,13 @@ import { readFileSync, readdirSync } from 'node:fs';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminEnv } from '../../env';
-import { ApiError, AuthError, CatalogError, NetworkError } from '../../ports';
+import { ApiError, AuthError, CatalogError, NetworkError, UploadAbortedError } from '../../ports';
 import { createRealApi } from './api';
 import { createRealAuth, type SupabaseAuthLike, type SupabaseErrorLike } from './auth';
 import { createRealCatalog } from './catalog';
 import { createRest, type FetchFn } from './http';
 import { createRealPorts } from './index';
+import { createXhrUpload } from './upload';
 
 // ---------------------------------------------------------------- helpers
 
@@ -428,12 +429,127 @@ describe('createRealPorts', () => {
     for (const call of calls) expect(call.headers.authorization).toBe(`Bearer ${TOKEN}`);
   });
 
-  it('upload and publish status say "not available" until their work packages land', async () => {
+  it('publish status says "not available" until its work package lands; the upload port is the XHR one', async () => {
     const ports = createRealPorts(env, { auth: authStub(), fetch: stubFetch({}).fetch });
-    await expect(ports.upload.put({ url: 'x', method: 'PUT', headers: {} }, new Blob([]))).rejects.toThrow(
-      /Připojení k serveru/,
-    );
+    expect(typeof ports.upload.put).toBe('function');
     await expect(ports.publishStatus.read()).rejects.toThrow(/Připojení k serveru/);
+  });
+});
+
+// ---------------------------------------------------------------- app_config and the XHR upload port
+
+describe('real catalog getAppConfig', () => {
+  it('reads the single app_config row under the user JWT', async () => {
+    const row = { id: true, quota_hard_bytes: 9, quota_warn_bytes: 8, max_upload_bytes: 7, max_files_per_batch: 6, reservation_ttl_min: 5 };
+    const { fetch, calls } = stubFetch({ json: [row] });
+    expect(await createRealCatalog(restWith(fetch)).getAppConfig()).toEqual(row);
+    expect(calls[0]!.url).toBe(`${BASE}/rest/v1/app_config?select=*&limit=1`);
+    expect(calls[0]!.method).toBe('GET');
+    expect(calls[0]!.headers.authorization).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('NOT_FOUND without a row, and no request without a session', async () => {
+    await expect(createRealCatalog(restWith(stubFetch({ json: [] }).fetch)).getAppConfig()).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    const stub = stubFetch({ json: [] });
+    await expect(createRealCatalog(restWith(stub.fetch, async () => null)).getAppConfig()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+    expect(stub.calls).toHaveLength(0);
+  });
+});
+
+describe('real api commit signal', () => {
+  it('passes the abort signal to fetch', async () => {
+    const seen: Array<AbortSignal | null | undefined> = [];
+    const fetch: FetchFn = async (_url, init) => {
+      seen.push(init?.signal);
+      throw new TypeError('aborted');
+    };
+    const api = createRealApi({ baseUrl: WORKER, getToken: async () => TOKEN, fetch });
+    const controller = new AbortController();
+    await expect(api.commit({} as never, { signal: controller.signal })).rejects.toBeInstanceOf(NetworkError);
+    expect(seen[0]).toBe(controller.signal);
+  });
+});
+
+class FakeXhr {
+  static last: FakeXhr;
+  method = '';
+  url = '';
+  status = 0;
+  headers: Array<[string, string]> = [];
+  sent: unknown = undefined;
+  aborted = false;
+  upload: { onprogress: ((e: { loaded: number; total: number; lengthComputable: boolean }) => void) | null } = { onprogress: null };
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  ontimeout: (() => void) | null = null;
+  onabort: (() => void) | null = null;
+  constructor() {
+    FakeXhr.last = this;
+  }
+  open(method: string, url: string) {
+    this.method = method;
+    this.url = url;
+  }
+  setRequestHeader(name: string, value: string) {
+    this.headers.push([name, value]);
+  }
+  send(body: unknown) {
+    this.sent = body;
+  }
+  abort() {
+    this.aborted = true;
+    this.onabort?.();
+  }
+}
+const xhrPort = () => createXhrUpload(() => new FakeXhr() as unknown as XMLHttpRequest);
+const signed = {
+  url: 'https://r2.example.test/photos/x/master.jpg?sig=1',
+  method: 'PUT' as const,
+  headers: { 'content-type': 'image/jpeg', 'content-length': '3', 'cache-control': 'public, max-age=31536000, immutable' },
+};
+
+describe('real upload (XHR)', () => {
+  it('sends the signed headers unchanged except content-length, reports progress and resolves on 2xx', async () => {
+    const progress: Array<[number, number]> = [];
+    const body = new Blob(['abc']);
+    const done = xhrPort().put(signed, body, { onProgress: (l, t) => progress.push([l, t]) });
+    const xhr = FakeXhr.last;
+    expect(xhr.method).toBe('PUT');
+    expect(xhr.url).toBe(signed.url);
+    expect(xhr.headers).toEqual([
+      ['content-type', 'image/jpeg'],
+      ['cache-control', 'public, max-age=31536000, immutable'],
+    ]);
+    expect(xhr.headers.some(([n]) => n.toLowerCase() === 'content-length')).toBe(false);
+    expect(xhr.sent).toBe(body);
+    xhr.upload.onprogress?.({ loaded: 1, total: 3, lengthComputable: true });
+    xhr.status = 200;
+    xhr.onload?.();
+    await done;
+    expect(progress).toEqual([
+      [1, 3],
+      [3, 3],
+    ]);
+  });
+
+  it('maps 403 to UploadHttpError, transport failure to NetworkError and abort to UploadAbortedError', async () => {
+    const forbidden = xhrPort().put(signed, new Blob(['abc']));
+    FakeXhr.last.status = 403;
+    FakeXhr.last.onload?.();
+    await expect(forbidden).rejects.toMatchObject({ status: 403 });
+
+    const offline = xhrPort().put(signed, new Blob(['abc']));
+    FakeXhr.last.onerror?.();
+    await expect(offline).rejects.toBeInstanceOf(NetworkError);
+
+    const controller = new AbortController();
+    const cancelled = xhrPort().put(signed, new Blob(['abc']), { signal: controller.signal });
+    controller.abort();
+    await expect(cancelled).rejects.toBeInstanceOf(UploadAbortedError);
+    expect(FakeXhr.last.aborted).toBe(true);
+
+    controller.abort();
+    await expect(xhrPort().put(signed, new Blob(['abc']), { signal: controller.signal })).rejects.toBeInstanceOf(UploadAbortedError);
   });
 });
 

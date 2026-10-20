@@ -68,6 +68,7 @@ export interface CommittedEvent {
 }
 
 export interface QueueDeps {
+  /** `commit` receives the photo's abort signal (cancel aborts an in-flight commit). */
   api: Pick<ApiPort, 'reserve' | 'commit'>;
   upload: UploadPort;
   clock: Clock;
@@ -138,6 +139,8 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
   let reserveBusy = false;
   let commitBusy = false;
   let idleTimer: AbortController | null = null;
+  /** Set when the browser cannot write WebP: nothing more is encoded until the photographer retries. */
+  let noWebp: ItemFailure | null = null;
 
   const online = () => state.online && (deps.isOnline?.() ?? true);
 
@@ -241,6 +244,10 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
   // -- encode
 
   function startEncodes() {
+    if (noWebp) {
+      for (const item of inOrder('queued')) fail(item.id, noWebp);
+      return;
+    }
     let encoding = state.items.filter((i) => i.status === 'encoding').length;
     const buffered = state.items.filter((i) => i.status === 'encoded' || i.status === 'reserving' || i.status === 'reserved').length;
     for (const item of inOrder('queued')) {
@@ -267,11 +274,14 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
         // The browser encoder throws errors that carry their own Czech text (src/encode/errors.ts).
         const text = (error as { userMessage?: unknown } | null)?.userMessage;
         const code = (error as { code?: unknown } | null)?.code;
-        fail(id, {
+        const failure: ItemFailure = {
           kind: 'corrupt',
           message: typeof text === 'string' ? text : cs.upload.corrupt,
           ...(typeof code === 'string' ? { code } : {}),
-        });
+        };
+        fail(id, failure);
+        // A browser without WebP fails every file the same way: say it once and stop trying.
+        if (code === 'NO_WEBP') noWebp = failure;
       }
     }
     pump();
@@ -549,11 +559,13 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
     const request = run.commit;
     dispatch({ type: 'status', id, status: 'committing' });
     try {
-      const response = await callWithRetry(() => deps.api.commit(request), [id], signal);
+      // The signal aborts an in-flight commit on cancel; the Worker's commit is idempotent, so a commit that
+      // already arrived is harmless and a retry reports already_existed.
+      const response = await callWithRetry(() => deps.api.commit(request, { signal }), [id], signal);
       if (itemOf(id)?.status === 'committing') {
         dispatch({ type: 'status', id, status: 'done' });
         delete run.commit;
-        deps.onCommitted?.({ item: itemOf(id)!, photo: response.photo as unknown as PhotoRow, alreadyExisted: response.already_existed });
+        deps.onCommitted?.({ item: itemOf(id)!, photo: response.photo, alreadyExisted: response.already_existed });
       }
     } catch (error) {
       if (!(error instanceof Cancelled) && !signal.aborted) fail(id, failureOf(error, 'commit'));
@@ -598,6 +610,7 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
       const item = itemOf(id);
       const run = runs.get(id);
       if (!item || !run || (item.status !== 'failed' && item.status !== 'cancelled')) return;
+      if (item.failure?.code === 'NO_WEBP') noWebp = null; // one new attempt shows whether the browser can do it now
       // A failed commit is repeated alone; everything else starts over (the reservation may have expired).
       const commitOnly = item.failure?.kind === 'commit' && run.commit !== undefined && item.failure.code !== 'KEY_MISMATCH' && item.failure.code !== 'BYTES_MISMATCH';
       if (!commitOnly) {

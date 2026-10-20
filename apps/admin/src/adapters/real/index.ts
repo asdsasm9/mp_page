@@ -1,7 +1,7 @@
 /**
  * Real adapter set: supabase-js (anon key) for sign-in, PostgREST for the catalog, fetch for the Worker.
- * The upload PUT (XHR) and the publish status reader belong to later work packages (WP5-21, WP5-25);
- * until then they answer with the Czech "not available" error instead of pretending to work.
+ * The publish status reader belongs to a later work package (WP5-25); until then it answers with the Czech
+ * "not available" error instead of pretending to work.
  */
 import { createClient } from '@supabase/supabase-js';
 import type { AdminEnv } from '../../env';
@@ -10,6 +10,7 @@ import { createRealApi } from './api';
 import { createRealAuth, type SupabaseAuthLike } from './auth';
 import { createRealCatalog } from './catalog';
 import { createRest, type FetchFn } from './http';
+import { createXhrUpload } from './upload';
 
 export interface RealPortsDeps {
   /** Replaces supabase.auth (tests). */
@@ -40,9 +41,7 @@ export function createRealPorts(env: AdminEnv, deps: RealPortsDeps = {}): Ports 
     }),
     catalog: createRealCatalog(rest),
     api: createRealApi({ baseUrl: env.apiBaseUrl, getToken, ...fetchDep }),
-    upload: {
-      put: () => Promise.reject(new AdapterUnavailableError()),
-    },
+    upload: createXhrUpload(),
     publishStatus: {
       read: () => Promise.reject(new AdapterUnavailableError()),
     },

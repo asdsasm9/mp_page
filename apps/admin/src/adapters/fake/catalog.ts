@@ -180,6 +180,18 @@ export function createFakeCatalog(core: Core): CatalogPort {
       return copy(next);
     },
 
+    async getAppConfig() {
+      guard('catalog.getAppConfig');
+      const l = state.limits;
+      return {
+        id: true,
+        quota_hard_bytes: l.quotaHardBytes,
+        quota_warn_bytes: l.quotaWarnBytes,
+        max_upload_bytes: l.maxUploadBytes,
+        max_files_per_batch: l.maxFilesPerBatch,
+        reservation_ttl_min: l.reservationTtlMin,
+      };
+    },
     async getSiteState() {
       guard('catalog.getSiteState');
       return copy(state.site);

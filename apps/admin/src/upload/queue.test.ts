@@ -42,6 +42,7 @@ interface Harness {
     putsPerPhotoPeak: number;
     bufferedPeak: number;
     commits: CommitRequest[];
+    commitSignals: AbortSignal[];
   };
   hooks: {
     /** Throw to fail the nth PUT (1-based, per photo and file) attempt. */
@@ -51,6 +52,8 @@ interface Harness {
     reserveAll409?: boolean;
     commit?: (photo: string, attempt: number) => Error | undefined;
     putMs?: (photo: string) => number;
+    /** A commit that takes this long (and can be aborted). */
+    commitMs?: number;
     offline: boolean;
   };
   tick(ms: number, step?: number): Promise<void>;
@@ -102,6 +105,7 @@ function setup(over: { encodeConcurrency?: number; maxFilesPerBatch?: number; en
     putsPerPhotoPeak: 0,
     bufferedPeak: 0,
     commits: [],
+    commitSignals: [],
   };
   const hooks: Harness['hooks'] = { offline: false };
   let encoding = 0;
@@ -156,8 +160,15 @@ function setup(over: { encodeConcurrency?: number; maxFilesPerBatch?: number; en
         const response: ReserveResponse = { items, used_bytes: 0, reserved_bytes: 0, hard: 100, warn: 80, level: 'ok' };
         return response;
       },
-      async commit(request) {
+      async commit(request, options) {
         CommitRequestSchema.parse(request);
+        if (options?.signal) log.commitSignals.push(options.signal);
+        if (hooks.commitMs !== undefined) {
+          // Like the real adapter: an abort during the call surfaces as a NetworkError.
+          await clock.sleep(hooks.commitMs, options?.signal).catch(() => {
+            throw new NetworkError();
+          });
+        }
         const attempt = (commitAttempts.get(request.photo_id) ?? 0) + 1;
         commitAttempts.set(request.photo_id, attempt);
         const error = hooks.commit?.(request.photo_id, attempt);
@@ -574,5 +585,76 @@ describe('cancel', () => {
     expect(statusCount(h, 'cancelled')).toBe(10);
     expect(h.log.reserves).toHaveLength(0);
     expect(h.log.encodeStarted.length).toBeLessThan(10);
+  });
+
+  it('threads the photo signal into commit; cancelling aborts the commit in flight and it ends cancelled', async () => {
+    const h = started(setup());
+    h.hooks.commitMs = 5_000;
+    h.queue.add('bbbbbbbb-0000-4000-8000-000000000001', files(1));
+    await h.tick(4_000);
+    expect(h.items()[0]!.status).toBe('committing');
+    expect(h.log.commitSignals).toHaveLength(1);
+    expect(h.log.commitSignals[0]!.aborted).toBe(false);
+    h.queue.cancel(h.items()[0]!.id);
+    await h.tick(0);
+    expect(h.log.commitSignals[0]!.aborted).toBe(true);
+    expect(h.items()[0]!.status).toBe('cancelled');
+    expect(h.items()[0]!.failure).toBeNull();
+    expect(h.log.commits).toHaveLength(0);
+  });
+});
+
+describe('dispose', () => {
+  it('leaves no timer behind: idle timer, backoff sleeps, encodes and PUT retries are all released', async () => {
+    const h = setup({ encodeMs: 400, putMs: 5_000 });
+    h.queue.add('bbbbbbbb-0000-4000-8000-000000000001', files(6));
+    await h.tick(1_000); // some photos are encoding, an idle timer is running
+    expect(h.clock.pending()).toBeGreaterThan(0);
+    h.queue.dispose();
+    await h.tick(0);
+    expect(h.clock.pending()).toBe(0);
+  });
+
+  it('also after uploads started and a backoff sleep is pending', async () => {
+    const h = setup({ putMs: 5_000 });
+    h.hooks.put = (_p, _f, attempt) => (attempt === 1 ? new NetworkError() : undefined);
+    h.queue.add('bbbbbbbb-0000-4000-8000-000000000001', files(3));
+    await h.tick(2_500);
+    expect(h.clock.pending()).toBeGreaterThan(0);
+    h.queue.dispose();
+    await h.tick(0);
+    expect(h.clock.pending()).toBe(0);
+  });
+});
+
+describe('browser without WebP', () => {
+  const noWebp = () => Object.assign(new Error('NO_WEBP'), { code: 'NO_WEBP', userMessage: cs.encode.noWebp });
+
+  it('3 files: one encode attempt, then every queued file fails at once with the same message', async () => {
+    const h = started(setup({ encodeConcurrency: 1 }));
+    h.hooks.encode = () => noWebp();
+    h.queue.add('bbbbbbbb-0000-4000-8000-000000000001', files(3));
+    await h.tick(2_000);
+    expect(h.log.encodeStarted).toHaveLength(1);
+    expect(statusCount(h, 'failed')).toBe(3);
+    expect(new Set(h.items().map((i) => i.failure?.message))).toEqual(new Set([cs.encode.noWebp]));
+    expect(h.items().every((i) => i.failure?.code === 'NO_WEBP')).toBe(true);
+    expect(h.log.reserves).toHaveLength(0);
+  });
+
+  it('files added afterwards fail at once without an encode attempt; a retry tries once more', async () => {
+    const h = started(setup({ encodeConcurrency: 1 }));
+    h.hooks.encode = () => noWebp();
+    h.queue.add('bbbbbbbb-0000-4000-8000-000000000001', files(1));
+    await h.tick(1_000);
+    h.queue.add('bbbbbbbb-0000-4000-8000-000000000001', files(2, 'LATER_'));
+    await h.tick(100);
+    expect(h.log.encodeStarted).toHaveLength(1);
+    expect(statusCount(h, 'failed')).toBe(3);
+
+    h.hooks.encode = undefined; // the browser can do it now
+    h.queue.retryFailed();
+    await h.tick(20_000);
+    expect(statusCount(h, 'done')).toBe(3);
   });
 });

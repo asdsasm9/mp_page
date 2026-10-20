@@ -30,7 +30,7 @@ import {
   type PublishLogRow,
   type UploadTarget,
 } from '@mp/shared';
-import { ApiError, type ApiPort } from '../../ports';
+import { ApiError, NetworkError, type ApiPort } from '../../ports';
 import { clearCoversOfPhoto } from './catalog';
 import { copy, type Core } from './core';
 
@@ -214,8 +214,9 @@ export function createFakeApi(core: Core): ApiPort {
       });
     },
 
-    async commit(request) {
+    async commit(request, options) {
       guard('api.commit');
+      if (options?.signal?.aborted) throw new NetworkError();
       const req = parseRequest(CommitRequestSchema, request);
       const cleanup = () => {
         if (!state.photos.has(req.photo_id)) removeObjectsOf(req.photo_id);

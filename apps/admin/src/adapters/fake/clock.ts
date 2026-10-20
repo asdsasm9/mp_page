@@ -4,6 +4,8 @@ export interface ManualClock extends Clock {
   /** Moves time forward and settles every sleep that falls due, oldest first. */
   advance(ms: number): Promise<void>;
   set(epochMs: number): void;
+  /** Sleeps that have neither fired nor been aborted (tests assert nothing is left behind). */
+  pending(): number;
 }
 
 export const DEFAULT_START = Date.parse('2026-10-20T08:00:00.000Z');
@@ -13,6 +15,7 @@ export function createManualClock(start: number = DEFAULT_START): ManualClock {
   let sleepers: { at: number; resolve: () => void }[] = [];
   return {
     now: () => t,
+    pending: () => sleepers.length,
     set(epochMs) {
       t = epochMs;
     },

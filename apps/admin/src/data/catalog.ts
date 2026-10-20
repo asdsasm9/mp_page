@@ -30,6 +30,7 @@ export const catalogKeys = {
   photos: (albumId: string) => [...ALL, 'photos', albumId] as const,
   photo: (id: string) => [...ALL, 'photo', id] as const,
   siteState: () => [...ALL, 'site-state'] as const,
+  appConfig: () => [...ALL, 'app-config'] as const,
   publishLog: (limit: number) => [...ALL, 'publish-log', limit] as const,
 };
 

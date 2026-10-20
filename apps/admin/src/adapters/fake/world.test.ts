@@ -108,6 +108,24 @@ describe('contract: responses parse with the shared zod schemas', () => {
   });
 });
 
+describe('catalog.getAppConfig', () => {
+  it('returns the configured limits as the app_config row, follows setLimits, needs a session', async () => {
+    const s = await setup({ limits: { maxFilesPerBatch: 7 } });
+    expect(await s.ports.catalog.getAppConfig()).toEqual({
+      id: true,
+      quota_hard_bytes: 9_500_000_000,
+      quota_warn_bytes: 8_000_000_000,
+      max_upload_bytes: 41_943_040,
+      max_files_per_batch: 7,
+      reservation_ttl_min: 60,
+    });
+    s.world.setLimits({ maxUploadBytes: 123 });
+    expect((await s.ports.catalog.getAppConfig()).max_upload_bytes).toBe(123);
+    await s.ports.auth.signOut();
+    await expect(s.ports.catalog.getAppConfig()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+  });
+});
+
 describe('quota guard (apps/api/test/quota-guard.test.ts, replayed)', () => {
   it('refuses a reserve that would cross the hard limit and issues no URL', async () => {
     const s = await setup({ limits: { quotaHardBytes: PER - 1, quotaWarnBytes: 10 } });

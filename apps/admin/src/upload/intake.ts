@@ -13,6 +13,9 @@ export interface IntakeLimits {
 const MIME_OK = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
 const EXT_OK = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif']);
 
+/** The `accept` attribute of the file picker (a hint only: intakeFiles still checks every file). */
+export const PICKER_ACCEPT = [...MIME_OK, ...[...EXT_OK].map((e) => `.${e}`)].join(',');
+
 /** Browsers often report no type (or octet-stream) for HEIC: then the extension decides. */
 export function isSupportedType(file: Pick<FileLike, 'name' | 'type'>): boolean {
   const mime = file.type.trim().toLowerCase();

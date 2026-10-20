@@ -30,11 +30,16 @@ interface Parser<T> {
 export function createRealApi(config: RealApiConfig): ApiPort {
   const fetchFn = config.fetch ?? defaultFetch;
 
-  async function raw(method: 'GET' | 'POST', path: string, body?: unknown): Promise<{ res: Response; json: unknown }> {
+  async function raw(
+    method: 'GET' | 'POST',
+    path: string,
+    body?: unknown,
+    signal?: AbortSignal,
+  ): Promise<{ res: Response; json: unknown }> {
     const token = await config.getToken();
     if (!token) throw new ApiError('UNAUTHENTICATED');
     const headers: Record<string, string> = { authorization: `Bearer ${token}`, accept: 'application/json' };
-    const init: RequestInit = { method, headers, cache: 'no-store' };
+    const init: RequestInit = { method, headers, cache: 'no-store', ...(signal ? { signal } : {}) };
     if (method === 'POST') {
       headers['content-type'] = 'application/json';
       init.body = JSON.stringify(body ?? {});
@@ -57,8 +62,14 @@ export function createRealApi(config: RealApiConfig): ApiPort {
     return new ApiError('INTERNAL', { status: res.status });
   }
 
-  async function request<T>(method: 'GET' | 'POST', path: string, schema: Parser<T>, body?: unknown): Promise<T> {
-    const { res, json } = await raw(method, path, body);
+  async function request<T>(
+    method: 'GET' | 'POST',
+    path: string,
+    schema: Parser<T>,
+    body?: unknown,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    const { res, json } = await raw(method, path, body, signal);
     if (!res.ok) throw failure(res, json);
     try {
       return schema.parse(json);
@@ -85,7 +96,7 @@ export function createRealApi(config: RealApiConfig): ApiPort {
       }
       throw failure(res, json);
     },
-    commit: (body) => request('POST', '/uploads/commit', CommitResponseSchema, body),
+    commit: (body, options) => request('POST', '/uploads/commit', CommitResponseSchema, body, options?.signal),
     deletePhotos: (body) => request('POST', '/photos/delete', DeleteResponseSchema, body),
     reconcile: (body) => request('POST', '/storage/reconcile', ReconcileResponseSchema, body),
     publish: () => request('POST', '/publish', PublishResponseSchema, {}),

@@ -6,7 +6,7 @@
  * Failures: CatalogError (STALE, NOT_FOUND, DUPLICATE_SLUG, IN_USE, COVER_NOT_IN_ALBUM, INVALID),
  * ApiError UNAUTHENTICATED (401, expired token), NetworkError.
  */
-import type { AlbumRow, CategoryRow, PhotoRow, PublishLogRow, SiteStateRow } from '@mp/shared';
+import type { AlbumRow, AppConfigRow, CategoryRow, PhotoRow, PublishLogRow, SiteStateRow } from '@mp/shared';
 
 export type CategoryInput = Pick<CategoryRow, 'slug' | 'name'> &
   Partial<Pick<CategoryRow, 'description' | 'seo_title' | 'seo_description' | 'sort' | 'visible'>>;
@@ -45,6 +45,8 @@ export interface CatalogPort {
   getPhoto(id: string): Promise<PhotoRow | null>;
   updatePhoto(id: string, patch: PhotoPatch, options?: UpdateOptions): Promise<PhotoRow>;
 
+  /** The single app_config row (upload limits); readable by admins only. */
+  getAppConfig(): Promise<AppConfigRow>;
   getSiteState(): Promise<SiteStateRow>;
   /** Newest first. */
   listPublishLog(limit: number): Promise<PublishLogRow[]>;

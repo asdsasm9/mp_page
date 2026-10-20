@@ -7,6 +7,8 @@ import { createHealthStore, HealthProvider } from './data/health';
 import { createQueryClient } from './data/queryClient';
 import type { Ports } from './ports';
 import { ImageBaseProvider, PortsProvider } from './ports-context';
+import type { Encoder } from './upload/types';
+import { UploadProvider } from './upload/UploadProvider';
 
 interface Props {
   ports: Ports;
@@ -14,11 +16,13 @@ interface Props {
   retry?: boolean;
   /** Public image host for thumbnails (VITE_IMG_BASE_URL). */
   imgBaseUrl?: string;
+  /** Tests inject a stub encoder; the app encodes with the canvas encoder. */
+  encoder?: Encoder;
   children: ReactNode;
 }
 
 /** Ports, connectivity state, the query client and the session, with the expiry modal above the app. Router goes outside. */
-export function AppProviders({ ports, retry, imgBaseUrl = '', children }: Props) {
+export function AppProviders({ ports, retry, imgBaseUrl = '', encoder, children }: Props) {
   const [health] = useState(createHealthStore);
   const [queryClient] = useState(() => createQueryClient(health, retry === undefined ? {} : { retry }));
   return (
@@ -27,7 +31,9 @@ export function AppProviders({ ports, retry, imgBaseUrl = '', children }: Props)
         <HealthProvider store={health}>
           <QueryClientProvider client={queryClient}>
             <SessionProvider>
-              <ToastProvider>{children}</ToastProvider>
+              <ToastProvider>
+                <UploadProvider {...(encoder ? { encoder } : {})}>{children}</UploadProvider>
+              </ToastProvider>
               <ExpiredDialog />
             </SessionProvider>
           </QueryClientProvider>

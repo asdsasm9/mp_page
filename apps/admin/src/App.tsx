@@ -8,6 +8,7 @@ import { AlbumScreen } from './screens/AlbumScreen';
 import { CategoriesScreen } from './screens/CategoriesScreen';
 import { CategoryScreen } from './screens/CategoryScreen';
 import { PhotoDetailScreen } from './screens/PhotoDetailScreen';
+import { UploadScreen } from './screens/UploadScreen';
 
 function NotFound() {
   useDocumentTitle(cs.notFound.title);
@@ -37,7 +38,7 @@ export function App() {
           <Route path="/alba/:id/foto/:photoId" element={<PhotoDetailScreen />} />
           <Route path="/zverejnit" element={<Placeholder title={cs.routes.publish.title} />} />
           <Route path="/ulozeni" element={<Placeholder title={cs.routes.storage.title} storageBar />} />
-          <Route path="/nahravani" element={<Placeholder title={cs.routes.upload.title} />} />
+          <Route path="/nahravani" element={<UploadScreen />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Route>

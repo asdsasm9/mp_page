@@ -32,6 +32,10 @@ function parseUrl(name: string, value: string | undefined): URL {
   } catch {
     throw new LiveGuardError(`${name} is not a valid URL`);
   }
+  // user:pass@host hides the real host from a quick read and would put a secret in a URL.
+  if (url.username !== '' || url.password !== '') {
+    throw new LiveGuardError(`${name} must not contain credentials (user:password@)`);
+  }
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && isLocal(url.hostname))) {
     throw new LiveGuardError(`${name} must use https (http is accepted for localhost only)`);
   }

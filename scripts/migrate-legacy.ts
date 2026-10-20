@@ -9,6 +9,7 @@ import { SourcePathError } from './migrate-legacy/sources';
 import { UsageError, type MigrateOptions } from './migrate-legacy/types';
 import { BackendError, type MigrationBackend } from './migrate-legacy/backend';
 import { createHttpBackend, type FetchLike } from './migrate-legacy/http-backend';
+import { formatCatalog, syncCatalog } from './migrate-legacy/catalog';
 import { checkLive, LiveGuardError, type Env } from './migrate-legacy/live-guard';
 
 export interface MainDeps {
@@ -26,7 +27,7 @@ export interface MainDeps {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Live mode: guards first (exit 2, no request), then sign-in. Upload steps follow in T-155..T-157. */
+/** Live mode: guards first (exit 2, no request), then sign-in, then the catalog. Photo upload follows in T-156, T-157. */
 async function runLive(
   options: MigrateOptions,
   out: (line: string) => void,
@@ -66,7 +67,14 @@ async function runLive(
     return 1;
   }
   out(`signed in as admin for project ${config.projectLabel}`);
-  err('migrate-legacy: --live upload is not implemented yet. Nothing was written.');
+  try {
+    for (const line of formatCatalog(await syncCatalog(backend, options))) out(line);
+  } catch (e) {
+    const code = e instanceof BackendError ? e.code : 'UNKNOWN';
+    err(`migrate-legacy: catalog phase failed (${code}).`);
+    return 1;
+  }
+  err('migrate-legacy: photos not implemented yet (T-156). Only the catalog was written.');
   return 1;
 }
 

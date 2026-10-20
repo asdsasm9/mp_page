@@ -82,6 +82,41 @@ describe('live guards', () => {
     fails({ confirmProject: 'db', allowHost: false }, { ...baseEnv, SUPABASE_URL: 'https://db.example.test' });
     expect(checkLive({ confirmProject: 'db', allowHost: true }, { ...baseEnv, SUPABASE_URL: 'https://db.example.test' }).projectLabel).toBe('db');
   });
+  it('refuses URLs that carry userinfo, without echoing it', () => {
+    for (const bad of [
+      `https://user:pw-SECRET@${PROJECT}.supabase.co`,
+      `https://user@${PROJECT}.supabase.co`,
+      `https://${PROJECT}.supabase.co@evil.example`,
+      `https://${PROJECT}.supabase.co:443@evil.example`,
+    ]) {
+      expect(() => checkLive(ok, { ...baseEnv, SUPABASE_URL: bad })).toThrow(LiveGuardError);
+      expect(() => checkLive({ confirmProject: PROJECT, allowHost: true }, { ...baseEnv, SUPABASE_URL: bad })).toThrow(/credentials|label|host/);
+    }
+    fails(ok, { ...baseEnv, API_BASE_URL: 'https://admin:pw-SECRET@api.example.test' });
+    try {
+      checkLive(ok, { ...baseEnv, API_BASE_URL: 'https://admin:pw-SECRET@api.example.test' });
+    } catch (e) {
+      expect(String(e)).not.toContain('pw-SECRET');
+    }
+  });
+  it('refuses look-alike hosts unless --allow-host', () => {
+    for (const host of [`${PROJECT}.supabase.co.evil.example`, `${PROJECT}supabase.co`, `${PROJECT}.supabase.co.`, `evil.example/${PROJECT}.supabase.co`, 'localhost.evil.example']) {
+      const label = host.split('.')[0]!.split('/')[0]!;
+      fails({ confirmProject: label, allowHost: false }, { ...baseEnv, SUPABASE_URL: `https://${host}` });
+    }
+    // allow-host accepts it explicitly, and the confirm label is still enforced
+    expect(checkLive({ confirmProject: PROJECT, allowHost: true }, { ...baseEnv, SUPABASE_URL: `https://${PROJECT}.supabase.co.evil.example` }).projectLabel).toBe(PROJECT);
+    fails({ confirmProject: 'other', allowHost: true }, { ...baseEnv, SUPABASE_URL: `https://${PROJECT}.supabase.co.evil.example` });
+  });
+  it('normalises an upper-case host; a trailing dot is not *.supabase.co; http is localhost only', () => {
+    const c = checkLive(ok, { ...baseEnv, SUPABASE_URL: `https://${PROJECT.toUpperCase()}.SUPABASE.CO` });
+    expect(c.projectLabel).toBe(PROJECT);
+    expect(c.supabaseUrl).toBe(SUPA);
+    fails(ok, { ...baseEnv, SUPABASE_URL: `https://${PROJECT}.supabase.co.` });
+    fails(ok, { ...baseEnv, SUPABASE_URL: `http://${PROJECT}.supabase.co` });
+    fails({ confirmProject: 'localhost', allowHost: true }, { ...baseEnv, SUPABASE_URL: 'http://localhost.evil.example:54321' });
+    expect(checkLive({ confirmProject: 'localhost', allowHost: false }, { ...baseEnv, SUPABASE_URL: 'http://LOCALHOST:54321', API_BASE_URL: 'http://127.0.0.1:8787' }).projectLabel).toBe('localhost');
+  });
   it('refuses missing URL, key or credentials', () => {
     fails(ok, { ...baseEnv, SUPABASE_URL: undefined });
     fails(ok, { ...baseEnv, SUPABASE_ANON_KEY: undefined });
@@ -245,13 +280,13 @@ describe('migrate-legacy --live entry', () => {
     expect(h.calls.some((c) => c.method !== 'GET' && !c.url.includes('/auth/v1/'))).toBe(false);
   });
 
-  it('an admin signs in; the upload part is still not implemented; sentinel password in no output', async () => {
+  it('an admin signs in, the catalog phase starts (here the fake API refuses it); sentinel password in no output', async () => {
     const h = fakeHttp();
     const r = await run(live, baseEnv, h.fetch);
     expect(r.code).toBe(1);
     expect(r.text).toContain('signed in as admin');
-    expect(r.text).toContain('not implemented');
-    expect(h.calls).toHaveLength(2);
+    expect(r.text).toContain('catalog phase failed');
+    expect(h.calls.some((c) => c.url.includes('/rest/v1/photos'))).toBe(false);
     for (const secret of [SENTINEL_PASSWORD, SENTINEL_TOKEN]) expect(r.text).not.toContain(secret);
   });
 

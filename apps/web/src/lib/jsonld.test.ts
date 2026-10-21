@@ -83,6 +83,8 @@ describe('Photographer (5.1)', () => {
       addressCountry: 'CZ',
     });
     expect(p.email).toBe('mullnyphotos@gmail.com');
+    expect(p.description).toMatch(/Brn/);
+    expect(p.areaServed).toContainEqual({ '@type': 'City', name: 'Brno' });
     expect(p.sameAs).toEqual(['https://www.instagram.com/mullny_photos/', 'https://mywed.com/cs/photographer/mullny/']);
   });
   it('omits unanswered optional properties and street address', () => {

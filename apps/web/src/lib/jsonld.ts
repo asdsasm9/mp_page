@@ -19,6 +19,10 @@ export const BUSINESS_ID = `${SITE_ORIGIN}/#business`;
 export const PERSON_ID = `${SITE_ORIGIN}/#terezie`;
 const INSTAGRAM_PROFILE = `https://www.instagram.com/${INSTAGRAM_HANDLE.replace(/^@/, '')}/`;
 
+/** Factual one-liner shared by the Photographer JSON-LD and llms.txt (services as listed on the site; no prices). */
+export const BUSINESS_DESCRIPTION =
+  'Fotografka Terezie Müllnerová z Brna: svatební, portrétní a párové focení v Brně a Jihomoravském kraji.';
+
 /** Absolute page URL on the production origin; `path` like `/svatby/` (leading and trailing slash). */
 export const pageUrl = (path: string): string => `${SITE_ORIGIN}${path}`;
 
@@ -52,6 +56,7 @@ export function photographerFull(imageUrl: string): JsonLd {
     '@id': BUSINESS_ID,
     name: BRAND,
     url: `${SITE_ORIGIN}/`,
+    description: BUSINESS_DESCRIPTION,
     image: imageUrl,
     address: {
       '@type': 'PostalAddress',

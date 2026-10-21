@@ -117,6 +117,14 @@ describe('buildRobots', () => {
     expect(r).not.toContain('Disallow');
   });
 
+  it('production names the main AI crawlers, each allowed', () => {
+    const r = buildRobots(true);
+    for (const bot of ['GPTBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended']) {
+      expect(r).toContain(`User-agent: ${bot}\nAllow: /\n`);
+    }
+    expect(r.endsWith('Sitemap: https://www.mullnyphotos.cz/sitemap.xml\n')).toBe(true);
+  });
+
   it('non-production disallows everything and has no Sitemap line', () => {
     const r = buildRobots(false);
     expect(r).toContain('Disallow: /\n');

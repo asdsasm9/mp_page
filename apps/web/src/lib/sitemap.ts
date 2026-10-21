@@ -84,8 +84,23 @@ export function buildSitemap(categories: readonly SnapshotCategory[], imgBase: s
   ].join('\n');
 }
 
-/** Production allows all and names the sitemap; every other environment disallows everything. */
+/**
+ * AI crawlers and assistants named explicitly in production robots.txt (docs/SEO-AI.md). `Google-Extended` is a
+ * control token, not a separate crawler. Allowing them is a stance the photographer can revert by deleting names here.
+ */
+export const AI_CRAWLERS = [
+  'GPTBot',
+  'OAI-SearchBot',
+  'ChatGPT-User',
+  'ClaudeBot',
+  'Claude-SearchBot',
+  'PerplexityBot',
+  'Google-Extended',
+] as const;
+
+/** Production allows all (AI crawlers by name) and names the sitemap; every other environment disallows everything. */
 export function buildRobots(production: boolean): string {
   if (!production) return 'User-agent: *\nDisallow: /\n';
-  return `User-agent: *\nAllow: /\n\nSitemap: ${pageUrl('/sitemap.xml')}\n`;
+  const groups = ['*', ...AI_CRAWLERS].map((agent) => `User-agent: ${agent}\nAllow: /\n`);
+  return `${groups.join('\n')}\nSitemap: ${pageUrl('/sitemap.xml')}\n`;
 }

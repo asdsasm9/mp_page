@@ -2,26 +2,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { headingAnchors } from './gates-docs.mjs';
 
 const root = `${import.meta.dirname}/..`;
 const readmePath = `${root}/README.md`;
 const readme = readFileSync(readmePath, 'utf8');
 const lines = readme.split('\n');
 const pkg = JSON.parse(readFileSync(`${root}/package.json`, 'utf8')) as { scripts: Record<string, string> };
-
-/** GitHub-style heading slug: lowercase, drop punctuation, spaces to hyphens. */
-const slug = (heading: string): string =>
-  heading
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, '')
-    .replace(/\s/g, '-');
-
-const headingSlugs = (text: string): string[] =>
-  text
-    .split('\n')
-    .filter((l) => /^#{1,6} /.test(l))
-    .map((l) => slug(l.replace(/^#+ /, '')));
 
 const section = (text: string, title: string): string[] => {
   const all = text.split('\n');
@@ -56,7 +43,7 @@ describe('README.md', () => {
       const target = file === '' ? readmePath : resolve(dirname(readmePath), file);
       expect(existsSync(target), link).toBe(true);
       if (anchor !== undefined) {
-        expect(headingSlugs(readFileSync(target, 'utf8')), link).toContain(anchor);
+        expect([...headingAnchors(readFileSync(target, 'utf8'))], link).toContain(anchor);
       }
     }
   });

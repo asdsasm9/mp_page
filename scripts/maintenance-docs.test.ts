@@ -2,19 +2,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { headingAnchors } from './gates-docs.mjs';
 
 const root = `${import.meta.dirname}/..`;
 const docPath = `${root}/docs/MAINTENANCE.md`;
 const doc = readFileSync(docPath, 'utf8');
 const lines = doc.split('\n');
-
-/** GitHub-style heading slug: lowercase, drop punctuation, spaces to hyphens. */
-const slug = (heading: string): string =>
-  heading
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, '')
-    .replace(/\s/g, '-');
 
 const section = (title: string): string[] => {
   const start = lines.findIndex((l) => l.trim() === `## ${title}`);
@@ -68,10 +61,7 @@ describe('docs/MAINTENANCE.md', () => {
       const target = resolve(dirname(docPath), file);
       expect(existsSync(target), link).toBe(true);
       if (anchor !== undefined) {
-        const slugs = readFileSync(target, 'utf8')
-          .split('\n')
-          .filter((l) => /^#{1,6} /.test(l))
-          .map((l) => slug(l.replace(/^#+ /, '')));
+        const slugs = [...headingAnchors(readFileSync(target, 'utf8'))];
         expect(slugs, link).toContain(anchor);
       }
     }

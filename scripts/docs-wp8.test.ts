@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { cs } from '../apps/admin/src/i18n/cs';
+import { headingAnchors } from './gates-docs.mjs';
 
 const root = `${import.meta.dirname}/..`;
 const docPath = `${root}/docs/NAVOD.md`;
@@ -136,8 +137,6 @@ describe('docs/NAVOD.md', () => {
   });
 
   it('relative links resolve, including heading anchors', () => {
-    const slug = (h: string): string =>
-      h.trim().toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, '').replace(/\s/g, '-');
     const links = [...doc.matchAll(/\]\((?!https?:|mailto:)([^)\s]+)\)/g)].map((m) => m[1] as string);
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
@@ -145,10 +144,7 @@ describe('docs/NAVOD.md', () => {
       const target = file === '' ? docPath : resolve(dirname(docPath), file);
       expect(existsSync(target), link).toBe(true);
       if (anchor) {
-        const heads = readFileSync(target, 'utf8')
-          .split('\n')
-          .filter((l) => /^#{1,6} /.test(l))
-          .map((l) => slug(l.replace(/^#+\s+/, '')));
+        const heads = [...headingAnchors(readFileSync(target, 'utf8'))];
         expect(heads, link).toContain(anchor);
       }
     }

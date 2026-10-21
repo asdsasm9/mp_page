@@ -102,6 +102,16 @@ describe('FakeBackend contract', () => {
     expect(b.storageFake.keys()).toHaveLength(0);
   });
 
+  it('expired reservation, commit larger than reserved', async () => {
+    const b = await ready({ enforceContentLength: false });
+    const small = variantsFor(2000, 1500, 100);
+    const r = await b.reserve(reserveRequest(id(1), 2000, 1500, small));
+    await putAll(b, r.items[0]!.uploads!, 1000);
+    b.advance(61 * 60_000); // past the reservation TTL; the row lingers until the next reserve, as in the Worker
+    expect(await codeOf(b.commit(commitRequest(id(1), 2000, 1500, variantsFor(2000, 1500, 1000))))).toBe('KEY_MISMATCH');
+    expect(b.photos()).toHaveLength(0);
+  });
+
   it('answers STORAGE_FULL at the hard limit and allows exactly the limit', async () => {
     const v = variantsFor(2000, 1500);
     const need = sumBytes(v);

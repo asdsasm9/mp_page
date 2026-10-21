@@ -8,20 +8,12 @@ import {
   CommitRequestSchema,
   allKeys,
   apiCodeFromZodError,
-  sumBytes,
-  type CommitRequest,
+  checkCommitBytes,
   type StorageAdapter,
 } from '@mp/shared';
 import type { Route } from '../index';
 import { errorResponse, jsonResponse, readJsonBody } from '../http';
 import { removePhotoObjects } from './remove-photo-objects';
-
-type Variants = CommitRequest['variants'];
-
-/** Declared byte size of each key, in the order of `allKeys`. */
-function declaredBytes(v: Variants): number[] {
-  return [v.master.bytes, ...v.webp.map((e) => e.bytes), v.jpeg.bytes, v.og.bytes];
-}
 
 /** Delete every object under the photo prefix. Failures are swallowed: reconcile finds leftovers. */
 async function removeObjects(storage: StorageAdapter, photoId: string): Promise<void> {
@@ -64,18 +56,15 @@ export function createCommitRoute(deps: { storage: StorageAdapter }): Route {
 
       // Verification before the database is touched.
       const keys = allKeys(req.photo_id, req.variants);
-      const declared = declaredBytes(req.variants);
-      let actualSum = 0;
+      let actual: (number | null)[];
       try {
         const heads = await Promise.all(keys.map((k) => storage.head(k)));
-        for (const [i, info] of heads.entries()) {
-          if (!info || info.bytes !== declared[i] || info.bytes > maxUpload) return await mismatch();
-          actualSum += info.bytes;
-        }
+        actual = heads.map((info) => (info ? info.bytes : null));
       } catch {
         return errorResponse('UPSTREAM_ERROR');
       }
-      if (actualSum !== req.bytes_total || sumBytes(req.variants) !== req.bytes_total) return mismatch();
+      const verify = { variants: req.variants, bytesTotal: req.bytes_total, actual, maxUploadBytes: maxUpload };
+      if (!checkCommitBytes(verify)) return mismatch();
 
       const reservation = await supabase.select<{ bytes: number }>(
         'upload_reservations',
@@ -84,7 +73,8 @@ export function createCommitRoute(deps: { storage: StorageAdapter }): Route {
       );
       if (!reservation.ok) return errorResponse(reservation.code);
       const reserved = reservation.data[0];
-      if (reserved && actualSum > Number(reserved.bytes)) return mismatch();
+      // An expired row still binds until reserve_uploads purges it (same as the fakes).
+      if (reserved && !checkCommitBytes({ ...verify, reservedBytes: Number(reserved.bytes) })) return mismatch();
 
       const rpc = await supabase.rpc<Record<string, unknown>>(
         'register_photo',

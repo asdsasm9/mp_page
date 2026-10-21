@@ -15,5 +15,8 @@ export type Limits = {
   reservationTtlMin: number;
 };
 
+/** Presigned PUT URLs live 15 minutes (Worker reserve route and both fakes). */
+export const PRESIGN_EXPIRY_SEC = 15 * 60;
+
 /** Absolute provider ceiling the hard limit must never exceed (R2 free 10 GB). */
 export const PROVIDER_MAX_BYTES = 10_000_000_000;

@@ -263,6 +263,15 @@ describe('commit and delete', () => {
     expect(s.world.snapshot().photos).toEqual([]);
   });
 
+  it('expired reservation, commit larger than reserved', async () => {
+    const s = await setup({ enforceContentLength: false });
+    const res = await s.ports.api.reserve({ album_id: s.album.id, items: [item(1, 100)] });
+    for (const t of res.items[0]!.uploads!) await s.ports.upload.put(t, new Blob([new Uint8Array(1000)]));
+    s.clock.advance(61 * 60_000); // past the 60 minute reservation TTL; the row lingers until the next reserve
+    await expect(s.ports.api.commit(commitBody(1, s.album.id, 1000))).rejects.toMatchObject({ code: 'KEY_MISMATCH' });
+    expect(s.world.snapshot().photos).toEqual([]);
+  });
+
   it('commit with a wrong bytes_total is refused before any row exists', async () => {
     const s = await setup();
     const res = await s.ports.api.reserve({ album_id: s.album.id, items: [item(1)] });

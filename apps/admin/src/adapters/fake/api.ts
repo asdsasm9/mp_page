@@ -25,7 +25,13 @@ import {
   parseKey,
   photoPrefix,
   planUploadFiles,
-  sumBytes,
+  PRESIGN_EXPIRY_SEC,
+  checkCommitBytes,
+  commitQuotaOk,
+  hasOversizedFile,
+  itemBytes,
+  reservationActive,
+  totalBytes,
   type PhotoRow,
   type PublishLogRow,
   type UploadTarget,
@@ -34,7 +40,7 @@ import { ApiError, NetworkError, type ApiPort } from '../../ports';
 import { clearCoversOfPhoto } from './catalog';
 import { copy, type Core } from './core';
 
-const PRESIGN_EXPIRY_MS = 15 * 60 * 1000;
+const PRESIGN_EXPIRY_MS = PRESIGN_EXPIRY_SEC * 1000;
 const PUBLISH_MIN_GAP_MS = 60_000;
 const ORPHAN_MIN_AGE_MS = 2 * 60 * 60 * 1000;
 const PUBLISH_LOG_KEEP = 100;
@@ -62,10 +68,10 @@ export function createFakeApi(core: Core): ApiPort {
   const guard = (op: Parameters<Core['guard']>[0]) => core.guard(op, { auth: true });
   const encoder = new TextEncoder();
 
-  const liveReservations = () => [...state.reservations.entries()].filter(([, r]) => r.expiresAtMs > clock.now());
+  const liveReservations = () => [...state.reservations.entries()].filter(([, r]) => reservationActive(r, clock.now()));
+  const usedBytes = () => totalBytes(state.photos.values());
   function usage() {
-    let used = 0;
-    for (const p of state.photos.values()) used += p.bytes_total;
+    const used = usedBytes();
     let reserved = 0;
     for (const [, r] of liveReservations()) reserved += r.bytes;
     const hard = state.limits.quotaHardBytes;
@@ -166,12 +172,11 @@ export function createFakeApi(core: Core): ApiPort {
 
       // Per-file limit first; those items never reach reserve_uploads.
       const maxUpload = state.limits.maxUploadBytes;
-      const tooLarge = new Set(items.filter((i) => i.files.some((f) => f.bytes > maxUpload)).map((i) => i.photo_id));
+      const tooLarge = new Set(items.filter((i) => hasOversizedFile(i.files, maxUpload)).map((i) => i.photo_id));
 
       // reserve_uploads: expired rows go, then first-fit in order; refused items consume nothing.
-      for (const [id, r] of state.reservations) if (r.expiresAtMs <= clock.now()) state.reservations.delete(id);
-      let used = 0;
-      for (const p of state.photos.values()) used += p.bytes_total;
+      for (const [id, r] of state.reservations) if (!reservationActive(r, clock.now())) state.reservations.delete(id);
+      const used = usedBytes();
       let reserved = 0;
       for (const r of state.reservations.values()) reserved += r.bytes;
       const { quotaHardBytes: hard, quotaWarnBytes: warn } = state.limits;
@@ -182,7 +187,7 @@ export function createFakeApi(core: Core): ApiPort {
           out.push({ photo_id: item.photo_id, ok: false, code: 'FILE_TOO_LARGE' });
           continue;
         }
-        const bytes = item.files.reduce((n, f) => n + f.bytes, 0);
+        const bytes = itemBytes(item.files);
         const old = state.reservations.get(item.photo_id);
         if (old) {
           reserved -= old.bytes;
@@ -190,7 +195,7 @@ export function createFakeApi(core: Core): ApiPort {
         }
         if (bytes > maxUpload) {
           out.push({ photo_id: item.photo_id, ok: false, code: 'FILE_TOO_LARGE' });
-        } else if (used + reserved + bytes > hard) {
+        } else if (!commitQuotaOk(used, reserved, bytes, hard)) {
           out.push({ photo_id: item.photo_id, ok: false, code: 'STORAGE_FULL' });
         } else {
           state.reservations.set(item.photo_id, {
@@ -229,19 +234,14 @@ export function createFakeApi(core: Core): ApiPort {
       // Verification before the database is touched (HEAD on every object).
       const keys = allKeys(req.photo_id, req.variants);
       const v = req.variants;
-      const declared = [v.master.bytes, ...v.webp.map((e) => e.bytes), v.jpeg.bytes, v.og.bytes];
-      let actualSum = 0;
-      for (const [i, key] of keys.entries()) {
-        const obj = state.objects.get(key);
-        if (!obj || obj.bytes !== declared[i] || obj.bytes > state.limits.maxUploadBytes) mismatch();
-        actualSum += obj!.bytes;
-      }
-      if (actualSum !== req.bytes_total || sumBytes(v) !== req.bytes_total) mismatch();
+      const actual = keys.map((key) => state.objects.get(key)?.bytes ?? null);
+      const verify = { variants: v, bytesTotal: req.bytes_total, actual, maxUploadBytes: state.limits.maxUploadBytes };
+      if (!checkCommitBytes(verify)) mismatch();
+      // An expired row still binds until reserve_uploads purges it (as in the Worker).
       const reservation = state.reservations.get(req.photo_id);
-      if (reservation && actualSum > reservation.bytes) mismatch();
+      if (reservation && !checkCommitBytes({ ...verify, reservedBytes: reservation.bytes })) mismatch();
 
-      // register_photo
-      if (req.bytes_total !== sumBytes(v)) throw new ApiError('BYTES_MISMATCH');
+      // register_photo (its BYTES_MISMATCH check is unreachable here: the sum was verified above)
       const existing = state.photos.get(req.photo_id);
       if (existing) {
         if (existing.album_id === req.album_id && existing.bytes_total === req.bytes_total) {
@@ -257,11 +257,9 @@ export function createFakeApi(core: Core): ApiPort {
         cleanup();
         throw new ApiError('ALBUM_NOT_FOUND');
       }
-      let used = 0;
-      for (const p of state.photos.values()) used += p.bytes_total;
       let othersReserved = 0;
       for (const [id, r] of liveReservations()) if (id !== req.photo_id) othersReserved += r.bytes;
-      if (used + othersReserved + req.bytes_total > state.limits.quotaHardBytes) {
+      if (!commitQuotaOk(usedBytes(), othersReserved, req.bytes_total, state.limits.quotaHardBytes)) {
         cleanup();
         throw new ApiError('STORAGE_FULL');
       }

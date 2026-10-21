@@ -194,6 +194,27 @@ describe('POST /uploads/commit', () => {
     expect(await photoCount()).toBe(0);
   });
 
+  it('expired reservation, commit larger than reserved', async () => {
+    const planned = planUploadFiles(id(1), W, H);
+    await reserve({
+      album_id: ALB,
+      items: [
+        {
+          photo_id: id(1),
+          width: W,
+          height: H,
+          files: planned.map((f) => ({ kind: f.kind, ...(f.tier ? { tier: f.tier } : {}), bytes: 100 })),
+        },
+      ],
+    });
+    await putAll(1); // 1000-byte files although 100 were reserved
+    // The row lingers after expiry (only reserve_uploads purges it), so it still binds the commit.
+    await world.db.exec(`update public.upload_reservations set expires_at = now() - interval '1 minute'`);
+    expect((await commit(commitBody(1))).body.error).toBe('KEY_MISMATCH');
+    expect(await listed(1)).toEqual([]);
+    expect(await photoCount()).toBe(0);
+  });
+
   it('STORAGE_FULL at commit deletes the objects and returns the code', async () => {
     await putAll(1);
     await setLimits(sum(variantsFor()) - 1, 10);

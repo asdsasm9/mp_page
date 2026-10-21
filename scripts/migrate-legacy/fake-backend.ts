@@ -28,7 +28,13 @@ import {
   masterKey,
   planBatch,
   planUploadFiles,
-  sumBytes,
+  PRESIGN_EXPIRY_SEC,
+  checkCommitBytes,
+  commitQuotaOk,
+  hasOversizedFile,
+  itemBytes,
+  reservationActive,
+  totalBytes,
   type AlbumRow,
   type CategoryRow,
   type CommitRequest,
@@ -44,7 +50,6 @@ import {
 } from '../../packages/shared/src';
 import { BackendError, type AlbumInput, type CategoryInput, type MigrationBackend, type UrlHistoryInput, type UrlHistoryResult } from './backend';
 
-const PRESIGN_EXPIRY_SEC = 15 * 60;
 const DEFAULT_START_MS = Date.parse('2026-10-20T08:00:00.000Z');
 
 export type FakeOp =
@@ -158,16 +163,12 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
   }
 
   const liveReserved = () => {
-    for (const [id, r] of reservations) if (r.expiresAtMs <= nowMs()) reservations.delete(id);
+    for (const [id, r] of reservations) if (!reservationActive(r, nowMs())) reservations.delete(id);
     let n = 0;
     for (const r of reservations.values()) n += r.bytes;
     return n;
   };
-  const usedBytes = () => {
-    let n = 0;
-    for (const p of photos.values()) n += p.bytes_total;
-    return n;
-  };
+  const usedBytes = () => totalBytes(photos.values());
 
   return {
     calls,
@@ -301,7 +302,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
         items.map((i) => ({
           photo_id: i.photo_id,
           // A single oversized file makes the whole item FILE_TOO_LARGE.
-          bytes: i.files.some((f) => f.bytes > limits.maxUploadBytes) ? limits.maxUploadBytes + 1 : i.files.reduce((n, f) => n + f.bytes, 0),
+          bytes: hasOversizedFile(i.files, limits.maxUploadBytes) ? limits.maxUploadBytes + 1 : itemBytes(i.files),
         })),
       );
 
@@ -313,7 +314,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
           continue;
         }
         reservations.set(item.photo_id, {
-          bytes: item.files.reduce((n, f) => n + f.bytes, 0),
+          bytes: itemBytes(item.files),
           expiresAtMs: nowMs() + limits.reservationTtlMin * 60_000,
         });
         const uploads: UploadTarget[] = [];
@@ -377,16 +378,13 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
 
       // HEAD on every object before the database is touched.
       const keys = allKeys(req.photo_id, v);
-      const declared = [v.master.bytes, ...v.webp.map((e) => e.bytes), v.jpeg.bytes, v.og.bytes];
-      let actualSum = 0;
-      for (const [i, key] of keys.entries()) {
-        const head = await storageFake.head(key);
-        if (!head || head.bytes !== declared[i] || head.bytes > limits.maxUploadBytes) return mismatch();
-        actualSum += head.bytes;
-      }
-      if (actualSum !== req.bytes_total || sumBytes(v) !== req.bytes_total) return mismatch();
+      const actual: (number | null)[] = [];
+      for (const key of keys) actual.push((await storageFake.head(key))?.bytes ?? null);
+      const verify = { variants: v, bytesTotal: req.bytes_total, actual, maxUploadBytes: limits.maxUploadBytes };
+      if (!checkCommitBytes(verify)) return mismatch();
+      // Behaviour change (T-206): an expired row still binds until reserve purges it, as in the Worker.
       const reservation = reservations.get(req.photo_id);
-      if (reservation && reservation.expiresAtMs > nowMs() && actualSum > reservation.bytes) return mismatch();
+      if (reservation && !checkCommitBytes({ ...verify, reservedBytes: reservation.bytes })) return mismatch();
 
       // register_photo
       const existing = photos.get(req.photo_id);
@@ -405,8 +403,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
         throw new BackendError('ALBUM_NOT_FOUND');
       }
       let othersReserved = 0;
-      for (const [id, r] of reservations) if (id !== req.photo_id && r.expiresAtMs > nowMs()) othersReserved += r.bytes;
-      if (usedBytes() + othersReserved + req.bytes_total > limits.quotaHardBytes) {
+      for (const [id, r] of reservations) if (id !== req.photo_id && reservationActive(r, nowMs())) othersReserved += r.bytes;
+      if (!commitQuotaOk(usedBytes(), othersReserved, req.bytes_total, limits.quotaHardBytes)) {
         await cleanup();
         throw new BackendError('STORAGE_FULL');
       }

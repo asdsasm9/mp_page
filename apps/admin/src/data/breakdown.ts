@@ -1,5 +1,5 @@
 /** Per-album storage breakdown (ADMIN-UX 3.7): sums photos.bytes_total per album, biggest first. */
-import type { AlbumRow, PhotoRow } from '@mp/shared';
+import { totalBytes, type AlbumRow, type PhotoRow } from '@mp/shared';
 
 export interface BreakdownRow {
   id: string;
@@ -33,7 +33,7 @@ export function buildBreakdown(
       id: album.id,
       title: album.title,
       photos: photos.length,
-      bytes: photos.reduce((n, p) => n + p.bytes_total, 0),
+      bytes: totalBytes(photos),
     });
   }
   rows.sort((a, b) => b.bytes - a.bytes || a.title.localeCompare(b.title, 'cs') || (a.id < b.id ? -1 : 1));

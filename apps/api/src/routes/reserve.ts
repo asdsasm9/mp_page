@@ -5,6 +5,9 @@
  */
 import {
   ERROR_STATUS,
+  PRESIGN_EXPIRY_SEC,
+  hasOversizedFile,
+  itemBytes,
   PHOTO_CACHE_CONTROL,
   CONTENT_TYPE_BY_KIND,
   ReserveRequestSchema,
@@ -16,9 +19,6 @@ import {
 } from '@mp/shared';
 import type { Route } from '../index';
 import { errorResponse, jsonResponse, readJsonBody } from '../http';
-
-/** Presigned URLs live 15 minutes. */
-export const PRESIGN_EXPIRY_SEC = 15 * 60;
 
 interface Config {
   max_upload_bytes: number;
@@ -37,8 +37,6 @@ interface RpcResult {
 }
 
 type ReserveItem = ReserveRequest['items'][number];
-
-const sumFiles = (item: ReserveItem): number => item.files.reduce((n, f) => n + f.bytes, 0);
 
 async function presignItem(storage: StorageAdapter, item: ReserveItem): Promise<UploadTarget[]> {
   const uploads: UploadTarget[] = [];
@@ -101,11 +99,11 @@ export function createReserveRoute(deps: { storage: StorageAdapter }): Route {
       // Per-file limit first; those items never reach the quota RPC.
       const maxUpload = Number(cfg.max_upload_bytes);
       const tooLarge = new Set(
-        items.filter((i) => i.files.some((f) => f.bytes > maxUpload)).map((i) => i.photo_id),
+        items.filter((i) => hasOversizedFile(i.files, maxUpload)).map((i) => i.photo_id),
       );
       const forRpc = items
         .filter((i) => !tooLarge.has(i.photo_id))
-        .map((i) => ({ photo_id: i.photo_id, bytes: sumFiles(i) }));
+        .map((i) => ({ photo_id: i.photo_id, bytes: itemBytes(i.files) }));
 
       const rpc = await supabase.rpc<RpcResult>('reserve_uploads', { p_items: forRpc }, jwt);
       if (!rpc.ok) return errorResponse(rpc.code);

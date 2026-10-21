@@ -9,6 +9,7 @@ export * from './alt';
 export * from './keys';
 export * from './variants';
 export * from './quota';
+export * from './commit-rules';
 export * from './snapshot';
 export * from './backup';
 export * from './storage/adapter';

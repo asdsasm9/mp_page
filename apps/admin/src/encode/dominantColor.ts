@@ -1,4 +1,9 @@
-/** Dominant colour from a 16x16 RGBA sample (plan 4.7). Pure and deterministic. */
+/**
+ * Dominant colour from a 16x16 RGBA sample (plan 4.7). Pure and deterministic.
+ * Deliberately differs from scripts/dominant-color.ts (sharp stats on a 32 px downscale, plain mean): this one runs in
+ * the browser on a canvas sample, weights pixels by alpha, and damps near-white/near-black border pixels so frames and
+ * letterboxing do not skew the colour. The script's plain mean is enough for bulk dev/legacy imports.
+ */
 import type { Rgba } from './surface';
 
 export const FALLBACK_COLOR = '#808080';

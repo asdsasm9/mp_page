@@ -400,6 +400,7 @@ export function createFakeApi(core: Core): ApiPort {
           categories: [...state.categories.values()],
           albums: [...state.albums.values()],
           photos: [...state.photos.values()],
+          // Fake world keeps no slug history; the real Worker passes the real url_history rows (see docs/ADMIN.md).
           urlHistory: [],
         },
         new Date(now),

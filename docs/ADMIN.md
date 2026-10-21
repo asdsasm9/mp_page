@@ -59,6 +59,7 @@ On the public web project the one related variable is `PUBLIC_ADMIN_ORIGIN` (`do
 Starting the Vite dev server with `VITE_BACKEND=fake` set in the environment (the checks below set it themselves)
 runs the app against an in-memory world. The seeded accounts are in `apps/admin/src/adapters/fake/auth.ts` (test
 data only, not real credentials). Nothing leaves the browser. All unit tests use it, so `npm test` needs no services.
+The fake publish builds its snapshot with an empty `urlHistory` (the fake world keeps no slug history), whereas the real Worker passes the real rows, so old-URL redirects are not exercised in fake mode.
 
 ## Deploying the admin (human steps)
 

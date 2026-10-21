@@ -1,38 +1,18 @@
 /** Dialogs of the categories screen: create / edit (ADMIN-UX 3.2), hide (F4) and delete (F5). */
 import { isReservedCategorySlug, isValidSlug, slugify, uniqueSlug, type CategoryRow } from '@mp/shared';
 import { useId, useRef, useState, type FormEvent } from 'react';
+import { DialogActions, DialogButton } from '../components/DialogActions';
+import { ErrorLine } from '../components/ErrorLine';
 import { Field } from '../components/Field';
 import { Modal } from '../components/Modal';
-import { StaleNotice } from '../components/StaleNotice';
+import { useConfirmAction } from '../components/useConfirmAction';
 import { useCreateCategory, useDeleteCategory, useUpdateCategory } from '../data/catalog';
-import { expectUpdatedAt, isStale } from '../data/concurrency';
+import { expectUpdatedAt } from '../data/concurrency';
 import { useCanMutate } from '../data/health';
 import { nextSortAfterLast } from '../data/order';
 import { cs, glossary } from '../i18n/cs';
 import { fill, formatCount } from '../i18n/format';
-import { errorMessage } from '../i18n/messages';
 import { CatalogError } from '../ports';
-
-/** The failure of a dialog's save: "changed elsewhere" with a reload button, or the Czech error text. */
-export function ErrorLine({
-  error,
-  onReload,
-  entity = 'category',
-  message = errorMessage,
-}: {
-  error: unknown;
-  onReload: () => void;
-  entity?: 'album' | 'category';
-  message?: (error: unknown) => string;
-}) {
-  if (error === null) return null;
-  if (isStale(error)) return <StaleNotice entity={entity} onReload={onReload} />;
-  return (
-    <p className="notice notice-error" role="alert">
-      {message(error)} {cs.categories.saveFailedHint}
-    </p>
-  );
-}
 
 const orNull = (value: string) => (value.trim() === '' ? null : value.trim());
 
@@ -192,14 +172,11 @@ export function CategoryFormDialog({ category, categories, onClose }: FormProps)
           </div>
         </details>
         <ErrorLine error={failure} onReload={onClose} />
-        <div className="dialog-actions">
-          <button type="submit" className="button button-primary" disabled={!canMutate} aria-disabled={saving || undefined}>
+        <DialogActions busy={saving} onClose={onClose}>
+          <DialogButton type="submit" kind="primary" busy={saving} disabled={!canMutate}>
             {saving ? cs.categories.saving : editing ? glossary.save : cs.categories.create}
-          </button>
-          <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
-            {glossary.cancel}
-          </button>
-        </div>
+          </DialogButton>
+        </DialogActions>
       </form>
     </Modal>
   );
@@ -215,21 +192,10 @@ interface ConfirmProps {
 export function HideCategoryDialog({ category, albumCount, onClose }: ConfirmProps) {
   const update = useUpdateCategory();
   const canMutate = useCanMutate();
-  const [failure, setFailure] = useState<unknown>(null);
-  const [saving, setSaving] = useState(false);
-
-  async function confirm() {
-    if (saving) return;
-    setSaving(true);
-    setFailure(null);
-    try {
-      await update.mutateAsync({ id: category.id, patch: { visible: false }, options: expectUpdatedAt(category) });
-      onClose();
-    } catch (error) {
-      setFailure(error);
-      setSaving(false);
-    }
-  }
+  const { saving, failure, confirm } = useConfirmAction(async () => {
+    await update.mutateAsync({ id: category.id, patch: { visible: false }, options: expectUpdatedAt(category) });
+    onClose();
+  });
 
   const body =
     albumCount > 0
@@ -239,22 +205,11 @@ export function HideCategoryDialog({ category, albumCount, onClose }: ConfirmPro
     <Modal title={fill(cs.categories.hideTitle, { name: category.name })} onClose={onClose} busy={saving}>
       <p>{body}</p>
       <ErrorLine error={failure} onReload={onClose} />
-      <div className="dialog-actions">
-        <button
-          type="button"
-          className="button button-primary"
-          data-autofocus=""
-          disabled={!canMutate}
-          aria-disabled={saving || undefined}
-          aria-busy={saving}
-          onClick={() => void confirm()}
-        >
+      <DialogActions busy={saving} onClose={onClose}>
+        <DialogButton kind="primary" busy={saving} announceBusy autofocus disabled={!canMutate} onClick={() => void confirm()}>
           {saving ? cs.categories.saving : cs.categories.hide}
-        </button>
-        <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
-          {glossary.cancel}
-        </button>
-      </div>
+        </DialogButton>
+      </DialogActions>
     </Modal>
   );
 }
@@ -271,8 +226,15 @@ export function DeleteCategoryDialog({
 }: ConfirmProps & { /** Called once the category is gone (its row, and so the opener, no longer exists). */ onDeleted?: () => void }) {
   const remove = useDeleteCategory();
   const canMutate = useCanMutate();
-  const [failure, setFailure] = useState<unknown>(null);
-  const [deleting, setDeleting] = useState(false);
+  const {
+    saving: deleting,
+    failure,
+    confirm,
+  } = useConfirmAction(async () => {
+    await remove.mutateAsync(category.id);
+    onDeleted?.();
+    onClose();
+  });
   const title = fill(cs.categories.deleteTitle, { name: category.name });
 
   if (albumCount > 0) {
@@ -288,39 +250,15 @@ export function DeleteCategoryDialog({
     );
   }
 
-  async function confirm() {
-    if (deleting) return;
-    setDeleting(true);
-    setFailure(null);
-    try {
-      await remove.mutateAsync(category.id);
-      onDeleted?.();
-      onClose();
-    } catch (error) {
-      setFailure(error);
-      setDeleting(false);
-    }
-  }
-
   return (
     <Modal title={title} onClose={onClose} busy={deleting}>
       <p>{cs.categories.deleteBody}</p>
       <ErrorLine error={failure} onReload={onClose} />
-      <div className="dialog-actions">
-        <button
-          type="button"
-          className="button button-danger"
-          disabled={!canMutate}
-          aria-disabled={deleting || undefined}
-          aria-busy={deleting}
-          onClick={() => void confirm()}
-        >
+      <DialogActions busy={deleting} onClose={onClose} cancelAutofocus>
+        <DialogButton kind="danger" busy={deleting} announceBusy disabled={!canMutate} onClick={() => void confirm()}>
           {deleting ? cs.categories.deleting : glossary.delete}
-        </button>
-        <button type="button" className="button" data-autofocus="" aria-disabled={deleting || undefined} onClick={() => !deleting && onClose()}>
-          {glossary.cancel}
-        </button>
-      </div>
+        </DialogButton>
+      </DialogActions>
     </Modal>
   );
 }

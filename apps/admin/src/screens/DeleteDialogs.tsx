@@ -1,6 +1,7 @@
 /** Delete dialogs (ADMIN-UX F5): photos (light confirmation) and album (typed name or "SMAZAT"). */
 import type { AlbumRow, PhotoRow } from '@mp/shared';
 import { useId, useState } from 'react';
+import { DialogActions, DialogButton } from '../components/DialogActions';
 import { Modal } from '../components/Modal';
 import { useToast } from '../components/Toast';
 import { useAlbumActions } from '../data/albumActions';
@@ -44,21 +45,11 @@ export function DeletePhotosDialog({ album, photos, onClose, onFinished }: Photo
   return (
     <Modal title={fill(plural(count, cs.delete.photosTitle), { count })} onClose={onClose} busy={deleting}>
       <p>{count === 1 ? cs.delete.photosBodyOne : cs.delete.photosBodyMany}</p>
-      <div className="dialog-actions">
-        <button
-          type="button"
-          className="button button-danger"
-          disabled={!canMutate}
-          aria-disabled={deleting || undefined}
-          aria-busy={deleting}
-          onClick={() => void confirm()}
-        >
+      <DialogActions busy={deleting} onClose={onClose} cancelAutofocus>
+        <DialogButton kind="danger" busy={deleting} announceBusy disabled={!canMutate} onClick={() => void confirm()}>
           {deleting ? cs.delete.progress : glossary.delete}
-        </button>
-        <button type="button" className="button" data-autofocus="" aria-disabled={deleting || undefined} onClick={() => !deleting && onClose()}>
-          {glossary.cancel}
-        </button>
-      </div>
+        </DialogButton>
+      </DialogActions>
     </Modal>
   );
 }
@@ -153,32 +144,22 @@ export function DeleteAlbumDialog({ album, photoCount: openedWith, onClose, onDe
           {error !== null ? ` ${errorMessage(error)}` : ''}
         </p>
       ) : null}
-      <div className="dialog-actions">
-        <button
-          type="button"
-          className="button button-danger"
+      <DialogActions busy={deleting} onClose={onClose}>
+        <DialogButton
+          kind="danger"
+          busy={deleting}
+          announceBusy
           disabled={!canMutate || !confirmsAlbumDelete(typed, album.title)}
-          aria-disabled={deleting || undefined}
-          aria-busy={deleting}
           onClick={() => void confirm()}
         >
           {deleting ? cs.delete.progress : failure ? glossary.retry : cs.delete.album}
-        </button>
+        </DialogButton>
         {album.published ? (
-          <button
-            type="button"
-            className="button"
-            disabled={!canMutate}
-            aria-disabled={deleting || undefined}
-            onClick={() => void hide()}
-          >
+          <DialogButton busy={deleting} disabled={!canMutate} onClick={() => void hide()}>
             {glossary.hideAlbum}
-          </button>
+          </DialogButton>
         ) : null}
-        <button type="button" className="button" aria-disabled={deleting || undefined} onClick={() => !deleting && onClose()}>
-          {glossary.cancel}
-        </button>
-      </div>
+      </DialogActions>
     </Modal>
   );
 }

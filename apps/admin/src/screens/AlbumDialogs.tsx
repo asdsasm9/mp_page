@@ -1,8 +1,11 @@
 /** Dialogs of the album screens: new album (F1), hide (F4), move to another category (F7). */
 import { slugify, uniqueSlug, type AlbumRow, type CategoryRow } from '@mp/shared';
 import { useId, useRef, useState, type FormEvent } from 'react';
+import { DialogActions, DialogButton } from '../components/DialogActions';
+import { ErrorLine } from '../components/ErrorLine';
 import { Field } from '../components/Field';
 import { Modal } from '../components/Modal';
+import { useConfirmAction } from '../components/useConfirmAction';
 import { albumActionMessage, useAlbumActions } from '../data/albumActions';
 import { ALBUM_LIMITS, isValidShotOn } from '../data/albumFields';
 import { useCreateAlbum } from '../data/catalog';
@@ -11,7 +14,6 @@ import { nextSortAfterLast, sortedRows } from '../data/order';
 import { cs, glossary } from '../i18n/cs';
 import { fill } from '../i18n/format';
 import { CatalogError } from '../ports';
-import { ErrorLine } from './CategoryDialogs';
 
 function SelectField({
   label,
@@ -137,14 +139,11 @@ export function NewAlbumDialog({ categories, albums, defaultCategoryId, onClose,
           error={shotOnError}
         />
         <ErrorLine error={failure} entity="album" onReload={onClose} message={albumActionMessage} />
-        <div className="dialog-actions">
-          <button type="submit" className="button button-primary" disabled={!canMutate} aria-disabled={saving || undefined}>
+        <DialogActions busy={saving} onClose={onClose}>
+          <DialogButton type="submit" kind="primary" busy={saving} disabled={!canMutate}>
             {saving ? cs.categories.saving : cs.albums.create}
-          </button>
-          <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
-            {glossary.cancel}
-          </button>
-        </div>
+          </DialogButton>
+        </DialogActions>
       </form>
     </Modal>
   );
@@ -154,42 +153,20 @@ export function NewAlbumDialog({ categories, albums, defaultCategoryId, onClose,
 export function HideAlbumDialog({ album, onClose }: { album: AlbumRow; onClose: () => void }) {
   const actions = useAlbumActions();
   const canMutate = useCanMutate();
-  const [failure, setFailure] = useState<unknown>(null);
-  const [saving, setSaving] = useState(false);
-
-  async function confirm() {
-    if (saving) return;
-    setSaving(true);
-    setFailure(null);
-    try {
-      await actions.hide(album);
-      onClose();
-    } catch (error) {
-      setFailure(error);
-      setSaving(false);
-    }
-  }
+  const { saving, failure, confirm } = useConfirmAction(async () => {
+    await actions.hide(album);
+    onClose();
+  });
 
   return (
     <Modal title={fill(cs.albums.hideTitle, { title: album.title })} onClose={onClose} busy={saving}>
       <p>{cs.albums.hideBody}</p>
       <ErrorLine error={failure} entity="album" onReload={onClose} message={albumActionMessage} />
-      <div className="dialog-actions">
-        <button
-          type="button"
-          className="button button-primary"
-          data-autofocus=""
-          disabled={!canMutate}
-          aria-disabled={saving || undefined}
-          aria-busy={saving}
-          onClick={() => void confirm()}
-        >
+      <DialogActions busy={saving} onClose={onClose}>
+        <DialogButton kind="primary" busy={saving} announceBusy autofocus disabled={!canMutate} onClick={() => void confirm()}>
           {saving ? cs.categories.saving : glossary.hideAlbum}
-        </button>
-        <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
-          {glossary.cancel}
-        </button>
-      </div>
+        </DialogButton>
+      </DialogActions>
     </Modal>
   );
 }
@@ -208,21 +185,10 @@ export function MoveAlbumDialog({ album, categories, albums, onClose }: MoveProp
   const canMutate = useCanMutate();
   const targets = sortedRows(categories).filter((c) => c.id !== album.category_id);
   const [categoryId, setCategoryId] = useState(targets[0]?.id ?? '');
-  const [failure, setFailure] = useState<unknown>(null);
-  const [saving, setSaving] = useState(false);
-
-  async function confirm() {
-    if (saving) return;
-    setSaving(true);
-    setFailure(null);
-    try {
-      await actions.move(album, categoryId, albums);
-      onClose();
-    } catch (error) {
-      setFailure(error);
-      setSaving(false);
-    }
-  }
+  const { saving, failure, confirm } = useConfirmAction(async () => {
+    await actions.move(album, categoryId, albums);
+    onClose();
+  });
 
   return (
     <Modal title={fill(cs.albums.moveTitle, { title: album.title })} onClose={onClose} busy={saving}>
@@ -244,21 +210,17 @@ export function MoveAlbumDialog({ album, categories, albums, onClose }: MoveProp
             options={targets.map((c) => ({ value: c.id, label: c.name }))}
           />
           <ErrorLine error={failure} entity="album" onReload={onClose} message={albumActionMessage} />
-          <div className="dialog-actions">
-            <button
-              type="button"
-              className="button button-primary"
+          <DialogActions busy={saving} onClose={onClose}>
+            <DialogButton
+              kind="primary"
+              busy={saving}
+              announceBusy
               disabled={!canMutate || categoryId === ''}
-              aria-disabled={saving || undefined}
-              aria-busy={saving}
               onClick={() => void confirm()}
             >
               {saving ? cs.categories.saving : glossary.move}
-            </button>
-            <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
-              {glossary.cancel}
-            </button>
-          </div>
+            </DialogButton>
+          </DialogActions>
         </>
       )}
     </Modal>

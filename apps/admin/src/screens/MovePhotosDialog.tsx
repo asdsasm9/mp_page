@@ -1,7 +1,9 @@
 /** "Přesunout do alba" (F7): pick a target album (grouped by category, with search); the photos are appended at its end. */
 import type { AlbumRow, CategoryRow } from '@mp/shared';
 import { useId, useState } from 'react';
+import { DialogActions, DialogButton } from '../components/DialogActions';
 import { Modal } from '../components/Modal';
+import { useConfirmAction } from '../components/useConfirmAction';
 import { useToast } from '../components/Toast';
 import { groupAlbums } from '../data/albumSearch';
 import { isStale } from '../data/concurrency';
@@ -30,25 +32,14 @@ export function MovePhotosDialog({ album, photoIds, categories, albums, onClose,
   const searchId = useId();
   const [query, setQuery] = useState('');
   const [targetId, setTargetId] = useState('');
-  const [failure, setFailure] = useState<unknown>(null);
-  const [saving, setSaving] = useState(false);
   const everyGroup = groupAlbums(categories, albums, album.id, '');
   const groups = groupAlbums(categories, albums, album.id, query);
-
-  async function confirm() {
-    if (saving) return;
-    setSaving(true);
-    setFailure(null);
-    try {
-      const result = await actions.movePhotos(album, targetId, photoIds);
-      toast.show(fill(cs.photos.moved, { count: formatCount(result.moved, cs.units.photo) }));
-      if (result.coverReassigned) toast.show(cs.photos.coverReassigned);
-      onMoved();
-    } catch (error) {
-      setFailure(error);
-      setSaving(false);
-    }
-  }
+  const { saving, failure, confirm } = useConfirmAction(async () => {
+    const result = await actions.movePhotos(album, targetId, photoIds);
+    toast.show(fill(cs.photos.moved, { count: formatCount(result.moved, cs.units.photo) }));
+    if (result.coverReassigned) toast.show(cs.photos.coverReassigned);
+    onMoved();
+  });
 
   return (
     <Modal title={cs.photos.moveDialogTitle} onClose={onClose} busy={saving}>
@@ -102,21 +93,17 @@ export function MovePhotosDialog({ album, photoIds, categories, albums, onClose,
               {errorMessage(failure)}
             </p>
           )}
-          <div className="dialog-actions">
-            <button
-              type="button"
-              className="button button-primary"
+          <DialogActions busy={saving} onClose={onClose}>
+            <DialogButton
+              kind="primary"
+              busy={saving}
+              announceBusy
               disabled={!canMutate || targetId === ''}
-              aria-disabled={saving || undefined}
-              aria-busy={saving}
               onClick={() => void confirm()}
             >
               {saving ? cs.categories.saving : glossary.move}
-            </button>
-            <button type="button" className="button" aria-disabled={saving || undefined} onClick={() => !saving && onClose()}>
-              {glossary.cancel}
-            </button>
-          </div>
+            </DialogButton>
+          </DialogActions>
         </>
       )}
     </Modal>

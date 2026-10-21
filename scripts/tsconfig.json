@@ -5,5 +5,5 @@
     "types": ["node"],
     "noUncheckedIndexedAccess": true
   },
-  "include": ["migrate-legacy.ts", "migrate-legacy/**/*.ts", "restore-plan/**/*.ts"]
+  "include": ["migrate-legacy.ts", "migrate-legacy/**/*.ts", "restore-plan.ts","restore-plan/**/*.ts"]
 }

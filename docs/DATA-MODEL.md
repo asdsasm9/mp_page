@@ -17,7 +17,7 @@ tables below are checked against `supabase/tests/golden/privilege-matrix.json` b
    reservation lives **60 minutes** (`app_config.reservation_ttl_min`), so a slow batch keeps its reserved
    bytes after the URL has expired and can be re-presigned without losing its place. Expired reservations
    stop counting immediately and are deleted on the next `reserve_uploads()` call.
-3. **Tailwind is deferred to WP-3**, so the version is chosen once (no effect on the database).
+3. **Plain CSS with design tokens, not Tailwind** (D-6). MASTERPLAN section 3 once named Tailwind for `apps/web`; no effect on the database.
 
 ## Tables
 

@@ -58,7 +58,7 @@ Date: 2026-10-20. Branch `autopilot`, working tree clean before this file was ad
 ## Only offline or fake
 
 - Supabase auth, PostgREST, the Worker reserve/commit and R2 presigned PUT are the in-memory `FakeBackend` or localhost-style fake HTTP in tests. `HttpBackend` has only been run against fake `fetch`.
-- Real quota figures, the first real presigned PUT with content-length (VERIFY row 4 and rows 33 to 36), sharp output served from live R2, and the password grant (TOTP may block it, then `MIGRATE_ACCESS_TOKEN`) are unverified.
+- Real quota figures, the first real presigned PUT with content-length (VERIFY row 4 and rows 33 to 36), sharp output served from live R2, and the password grant (accounts are password-only; `MIGRATE_ACCESS_TOKEN` is the fallback if TOTP is added later) are unverified.
 - The dry-run numbers are real (real files, real sharp encoding) but nothing was uploaded.
 - 154.0 MB planned is well below the plan's estimate of 300 to 420 MB. The estimate was a guess; the real figure comes from the actual encoded sizes. Re-check the live figure in VERIFY row 34.
 

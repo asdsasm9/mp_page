@@ -86,7 +86,8 @@ match the CORS and redirect lists below.
      check the column name against `supabase/migrations`). A user without that row can sign in but the app refuses her.
    - Authentication, URL Configuration: add `<admin origin>/prihlaseni` to the redirect URLs (for example
      `https://admin.mullnyphotos.cz/prihlaseni`; it is where the password reset mail sends her), and set the site URL to the admin origin.
-   - Optional, VERIFY row 5: TOTP if the plan allows it.
+   - The admin is password-only: a long unique password per user, sign-ups off, two accounts. TOTP is not used; it can
+     be added later (VERIFY row 5, [MAINTENANCE.md](MAINTENANCE.md)).
 6. **Public site.** On the web Pages project set `PUBLIC_ADMIN_ORIGIN` to the exact admin origin (no path, no trailing
    slash) and redeploy, so the admin may read `/_publish.json` (`docs/WEB.md`, VERIFY row 28).
 7. **First run.** Sign in, create a test category and album, upload 3 photos, publish. Then do VERIFY rows 25 to 32

@@ -168,5 +168,6 @@ Placeholders ship until answered (none blocks the build; controller details bloc
 
 - Lighthouse numbers vary by 100 to 300 ms between sessions; `/svatby/` LCP passes by only 22 ms (DESIGN-CHECK.md).
 - INP is not lab-measurable and is not claimed.
+- Deleted-album URLs answer 404, not 410 (approved temporary deviation, D-14). `redirects.ts` drops 410 rows because Cloudflare Pages support for status 410 in `_redirects` is unverified (VERIFY row 17). After a human confirms row 17 (H-13), the autopilot flips `emit410`.
 - `design-check` and the other browser checks run against the fixture build with dev images, not production images.
 - A 1200 px tier would cut bytes for 3x phones at 360 px but needs a contract change and approval (DESIGN-CHECK.md, R3).

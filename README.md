@@ -63,9 +63,9 @@ Unconfirmed platform facts are collected in [docs/VERIFY.md](docs/VERIFY.md).
 Go-live checklist for the old GitHub Pages site. Human steps only; H-numbers are the human to-dos tracked in the autopilot STATE. Avoid wedding-busy weeks.
 
 1. H-2 finished: Cloudflare account, R2 buckets (public and private backup), CORS, bucket-scoped token, Worker secrets. See [docs/DEPLOY-API.md](docs/DEPLOY-API.md#0-prerequisites).
-2. Supabase set up: migrations pushed, sign-ups off, two users, `admins` rows, auth redirect URLs. See [docs/ADMIN.md](docs/ADMIN.md#deploying-the-admin-human-steps).
+2. Supabase set up: migrations pushed, sign-ups off, two users with long unique passwords (the admin is password-only, no TOTP; it can be added later), `admins` rows, auth redirect URLs. See [docs/ADMIN.md](docs/ADMIN.md#deploying-the-admin-human-steps).
 3. H-6 done: the "Needs a human" items in [docs/VERIFY.md](docs/VERIFY.md) are worked through and the results recorded there.
-4. H-7: the photographer gives the controller details for `/cookies/`; replace the placeholder lines. See [docs/WEB.md](docs/WEB.md#analytics).
+4. H-7: the photographer gives the controller details for `/cookies/`; replace the placeholder lines; while they remain, a production build is blocked. See [docs/WEB.md](docs/WEB.md#analytics).
 5. H-11: the Cloudflare analytics token is created and set. See [docs/WEB.md](docs/WEB.md#analytics).
 6. Deploy Worker, admin and web to preview URLs (Deploy table above). Keep the old site primary.
 7. H-10: run the live legacy migration (first one album, then all). See [docs/MIGRATION.md](docs/MIGRATION.md#steps).

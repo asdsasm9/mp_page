@@ -156,5 +156,5 @@ JWT: `authenticated` has insert on `url_history` behind the `is_admin()` policy,
 ## Evidence still to collect
 
 VERIFY rows 33 to 36 (first real presigned PUT through the script, real quota figures, sharp output on live R2,
-live sign-in with the password grant and the TOTP caveat). If the password grant is blocked because the account has
-TOTP, sign in on the admin, copy the access token and pass it as `MIGRATE_ACCESS_TOKEN`; it expires after about an hour.
+live sign-in with the password grant). The admin is password-only (D-12). If TOTP is added later and the password
+grant is blocked because the account has it, sign in on the admin, copy the access token and pass it as `MIGRATE_ACCESS_TOKEN`; it expires after about an hour.

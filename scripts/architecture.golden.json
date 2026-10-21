@@ -19,6 +19,7 @@
     "bindings": ["PHOTOS", "BACKUP"],
     "cronCount": 1,
     "secrets": ["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "PAGES_DEPLOY_HOOK_URL"],
+    "_plainVarsNote": "plainVars = non-credential config names. In production DEPLOY-API.md sets all ten names (secrets plus plainVars) with `wrangler secret put`; wrangler.toml has no [vars]. The key name is kept because the arch-api-surface gate reads it; it only means 'not credential-shaped'.",
     "plainVars": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "R2_ACCOUNT_ID", "R2_BUCKET", "R2_BACKUP_BUCKET", "R2_PUBLIC_BASE_URL", "ALLOWED_ORIGINS"]
   },
   "storageKeys": {

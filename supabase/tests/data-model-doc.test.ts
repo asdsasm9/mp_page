@@ -54,6 +54,7 @@ describe('docs/DATA-MODEL.md', () => {
     expect(doc).toMatch(/15 minutes/);
     expect(doc).toMatch(/60 minutes/);
     expect(doc).toContain('reservation_ttl_min');
-    expect(doc).toContain('Tailwind');
+    expect(doc).toContain('Plain CSS with design tokens, not Tailwind');
+    expect(doc).toContain('D-6');
   });
 });

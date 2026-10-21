@@ -113,11 +113,12 @@ rejects it, use the dashboard form with the same origins, methods and headers.
 
 The backup bucket gets no CORS policy and no public access.
 
-## 7. Optional: rate-limit rule
+## 7. Recommended: rate-limit rule
 
-**HUMAN** If the Worker is on its own host (e.g. `api.mullnyphotos.cz`), a WAF rate-limiting rule on that host (for
-example 60 requests per minute per IP, action block) adds a layer in front of the Worker. The Worker already refuses
-non-admins, but each refused request still costs a Supabase call. Free-plan availability of the rule is unverified.
+**HUMAN** Put the Worker on its own host (e.g. `api.mullnyphotos.cz`) and add a Cloudflare WAF rate-limiting rule on that
+host (for example 60 requests per minute per IP, action block). The Worker already refuses non-admins, but a request with
+a junk JWT still triggers one Supabase call, so without the rule an attacker can spend that quota. Free-plan availability
+of the rule is unverified.
 
 ## 8. Deploy
 

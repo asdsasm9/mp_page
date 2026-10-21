@@ -50,6 +50,21 @@ export interface AlbumInput {
   published: boolean;
 }
 
+/** One legacy image redirect: a 301 from the old path to an absolute image-host URL. */
+export interface UrlHistoryInput {
+  old_path: string;
+  target: string;
+}
+
+export interface UrlHistoryResult {
+  /** Rows created by this call. */
+  inserted: number;
+  /** Rows already present with the same target and status 301 (nothing done). */
+  existing: number;
+  /** Rows present but different (other target or status); left untouched, reported. */
+  changed: Array<{ old_path: string; found_target: string | null; found_status: number; wanted_target: string }>;
+}
+
 export interface MigrationBackend {
   /** Signs in as the admin. Rejects with NOT_ADMIN (fails closed) before any write is possible. */
   signIn(): Promise<void>;
@@ -62,6 +77,11 @@ export interface MigrationBackend {
   setCover(albumId: string, photoId: string): Promise<void>;
   /** Photos that carry a legacy_key (the only ones the migration owns). */
   listPhotosByLegacyKey(): Promise<PhotoRow[]>;
+  /**
+   * Inserts the missing url_history rows (301) and leaves existing ones alone (on conflict old_path do nothing).
+   * A row with a different target or status is never overwritten (an admin may have edited it): it is returned in `changed`.
+   */
+  addUrlHistory(rows: UrlHistoryInput[]): Promise<UrlHistoryResult>;
   /** POST /uploads/reserve */
   reserve(request: ReserveRequest): Promise<ReserveResponse>;
   /** PUT to a presigned target. Rejects PRESIGN_EXPIRED, PUT_REJECTED, NETWORK or SERVER_ERROR. */

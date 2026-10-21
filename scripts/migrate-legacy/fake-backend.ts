@@ -40,8 +40,9 @@ import {
   type ReserveResponse,
   type StorageResponse,
   type UploadTarget,
+  type UrlHistoryRow,
 } from '../../packages/shared/src';
-import { BackendError, type AlbumInput, type CategoryInput, type MigrationBackend } from './backend';
+import { BackendError, type AlbumInput, type CategoryInput, type MigrationBackend, type UrlHistoryInput, type UrlHistoryResult } from './backend';
 
 const PRESIGN_EXPIRY_SEC = 15 * 60;
 const DEFAULT_START_MS = Date.parse('2026-10-20T08:00:00.000Z');
@@ -53,6 +54,7 @@ export type FakeOp =
   | 'listAlbums'
   | 'upsertAlbum'
   | 'setCover'
+  | 'addUrlHistory'
   | 'listPhotosByLegacyKey'
   | 'reserve'
   | 'put'
@@ -101,6 +103,8 @@ export interface FakeBackend extends MigrationBackend {
   photos(): PhotoRow[];
   albums(): AlbumRow[];
   categories(): CategoryRow[];
+  /** Plain copies of the stored url_history rows (same shape as the table). */
+  urlHistory(): UrlHistoryRow[];
   setLimits(limits: Partial<Limits>): void;
 }
 
@@ -119,6 +123,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
   const categories = new Map<string, CategoryRow>();
   const albums = new Map<string, AlbumRow>();
   const photos = new Map<string, PhotoRow>();
+  /** url_history by old_path (unique). */
+  const urlHistory = new Map<string, UrlHistoryRow>();
   const reservations = new Map<string, Reservation>();
   const failures: Failure[] = [];
   const calls: FakeOp[] = [];
@@ -177,6 +183,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
     photos: () => copy([...photos.values()]),
     albums: () => copy([...albums.values()]),
     categories: () => copy([...categories.values()]),
+    urlHistory: () => copy([...urlHistory.values()]),
     setLimits(next) {
       limits = { ...limits, ...next };
     },
@@ -255,6 +262,22 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
       if (!photo || photo.album_id !== albumId) throw new BackendError('NOT_FOUND');
       album.cover_photo_id = photoId;
       album.updated_at = iso();
+    },
+
+    async addUrlHistory(rows: UrlHistoryInput[]): Promise<UrlHistoryResult> {
+      enter('addUrlHistory');
+      const result: UrlHistoryResult = { inserted: 0, existing: 0, changed: [] };
+      for (const r of rows) {
+        const found = urlHistory.get(r.old_path);
+        if (found) {
+          if (found.status === 301 && found.target === r.target) result.existing++;
+          else result.changed.push({ old_path: r.old_path, found_target: found.target, found_status: found.status, wanted_target: r.target });
+          continue;
+        }
+        urlHistory.set(r.old_path, { id: crypto.randomUUID(), old_path: r.old_path, target: r.target, status: 301, created_at: iso() });
+        result.inserted++;
+      }
+      return result;
     },
 
     async listPhotosByLegacyKey() {

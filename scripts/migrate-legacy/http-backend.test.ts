@@ -198,6 +198,39 @@ describe('HttpBackend endpoints', () => {
     await expect(b.upsertAlbum({ id: 'i', category_id: 'c', slug: 's', title: 't', place: null, sort: 1, legacy_id: 'l', published: true })).rejects.toBeInstanceOf(BackendError);
     expect(calls.some((c) => c.url.includes('/rest/v1/photos') && c.method !== 'GET')).toBe(false);
   });
+  it('addUrlHistory inserts only missing rows with on_conflict do-nothing, reports changed ones, never overwrites', async () => {
+    const T = 'https://img.example.test/photos';
+    const rows = [
+      { old_path: '/fotky_web/galleries/a/b/1.jpg', target: `${T}/1/1600.jpg` },
+      { old_path: '/fotky_web/galleries/a/b/2.jpg', target: `${T}/2/1600.jpg` },
+      { old_path: '/fotky_web/galleries/a/b/3.jpg', target: `${T}/3/1600.jpg` },
+    ];
+    const stored = [
+      { old_path: rows[0]!.old_path, target: rows[0]!.target, status: 301 },
+      { old_path: rows[1]!.old_path, target: 'https://elsewhere.example/x.jpg', status: 301 },
+    ];
+    const { b, calls } = await signedIn((c) => {
+      if (!c.url.includes('/rest/v1/url_history')) return undefined;
+      return c.method === 'GET' ? json(stored) : json([{ old_path: rows[2]!.old_path }], 201);
+    });
+    const r = await b.addUrlHistory(rows);
+    expect(r).toEqual({
+      inserted: 1,
+      existing: 1,
+      changed: [{ old_path: rows[1]!.old_path, found_target: 'https://elsewhere.example/x.jpg', found_status: 301, wanted_target: rows[1]!.target }],
+    });
+    expect(calls.map((c) => c.method)).toEqual(['GET', 'POST']);
+    expect(calls[1]!.url).toBe(`${SUPA}/rest/v1/url_history?on_conflict=old_path`);
+    expect(calls[1]!.headers.prefer).toContain('resolution=ignore-duplicates');
+    expect(calls[1]!.headers.authorization).toBe(`Bearer ${SENTINEL_TOKEN}`);
+    expect(JSON.parse(calls[1]!.body!)).toEqual([{ old_path: rows[2]!.old_path, target: rows[2]!.target, status: 301 }]);
+    expect(calls.some((c) => c.method === 'PATCH' || c.method === 'DELETE')).toBe(false);
+
+    // Everything present: no write at all.
+    const all = await signedIn((c) => (c.url.includes('/rest/v1/url_history') ? json(rows.map((x) => ({ ...x, status: 301 }))) : undefined));
+    expect(await all.b.addUrlHistory(rows)).toEqual({ inserted: 0, existing: 3, changed: [] });
+    expect(all.calls.map((c) => c.method)).toEqual(['GET']);
+  });
   it('setCover patches the album', async () => {
     const { b, calls } = await signedIn((c) => (c.method === 'PATCH' ? json([{ id: 'a' }]) : undefined));
     await b.setCover('a', 'p');

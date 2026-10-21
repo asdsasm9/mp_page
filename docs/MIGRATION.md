@@ -58,14 +58,14 @@ fails closed (`NOT_ADMIN`) before any write. Use your own second admin account, 
 ## Steps
 
 1. **Dry-run first.** `npm run migrate-legacy`. Expect 3 categories, 13 albums, 141 photos, a per-album table and
-   `legacy-image-redirects.txt` with 141 lines. Real numbers from the dry-run on the real files: 141 photos, about
+   `legacy-image-redirects.txt` (a preview) with 141 lines. Real numbers from the dry-run on the real files: 141 photos, about
    154 MB planned in total (real encoded sizes), 36 s on the development machine. Re-run to check it is stable.
 2. **First live run on one small album.**
    `npm run migrate-legacy -- --live --confirm-project <ref> --album lucka_filip`
    Pre-flight signs in, reads `GET /storage` and the existing rows, computes the need and aborts with zero writes if
    `used + need` would exceed the hard limit. Check the album in the admin (see the checklist), then continue.
 3. **Full run.** `npm run migrate-legacy -- --live --confirm-project <ref>`. Albums already done are skipped.
-   Roughly 154 MB goes to R2 and 141 rows to the database, 0 EUR. The run stops at the first `STORAGE_FULL` or
+   Roughly 154 MB goes to R2 and 141 photo rows plus 141 `url_history` redirect rows to the database, 0 EUR. The run stops at the first `STORAGE_FULL` or
    `FILE_TOO_LARGE`. It ends with `RESULT: OK` (exit 0) or `RESULT: INCOMPLETE` (exit 1; read the report, fix, re-run;
    crash-resume and skipping of finished photos are automatic). Each live run writes `migration-report/<timestamp>.json`
    and `.md`, with a `drift` list (existing catalog rows that differ from the mapping; left unchanged). If the upload or
@@ -82,7 +82,7 @@ fails closed (`NOT_ADMIN`) before any write. Use your own second admin account, 
 - [ ] Storage figure in the admin is plausible and below the warn level; write the real figures into VERIFY row 34.
 - [ ] Open a few 720 and 1600 variants and one master from the public image URL; they load and show no GPS data (VERIFY row 35).
 - [ ] Albums are `published`, but nothing is public until you press "Zveřejnit web" in the admin. Publish only when ready.
-- [ ] Keep `migration-report/legacy-image-redirects.txt` (see below). Do not delete `legacy/fotky_web` yet.
+- [ ] The `url_history: legacy image redirects` line shows wanted 141, inserted 141 (first run), changed 0; a second run shows inserted 0, already present 141 (see "The redirect file"). Do not delete `legacy/fotky_web` yet.
 
 ## Rollback
 
@@ -119,16 +119,39 @@ Unless the owner objects, these are used. The owner is who can change the defaul
 | 3 | Masters are re-encoded at q85, which also strips EXIF and GPS | Adam |
 | 4 | `sort` is stored as 10, 20, 30 (gaps for later reordering) | Adam |
 | 5 | Album slugs keep their underscores (`pavla_rafael`, `helis_tom`, `lucka_filip`) unless hyphens are asked for before the live run | Adam |
-| 6 | The redirect file is handed to WP-3 and WP-8 and switched on only after H-5 | Adam (H-5) |
+| 6 | The live run writes the 141 legacy image redirects to `url_history` (D-13); they reach visitors only after a publish following H-5 | Adam (H-5) |
 
 ## The redirect file
 
-`migration-report/legacy-image-redirects.txt` has 141 lines in the `_redirects` format of CONTENT-MAPPING section 7.3:
-`/fotky_web/galleries/<cat>/<id>/<n>.jpg` to `<PUBLIC_IMG_BASE_URL>/photos/<photo_id>/1600.jpg`, 301. It is also
-written by a dry-run, and a dry-run and a live run produce identical files because the ids are deterministic. The
-script does not touch `apps/web`. WP-3 and WP-8 consume the file when generating the site's `_redirects`, and the
-rows are switched on only after H-5 (DNS on Cloudflare and `img.mullnyphotos.cz` connected), because they point at
-the public image host. The file is gitignored; copy it to the web work when that step starts.
+The 141 legacy image redirects (D-13, T-200) are written to the database, not handed over as a file. The live run
+inserts one `url_history` row per migrated photo: `old_path` `/fotky_web/galleries/<cat>/<id>/<n>.jpg`, `status` 301,
+`target` the absolute `<PUBLIC_IMG_BASE_URL>/photos/<photo_id>/1600.jpg` (the default `https://img.mullnyphotos.cz` when
+the variable is unset; the console and report print the host used). The insert goes through PostgREST under the admin
+JWT: `authenticated` has insert on `url_history` behind the `is_admin()` policy, so no migration was needed.
+
+- **Order in the live run:** pre-flight, catalog (categories, albums), photos, covers and order check, then the
+  redirects last, because the targets contain the photo ids. The line is `url_history: legacy image redirects wanted 141,
+  inserted 141, already present 0, changed 0`, repeated in the report (`.json` and `.md`).
+- **Idempotent:** `old_path` is unique and the insert uses `on conflict do nothing`. A rerun inserts 0 and reports 141
+  already present. A row that exists with another target or status is never overwritten; it is listed as `CHANGED`
+  and the run ends `RESULT: INCOMPLETE` (exit 1). A changed row means the legacy URL points elsewhere than the
+  migrated photo, usually because `PUBLIC_IMG_BASE_URL` changed between runs. Fix the row by hand in the database, or
+  delete it and re-run. If the redirects phase itself fails, the report of the finished upload phase is still written
+  with the redirects block marked `FAILED`, the run ends `INCOMPLETE`, and a re-run adds the rows.
+- **`--album <id>`** inserts only the redirects of that album's photos. Photos that are still missing get their row
+  when a later run registers them.
+- **Dry-run** writes nothing to the database. It prints `redirect lines 141` and still writes
+  `migration-report/legacy-image-redirects.txt` (gitignored) as a human-readable preview of the same rows; nothing
+  consumes that file any more. `apps/web` reads the rows from the published snapshot (`snapshot.redirects`) and emits them
+  into `_redirects`; a build fails if a target is not on the image origin.
+- **Switch-on:** the rows are in the database after the live run, but a visitor only gets them after the next publish
+  and web build. Do that only after H-5 (DNS on Cloudflare and `img.mullnyphotos.cz` connected), because the targets are on
+  the public image host.
+- **Rollback:** deleting photos (admin or `POST /photos/delete`) does not remove their `url_history` rows, which would
+  then point at objects that are gone. After a rollback run
+  `delete from public.url_history where old_path like '/fotky_web/galleries/%';` in the Supabase SQL editor (or delete those rows in
+  the table editor) before publishing, and re-run the migration to recreate them. A re-run recreates photos with the
+  same ids, so the old rows stay valid in that case.
 
 ## Evidence still to collect
 

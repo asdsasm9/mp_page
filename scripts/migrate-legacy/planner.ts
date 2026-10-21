@@ -144,7 +144,7 @@ export function formatReport(plan: Plan, options: Pick<MigrateOptions, 'limitByt
   if (options.limitBytes !== null && plan.bytes > options.limitBytes) {
     lines.push(`planned bytes exceed --limit-bytes ${options.limitBytes}`);
   }
-  lines.push(`redirect lines ${plan.redirects.length}`);
+  lines.push(`redirect lines ${plan.redirects.length} (a live run inserts these as url_history rows; the dry-run writes nothing)`);
   lines.push(`RESULT: ${plan.result}`);
   return lines;
 }

@@ -20,7 +20,7 @@ import {
   type StorageResponse,
   type UploadTarget,
 } from '../../packages/shared/src';
-import { BackendError, type AlbumInput, type BackendErrorCode, type CategoryInput, type MigrationBackend } from './backend';
+import { BackendError, type AlbumInput, type BackendErrorCode, type CategoryInput, type MigrationBackend, type UrlHistoryInput, type UrlHistoryResult } from './backend';
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -81,7 +81,7 @@ export function createHttpBackend(config: HttpBackendConfig): MigrationBackend {
 
   // ---- PostgREST
 
-  async function rest<T>(method: string, table: string, query: Record<string, string>, body?: unknown): Promise<T[]> {
+  async function rest<T>(method: string, table: string, query: Record<string, string>, body?: unknown, prefer = 'return=representation'): Promise<T[]> {
     const headers: Record<string, string> = {
       apikey: config.anonKey,
       authorization: `Bearer ${bearer()}`,
@@ -90,7 +90,7 @@ export function createHttpBackend(config: HttpBackendConfig): MigrationBackend {
     const init: RequestInit = { method, headers, cache: 'no-store' };
     if (body !== undefined) {
       headers['content-type'] = 'application/json';
-      headers.prefer = 'return=representation';
+      headers.prefer = prefer;
       init.body = JSON.stringify(body);
     }
     const qs = new URLSearchParams(query).toString();
@@ -213,6 +213,38 @@ export function createHttpBackend(config: HttpBackendConfig): MigrationBackend {
     async setCover(albumId, photoId) {
       const rows = await rest<AlbumRow>('PATCH', 'albums', { id: `eq.${albumId}` }, { cover_photo_id: photoId });
       if (!rows[0]) throw new BackendError('NOT_FOUND');
+    },
+
+    async addUrlHistory(rows: UrlHistoryInput[]): Promise<UrlHistoryResult> {
+      const result: UrlHistoryResult = { inserted: 0, existing: 0, changed: [] };
+      if (rows.length === 0) return result;
+      // Direct PostgREST insert under the admin JWT: authenticated has insert on url_history behind the is_admin() policy.
+      const stored = await rest<{ old_path: string; target: string | null; status: number }>('GET', 'url_history', {
+        select: 'old_path,target,status',
+        old_path: 'like./fotky_web/galleries/*',
+        limit: '5000',
+      });
+      const byPath = new Map(stored.map((r) => [r.old_path, r] as const));
+      const missing: UrlHistoryInput[] = [];
+      for (const r of rows) {
+        const found = byPath.get(r.old_path);
+        if (!found) missing.push(r);
+        else if (found.status === 301 && found.target === r.target) result.existing++;
+        else result.changed.push({ old_path: r.old_path, found_target: found.target, found_status: found.status, wanted_target: r.target });
+      }
+      if (missing.length > 0) {
+        // on conflict (old_path) do nothing: a concurrent run or a row added meanwhile is never overwritten.
+        const created = await rest<{ old_path: string }>(
+          'POST',
+          'url_history',
+          { on_conflict: 'old_path' },
+          missing.map((r) => ({ old_path: r.old_path, target: r.target, status: 301 })),
+          'resolution=ignore-duplicates,return=representation',
+        );
+        result.inserted = created.length;
+        result.existing += missing.length - created.length;
+      }
+      return result;
     },
 
     listPhotosByLegacyKey: () => rest<PhotoRow>('GET', 'photos', { select: '*', legacy_key: 'not.is.null', order: 'sort.asc,id.asc' }),

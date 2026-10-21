@@ -202,7 +202,7 @@ Delivered as a `_redirects` file (or Cloudflare redirect rules) in the public si
 | `/couples/:id` | `/parove-foceni/:id/` | 301 | same |
 | `/about`, `/about/` | `/o-mne/` | 301 | same |
 | `/contact`, `/contact/` | `/kontakt/` | 301 | same |
-| `/fotky_web/galleries/<cat>/<id>/<n>.jpg` (141 URLs) | `<PUBLIC_BASE_URL>/photos/<photo_id>/1600.jpg` | 301 | Google Images and external embeds. Generated at migration time from `legacy_key` to `photo_id` into a `_redirects` file (141 lines; Cloudflare Pages allows 2000 static rules), so the old image URLs keep working. The 1600 px variant is the closest to the old "about 1 MB" files. |
+| `/fotky_web/galleries/<cat>/<id>/<n>.jpg` (141 URLs) | `<PUBLIC_BASE_URL>/photos/<photo_id>/1600.jpg` | 301 | Google Images and external embeds. Inserted at migration time from `legacy_key` to `photo_id` as 141 `url_history` rows by the live `migrate-legacy` run (D-13, `docs/MIGRATION.md`); the web build emits them into `_redirects` (Cloudflare Pages allows 2000 static rules), so the old image URLs keep working. The 1600 px variant is the closest to the old "about 1 MB" files. |
 | `/fotky_web/site/preview/preview.jpg` | the new OG image URL (T-3 picks it) | 301 | social share caches |
 | `/fotky_web/site/**` (other site images) | no redirect, 410 or 404 | n/a | not indexed assets; accepted loss |
 | `/robots.txt`, `/manifest.json`, `/favicon.ico`, `/logo.png`, `/android-chrome-192x192.png` | same path, served by the new site (new files with the same names) | none | root files, must exist at the same path |

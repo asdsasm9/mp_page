@@ -1,5 +1,5 @@
 // Legacy migration (plan WP-06): moves the 141 legacy photos into the new system through the guarded upload path.
-// Step 6: the default dry-run (no backend, no network). Live mode follows in later steps.
+// Default is a dry-run (no backend, no network); --live adds the guarded real run, including the url_history redirects.
 // Usage: npm run migrate-legacy -- --help
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -12,6 +12,7 @@ import { createHttpBackend, type FetchLike } from './migrate-legacy/http-backend
 import { formatCatalog, syncCatalog } from './migrate-legacy/catalog';
 import { formatUpload, preflight, uploadComplete, uploadPhotos, type UploadDeps } from './migrate-legacy/upload';
 import { coversComplete, formatCovers, syncCovers } from './migrate-legacy/cover';
+import { formatRedirects, redirectsComplete, syncRedirects, type RedirectsReport } from './migrate-legacy/url-history';
 import { buildFailedLiveReport, buildLiveReport, writeLiveReport } from './migrate-legacy/report';
 import { checkLive, LiveGuardError, type Env } from './migrate-legacy/live-guard';
 
@@ -32,7 +33,7 @@ export interface MainDeps {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Live mode: guards first (exit 2, no request), then sign-in, then the catalog. Photo upload follows in T-156, T-157. */
+/** Live mode: guards first (exit 2, no request), sign-in, pre-flight, catalog, photos, covers, then the url_history redirects. */
 async function runLive(
   options: MigrateOptions,
   out: (line: string) => void,
@@ -100,12 +101,23 @@ async function runLive(
   try {
     const report = await uploadPhotos(backend, pre, catalog.albumIds, { ...deps.upload, repair: options.repair, alt: options.alt });
     const covers = await syncCovers(backend, options);
+    // Legacy image redirects go in last: they point at photo ids, so the photos must be registered first.
+    // Its own try: a failure here must not discard the report of the successful upload phase.
+    let redirects: RedirectsReport | null = null;
+    let redirectsError: string | null = null;
+    try {
+      redirects = await syncRedirects(backend, options, config.publicImgBaseUrl);
+    } catch (e) {
+      redirectsError = e instanceof BackendError ? e.code : 'UNKNOWN';
+    }
     const lines = formatUpload(report);
     lines.pop(); // the upload-only RESULT line; the final one below also covers cover and order
     for (const line of lines) out(line);
     for (const line of formatCovers(covers)) out(line);
-    const ok = uploadComplete(report) && coversComplete(covers);
-    writeLiveReport(buildLiveReport(report, covers, options.alt, ok, catalog.drift), reportDir, stamp);
+    if (redirects !== null) for (const line of formatRedirects(redirects)) out(line);
+    else err(`migrate-legacy: url_history redirects phase failed (${redirectsError}). The photos are in; re-run to add the redirects.`);
+    const ok = uploadComplete(report) && coversComplete(covers) && redirects !== null && redirectsComplete(redirects);
+    writeLiveReport(buildLiveReport(report, covers, options.alt, ok, catalog.drift, redirects, redirectsError), reportDir, stamp);
     out('report written to migration-report/');
     out(ok ? 'RESULT: OK' : 'RESULT: INCOMPLETE');
     return ok ? 0 : 1;
@@ -153,7 +165,7 @@ export async function main(
     for (const line of formatReport(plan, options)) out(line);
     const stamp = (deps.now?.() ?? new Date()).toISOString().replace(/[:.]/g, '-');
     writeReport(plan, options, deps.reportDir ?? join(REPO_ROOT, 'migration-report'), stamp);
-    out('report and legacy-image-redirects.txt written to migration-report/');
+    out('report and legacy-image-redirects.txt (preview only; a live run writes these rows to url_history) written to migration-report/');
     return plan.result === 'OK' ? 0 : 1;
   } catch (e) {
     if (e instanceof PlanError || e instanceof SourcePathError) {

@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import type { Drift } from './catalog';
 import type { CoverReport } from './cover';
 import type { UploadReport } from './upload';
+import type { RedirectsReport } from './url-history';
 
 export interface LiveAlbumReport {
   id: string;
@@ -31,9 +32,29 @@ export interface LiveReport {
   quota: { before: number; after: number | null };
   /** Catalog drift: existing rows that differ from CONTENT-MAPPING (reported, never overwritten). */
   drift: Drift[];
+  /** url_history phase (legacy image redirects); null when it did not run. Paths and counts only: no URLs in report files. */
+  redirects: LiveRedirects | null;
   aborted: string | null;
   result: 'OK' | 'INCOMPLETE';
 }
+
+export interface LiveRedirects {
+  wanted: number;
+  inserted: number;
+  existing: number;
+  /** Rows left unchanged because their target or status differs (old_path and stored status; the URLs are printed on the console only). */
+  changed: Array<{ old_path: string; found_status: number }>;
+  /** Error code when the redirects phase threw (the counts are then 0); null otherwise. */
+  error: string | null;
+}
+
+const toLiveRedirects = (r: RedirectsReport | null, error: string | null): LiveRedirects | null =>
+  r === null
+    ? error === null
+      ? null
+      : { wanted: 0, inserted: 0, existing: 0, changed: [], error }
+    : {
+        error: null, wanted: r.wanted, inserted: r.inserted, existing: r.existing, changed: r.changed.map((c) => ({ old_path: c.old_path, found_status: c.found_status })) };
 
 /** Removes URLs, e-mail-shaped strings, bearer tokens and any of the given secret values from free text. */
 export const scrub = (s: string, secrets: readonly string[] = []): string => {
@@ -60,6 +81,7 @@ export function buildFailedLiveReport(
     totals: { found: 0, inserted: 0, skipped: 0, missing: 0, repaired: 0, failed: 0, bytes: 0 },
     quota: { before: quotaBefore, after: null },
     drift: drift.map(scrubDrift),
+    redirects: null,
     aborted: `upload phase failed: ${scrub(label, secrets)}`,
     result: 'INCOMPLETE',
   };
@@ -77,6 +99,8 @@ export function buildLiveReport(
   alt: 'null' | 'default',
   ok: boolean,
   drift: Drift[] = [],
+  redirects: RedirectsReport | null = null,
+  redirectsError: string | null = null,
 ): LiveReport {
   const coverById = new Map(covers.albums.map((c) => [c.id, c] as const));
   const albums = upload.albums.map((a): LiveAlbumReport => {
@@ -113,6 +137,7 @@ export function buildLiveReport(
     },
     quota: { before: upload.quotaBefore, after: upload.quotaAfter },
     drift: drift.map(scrubDrift),
+    redirects: toLiveRedirects(redirects, redirectsError),
     aborted: upload.aborted,
     result: ok ? 'OK' : 'INCOMPLETE',
   };
@@ -133,6 +158,12 @@ export function formatLiveReportMd(r: LiveReport): string {
   lines.push(`quota used before ${r.quota.before}, after ${r.quota.after ?? 'unknown'}`);
   lines.push(`catalog drift: ${r.drift.length}`);
   for (const d of r.drift) lines.push(`DRIFT ${d.kind} ${d.ref} ${d.field}: expected ${JSON.stringify(d.expected)}, found ${JSON.stringify(d.actual)} (left unchanged)`);
+  if (r.redirects) {
+    const x = r.redirects;
+    if (x.error !== null) lines.push(`url_history legacy image redirects: FAILED (${x.error})`);
+    else lines.push(`url_history legacy image redirects: wanted ${x.wanted}, inserted ${x.inserted}, already present ${x.existing}, changed ${x.changed.length}`);
+    for (const c of x.changed) lines.push(`CHANGED ${c.old_path} (stored status ${c.found_status}, left unchanged)`);
+  }
   if (r.aborted) lines.push(`ABORTED: ${r.aborted}`);
   for (const a of r.albums) for (const e of a.errors) lines.push(`ERROR ${a.id}: ${e}`);
   lines.push('', `RESULT: ${r.result}`, '');

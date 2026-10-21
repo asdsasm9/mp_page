@@ -301,6 +301,19 @@ export function placeholderPages(pages) {
 
 // ------------------------------------------------------------------ runner
 
+/**
+ * The fixture-only `layout-check/` pages (T-216) must never ship: fails when dist has them in a production build
+ * or a build from a real snapshot (`_publish.json` source "snapshot"). Fixture/dev builds may keep them.
+ */
+export function checkLayoutCheckAbsent(site) {
+  const present = (site.files ?? []).some((f) => f.startsWith('layout-check/'));
+  if (!present) return [];
+  if (site.siteEnv === 'production' || site.source === 'snapshot') {
+    return [`dist/layout-check exists in a ${site.siteEnv === 'production' ? 'production' : 'snapshot'} build (fixture-only pages must not ship)`];
+  }
+  return [];
+}
+
 /** Runs everything. `errors` fail the check, `warnings` are printed only. */
 export function runSiteChecks(site) {
   const errors = [];
@@ -318,6 +331,7 @@ export function runSiteChecks(site) {
   add('unique', checkUnique(site.pages));
   add('links', checkInternalLinks(site.pages, site));
   add('sitemap', checkSitemapCanonical(site.pages, site.sitemapXml));
+  add('layout-check', checkLayoutCheckAbsent(site));
   const open = placeholderPages(site.pages);
   if (open.length > 0) {
     const msg = `${PLACEHOLDER} marker still on ${open.join(', ')} (cutover blocker)`;
@@ -459,8 +473,11 @@ export function loadSite(distDir, walkFn = listFiles) {
   // layout-check/ holds the fixture-only album layout pages for design-check (T-216); they are not part of the site.
   const pages = files.filter((f) => f.endsWith('.html') && !f.startsWith('layout-check/')).map((f) => ({ path: f, html: readFileSync(join(distDir, f), 'utf8') }));
   let siteEnv = null;
+  let source = null;
   try {
-    siteEnv = JSON.parse(read('_publish.json') ?? '{}').siteEnv ?? null;
+    const publish = JSON.parse(read('_publish.json') ?? '{}');
+    siteEnv = publish.siteEnv ?? null;
+    source = publish.source ?? null;
   } catch {
     siteEnv = null;
   }
@@ -472,7 +489,7 @@ export function loadSite(distDir, walkFn = listFiles) {
     imageHost = null;
   }
   const analytics = hasBeacon(siteEnv, process.env.PUBLIC_CF_ANALYTICS_TOKEN);
-  return { pages, files, sitemapXml: read('sitemap.xml'), redirectsText: read('_redirects') ?? '', siteEnv, distDir, imageHost, analytics };
+  return { pages, files, sitemapXml: read('sitemap.xml'), redirectsText: read('_redirects') ?? '', siteEnv, source, distDir, imageHost, analytics };
 }
 
 export function main() {

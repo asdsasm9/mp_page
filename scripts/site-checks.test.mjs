@@ -10,6 +10,7 @@ import {
   checkImages,
   checkInternalLinks,
   checkJsonLd,
+  checkLayoutCheckAbsent,
   checkRobots,
   checkSitemapCanonical,
   checkUnique,
@@ -257,6 +258,41 @@ describe('gate registration', () => {
     const out = runChecks({ files: [], dist: [], site: s }, { checks: [row] });
     expect(out.rows[0].status).toBe('FAIL');
     expect(out.exitCode).toBe(1);
+  });
+});
+
+describe('layout-check absence (T-221)', () => {
+  const build = (publish) => {
+    const dir = mkdtempSync(join(tmpdir(), 'site-checks-lc-'));
+    const w = (rel, text) => {
+      mkdirSync(dirname(join(dir, rel)), { recursive: true });
+      writeFileSync(join(dir, rel), text);
+    };
+    w('index.html', '<html lang="cs"></html>');
+    w('layout-check/a/index.html', '<html></html>');
+    if (publish) w('_publish.json', JSON.stringify(publish));
+    return dir;
+  };
+  const errorsFor = (publish) => {
+    const dir = build(publish);
+    try {
+      return checkLayoutCheckAbsent(loadSite(dir));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  it('fails in production and snapshot builds', () => {
+    expect(errorsFor({ siteEnv: 'production', source: 'fixture' })).toHaveLength(1);
+    expect(errorsFor({ siteEnv: 'preview', source: 'snapshot' })).toHaveLength(1);
+  });
+  it('passes for fixture/dev builds and without layout-check', () => {
+    expect(errorsFor({ siteEnv: 'local', source: 'fixture' })).toEqual([]);
+    expect(errorsFor(null)).toEqual([]);
+    expect(checkLayoutCheckAbsent({ files: ['index.html'], siteEnv: 'production', source: 'snapshot' })).toEqual([]);
+  });
+  it('is part of runSiteChecks', () => {
+    const { errors } = runSiteChecks({ pages: [], files: ['layout-check/x/index.html'], siteEnv: 'production', source: null });
+    expect(errors.some((e) => e.startsWith('layout-check:'))).toBe(true);
   });
 });
 

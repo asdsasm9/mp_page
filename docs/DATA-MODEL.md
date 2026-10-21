@@ -29,7 +29,7 @@ All tables are in `public` with row level security on. Every migration starts ea
 | `admins` | `user_id` (pk, references `auth.users`). Who is an admin. No admin user is created by migrations or seed. |
 | `categories` | `slug` unique, `^[a-z0-9]+(-[a-z0-9]+)*$`, 2..60, not in the reserved list; `name`, SEO fields, `sort`, `visible`. |
 | `albums` | `category_id` (restrict), `slug` unique (`^[a-z0-9]+([-_][a-z0-9]+)*$`, 2..60), `title`, `place`, `shot_on`, `cover_photo_id` (set null), `published`, `legacy_id` unique. |
-| `photos` | `album_id` (restrict), `master_key` unique and equal to `photos/<id>/master.jpg`, `width`, `height`, `variants` jsonb, `bytes_total`, `dominant_color`, `alt`, `caption`, `sort`, `legacy_key` unique. |
+| `photos` | `album_id` (restrict), `master_key` unique and equal to `photos/<id>/master.jpg`, `width`, `height`, `variants` jsonb, `bytes_total`, `dominant_color` (null or `^#[0-9a-f]{6}$`), `alt` (at most 300 chars), `caption`, `sort`, `legacy_key` unique (null or 1..200 chars of `A-Za-z0-9_./-`, constraint `photos_legacy_key_format` from migration `20261019100900_photo_input_checks.sql`). A direct `register_photo` call that violates a check fails with SQLSTATE 23514, which the Worker maps to the generic `UPSTREAM_ERROR`. |
 | `url_history` | `old_path` unique, `target`, `status` in (301, 410). Filled by the slug-history triggers and by hand. |
 | `app_config` | Single row: quota hard 9.5e9, warn 8e9, max upload 41943040, max batch 200, reservation TTL 60 min. |
 | `site_state` | Single row: `pending_changes`, `last_published_at`, `last_publish_requested_at`. |

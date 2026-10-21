@@ -31,12 +31,21 @@ interface Reg {
   total?: number;
   legacy?: string | null;
   alt?: string | null;
+  color?: string | null;
 }
 const register = (r: Reg = {}) =>
   asAdmin((d) =>
     d.query<{ r: Record<string, unknown> }>(
-      `select public.register_photo($1::uuid, $2::uuid, 3000, 2000, $3::jsonb, $4::bigint, '#aabbcc', $5, $6) as r`,
-      [r.id ?? id(1), r.album ?? ALB, JSON.stringify(r.variants ?? VARIANTS), r.total ?? TOTAL, r.alt ?? null, r.legacy ?? null],
+      `select public.register_photo($1::uuid, $2::uuid, 3000, 2000, $3::jsonb, $4::bigint, $7, $5, $6) as r`,
+      [
+        r.id ?? id(1),
+        r.album ?? ALB,
+        JSON.stringify(r.variants ?? VARIANTS),
+        r.total ?? TOTAL,
+        r.alt ?? null,
+        r.legacy ?? null,
+        r.color === undefined ? '#aabbcc' : r.color,
+      ],
     ),
   );
 const count = async () => (await db.query<{ n: number }>('select count(*)::int as n from public.photos')).rows[0].n;
@@ -147,6 +156,23 @@ describe('register_photo', () => {
     const again = (await register({ id: id(2), legacy: 'svatby/sedlakovi/1.jpg' })).rows[0].r;
     expect(again).toMatchObject({ id: first.id, already_existed: true });
     expect(await count()).toBe(1);
+  });
+
+  it('T-205: direct calls cannot store an over-long alt, a bad colour or a bad legacy_key', async () => {
+    await expect(register({ alt: 'a'.repeat(301) })).rejects.toThrow('photos_alt_length');
+    await expect(register({ color: 'red' })).rejects.toThrow('photos_dominant_color_format');
+    await expect(register({ color: '#AABBCC' })).rejects.toThrow('photos_dominant_color_format');
+    await expect(register({ legacy: 'weddings/a/' + '1'.repeat(200) + '.jpg' })).rejects.toThrow('photos_legacy_key_format');
+    await expect(register({ legacy: '../weddings/a/1 .jpg' })).rejects.toThrow('photos_legacy_key_format');
+    await expect(register({ legacy: '' })).rejects.toThrow('photos_legacy_key_format');
+    expect(await count()).toBe(0);
+  });
+
+  it('T-205: boundary values and nulls are accepted', async () => {
+    const ok = (await register({ alt: 'a'.repeat(300), color: null, legacy: 'weddings/pavla_rafael/11.jpg' })).rows[0].r;
+    expect(ok).toMatchObject({ dominant_color: null, legacy_key: 'weddings/pavla_rafael/11.jpg', already_existed: false });
+    expect((await register({ id: id(2), alt: null, color: '#00ff7a' })).rows[0].r.dominant_color).toBe('#00ff7a');
+    expect(await count()).toBe(2);
   });
 
   it('an unknown album raises ALBUM_NOT_FOUND', async () => {

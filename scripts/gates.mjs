@@ -455,18 +455,35 @@ export function envUrlHosts(env = process.env) {
 // anon key and her JWT: no service key, no sign-up, no direct writes to `photos` (the Worker commit does those; the
 // HttpBackend may PATCH albums, POST categories/albums and read photos), no R2/S3 hosts or SDKs (presigned PUTs only),
 // and no committed credentials.
-const isMigrateSrc = (p) =>
-  (p === 'scripts/migrate-legacy.ts' || p.startsWith('scripts/migrate-legacy/')) && /\.(ts|mjs|js)$/.test(p) && !/\.test\.(ts|mjs|js)$/.test(p);
-const migrateRule = (patterns) => (files) => {
-  const src = files.filter((f) => isMigrateSrc(f.path));
-  return result(findMatches(src, () => false, patterns), `${src.length} migrate-legacy sources clean`);
+// Shared by the migrate and backup/restore-plan source gates: a script entry file plus its directory, tests excluded.
+const isScriptSrcOf = (entry, dir) => (p) =>
+  (p === entry || p.startsWith(dir)) && /\.(ts|mjs|js)$/.test(p) && !/\.test\.(ts|mjs|js)$/.test(p);
+const isMigrateSrc = isScriptSrcOf('scripts/migrate-legacy.ts', 'scripts/migrate-legacy/');
+const sourceRule = (isSrc, label) => (patterns) => (files) => {
+  const src = files.filter((f) => isSrc(f.path));
+  return result(findMatches(src, () => false, patterns), `${src.length} ${label} sources clean`);
 };
+const migrateRule = sourceRule(isMigrateSrc, 'migrate-legacy');
 const WRITE_METHOD = `['"\`](POST|PATCH|PUT|DELETE)['"\`]`;
 
-export const checkMigrateNoServiceKey = migrateRule([
+const SERVICE_KEY_PATTERNS = [
   ['service_role', /service[_-]?role/i],
   ['service key name', /service[_-]?key/i],
-]);
+];
+const R2_PATTERNS = [
+  ['r2.cloudflarestorage.com', /r2\.cloudflarestorage\.com/i],
+  ['r2.dev', /\.r2\.dev\b/i],
+  ['R2/S3 SDK', /@aws-sdk|aws4fetch|R2Bucket/],
+];
+const CREDENTIAL_PATTERNS = [
+  ['JWT', /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/],
+  ['sk_ key', /\bsk_(live_|test_)?[A-Za-z0-9]{16,}/],
+  ['AWS access key id', /\b(AKIA|ASIA)[0-9A-Z]{16}\b/],
+  ['private key block', /-----BEGIN [A-Z ]*PRIVATE KEY/],
+  ['key-named long value', /(key|secret|token|password)[\w"' ]{0,20}[:=]\s*["'][A-Za-z0-9+/_-]{32,}["']/i],
+];
+
+export const checkMigrateNoServiceKey = migrateRule(SERVICE_KEY_PATTERNS);
 export const checkMigrateNoSignUp = migrateRule([
   ['signUp', /\bsign_?up\s*\(/i],
   ['auth signup endpoint', /auth\/v1\/signup/i],
@@ -478,18 +495,54 @@ export const checkMigrateNoPhotoWrites = migrateRule([
   ['photos write via from()', new RegExp(`from\\(\\s*${Q}photos${Q}\\s*\\)\\s*\\.\\s*(insert|update|delete|upsert)`)],
   ['photos via REST path literal', /rest\/v1\/photos/],
 ]);
-export const checkMigrateNoR2 = migrateRule([
-  ['r2.cloudflarestorage.com', /r2\.cloudflarestorage\.com/i],
-  ['r2.dev', /\.r2\.dev\b/i],
-  ['R2/S3 SDK', /@aws-sdk|aws4fetch|R2Bucket/],
-]);
-export const checkMigrateNoCredentials = migrateRule([
-  ['JWT', /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/],
-  ['sk_ key', /\bsk_(live_|test_)?[A-Za-z0-9]{16,}/],
-  ['AWS access key id', /\b(AKIA|ASIA)[0-9A-Z]{16}\b/],
-  ['private key block', /-----BEGIN [A-Z ]*PRIVATE KEY/],
-  ['key-named long value', /(key|secret|token|password)[\w"' ]{0,20}[:=]\s*["'][A-Za-z0-9+/_-]{32,}["']/i],
-]);
+export const checkMigrateNoR2 = migrateRule(R2_PATTERNS);
+export const checkMigrateNoCredentials = migrateRule(CREDENTIAL_PATTERNS);
+
+// ---------------------------------------------------------------------------------------------- backup / restore-plan (WP8-13)
+// scripts/backup.ts + scripts/backup/** (reads the live catalog and public masters) and scripts/restore-plan.ts +
+// scripts/restore-plan/** (pure, offline SQL emitter). Same matchers as the migrate gates; tests excluded (they
+// assemble fake secrets), but tests are still covered by no-secrets.
+export const isBackupSrc = (p) => isScriptSrcOf('scripts/backup.ts', 'scripts/backup/')(p);
+export const isRestorePlanSrc = (p) => isScriptSrcOf('scripts/restore-plan.ts', 'scripts/restore-plan/')(p);
+const isBackupOrRestoreSrc = (p) => isBackupSrc(p) || isRestorePlanSrc(p);
+const backupRule = sourceRule(isBackupOrRestoreSrc, 'backup/restore-plan');
+
+export const checkBackupNoServiceKey = backupRule(SERVICE_KEY_PATTERNS);
+export const checkBackupNoR2 = backupRule(R2_PATTERNS);
+export const checkBackupNoCredentials = backupRule(CREDENTIAL_PATTERNS);
+
+/** The one write-method literal allowed in the whole backup: the password-grant sign-in POST in catalog.ts. */
+export const BACKUP_SIGNIN_FILE = 'scripts/backup/catalog.ts';
+const BACKUP_SIGNIN_POST = new RegExp(`\\bauth\\(\\s*${Q}token\\?grant_type=password${Q}\\s*,\\s*\\{\\s*method:\\s*['"\`]POST['"\`]`);
+const WRITE_METHOD_RE = new RegExp(WRITE_METHOD, 'i');
+
+/** No POST/PATCH/PUT/DELETE literal in backup or restore-plan sources, except the single token POST in catalog.ts. */
+export function checkBackupReadOnly(files) {
+  const src = files.filter((f) => isBackupOrRestoreSrc(f.path));
+  const bad = [];
+  for (const f of src) {
+    let text = f.text;
+    if (f.path === BACKUP_SIGNIN_FILE) text = text.replace(BACKUP_SIGNIN_POST, 'auth(');
+    if (WRITE_METHOD_RE.test(text)) bad.push(`${f.path} (write method literal)`);
+  }
+  return result(bad, `${src.length} backup/restore-plan sources read-only (one sign-in POST allowed)`);
+}
+
+// Offline means offline, fail closed: the RAW text is scanned, comments included (a scanner that tries to skip
+// comments can be fooled by regex literals). Restore-plan comments must therefore avoid the banned words.
+const OFFLINE_PATTERNS = [
+  ['fetch(', /\bfetch\s*\(/],
+  ['http', /http/i],
+  ['XMLHttpRequest', /XMLHttpRequest/],
+  ['child_process', /child_process/],
+  ['net/https/dgram/tls module', /['"`](node:)?(net|https?|http2|dgram|tls)['"`]/],
+  ['WebSocket', /\bWebSocket\b/],
+];
+/** restore-plan sources never touch a network or spawn a process. */
+export function checkRestorePlanOffline(files) {
+  const src = files.filter((f) => isRestorePlanSrc(f.path));
+  return result(findMatches(src, () => false, OFFLINE_PATTERNS), `${src.length} restore-plan sources offline (raw scan, comments included)`);
+}
 
 // ---------------------------------------------------------------------------------------------- architecture (WP8-3..5)
 // The arch-* gate functions live in scripts/gates-arch.mjs; re-exported here so imports of gates.mjs keep working.
@@ -537,6 +590,11 @@ export const CHECKS = [
   { name: 'migrate-no-photo-writes', input: 'files', run: checkMigrateNoPhotoWrites },
   { name: 'migrate-no-r2', input: 'files', run: checkMigrateNoR2 },
   { name: 'migrate-no-credentials', input: 'files', run: checkMigrateNoCredentials },
+  { name: 'backup-no-service-key', input: 'files', run: checkBackupNoServiceKey },
+  { name: 'backup-no-r2', input: 'files', run: checkBackupNoR2 },
+  { name: 'backup-read-only', input: 'files', run: checkBackupReadOnly },
+  { name: 'backup-no-credentials', input: 'files', run: checkBackupNoCredentials },
+  { name: 'restore-plan-offline', input: 'files', run: checkRestorePlanOffline },
   { name: 'arch-components', input: 'files', run: (f) => checkArchComponents(f) },
   { name: 'arch-data-model', input: 'files', run: (f) => checkArchDataModel(f) },
   { name: 'arch-api-surface', input: 'files', run: (f) => checkArchApiSurface(f) },

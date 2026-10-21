@@ -26,9 +26,59 @@ export function globToRegExp(glob) {
   return new RegExp(`^${re}$`);
 }
 
-/** Source text without block and whole-line `//` comments (TS/JS/MJS). */
-// A block comment opens only after whitespace or a brace/semicolon, so a string such as '/*' does not start one.
-export const stripCodeComments = (s) => s.replace(/(^|[\s;{}])\/\*[\s\S]*?\*\//g, '$1 ').replace(/^\s*\/\/.*$/gm, ' ');
+/**
+ * Source text without real line and block comments (TS/JS/MJS). A small scanner tracks '...', "...", `...` strings
+ * (backslash escapes; `${` inside a template is code again), so comment markers inside strings are kept and code after
+ * them is still visible. Unterminated ' and " strings end at the line break. Regex literals are not parsed (a quote inside
+ * one only affects the rest of its line). KNOWN LIMITATION: a regex literal containing // or /* can hide code. Only
+ * presence-asserting gates may use this (a hidden region can only cause a false FAIL there). Comments become a space; line breaks are kept.
+ */
+export function stripCodeComments(s) {
+  let out = '';
+  const stack = []; // template nesting: brace depth to return to
+  let i = 0;
+  let braces = 0;
+  let tpl = false; // inside template text
+  while (i < s.length) {
+    const c = s[i];
+    const n = s[i + 1];
+    if (tpl) {
+      if (c === '\\') { out += s.slice(i, i + 2); i += 2; continue; }
+      if (c === '`') { tpl = false; out += c; i++; continue; }
+      if (c === '$' && n === '{') { stack.push(braces); braces = 0; tpl = false; out += '${'; i += 2; continue; }
+      out += c; i++; continue;
+    }
+    if (c === '/' && n === '/') {
+      while (i < s.length && s[i] !== '\n') i++;
+      out += ' ';
+      continue;
+    }
+    if (c === '/' && n === '*') {
+      const end = s.indexOf('*/', i + 2);
+      const stop = end === -1 ? s.length : end + 2;
+      out += ' ' + s.slice(i, stop).replace(/[^\n]/g, '');
+      i = stop;
+      continue;
+    }
+    if (c === "'" || c === '"') {
+      let j = i + 1;
+      while (j < s.length && s[j] !== c && s[j] !== '\n') j += s[j] === '\\' ? 2 : 1;
+      const stop = s[j] === c ? j + 1 : j;
+      out += s.slice(i, stop);
+      i = stop;
+      continue;
+    }
+    if (c === '`') { tpl = true; out += c; i++; continue; }
+    if (c === '{') braces++;
+    if (c === '}') {
+      if (braces === 0 && stack.length) { braces = stack.pop(); tpl = true; out += c; i++; continue; }
+      braces--;
+    }
+    out += c;
+    i++;
+  }
+  return out;
+}
 
 export const ARCH_GOLDEN = 'scripts/architecture.golden.json';
 

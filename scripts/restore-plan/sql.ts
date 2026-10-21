@@ -1,5 +1,5 @@
 /**
- * Restore SQL emitter (pure: no network, no fs, no child_process). Turns a validated BackupDocument
+ * Restore SQL emitter (pure: no network access, no fs, no process spawning). Turns a validated BackupDocument
  * (verifyBackupDocument in @mp/shared must have accepted it; callers do that, not this file) into one
  * deterministic SQL script for the catalog tables.
  *

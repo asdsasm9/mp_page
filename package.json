@@ -29,7 +29,8 @@
     "site-images:import": "node scripts/site-images-import.mjs",
     "dev-images": "tsx scripts/dev-images.ts",
     "migrate-legacy": "tsx scripts/migrate-legacy.ts",
-    "restore-plan": "tsx scripts/restore-plan.ts"
+    "restore-plan": "tsx scripts/restore-plan.ts",
+    "backup": "tsx scripts/backup.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.10",

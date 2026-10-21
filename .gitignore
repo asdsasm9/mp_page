@@ -57,3 +57,6 @@ supabase/.temp/
 # Migration dry-run/live reports and the generated old-image redirect table (npm run migrate-legacy)
 migration-report/
 legacy-image-redirects.txt
+
+# Default place for local backups (npm run backup -- --out backup-out/<name>); the only spot inside the repo the tool accepts
+backup-out/

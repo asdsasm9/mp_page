@@ -40,6 +40,10 @@ async function open(world: FakeWorld) {
   );
   await screen.findByRole('heading', { level: 1, name: cs.routes.publish.title });
   await waitFor(() => expect(screen.getByRole('button', { name: cs.publish.button })).toBeTruthy());
+  // The heading and button render before the site-state read resolves (the button is just disabled and the
+  // status line says "loading"), so wait for that read; otherwise assertions race it under load.
+  const status = await screen.findByRole('region', { name: cs.publish.statusLabel });
+  await waitFor(() => expect(within(status).queryByText(cs.data.loading)).toBeNull());
   return view;
 }
 
@@ -66,7 +70,7 @@ describe('publish screen', () => {
     expect(screen.getByText(new RegExp(`^${pending} úpr.* od posledního zveřejnění$`))).toBeTruthy();
     expect(screen.getByText(cs.publish.neverPublished)).toBeTruthy();
     expect((button() as HTMLButtonElement).disabled).toBe(false);
-    expect(screen.getByText(cs.publish.historyEmpty)).toBeTruthy();
+    expect(await screen.findByText(cs.publish.historyEmpty)).toBeTruthy();
 
     await userEvent.setup().click(button());
     expect(button().textContent).toBe(cs.publish.busy);

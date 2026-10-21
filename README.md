@@ -65,21 +65,22 @@ Go-live checklist for the old GitHub Pages site. Human steps only; H-numbers are
 1. H-2 finished: Cloudflare account, R2 buckets (public and private backup), CORS, bucket-scoped token, Worker secrets. See [docs/DEPLOY-API.md](docs/DEPLOY-API.md#0-prerequisites).
 2. Supabase set up: migrations pushed, sign-ups off, two users with long unique passwords (the admin is password-only, no TOTP; it can be added later), `admins` rows, auth redirect URLs. See [docs/ADMIN.md](docs/ADMIN.md#deploying-the-admin-human-steps).
 3. H-6 done: the "Needs a human" items in [docs/VERIFY.md](docs/VERIFY.md) are worked through and the results recorded there.
-4. H-7: the photographer gives the controller details for `/cookies/`; replace the placeholder lines; while they remain, a production build is blocked. See [docs/WEB.md](docs/WEB.md#analytics).
-5. H-11: the Cloudflare analytics token is created and set. See [docs/WEB.md](docs/WEB.md#analytics).
-6. Deploy Worker, admin and web to preview URLs (Deploy table above). Keep the old site primary.
-7. H-10: run the live legacy migration (first one album, then all). See [docs/MIGRATION.md](docs/MIGRATION.md#steps).
-8. Publish once from the admin as a preview (using the preview image URL or an `r2.dev` URL, since `img` does not exist yet), then check the preview site.
-9. Phase 3 preview review: the photographer checks the design and works through [docs/NAVOD.md](docs/NAVOD.md) on a test album. Fix findings before DNS.
-10. H-5, part 1: export or screenshot the old DNS zone first. Then move DNS to Cloudflare and compare record by record: A/AAAA, `www` CNAME, MX and TXT, so mail keeps working. Evidence: mail and the old site still work.
-11. Connect the `img`, `api` and `admin` hostnames; check each answers over https.
-12. Attach `www` (and the apex redirect, HSTS) to the web project: H-5, part 2.
-13. Set the production web variables (`PUBLIC_SITE_ENV`, `PUBLIC_SNAPSHOT_URL`, `PUBLIC_IMG_BASE_URL`; see `.env.example` class 1) and run the first production publish, only after `img` works (the site build fetches the snapshot and photos from it). Then do the real-phone lightbox check (H-8) and run the Rich Results and Schema.org validators (see [docs/WEB.md](docs/WEB.md#cutover-checklist-web-part)).
-14. Check about 10 old URLs against the redirect list: [docs/WEB.md](docs/WEB.md#cutover-checklist-web-part) step 4, rules in [docs/CONTENT-MAPPING.md](docs/CONTENT-MAPPING.md#73-real-path-redirects-server-side-cloudflare); switch redirects on only after H-5 ([docs/MIGRATION.md](docs/MIGRATION.md#the-redirect-file)).
-15. Submit `sitemap.xml` in Google Search Console.
-16. Test the github.io redirect; fallback in [docs/CONTENT-MAPPING.md](docs/CONTENT-MAPPING.md#74-other-legacy-host).
-17. Delete the old Google Tag Manager container.
-18. Legacy removal (`legacy/fotky_web`, stale `build/`) only after the photographer and Adam confirm in writing; the tag `legacy-cra` keeps history.
+4. H-7: the photographer gives name and address for `/cookies/` (IČO only if she has one; the line is left out otherwise); replace the placeholder lines; while any remain, a production build is blocked. See [docs/WEB.md](docs/WEB.md#analytics).
+5. Hold point: do not go further until VERIFY rows 3, 11, 12, 13, 14 and 17 are marked checked with a date in [docs/VERIFY.md](docs/VERIFY.md) (the unproven free-plan and redirect facts, listed in [docs/WP8-VERIFICATION.md](docs/WP8-VERIFICATION.md#known-unproven-0-eur-and-no-care-claims)). Otherwise no cutover.
+6. H-11: the Cloudflare analytics token is created and set. See [docs/WEB.md](docs/WEB.md#analytics).
+7. Deploy Worker, admin and web to preview URLs (Deploy table above). Keep the old site primary.
+8. H-10: run the live legacy migration (first one album, then all). See [docs/MIGRATION.md](docs/MIGRATION.md#steps).
+9. Publish once from the admin as a preview (using the preview image URL or an `r2.dev` URL, since `img` does not exist yet), then check the preview site.
+10. Phase 3 preview review: the photographer checks the design and works through [docs/NAVOD.md](docs/NAVOD.md) on a test album. Fix findings before DNS.
+11. H-5, part 1: export or screenshot the old DNS zone first. Then move DNS to Cloudflare and compare record by record: A/AAAA, `www` CNAME, MX and TXT, so mail keeps working. Evidence: mail and the old site still work.
+12. Connect the `img`, `api` and `admin` hostnames; check each answers over https.
+13. Attach `www` (and the apex redirect, HSTS) to the web project: H-5, part 2.
+14. Set the production web variables (`PUBLIC_SITE_ENV`, `PUBLIC_SNAPSHOT_URL`, `PUBLIC_IMG_BASE_URL`; see `.env.example` class 1) and run the first production publish, only after `img` works (the site build fetches the snapshot and photos from it). Then do the real-phone lightbox check (H-8) and run the Rich Results and Schema.org validators (see [docs/WEB.md](docs/WEB.md#cutover-checklist-web-part)).
+15. Check about 10 old URLs against the redirect list: [docs/WEB.md](docs/WEB.md#cutover-checklist-web-part) step 4, rules in [docs/CONTENT-MAPPING.md](docs/CONTENT-MAPPING.md#73-real-path-redirects-server-side-cloudflare); switch redirects on only after H-5 ([docs/MIGRATION.md](docs/MIGRATION.md#the-redirect-file)).
+16. Submit `sitemap.xml` in Google Search Console.
+17. Test the github.io redirect; fallback in [docs/CONTENT-MAPPING.md](docs/CONTENT-MAPPING.md#74-other-legacy-host).
+18. Delete the old Google Tag Manager container.
+19. Legacy removal (`legacy/fotky_web`, stale `build/`) only after the photographer and Adam confirm in writing; the tag `legacy-cra` keeps history.
 
 Rollback at any point: point DNS back to GitHub Pages and delete nothing. Keep the `gh-pages` branch for at least 4 weeks. Migration rollback: [docs/MIGRATION.md](docs/MIGRATION.md#rollback).
 

@@ -33,4 +33,8 @@ describe('COOKIES analytics text', () => {
   it('leaves the controller placeholder untouched', () => {
     expect(COOKIES.controller.placeholder).toBe('[doplnit]');
   });
+
+  it('keeps IČO optional: unset by default, never the placeholder', () => {
+    expect(COOKIES.controller.companyId).toBeNull();
+  });
 });

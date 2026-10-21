@@ -28,8 +28,12 @@ const hasBeacon = resolveEnv(readRawEnv()).analyticsToken !== null;
         <dd>{controller.placeholder}</dd>
         <dt>{controller.addressLabel}</dt>
         <dd>{controller.placeholder}</dd>
-        <dt>{controller.idLabel}</dt>
-        <dd>{controller.placeholder}</dd>
+        {controller.companyId !== null && (
+          <>
+            <dt>{controller.idLabel}</dt>
+            <dd>{controller.companyId}</dd>
+          </>
+        )}
         <dt>{controller.mailLabel}</dt>
         <dd><a href={MAIL_URL}>{MAIL_ADDRESS}</a></dd>
       </dl>

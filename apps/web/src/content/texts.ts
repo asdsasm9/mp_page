@@ -107,6 +107,8 @@ export const COOKIES = {
     nameLabel: 'Jméno a příjmení nebo obchodní jméno',
     addressLabel: 'Adresa',
     idLabel: 'IČO',
+    /** Optional (T-220): a private person without IČO leaves it null and the line is omitted. Name, address and e-mail suffice. */
+    companyId: null as string | null,
     mailLabel: 'E-mail',
     placeholder: '[doplnit]',
   },

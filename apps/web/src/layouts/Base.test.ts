@@ -386,7 +386,9 @@ describe('Cookies page and 404 (built, shared build)', () => {
     const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
     // The shared build is token-less: no marker comment, no analytics section.
     expect(main).not.toMatch(/cookiebar|souhlas|analytic|google analytics|měření/i);
-    expect((main.match(/\[doplnit\]/g) ?? []).length).toBeGreaterThanOrEqual(3);
+    // Name and address are required; IČO is optional and its line is omitted while unset (T-220).
+    expect((main.match(/\[doplnit\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(main).not.toContain('IČO');
     expect(page).not.toContain('ANALYTICS_PARAGRAPH');
     expect(page).not.toContain('id="mereni"');
     expect(main).toContain('href="mailto:mullnyphotos@gmail.com"');

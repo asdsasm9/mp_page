@@ -101,7 +101,8 @@ Human steps; the autopilot cannot do them.
 1. Production project has `PUBLIC_SITE_ENV=production`, `PUBLIC_SNAPSHOT_URL`, `PUBLIC_IMG_BASE_URL` set.
 2. After the production deploy, view-source of the home page must not contain `noindex`; `robots.txt` must not disallow all.
    Run `npm run check:site` against a production build once (the `robots` check fails a production build with `noindex`).
-3. `/cookies/` has no `[doplnit]` marker left (controller name, address, IČO, date); `page-checks` only warns on a
+3. `/cookies/` has no `[doplnit]` marker left (controller name, address, date; IČO is optional and its line is omitted unless
+   `COOKIES.controller.companyId` is set, so a private person without IČO is fine); `page-checks` only warns on a
    non-production build and fails a production one.
 4. Test about 10 old URLs (hash links such as `#/portfolio`, `/fotky_web/galleries/...` images, album paths) against
    `_redirects`; check `404.html` on an unknown path (VERIFY rows 17, 18, 22, 23).
@@ -110,6 +111,9 @@ Human steps; the autopilot cannot do them.
 7. Apex to www redirect and HSTS in Cloudflare (H-5).
 8. Phone check of the lightbox gestures on a real iPhone and Android (VERIFY row 24).
 9. Analytics: do the five human steps in [Analytics](#analytics), human steps below (WP-8 links here).
+10. Cutover cannot happen until VERIFY rows 3, 11, 12, 13, 14 and 17 in [VERIFY.md](VERIFY.md) are recorded as checked, each with a date
+    (these are the "Known unproven" rows in [WP8-VERIFICATION.md](WP8-VERIFICATION.md#known-unproven-0-eur-and-no-care-claims)).
+    A row still UNVERIFIED or HUMAN blocks the go-live.
 
 ## Analytics
 
@@ -162,7 +166,7 @@ Placeholders ship until answered (none blocks the build; controller details bloc
 - Q-1 product photography offered; Q-2 phone number; Q-6 own wording for the home tagline and style; Q-8 home share image;
   Q-9 portrait as share image and in `Person` markup; Q-10 street address; Q-12 price range; Q-14 copyright and licence
   wording; Q-16 client consent for names in titles and alt text.
-- Approval of the typo fixes listed in TEXTS-REVIEW.md, and the `/cookies/` controller details (cutover blocker).
+- Approval of the typo fixes listed in TEXTS-REVIEW.md, and the `/cookies/` controller details: name and address (cutover blocker); IČO only if she has one.
 
 ## Launch decisions (open)
 

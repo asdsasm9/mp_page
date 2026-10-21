@@ -81,6 +81,23 @@ describe('README.md', () => {
     expect(linked.length).toBeGreaterThanOrEqual(8);
   });
 
+  it('blocks cutover until VERIFY rows 3, 11, 12, 13, 14 and 17 are checked with a date (T-219)', () => {
+    const text = section(readme, 'Cutover').join('\n');
+    expect(text).toMatch(/VERIFY rows 3, 11, 12, 13, 14 and 17/);
+    expect(text).toMatch(/checked with a date/);
+    const web = readFileSync(`${root}/docs/WEB.md`, 'utf8');
+    expect(web).toMatch(/VERIFY rows 3, 11, 12, 13, 14 and 17/);
+    expect(web).toMatch(/cannot happen/);
+  });
+
+  it('numbers the cutover steps consecutively', () => {
+    const nums = section(readme, 'Cutover')
+      .map((l) => /^(\d+)\. /.exec(l)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number);
+    expect(nums).toEqual(nums.map((_, i) => i + 1));
+  });
+
   it('deploy table covers the four parts', () => {
     const rows = section(readme, 'Deploy').filter((l) => l.startsWith('|')).slice(2);
     expect(rows).toHaveLength(4);

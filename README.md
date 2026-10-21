@@ -41,6 +41,7 @@ Web build modes and commands: [docs/WEB.md](docs/WEB.md#build-modes).
 - Optional browser checks need Chrome and a built app. Run them one at a time, never during `npm test`, never two at once (concurrent Astro builds collide):
   `npm run design-check`, `npm run image-fit`, `npm run lightbox-network`, `npm run lightbox-a11y` (web, need `dist` and dev images), and `npm run admin-check`, `npm run admin-encode-check`, `npm run admin-prod-check` (admin).
 - Never put environment variables in front of a command; the checks find Chrome themselves.
+- What every gate protects and how to fix a red one: [docs/GATES.md](docs/GATES.md). The last full verification run: [docs/WP8-VERIFICATION.md](docs/WP8-VERIFICATION.md).
 
 What each check proves: [docs/WEB.md](docs/WEB.md#browser-checks-need-chrome-a-built-appswebdist-and-dev-images), [docs/ADMIN.md](docs/ADMIN.md#check-commands), [docs/DESIGN-CHECK.md](docs/DESIGN-CHECK.md).
 

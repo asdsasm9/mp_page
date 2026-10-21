@@ -693,14 +693,20 @@ describe('registry and runner', () => {
   it('budget is SKIP without dist (no site input)', () => {
     expect(runChecks(inputs).rows.find((r) => r.name === 'budget').status).toBe('SKIP');
   });
-  it('has the 1 pending check with an owner', () => {
-    const pend = runChecks(inputs).rows.filter((r) => r.status === 'PENDING');
-    expect(pend.map((r) => r.name)).toEqual(['docs-complete']);
-    expect(pend.every((r) => /WP-\d/.test(r.details))).toBe(true);
+  it('has no pending check left; docs-complete runs for real and fails on the synthetic input', () => {
+    const rows = runChecks(inputs).rows;
+    expect(rows.filter((r) => r.status === 'PENDING')).toEqual([]);
+    expect(rows.find((r) => r.name === 'docs-complete').status).toBe('FAIL');
   });
-  it('exits 0 normally and 1 with --strict', () => {
-    expect(runChecks(inputs).exitCode).toBe(0);
-    expect(runChecks(inputs, { strict: true }).exitCode).toBe(1);
+  it('exits 0 normally and with --strict once docs-complete is left out of the synthetic input', () => {
+    const checks = CHECKS.filter((c) => c.name !== 'docs-complete');
+    expect(runChecks(inputs, { checks }).exitCode).toBe(0);
+    expect(runChecks(inputs, { checks, strict: true }).exitCode).toBe(0);
+  });
+  it('--strict counts a PENDING check as failed', () => {
+    const checks = [{ name: 'x', input: 'files', run: () => ({ status: 'PENDING', details: 'owned by WP-9' }) }];
+    expect(runChecks(inputs, { checks }).exitCode).toBe(0);
+    expect(runChecks(inputs, { checks, strict: true }).exitCode).toBe(1);
   });
   it('exits 1 when a check fails', () => {
     expect(runChecks({ files: [f('.env', ''), f('.env.example', '')], dist: [] }).exitCode).toBe(1);

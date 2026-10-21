@@ -1,6 +1,6 @@
 # Audit of the current site (T-1)
 
-Audit date: 2026-10-19. Worktree: `work/mullnyphotos`, branch `autopilot`. Old Create React App (react-scripts 5.0.1) app, React 18, TypeScript 4.9, Tailwind 3, react-router-dom 6 (HashRouter), react-ga4. Hosted on GitHub Pages (`public/CNAME` = `www.mullnyphotos.cz`), published with `npm run deploy` (gh-pages, `-d build`). `package.json` `homepage` = `https://www.mullnyphotos.cz/`.
+Audit date: 2026-10-19. Worktree: `work/mullnyphotos`, branch `autopilot`. Old Create React App (react-scripts 5.0.1) app, React 18, TypeScript 4.9, Tailwind 3, react-router-dom 6 (HashRouter), react-ga4. Hosted on GitHub Pages (`public/CNAME` = `www.mullnyphotos.cz`), published with the old `deploy` script (gh-pages, `-d build`; it exists only on the legacy `main` branch). `package.json` `homepage` = `https://www.mullnyphotos.cz/`.
 
 ## 1. Build health
 
@@ -223,7 +223,7 @@ No consent banner, no cookie or privacy page, no consent mode. No click events f
 
 ## 10. Committed `build/` folder
 
-- About 130 files are tracked in git under `build/` (confirmed with `git ls-files build`), even though `.gitignore` contains `/build` (it was committed before the ignore rule). `npm run deploy` (gh-pages) publishes `build/` to the `gh-pages` branch, so the tracked folder is not what is live.
+- About 130 files are tracked in git under `build/` (confirmed with `git ls-files build`), even though `.gitignore` contains `/build` (it was committed before the ignore rule). The old `deploy` script (gh-pages) publishes `build/` to the `gh-pages` branch, so the tracked folder is not what is live.
 - The tracked copy is a stale and incomplete build: `build/index.html` references `/static/js/main.2d0f0e1b.js` and `/static/css/main.37097705.css`, but those two files are not tracked (only the `787` chunk and its map are). It also lacks `favicon.ico`, `CNAME`, `logo.png`, `android-chrome-192x192.png`, `site/common/*`, `site/preview/logo*.png` and `sedlakovi/14..44.jpg` (it only holds `sedlakovi` 1 to 13). The tracked copy also still has its old meta tags.
 - A fresh build produces a different bundle hash (`main.4ef3f3d5.js`), so the tracked build is out of date with the source.
 - `.DS_Store` files are also tracked inside `build/`.
@@ -234,7 +234,7 @@ No consent banner, no cookie or privacy page, no consent mode. No click events f
 
 - `package.json`: `private: false`, name `mp_page`; deploy via `gh-pages` devDependency; CRA is unmaintained (react-scripts 5.0.1, TypeScript 4.9), which explains the 104 audit findings.
 - `.gitattributes` and `.gitignore` present; `/build` ignored but tracked (above).
-- `README.md` is minimal: hosting on GitHub Pages at `https://www.mullnyphotos.cz`, image resizing tool, `npm run deploy`.
+- `README.md` is minimal: hosting on GitHub Pages at `https://www.mullnyphotos.cz`, image resizing tool, the old `deploy` script.
 - No tests exist (`setupTests.ts` only); `npm test` has nothing to run.
 - Third-party requests at load: Google Fonts, googletagmanager.com (twice via gtag and GTM), mywed.com logo.
 - DNS: the domain points to GitHub Pages (CNAME `www.mullnyphotos.cz`); see backlog H-5.

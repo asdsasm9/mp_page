@@ -14,10 +14,11 @@ import {
   checkArchTestsPresent,
 } from './gates-arch.mjs';
 import { scanEnvUsage } from './lib/env-scan.mjs';
-import { MIGRATION_RE, result, stripSqlComments } from './lib/gate-utils.mjs';
+import { checkDocsComplete } from './gates-docs.mjs';
+import { MIGRATION_RE, SECRET_PATTERNS, result, stripSqlComments } from './lib/gate-utils.mjs';
 import { attrsOf, checkBudget, checkPageChecks, loadSite } from './site-checks.mjs';
 
-const SELF = ['scripts/gates.mjs', 'scripts/gates.test.mjs'];
+const SELF = ['scripts/gates.mjs', 'scripts/gates.test.mjs', 'scripts/lib/gate-utils.mjs'];
 const isSelf = (p) => SELF.includes(p);
 const under = (p, ...prefixes) => prefixes.some((x) => p.startsWith(x));
 const isLockfile = (p) => p.endsWith('package-lock.json');
@@ -34,17 +35,8 @@ function findMatches(files, skip, patterns) {
 }
 
 export function checkNoSecrets(files) {
-  const patterns = [
-    ['private key block', /-----BEGIN [A-Z ]*(PRIVATE KEY|CERTIFICATE)?/],
-    ['sk_ key', /\bsk_(live_|test_)?[A-Za-z0-9]{16,}/],
-    ['JWT', /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/],
-    [
-      'long key-like value',
-      /(key|secret|token|password)[\w"' ]{0,20}[:=]\s*["']?[A-Za-z0-9+/_-]{32,}/i,
-    ],
-  ];
   return result(
-    findMatches(files, (p) => isSelf(p) || isLockfile(p) || under(p, 'legacy/', 'docs/'), patterns),
+    findMatches(files, (p) => isSelf(p) || isLockfile(p) || under(p, 'legacy/', 'docs/'), SECRET_PATTERNS),
   );
 }
 
@@ -556,7 +548,8 @@ export {
   checkArchTestsPresent,
 } from './gates-arch.mjs';
 
-const pending = (owner) => () => ({ status: 'PENDING', details: `owned by ${owner}` });
+// docs-complete lives in scripts/gates-docs.mjs; the registry passes its own name list in (checked lazily, no cycle).
+export { checkDocsComplete, checkGatesRows } from './gates-docs.mjs';
 
 export const CHECKS = [
   { name: 'no-secrets', input: 'files', run: checkNoSecrets },
@@ -601,7 +594,7 @@ export const CHECKS = [
   { name: 'arch-storage-keys', input: 'files', run: (f) => checkArchStorageKeys(f) },
   { name: 'arch-hosting-files', input: 'files', run: (f) => checkArchHostingFiles(f) },
   { name: 'arch-tests-present', input: 'files', run: (f) => checkArchTestsPresent(f) },
-  { name: 'docs-complete', input: 'files', run: pending('WP-8') },
+  { name: 'docs-complete', input: 'files', run: (f) => checkDocsComplete(f, CHECKS.map((c) => c.name)) },
 ];
 
 export function runChecks(inputs, { strict = false, checks = CHECKS } = {}) {

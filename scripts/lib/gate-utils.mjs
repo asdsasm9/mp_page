@@ -7,6 +7,14 @@ export const result = (offenders, passMsg = 'ok') =>
 /** At most `n` offenders, then a count of the rest. */
 export const firstOffenders = (bad, n = 3) => bad.slice(0, n).concat(bad.length > n ? [`and ${bad.length - n} more`] : []);
 
+/** Key-shaped string patterns shared by `no-secrets` and `docs-complete`. */
+export const SECRET_PATTERNS = [
+  ['private key block', /-----BEGIN [A-Z ]*(PRIVATE KEY|CERTIFICATE)?/],
+  ['sk_ key', /\bsk_(live_|test_)?[A-Za-z0-9]{16,}/],
+  ['JWT', /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/],
+  ['long key-like value', /(key|secret|token|password)[\w"' ]{0,20}[:=]\s*["']?[A-Za-z0-9+/_-]{32,}/i],
+];
+
 export const MIGRATION_RE = /^supabase\/migrations\/(\d{14})_[a-z0-9_]+\.sql$/;
 export const stripSqlComments = (sql) => sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
 

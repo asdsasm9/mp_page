@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_LIMITS } from './limits';
-import { BatchTooLargeError, canReserve, evaluateQuota, formatBytes, planBatch } from './quota';
+import { BatchTooLargeError, canReserve, evaluateQuota, planBatch } from './quota';
 
 const HARD = 9_500_000_000;
 const WARN = 8_000_000_000;
@@ -109,16 +109,5 @@ describe('planBatch', () => {
   });
   it('returns an empty plan for an empty batch', () => {
     expect(planBatch(base, []).results).toEqual([]);
-  });
-});
-
-describe('formatBytes', () => {
-  it('uses decimal units', () => {
-    expect(formatBytes(0)).toBe('0 B');
-    expect(formatBytes(999)).toBe('999 B');
-    expect(formatBytes(1000)).toBe('1.00 kB');
-    expect(formatBytes(2_500_000)).toBe('2.50 MB');
-    expect(formatBytes(9_500_000_000)).toBe('9.50 GB');
-    expect(formatBytes(41_943_040)).toBe('41.9 MB');
   });
 });

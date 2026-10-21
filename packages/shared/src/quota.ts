@@ -101,17 +101,3 @@ export function planBatch(state: BatchPlanState, items: BatchItem[]): BatchPlan 
     level: evaluateQuota({ used: state.used, reserved, hard: state.hard, warn: state.warn }).level,
   };
 }
-
-/** Decimal units (1 GB = 1e9 bytes), matching the limits. */
-export function formatBytes(n: number): string {
-  const abs = Math.abs(n);
-  const units = ['B', 'kB', 'MB', 'GB', 'TB'];
-  let i = 0;
-  let v = abs;
-  while (v >= 1000 && i < units.length - 1) {
-    v /= 1000;
-    i++;
-  }
-  const text = i === 0 ? String(Math.round(v)) : v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2);
-  return `${n < 0 ? '-' : ''}${text} ${units[i]}`;
-}

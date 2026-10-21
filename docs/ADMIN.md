@@ -97,6 +97,8 @@ value and rebuild (the five origins in `connect-src` / `img-src` must equal what
 
 ## Using it: short guide for the photographer (Czech)
 
+Podrobný návod krok za krokem je v [NAVOD.md](NAVOD.md).
+
 Přihlášení: otevři adresu správy, zadej e-mail a heslo. Heslo zapomenuté? Klikni na „Zapomenuté heslo“ a přijde ti odkaz.
 
 - **Kategorie** (úvodní stránka): „Nová kategorie“, přejmenování, skrytí, smazání a pořadí. Pořadí měníš šipkami nebo

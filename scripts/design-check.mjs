@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  EXIT, REFLOW_WIDTH, SKIPPED_MESSAGE, isExpectedConsoleError, WIDTHS, aggregate, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
+  EXIT, REFLOW_WIDTH, SKIPPED_MESSAGE, evaluateGrid, isExpectedConsoleError, WIDTHS, aggregate, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
 } from './design-check-lib.mjs';
 import { createDistServer, listen } from './serve-dist.mjs';
 
@@ -37,6 +37,26 @@ async function loadLazyImages(page) {
     }
     scrollTo(0, 0);
     await Promise.all([...document.images].map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))));
+  });
+}
+
+// Album grid (T-216): tiles grouped into visual rows by their top edge; null when the page has no justified grid.
+async function measureGrid(page) {
+  return page.evaluate(() => {
+    const ul = document.querySelector('ul.grid[data-count]');
+    if (!ul) return null;
+    const rows = [];
+    for (const li of ul.querySelectorAll('li')) {
+      const r = li.getBoundingClientRect();
+      const capped = r.width >= parseFloat(getComputedStyle(li).maxWidth) - 1;
+      const last = rows[rows.length - 1];
+      if (last && Math.abs(last.top - r.top) < 2) {
+        last.heights.push(r.height);
+        last.right = Math.max(last.right, r.right);
+        last.capped ||= capped;
+      } else rows.push({ top: r.top, heights: [r.height], right: r.right, capped });
+    }
+    return { rows, edge: ul.getBoundingClientRect().right };
   });
 }
 
@@ -105,7 +125,7 @@ async function main() {
     browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox'] });
     for (const route of routes) {
       const url = origin + route.path;
-      const entry = { route: route.path, name: route.name, light: Boolean(route.light), axe: [], overflow: 0, consoleErrors: [] };
+      const entry = { route: route.path, name: route.name, light: Boolean(route.light), axe: [], overflow: 0, consoleErrors: [], gridProblems: [] };
       for (const width of [...WIDTHS, REFLOW_WIDTH]) {
         const page = await browser.newPage();
         page.on('console', (m) => {
@@ -121,6 +141,8 @@ async function main() {
         } else {
           await loadLazyImages(page);
           await page.screenshot({ path: join(out, `${route.name}-${width}.png`), fullPage: true });
+          const grid = await measureGrid(page);
+          if (grid) entry.gridProblems.push(...evaluateGrid(route.path, width, grid.rows, grid.edge));
         }
         if (width === WIDTHS[2]) {
           await page.evaluate(axeSource);

@@ -21,6 +21,11 @@ export const ROUTES = [
   { path: '/', name: 'home' },
   { path: '/svatby/', name: 'category' },
   { path: '/svatby/sedlakovi/', name: 'album' },
+  // Album layout fixtures (T-216): 5, 9, 60 and 120 distinct photos; built in fixture mode only (pages/layout-check).
+  { path: '/layout-check/5/', name: 'album-5' },
+  { path: '/layout-check/9/', name: 'album-9' },
+  { path: '/layout-check/60/', name: 'album-60' },
+  { path: '/layout-check/120/', name: 'album-120' },
   { path: '/o-mne/', name: 'about' },
   { path: '/kontakt/', name: 'contact' },
   { path: '/cookies/', name: 'cookies', light: true },
@@ -158,6 +163,24 @@ export function evaluateReflow(route, overflowPx) {
   return overflowPx > 0 ? [`${route}: horizontal scroll at ${REFLOW_WIDTH}px (${overflowPx}px)`] : [];
 }
 
+export const GRID_TOLERANCE_PX = 2;
+
+/**
+ * Justified album grid (T-216). `rows`: [{ heights: number[], right: number }] per visual row in order, `edge` = right edge
+ * of the grid. Every row must have one height (no gaps under shorter tiles); every row but the last must reach the
+ * right edge. `perRow` is a snapshot of one viewport width, `width` its label.
+ */
+export function evaluateGrid(route, width, rows, edge, tol = GRID_TOLERANCE_PX) {
+  const out = [];
+  rows.forEach((row, i) => {
+    const spread = Math.max(...row.heights) - Math.min(...row.heights);
+    if (spread > tol) out.push(`${route} @${width}: row ${i + 1} tiles differ in height by ${spread.toFixed(1)}px (gap under shorter tiles)`);
+    // A row with a tile at its growth cap (CSS --cap) may legitimately stop short of the edge.
+    if (i < rows.length - 1 && !row.capped && edge - row.right > tol) out.push(`${route} @${width}: row ${i + 1} stops ${(edge - row.right).toFixed(1)}px short of the grid edge`);
+  });
+  return out;
+}
+
 export function evaluateConsole(route, messages) {
   return messages.map((m) => `${route}: console error: ${m}`);
 }
@@ -173,6 +196,7 @@ export function aggregate(results, t = THRESHOLDS) {
     failures.push(...evaluateAxe(r.route, r.axe ?? []));
     failures.push(...evaluateReflow(r.route, r.overflow ?? 0));
     if (r.keyboard) failures.push(...evaluateKeyboard(r.route, r.keyboard));
+    failures.push(...(r.gridProblems ?? []));
     failures.push(...evaluateConsole(r.route, r.consoleErrors ?? []));
   }
   if (!results.length) failures.push('no routes were checked');

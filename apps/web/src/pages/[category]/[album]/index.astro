@@ -2,13 +2,13 @@
 // Album page: header (title, place, date, description), breadcrumb, photo grid, previous/next album, lightbox.
 // Each thumbnail is a link to the 1600 JPEG, so the grid works without JavaScript; lightbox.ts upgrades it
 // to a native <dialog>. The data-lb-* attributes (fit srcset, master URL and size) are read only by the zoom script.
+import AlbumGrid from '../../../components/AlbumGrid.astro';
 import Breadcrumb from '../../../components/Breadcrumb.astro';
-import Photo from '../../../components/Photo.astro';
 import Base from '../../../layouts/Base.astro';
 import { albumThumbs, formatShotOn } from '../../../lib/album';
 import { getCatalog } from '../../../lib/catalog';
 import { readRawEnv, resolveEnv } from '../../../lib/env';
-import { ogImage as photoOgImage, photoSources } from '../../../lib/images';
+import { ogImage as photoOgImage } from '../../../lib/images';
 import { albumGallery, albumPath, breadcrumbList } from '../../../lib/jsonld';
 import { albumMeta } from '../../../lib/seo';
 
@@ -59,27 +59,7 @@ const { prev, next } = catalog.neighbours(album.slug);
       {description && <p class="description">{description}</p>}
     </header>
 
-    <ul class="grid">
-      {
-        thumbs.map((t) => {
-          const src = photoSources(t.photo, env.imgBaseUrl);
-          return (
-            <li>
-              <a
-                href={src.fallback.url}
-                data-lb-item
-                data-lb-set={src.lightboxSet}
-                data-lb-master={src.master.url}
-                data-lb-mw={src.master.width}
-                data-lb-mh={src.master.height}
-              >
-                <Photo photo={t.photo} base={env.imgBaseUrl} alt={t.alt} context="grid" eager={t.eager} priority={t.priority} />
-              </a>
-            </li>
-          );
-        })
-      }
-    </ul>
+    <AlbumGrid thumbs={thumbs} base={env.imgBaseUrl} />
 
     <nav class="album-nav" aria-label="Další alba">
       {prev ? <a rel="prev" href={albumPath(category, prev)}>&larr; {prev.title}</a> : <span></span>}
@@ -139,30 +119,6 @@ const { prev, next } = catalog.neighbours(album.slug);
   .description {
     max-inline-size: var(--measure);
     margin: 0;
-  }
-
-  .grid {
-    display: grid;
-    gap: var(--space-3);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .grid a {
-    display: block;
-  }
-
-  @media (min-width: 40rem) {
-    .grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (min-width: 64rem) {
-    .grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
   }
 
   .album-nav {

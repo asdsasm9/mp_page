@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
-  EXIT, THRESHOLDS, aggregate, evaluateKeyboard, evaluateLighthouse, isExpectedConsoleError, seoIgnoringCrawlable, median, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
+  EXIT, THRESHOLDS, aggregate, evaluateGrid, evaluateKeyboard, evaluateLighthouse, isExpectedConsoleError, seoIgnoringCrawlable, median, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
 } from './design-check-lib.mjs';
 import { CHROME_FALLBACKS, findChrome } from './design-check.mjs';
 import { createDistServer, headersFor, listen, parseHeaders } from './serve-dist.mjs';
@@ -38,6 +38,41 @@ describe('seo, console and keyboard evaluation', () => {
   });
 });
 
+describe('evaluateGrid (justified album rows)', () => {
+  const edge = 1000;
+  it('passes rows of equal height that reach the edge, with a short last row', () => {
+    const rows = [
+      { heights: [300, 300.5], right: 1000 },
+      { heights: [300, 300], right: 999 },
+      { heights: [300], right: 420 },
+    ];
+    expect(evaluateGrid('/a/', 1280, rows, edge)).toEqual([]);
+  });
+  it('flags a gap under a shorter tile and a row that stops short', () => {
+    const rows = [
+      { heights: [300, 250], right: 1000 },
+      { heights: [300, 300], right: 900 },
+      { heights: [300], right: 400 },
+    ];
+    const problems = evaluateGrid('/a/', 1280, rows, edge);
+    expect(problems).toHaveLength(2);
+    expect(problems[0]).toMatch(/differ in height/);
+    expect(problems[1]).toMatch(/short of the grid edge/);
+    expect(aggregate([{ route: '/a/', light: true, axe: [], overflow: 0, consoleErrors: [], gridProblems: problems }]).verdict).toBe('FAIL');
+  });
+  it('lets a row with a tile at its growth cap stop short of the edge', () => {
+    const rows = [
+      { heights: [300], right: 600, capped: true },
+      { heights: [300], right: 400 },
+    ];
+    expect(evaluateGrid('/a/', 1280, rows, edge)).toEqual([]);
+  });
+  it('lists the four album layout fixtures', () => {
+    const names = selectRoutes(null).map((r) => r.name);
+    expect(names).toEqual(expect.arrayContaining(['album-5', 'album-9', 'album-60', 'album-120']));
+  });
+});
+
 describe('findChrome', () => {
   it('prefers CHROME_PATH, falls back to macOS path, else null', () => {
     const mac = CHROME_FALLBACKS[0];
@@ -64,7 +99,7 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['--out'])).toThrow(/missing/);
   });
   it('selects routes', () => {
-    expect(selectRoutes(null)).toHaveLength(7);
+    expect(selectRoutes(null)).toHaveLength(11);
     expect(selectRoutes(['/kontakt/'])[0].name).toBe('contact');
     expect(selectRoutes(['/x/y/'])[0].name).toBe('x-y');
   });

@@ -456,7 +456,8 @@ export function loadSite(distDir, walkFn = listFiles) {
   if (!existsSync(join(distDir, 'index.html'))) return null;
   const files = walkFn(distDir);
   const read = (rel) => (files.includes(rel) ? readFileSync(join(distDir, rel), 'utf8') : null);
-  const pages = files.filter((f) => f.endsWith('.html')).map((f) => ({ path: f, html: readFileSync(join(distDir, f), 'utf8') }));
+  // layout-check/ holds the fixture-only album layout pages for design-check (T-216); they are not part of the site.
+  const pages = files.filter((f) => f.endsWith('.html') && !f.startsWith('layout-check/')).map((f) => ({ path: f, html: readFileSync(join(distDir, f), 'utf8') }));
   let siteEnv = null;
   try {
     siteEnv = JSON.parse(read('_publish.json') ?? '{}').siteEnv ?? null;

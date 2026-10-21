@@ -1,0 +1,51 @@
+---
+// Layout fixtures for design-check (T-216): the album grid with 5, 9, 60 and 120 distinct photos of the dev catalog.
+// Generated only from the committed fixture (fixture mode). A snapshot build, and so every production build, gets no
+// such page. site-checks ignores layout-check/ in dist, and the pages are always noindex.
+import AlbumGrid from '../../../components/AlbumGrid.astro';
+import Base from '../../../layouts/Base.astro';
+import { albumThumbs, layoutCheckPhotos } from '../../../lib/album';
+import { getCatalog } from '../../../lib/catalog';
+import { readRawEnv, resolveEnv } from '../../../lib/env';
+import type { PageMeta } from '../../../lib/seo';
+
+export async function getStaticPaths() {
+  const env = resolveEnv(readRawEnv());
+  if (env.source !== 'fixture') return [];
+  return [5, 9, 60, 120].map((count) => ({ params: { count: String(count) } }));
+}
+
+const env = resolveEnv(readRawEnv());
+const catalog = await getCatalog(env);
+const count = Number(Astro.params.count);
+// The album that /svatby/sedlakovi/ shows comes first, so the first (eager) photo is the same typical one on every page.
+const all = [...catalog.photoById.values()];
+const pool = [...all.filter((e) => e.album.slug === 'sedlakovi'), ...all.filter((e) => e.album.slug !== 'sedlakovi')].map((e) => e.photo);
+const thumbs = albumThumbs({ slug: 'svatby' }, { title: `Rozložení ${count}`, photos: layoutCheckPhotos(pool, count) });
+const meta: PageMeta = {
+  title: `Rozložení alba, ${count} fotografií | Mullny Photos`,
+  ogTitle: `Rozložení alba, ${count} fotografií`,
+  description: `Zkušební rozložení alba s ${count} fotografiemi pro kontrolu vzhledu.`,
+  noindex: true,
+};
+---
+<Base meta={meta} path={`/layout-check/${count}/`}>
+  <div class="page">
+    <h1>Rozložení alba, {count} fotografií</h1>
+    <AlbumGrid thumbs={thumbs} base={env.imgBaseUrl} />
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-5);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  h1 {
+    font-size: var(--font-size-5);
+  }
+</style>

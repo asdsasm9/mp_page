@@ -1,0 +1,88 @@
+---
+// Justified-rows photo grid (T-216). No JavaScript and no cropping: every tile is as wide as its aspect ratio asks
+// (flex-basis and flex-grow both follow --ar), so all tiles of a row share one height and the row fills the width.
+// The last row keeps its natural height (a very large flex-grow filler absorbs the free space), so there are no
+// gaps under shorter images. Short albums use taller rows. The links go to the 1600 JPEG, so it works without
+// JavaScript; lightbox.ts upgrades the data-lb-* links when it is on the page.
+import { aspectOf, gridSizes, rowRemFor, type AlbumThumb } from '../lib/album';
+import { photoSources } from '../lib/images';
+import Photo from './Photo.astro';
+
+interface Props {
+  thumbs: readonly AlbumThumb[];
+  base: string;
+}
+
+const { thumbs, base } = Astro.props;
+const count = thumbs.length;
+const rows = rowRemFor(count);
+const rowStyle = `--row-h:${rows.base}rem;--row-h-md:${rows.md}rem;--row-h-lg:${rows.lg}rem`;
+---
+<ul class="grid" style={rowStyle} data-count={count}>
+  {
+    thumbs.map((t) => {
+      const src = photoSources(t.photo, base);
+      const ar = aspectOf(t.photo);
+      return (
+        <li style={`--ar:${ar}`}>
+          <a
+            href={src.fallback.url}
+            data-lb-item
+            data-lb-set={src.lightboxSet}
+            data-lb-master={src.master.url}
+            data-lb-mw={src.master.width}
+            data-lb-mh={src.master.height}
+          >
+            <Photo photo={t.photo} base={base} alt={t.alt} sizes={gridSizes(ar, count, !t.eager)} eager={t.eager} priority={t.priority} />
+          </a>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<style>
+  .grid {
+    --row: var(--row-h);
+    --cap: 2.5; /* phone: rows hold one or two tiles, a lone one may fill the width */
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Filler: takes the free space of the last row so its tiles stay at their natural height. The negative margin
+     cancels the gap the filler itself adds, so it never wraps into an empty row of its own. */
+  .grid::after {
+    content: '';
+    flex: 1000000 1 0;
+    margin-inline-start: calc(-1 * var(--space-3));
+  }
+
+  /* A tile never grows past --cap times its nominal width, so a lone portrait next to a panorama is not stretched
+     to the full row (tall and blurry). Such a row may stop short of the right edge instead. */
+  .grid li {
+    flex: calc(var(--ar) * 100) 1 calc(var(--ar) * var(--row));
+    min-inline-size: 0;
+    max-inline-size: calc(var(--ar) * var(--row) * var(--cap));
+  }
+
+  .grid a {
+    display: block;
+  }
+
+  @media (min-width: 40rem) {
+    .grid {
+      --row: var(--row-h-md);
+      --cap: 2.2;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .grid {
+      --row: var(--row-h-lg);
+    }
+  }
+</style>

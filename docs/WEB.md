@@ -168,6 +168,9 @@ Placeholders ship until answered (none blocks the build; controller details bloc
 
 - Q-12 price range: the price range in the structured data (`priceRange`) and any price wording is a placeholder until the photographer
   answers. Decide before cutover: publish a real range, or leave the field out. Do not launch with an invented figure.
+  Default: the site publishes no prices and `apps/web/src/lib/jsonld.ts` emits no `priceRange` (checked 2026-10-21; the word appears only
+  in a comment). Whether regular paid work needs a trade licence (živnost) before prices are published is a question for a Czech tax
+  adviser or the finanční úřad; the project does not decide it. Prices can be added later by a small change in the texts and in `jsonld.ts`.
 - Home SEO check (T-211, 2026-10-21): the title ("Fotograf Brno: svatby, portréty, páry | Mullny Photos") and the description
   (`homeMeta` in `apps/web/src/lib/seo.ts`) target "fotograf Brno". The H1 is only the brand "Mullny Photos" and the tagline under it
   ("Focení svateb, portrétů a párových fotek", `SITE.description`) does not name Brno. Whether to put "Brno" into the visible H1 or tagline

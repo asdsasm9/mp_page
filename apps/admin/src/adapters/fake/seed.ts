@@ -1,5 +1,5 @@
 /** Fills a fake world from a public snapshot (the fixture), the way a migrated catalog would look. */
-import { allKeys, masterKey, sumBytes, type AlbumRow, type CategoryRow, type PhotoRow, type Snapshot } from '@mp/shared';
+import { allKeys, masterKey, sumBytes, variantBytes, type AlbumRow, type CategoryRow, type PhotoRow, type Snapshot } from '@mp/shared';
 import type { Core } from './core';
 
 const DAY_MS = 86_400_000;
@@ -58,7 +58,7 @@ export function seedFromSnapshot(core: Core, snapshot: Snapshot): void {
           updated_at: a.updatedAt,
         };
         state.photos.set(photo.id, photo);
-        const sizes = [p.variants.master.bytes, ...p.variants.webp.map((e) => e.bytes), p.variants.jpeg.bytes, p.variants.og.bytes];
+        const sizes = variantBytes(p.variants);
         allKeys(p.id, p.variants).forEach((key, i) => state.objects.set(key, { bytes: sizes[i]!, uploadedAtMs: objectAge }));
       });
     });

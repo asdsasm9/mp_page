@@ -12,6 +12,7 @@
  */
 import {
   PhotoVariantsSchema,
+  ORPHAN_MIN_AGE_MS,
   ReconcileRequestSchema,
   allKeys,
   apiCodeFromZodError,
@@ -20,6 +21,7 @@ import {
   type ReconcileResponse,
   type StorageAdapter,
   type StorageObjectInfo,
+  variantBytes,
 } from '@mp/shared';
 import type { Route } from '../index';
 import { errorResponse, jsonResponse, readJsonBody } from '../http';
@@ -27,8 +29,6 @@ import { errorResponse, jsonResponse, readJsonBody } from '../http';
 const PHOTOS_PREFIX = 'photos/';
 const DEFAULT_PAGE_BUDGET = 20;
 const DEFAULT_PAGE_SIZE = 1000;
-/** Orphans younger than this may belong to an upload that has not been committed yet. */
-export const ORPHAN_MIN_AGE_MS = 2 * 60 * 60 * 1000;
 
 export interface ReconcileDeps {
   storage: StorageAdapter;
@@ -206,7 +206,7 @@ export function createReconcileRoute(deps: ReconcileDeps): Route {
         const variants = PhotoVariantsSchema.safeParse(row.variants);
         if (!variants.success) continue;
         const v = variants.data;
-        const expected = [v.master.bytes, ...v.webp.map((e) => e.bytes), v.jpeg.bytes, v.og.bytes];
+        const expected = variantBytes(v);
         const missingKeys: string[] = [];
         for (const [i, key] of allKeys(row.id, v).entries()) {
           const found = byKey.get(key);

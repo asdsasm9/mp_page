@@ -8,6 +8,8 @@ import {
   CommitResponseSchema,
   DeleteRequestSchema,
   DeleteResponseSchema,
+  ORPHAN_MIN_AGE_MS,
+  PUBLISH_MIN_GAP_MS,
   PHOTO_CACHE_CONTROL,
   CONTENT_TYPE_BY_KIND,
   PublishResponseSchema,
@@ -32,6 +34,7 @@ import {
   itemBytes,
   reservationActive,
   totalBytes,
+  variantBytes,
   type PhotoRow,
   type PublishLogRow,
   type UploadTarget,
@@ -41,8 +44,6 @@ import { clearCoversOfPhoto } from './catalog';
 import { copy, type Core } from './core';
 
 const PRESIGN_EXPIRY_MS = PRESIGN_EXPIRY_SEC * 1000;
-const PUBLISH_MIN_GAP_MS = 60_000;
-const ORPHAN_MIN_AGE_MS = 2 * 60 * 60 * 1000;
 const PUBLISH_LOG_KEEP = 100;
 
 type ZodErrorLike = Parameters<typeof apiCodeFromZodError>[0];
@@ -355,7 +356,7 @@ export function createFakeApi(core: Core): ApiPort {
       const sizeMismatch: { id: string; key: string; expected: number; actual: number }[] = [];
       for (const row of rows) {
         const keys = allKeys(row.id, row.variants);
-        const expected = [row.variants.master.bytes, ...row.variants.webp.map((e) => e.bytes), row.variants.jpeg.bytes, row.variants.og.bytes];
+        const expected = variantBytes(row.variants);
         const gone: string[] = [];
         for (const [i, key] of keys.entries()) {
           const obj = state.objects.get(key);

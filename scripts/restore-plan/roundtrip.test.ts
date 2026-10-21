@@ -6,7 +6,7 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { variantPlan, verifyBackupDocument, type PhotoVariants } from '@mp/shared';
+import { sumBytes, variantPlan, verifyBackupDocument, type PhotoVariants } from '@mp/shared';
 import type { BackupDocument } from '../../packages/shared/src/backup';
 import { createMigratedDb } from '../../supabase/tests/helpers/db';
 import { emitRestoreSql } from './sql';
@@ -68,7 +68,7 @@ function variantsFor(w: number, h: number, bytes: number): PhotoVariants {
     og: { w: p.og.w, h: p.og.h, bytes },
   };
 }
-const totalBytes = (v: PhotoVariants) => v.master.bytes + v.webp.reduce((a, e) => a + e.bytes, 0) + v.jpeg.bytes + v.og.bytes;
+const totalBytes = (v: PhotoVariants) => sumBytes(v);
 const lit = (s: string) => "'" + s.split("'").join("''") + "'";
 
 async function triggerStates(db: PGlite) {

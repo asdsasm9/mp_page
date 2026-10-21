@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { LEGACY_ALBUMS, LEGACY_CATEGORIES } from '../packages/shared/src/legacy/albums';
 import { SnapshotSchema, assertPublishable, type Snapshot } from '../packages/shared/src/snapshot';
+import { sumBytes } from '../packages/shared/src/variants';
 import {
   FIXTURE_NAMESPACE,
   LEGACY_GALLERIES_DIR,
@@ -70,7 +71,7 @@ describe('gen-fixtures part 2: seed.sql and snapshot.fixture.json', () => {
     expect(ids.size).toBe(141);
     for (const p of gen.rows.photos) {
       const v = p.variants;
-      expect(p.bytes_total).toBe(v.master.bytes + v.webp.reduce((s, e) => s + e.bytes, 0) + v.jpeg.bytes + v.og.bytes);
+      expect(p.bytes_total).toBe(sumBytes(v));
       expect(p.master_key).toBe(`photos/${p.id}/master.jpg`);
     }
   });

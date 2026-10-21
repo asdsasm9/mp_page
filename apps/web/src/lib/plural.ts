@@ -3,6 +3,8 @@
  * 1 -> `one`, 2 to 4 -> `few`, everything else (0, 5 and more, 11, 22, 100) -> `many`.
  * Unlike Polish or Russian, 22 is `many` ("22 svateb"), not `few`.
  */
+import { czechPluralIndex } from '@mp/shared';
+
 export interface PluralForms {
   readonly one: string;
   readonly few: string;
@@ -10,10 +12,7 @@ export interface PluralForms {
 }
 
 export function pluralForm(n: number, forms: PluralForms): string {
-  const abs = Math.abs(n);
-  if (abs === 1) return forms.one;
-  if (abs >= 2 && abs <= 4 && Number.isInteger(abs)) return forms.few;
-  return forms.many;
+  return [forms.one, forms.few, forms.many][czechPluralIndex(Math.abs(n))]!;
 }
 
 /** `plural(4, forms)` gives `4 svatby`. */

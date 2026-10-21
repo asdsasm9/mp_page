@@ -1,6 +1,6 @@
 import type { StorageResponse } from '@mp/shared';
 import { cs } from './cs';
-import { formatBytes } from './format';
+import { fill, formatBytes } from './format';
 
 export interface StorageView {
   level: StorageResponse['level'];
@@ -15,9 +15,6 @@ export interface StorageView {
   /** Whole percent of the hard limit as the response reports it (0 when hard is 0). */
   percent: number;
 }
-
-const fill = (template: string, values: Record<string, string>) =>
-  template.replace(/\{(\w+)\}/g, (_, name: string) => values[name] ?? '');
 
 /** Everything shown comes from the GET /storage response: the limits are never constants in the admin. */
 export function describeStorage(storage: StorageResponse): StorageView {

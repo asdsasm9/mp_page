@@ -1,5 +1,7 @@
 /** Czech number, size, date and plural formatting. Pure; no Intl (output must not depend on ICU data). */
 
+import { czechPluralIndex } from '@mp/shared';
+
 const BYTE_UNITS = ['B', 'kB', 'MB', 'GB', 'TB'] as const;
 
 /** Decimal units like the server (1 GB = 1 000 000 000 B), one decimal, decimal comma: 3_200_000_000 -> "3,2 GB". */
@@ -22,9 +24,7 @@ export function formatBytes(bytes: number): string {
 
 /** Czech plural: 1 -> one, 2 to 4 -> few, everything else (0, 5+, fractions) -> many. */
 export function plural(n: number, forms: readonly [one: string, few: string, many: string]): string {
-  if (n === 1) return forms[0];
-  if (Number.isInteger(n) && n >= 2 && n <= 4) return forms[1];
-  return forms[2];
+  return forms[czechPluralIndex(n)];
 }
 
 /** "1 fotka", "3 fotky", "5 fotek". */

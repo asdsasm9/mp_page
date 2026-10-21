@@ -52,7 +52,7 @@ Output layout:
 
 A rerun fetches only what is missing or changed. Exit code is non-zero when any master could not be saved; the rest is still written.
 
-Cadence: about quarterly, and after a big shoot (this is the only second copy of new masters). Keep the folder on an encrypted disk, outside any synced public folder.
+Cadence: about quarterly, and after a big shoot (this is the only second copy of new masters; the full quarterly routine is in [MAINTENANCE.md](MAINTENANCE.md)). Keep the folder on an encrypted disk, outside any synced public folder.
 
 ## `npm run restore-plan`
 

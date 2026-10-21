@@ -1,6 +1,6 @@
 import type { AlbumRow, PhotoRow } from '@mp/shared';
 import { describe, expect, it } from 'vitest';
-import { checkAlt, hasNoAlt } from './altText';
+import { checkAlt, hasNoAlt, problemText } from './altText';
 import { groupAlbums } from './albumSearch';
 import { pickAutoCover, planAppend } from './photoActions';
 
@@ -45,6 +45,22 @@ describe('alt text checks', () => {
     expect(long.problems).toEqual([]);
     expect(long.warnings).toHaveLength(1);
     expect(checkAlt('Svatební dort').problems).toEqual([]);
+  });
+  it('maps each problem code to its own Czech text, ignoring the English message', () => {
+    const cases = [
+      ['FILENAME', 'Alternativní text nesmí vypadat jako název souboru.'],
+      ['PATH_SEPARATOR', 'Alternativní text nesmí obsahovat lomítka.'],
+      ['TOO_LONG', 'Alternativní text může mít nejvýše 300 znaků.'],
+    ] as const;
+    for (const [code, cz] of cases) {
+      expect(problemText({ code, message: 'reworded English text' })).toBe(cz);
+      expect(problemText({ code, message: 'something else entirely' })).toBe(cz);
+    }
+    expect(problemText({ code: 'GENERIC_PREFIX', message: 'x' })).toContain('Nezačínejte');
+    const texts = (['FILENAME', 'GENERIC_PREFIX', 'PATH_SEPARATOR', 'TOO_LONG'] as const).map((code) =>
+      problemText({ code, message: '' }),
+    );
+    expect(new Set(texts).size).toBe(4);
   });
   it('treats blank alt as missing', () => {
     expect(hasNoAlt({ alt: null })).toBe(true);

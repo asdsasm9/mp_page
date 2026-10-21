@@ -29,6 +29,12 @@ describe('validateAlt', () => {
       expect(r.problems.length).toBeGreaterThan(0);
     },
   );
+  it('returns stable codes', () => {
+    expect(validateAlt('IMG_1.jpg').problems.map((p) => p.code)).toEqual(['FILENAME']);
+    expect(validateAlt('foto x').problems.map((p) => p.code)).toEqual(['GENERIC_PREFIX']);
+    expect(validateAlt('a/b').problems.map((p) => p.code)).toEqual(['PATH_SEPARATOR']);
+    expect(validateAlt('a'.repeat(301)).problems.map((p) => p.code)).toEqual(['TOO_LONG']);
+  });
   it('accepts a good alt without warnings', () => {
     const r = validateAlt('Adam & Eliška – svatba, fotografie 12 z 44');
     expect(r).toEqual({ ok: true, problems: [], warnings: [] });

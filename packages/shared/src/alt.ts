@@ -6,20 +6,34 @@ export const ALT_WARN = 125;
 const FILENAME_RE = /\.(jpe?g|png|webp|avif)$/i;
 const GENERIC_PREFIX_RE = /^(image|photo|foto|obrázek)\b/i;
 
+/** Stable machine-readable codes; consumers map these, never the English message. */
+export type AltProblemCode = 'FILENAME' | 'GENERIC_PREFIX' | 'PATH_SEPARATOR' | 'TOO_LONG';
+
+export interface AltProblem {
+  code: AltProblemCode;
+  /** English description for logs and reports; free to reword. */
+  message: string;
+}
+
 export interface AltResult {
   ok: boolean;
-  problems: string[];
+  problems: AltProblem[];
   warnings: string[];
 }
 
 export function validateAlt(alt: string): AltResult {
-  const problems: string[] = [];
+  const problems: AltProblem[] = [];
   const warnings: string[] = [];
   const text = alt.trim();
-  if (FILENAME_RE.test(text)) problems.push('Alt looks like a file name.');
-  if (GENERIC_PREFIX_RE.test(text)) problems.push('Alt starts with a generic word (image, photo, foto, obrázek).');
-  if (/[\\/]/.test(text)) problems.push('Alt contains a path separator.');
-  if (text.length > ALT_MAX) problems.push(`Alt is longer than ${ALT_MAX} characters.`);
+  if (FILENAME_RE.test(text)) problems.push({ code: 'FILENAME', message: 'Alt looks like a file name.' });
+  if (GENERIC_PREFIX_RE.test(text))
+    problems.push({
+      code: 'GENERIC_PREFIX',
+      message: 'Alt starts with a generic word (image, photo, foto, obrázek).',
+    });
+  if (/[\\/]/.test(text)) problems.push({ code: 'PATH_SEPARATOR', message: 'Alt contains a path separator.' });
+  if (text.length > ALT_MAX)
+    problems.push({ code: 'TOO_LONG', message: `Alt is longer than ${ALT_MAX} characters.` });
   else if (text.length > ALT_WARN) warnings.push(`Alt is longer than ${ALT_WARN} characters.`);
   return { ok: problems.length === 0, problems, warnings };
 }

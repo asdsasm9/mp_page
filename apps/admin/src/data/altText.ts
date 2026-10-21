@@ -1,5 +1,5 @@
 /** Alt text and caption checks of the photo detail: validateAlt (shared) with Czech messages. */
-import { ALT_MAX, ALT_WARN, validateAlt } from '@mp/shared';
+import { ALT_MAX, ALT_WARN, validateAlt, type AltProblem } from '@mp/shared';
 import { cs } from '../i18n/cs';
 import { fill } from '../i18n/format';
 
@@ -7,13 +7,20 @@ export const CAPTION_MAX = 500;
 
 const d = cs.photos.detail;
 
-/** Czech text for one problem string of validateAlt (matched by its stable English start). */
-function problemText(problem: string): string {
-  if (problem.startsWith('Alt looks like')) return d.altFilename;
-  if (problem.startsWith('Alt starts with')) return d.altGeneric;
-  if (problem.startsWith('Alt contains')) return d.altPath;
-  if (problem.startsWith('Alt is longer')) return fill(d.altTooLong, { max: ALT_MAX });
-  return d.altInvalid;
+/** Czech text for one problem of validateAlt, chosen by its stable code (the English message is ignored). */
+export function problemText(problem: AltProblem): string {
+  switch (problem.code) {
+    case 'FILENAME':
+      return d.altFilename;
+    case 'GENERIC_PREFIX':
+      return d.altGeneric;
+    case 'PATH_SEPARATOR':
+      return d.altPath;
+    case 'TOO_LONG':
+      return fill(d.altTooLong, { max: ALT_MAX });
+    default:
+      return d.altInvalid;
+  }
 }
 
 export interface AltCheck {

@@ -145,6 +145,7 @@ Fotky klientů jsou osobní údaje. Chovej se k nim podle toho.
 
 - Když album skryješ nebo smažeš, zmizí z webu po „Zveřejnit web“. Dřív ne. Pamatuj na to, když klient chce fotky stáhnout z webu.
 - Skryté nebo nezveřejněné album není soukromé. Kdo zná přímý odkaz na obrázek, může ho otevřít. Říká to i správa: „Nezveřejněné album se na webu nezobrazuje, ale fotky nejsou soukromé: kdo zná přímý odkaz na obrázek, může ho otevřít.“
+- Rizikové je to hlavně u svateb a dalších osobních focení: originály (mastery) i všechny velikosti fotek jsou čitelné komukoli, kdo zná jejich adresu, i když album není na webu vidět. Odkaz může klient nebo host přeposlat dál. Proto klientům, kteří chtějí mít fotky opravdu soukromé (typicky svatební), nepředávej fotky přes toto album, ale soukromým doručením, například přes sdílený odkaz s heslem u jiné služby nebo osobním předáním na disku. Na web dávej jen fotky, se kterými klient souhlasí. Domluv to s klientem předem a v případě pochybností se zeptej Adama.
 - „Smazat fotku“ odstraní fotku z úložiště správy. Adam si ale může fotky z času na čas zálohovat na vlastní počítač. Kopie ve starší záloze proto může zůstat, i když jsi ji ve správě smazala. Když klient žádá o úplné odstranění, řekni to Adamovi, aby smazal i zálohu.
 - Do popisků a alt textů nepiš příjmení, adresy ani jiné osobní údaje, které klient nechce mít na webu.
 

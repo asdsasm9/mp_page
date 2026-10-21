@@ -59,6 +59,19 @@ Each gate went red on the synthetic change and green again once it was undone. N
 8. VERIFY row 37: on a scratch Supabase project, check that `alter table ... disable trigger user` works in the SQL editor (the restore SQL depends on it; fallback is in the SQL comments). See [BACKUP.md](BACKUP.md).
 9. The first `npm run backup -- --live` after cutover, then a look at the output folder (about 10 minutes).
 
+## Known unproven (0 EUR and no-care claims)
+
+These VERIFY rows are not proven. Until a human runs the check, the "0 EUR per month" and "needs no care" claims are assumptions.
+
+| VERIFY row | Unproven fact | Claim it affects | Check a human runs |
+|------------|---------------|------------------|--------------------|
+| 3 | Cron triggers work on the Workers free plan | Daily keepalive and backup run by themselves | Cloudflare dashboard, Workers, Triggers: add the cron; see [DEPLOY-API.md](DEPLOY-API.md) sections 3, 8, 9 |
+| 11 | Supabase free-project pause policy, and whether the keepalive counts as activity | Site data does not vanish behind a paused project | After 8 or more days of keepalive, check the Supabase dashboard that the project is not paused |
+| 12 | Current free-tier numbers (R2, Supabase, Workers, Pages) | The 0 EUR cap and the quota guard constants | Read each vendor pricing page and record the figures with the date in VERIFY.md |
+| 13 | Workers free-plan CPU and subrequest limits for publish | Publish works without a paid plan (about 5 USD per month) | Publish the real catalog once and read CPU time and subrequests in the live logs ([DEPLOY-API.md](DEPLOY-API.md) section 9 step 8) |
+| 14 | R2 "GB" decimal or binary | Storage stays under the free 10 GB | Read the R2 pricing docs (the 9.5e9 limit keeps margin either way) |
+| 17 | Pages `_redirects` limits and 410 support | Old links keep working; deleted albums answer correctly | Read the Pages redirects docs, then test about 10 old URLs on a preview |
+
 ## Only offline, honest notes
 
 - The gates are static text checks. They catch drift, not a determined bypass; see [GATES.md](GATES.md). The RLS, quota-guard and restore round-trip suites are the behavioural proof.

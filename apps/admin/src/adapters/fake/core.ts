@@ -11,6 +11,7 @@ import {
   ApiError,
   NetworkError,
   type ApiPort,
+  type CallbackError,
   type CatalogPort,
   type Clock,
   type Ids,
@@ -19,6 +20,7 @@ import {
 
 export type FakeOp =
   | 'auth.signIn'
+  | 'auth.signInWithGoogle'
   | 'auth.signOut'
   | 'auth.getSession'
   | 'auth.isAdmin'
@@ -54,6 +56,9 @@ export interface FakeSession {
   expired: boolean;
 }
 
+/** What the fake Google chooser does on the next sign-in; an e-mail picks that fake account. */
+export type GoogleNext = 'admin' | 'outsider' | 'cancel' | `${string}@${string}`;
+
 export interface Injection {
   op: FakeOp | '*';
   error: Error | 'network';
@@ -86,6 +91,8 @@ export interface State {
   reconcilePageObjects: number;
   failures: Injection[];
   tokenCounter: number;
+  /** Fake Google chooser: `next` is consumed by the next signInWithGoogle (null = admin). */
+  google: { next: GoogleNext | null; callbackError: CallbackError | null };
 }
 
 export interface Core {

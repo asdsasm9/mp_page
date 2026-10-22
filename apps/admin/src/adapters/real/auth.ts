@@ -94,6 +94,13 @@ export function createRealAuth(auth: SupabaseAuthLike, options: RealAuthOptions)
 
   return {
     getSession: currentSession,
+    // TEMPORARY (T-230): the real Google flow is task T-231.
+    async signInWithGoogle() {
+      throw new Error('signInWithGoogle is not implemented in the real adapter yet (T-231)');
+    },
+    takeCallbackError() {
+      throw new Error('takeCallbackError is not implemented in the real adapter yet (T-231)');
+    },
     async signIn(email, password) {
       const { data, error } = await auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw failure(error, 'credentials');

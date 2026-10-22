@@ -11,7 +11,7 @@ import { createFakeApi } from './api';
 import { FAKE_ADMIN, FAKE_OUTSIDER, createFakeAuth, notifyAuthChange } from './auth';
 import { createFakeCatalog } from './catalog';
 import { createManualClock, createSeqIds } from './clock';
-import { createCore, type FakeOp, type FakeUser, type State } from './core';
+import { createCore, type FakeOp, type FakeUser, type GoogleNext, type State } from './core';
 import { seedFromSnapshot } from './seed';
 import { createFakePublishStatus, createFakeUpload } from './storage';
 
@@ -63,6 +63,8 @@ export interface FakeWorld {
   slowPut(ms: number | null): void;
   /** The user follows the reset-mail link: a recovery session opens and the set-new-password event fires. */
   startPasswordRecovery(email: string): void;
+  /** The fake Google chooser: `google.next` is consumed by the next signInWithGoogle (default 'admin'). */
+  google: { next: GoogleNext | null };
   /** Changes the configuration the way editing app_config would. */
   setLimits(limits: Partial<Limits>): void;
   setBuildDelay(ms: number | null): void;
@@ -98,6 +100,7 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
     reconcilePageObjects: options.reconcilePageObjects ?? 20_000,
     failures: [],
     tokenCounter: 0,
+    google: { next: null, callbackError: null },
   };
   const core = createCore(clock, ids, state);
   if (options.seed) seedFromSnapshot(core, options.seed);
@@ -119,6 +122,7 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
   return {
     ports,
     clock,
+    google: state.google,
     failNext(op, error, times = 1) {
       state.failures.push({ op, error, times });
     },

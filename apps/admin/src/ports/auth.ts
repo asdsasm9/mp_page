@@ -9,8 +9,25 @@ export interface AuthSession {
   expiresAt: number;
 }
 
+/** Why the last Google round trip failed; read once through `takeCallbackError`. */
+export type CallbackError = 'CANCELLED' | 'NOT_ALLOWED' | 'FAILED';
+
+export interface GoogleSignInOptions {
+  /** App path to return to after sign-in; already validated by the caller (see auth/returnPath.ts). */
+  returnTo: string;
+  /** Pre-selects the account in the Google chooser (expiry re-sign-in). */
+  loginHint?: string;
+}
+
 export interface AuthPort {
   getSession(): Promise<AuthSession | null>;
+  /**
+   * Starts the Google sign-in. Real adapter: leaves the page (full-page redirect) and does not come back.
+   * Fake adapter: resolves once the fake chooser is done. Throws NetworkError when offline.
+   */
+  signInWithGoogle(options: GoogleSignInOptions): Promise<void>;
+  /** The error of the last Google round trip, once; null when there is none. */
+  takeCallbackError(): CallbackError | null;
   /** Throws AuthError (INVALID_CREDENTIALS, TOO_MANY_ATTEMPTS) or NetworkError. */
   signIn(email: string, password: string): Promise<AuthSession>;
   signOut(): Promise<void>;

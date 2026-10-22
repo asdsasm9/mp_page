@@ -20,9 +20,11 @@ import {
 } from 'react';
 import { ApiError, type AuthSession } from '../ports';
 import { usePorts } from '../ports-context';
+import { storeReturnPath } from './returnPath';
 
 export type SessionStatus = 'loading' | 'signedOut' | 'recovery' | 'ready' | 'expired' | 'error';
 export type SignInResult = 'ok' | 'denied';
+export type GoogleSignInResult = SignInResult | 'cancelled' | 'failed';
 
 export interface SessionValue {
   status: SessionStatus;
@@ -33,6 +35,11 @@ export interface SessionValue {
   error: unknown;
   /** Throws AuthError or NetworkError; 'denied' when the account is not an admin. */
   signIn(email: string, password: string): Promise<SignInResult>;
+  /**
+   * Google sign-in. The return path is validated and kept in sessionStorage. With the real adapter the page is
+   * left and this never resolves; with the fake one it resolves with the outcome. Throws NetworkError offline.
+   */
+  signInWithGoogle(options?: { returnTo?: string; loginHint?: string }): Promise<GoogleSignInResult>;
   /** Sets the new password of the recovery session, then runs the admin check. */
   completeRecovery(newPassword: string): Promise<SignInResult>;
   signOut(): Promise<void>;
@@ -165,6 +172,35 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [auth, apply, admit, rejectDeferred, flushDeferred, queryClient],
   );
 
+  const signInWithGoogle = useCallback(
+    async (options: { returnTo?: string; loginHint?: string } = {}): Promise<GoogleSignInResult> => {
+      apply({ denied: false });
+      const returnTo = storeReturnPath(options.returnTo);
+      const wasExpired = statusRef.current === 'expired';
+      const previousUser = userIdRef.current;
+      await auth.signInWithGoogle({ returnTo, ...(options.loginHint ? { loginHint: options.loginHint } : {}) });
+      // Real adapter: the page has been left. Fake adapter: the chooser is done and the outcome is here.
+      const callbackError = auth.takeCallbackError();
+      if (callbackError === 'CANCELLED') return 'cancelled';
+      if (callbackError === 'FAILED') return 'failed';
+      if (callbackError === 'NOT_ALLOWED') {
+        apply({ denied: true });
+        return 'denied';
+      }
+      const session = await auth.getSession();
+      if (!session) return 'failed';
+      if (wasExpired && previousUser !== null && previousUser !== session.userId) {
+        // Somebody else signed in: the waiting actions were not theirs.
+        rejectDeferred();
+        queryClient.clear();
+      }
+      const result = await admit(session);
+      if (result === 'ok' && wasExpired) flushDeferred();
+      return result;
+    },
+    [auth, apply, admit, rejectDeferred, flushDeferred, queryClient],
+  );
+
   const completeRecovery = useCallback(
     async (newPassword: string): Promise<SignInResult> => {
       await auth.updatePassword(newPassword);
@@ -205,8 +241,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   const value = useMemo<SessionValue>(
-    () => ({ ...state, signIn, completeRecovery, signOut, retry, runAuthed }),
-    [state, signIn, completeRecovery, signOut, retry, runAuthed],
+    () => ({ ...state, signIn, signInWithGoogle, completeRecovery, signOut, retry, runAuthed }),
+    [state, signIn, signInWithGoogle, completeRecovery, signOut, retry, runAuthed],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

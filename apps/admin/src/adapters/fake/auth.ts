@@ -17,6 +17,13 @@ export const FAKE_OUTSIDER = {
 
 const HOUR_MS = 3_600_000;
 
+/** Manual fake mode: `?fake-google=outsider|cancel` picks the fake chooser's answer. Read here and nowhere else. */
+function queryChoice(): 'outsider' | 'cancel' | null {
+  const search = typeof location === 'undefined' ? '' : location.search;
+  const value = new URLSearchParams(search).get('fake-google');
+  return value === 'outsider' || value === 'cancel' ? value : null;
+}
+
 export function notifyAuthChange(core: Core): void {
   for (const fn of core.listeners) fn();
 }
@@ -33,6 +40,30 @@ export function createFakeAuth(core: Core): AuthPort {
     async getSession() {
       core.guard('auth.getSession');
       return toSession();
+    },
+    async signInWithGoogle() {
+      core.guard('auth.signInWithGoogle');
+      const choice = state.google.next ?? queryChoice() ?? 'admin';
+      state.google.next = null;
+      state.google.callbackError = null;
+      if (choice === 'cancel') {
+        state.google.callbackError = 'CANCELLED';
+        return;
+      }
+      const user = choice.includes('@')
+        ? state.users.find((u) => u.email === choice.toLowerCase())
+        : state.users.find((u) => u.isAdmin === (choice === 'admin'));
+      if (!user) {
+        state.google.callbackError = 'FAILED';
+        return;
+      }
+      state.session = { user, token: `fake-token-${++state.tokenCounter}`, expired: false };
+      notifyAuthChange(core);
+    },
+    takeCallbackError() {
+      const error = state.google.callbackError;
+      state.google.callbackError = null;
+      return error;
     },
     async signIn(email, password) {
       core.guard('auth.signIn');

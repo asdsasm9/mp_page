@@ -28,7 +28,7 @@ export function RequireAuth() {
       </main>
     );
   }
-  // signedOut (or the unused recovery status): the login page takes over. `from` is what the Google button stores in
+  // signedOut: the login page takes over. `from` is what the Google button stores in
   // sessionStorage before leaving the page, so the path survives the full-page redirect and is restored afterwards.
   return <Navigate to="/prihlaseni" replace state={{ from: `${location.pathname}${location.search}` }} />;
 }

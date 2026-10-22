@@ -38,7 +38,8 @@ describe('adapter selection', () => {
     vi.stubEnv('VITE_BACKEND', 'fake');
     const ports = await loadPorts(env('fake'));
     await expect(ports.api.getStorage()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
-    await ports.auth.signIn(FAKE_ADMIN.email, FAKE_ADMIN.password);
+    await ports.auth.signInWithGoogle({ returnTo: '/' });
+    expect((await ports.auth.getSession())?.email).toBe(FAKE_ADMIN.email);
     expect((await ports.api.getStorage()).photo_count).toBe(141);
     expect((globalThis as Record<string, unknown>)[FAKE_WORLD_MARKER]).toBeDefined();
   });
@@ -77,6 +78,8 @@ describe('production bundle', () => {
       expect(prod.length).toBeGreaterThan(1000);
       expect(prod).not.toContain(FAKE_WORLD_MARKER);
       expect(prod).not.toContain('FAKE_WORLD_CONTRACT_VIOLATION');
+      // No password field in the production app (Google is the only way in).
+      expect(prod).not.toMatch(/type(=|:)\s*\\?["']password["']/);
       const fake = await bundle({ 'import.meta.env.VITE_BACKEND': '"fake"' });
       expect(fake).toContain(FAKE_WORLD_MARKER);
     } finally {

@@ -78,16 +78,10 @@ function authStub(over: Partial<SupabaseAuthLike> = {}): AuthStub {
     },
     emit: (event, s) => callback?.(event, s),
     getSession: async () => ({ data: { session: session() }, error: null }),
-    signInWithPassword: async () => ({ data: { session: session() }, error: null }),
     signOut: async (options) => {
       calls.push(`signOut:${options?.scope ?? 'default'}`);
       return { error: null };
     },
-    resetPasswordForEmail: async (_email, options) => {
-      calls.push(`reset:${options?.redirectTo ?? ''}`);
-      return { error: null };
-    },
-    updateUser: async () => ({ error: null }),
     onAuthStateChange: (cb) => {
       callback = cb;
       return { data: { subscription: { unsubscribe: () => undefined } } };
@@ -300,9 +294,9 @@ describe('real auth', () => {
   const make = (stub: AuthStub, isAdminUser = async () => true) =>
     createRealAuth(stub, { isAdminUser, redirectTo: 'https://admin.example.test/prihlaseni' });
 
-  it('signs in and maps the session', async () => {
-    const result = await make(authStub()).signIn('  foto@example.test ', 'pw');
-    expect(result).toEqual({
+  it('getSession returns null without a session and the mapped session with one', async () => {
+    expect(await make(authStub({ getSession: async () => ({ data: { session: null }, error: null }) })).getSession()).toBeNull();
+    expect(await make(authStub()).getSession()).toEqual({
       userId: 'user-1',
       email: 'foto@example.test',
       accessToken: TOKEN,
@@ -310,28 +304,11 @@ describe('real auth', () => {
     });
   });
 
-  it('maps sign-in failures', async () => {
-    const wrong = make(authStub({ signInWithPassword: async () => ({ data: { session: null }, error: apiError(400, 'invalid_credentials') }) }));
-    await expect(wrong.signIn('a@b.cz', 'x')).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
-    const many = make(authStub({ signInWithPassword: async () => ({ data: { session: null }, error: apiError(429, 'over_request_rate_limit') }) }));
-    await expect(many.signIn('a@b.cz', 'x')).rejects.toBeInstanceOf(AuthError);
-    await expect(many.signIn('a@b.cz', 'x')).rejects.toMatchObject({ code: 'TOO_MANY_ATTEMPTS' });
+  it('getSession reports a missing connection as NetworkError', async () => {
     const offline = make(
-      authStub({
-        signInWithPassword: async () => ({
-          data: { session: null },
-          error: { name: 'AuthRetryableFetchError', status: 0 },
-        }),
-      }),
+      authStub({ getSession: async () => ({ data: { session: null }, error: { name: 'AuthRetryableFetchError', status: 0 } }) }),
     );
-    await expect(offline.signIn('a@b.cz', 'x')).rejects.toBeInstanceOf(NetworkError);
-    const down = make(authStub({ signInWithPassword: async () => ({ data: { session: null }, error: apiError(502) }) }));
-    await expect(down.signIn('a@b.cz', 'x')).rejects.toMatchObject({ code: 'UPSTREAM_ERROR' });
-  });
-
-  it('getSession returns null without a session and the mapped session with one', async () => {
-    expect(await make(authStub({ getSession: async () => ({ data: { session: null }, error: null }) })).getSession()).toBeNull();
-    expect((await make(authStub()).getSession())?.accessToken).toBe(TOKEN);
+    await expect(offline.getSession()).rejects.toBeInstanceOf(NetworkError);
   });
 
   it('isAdmin asks about the signed-in user only', async () => {
@@ -361,19 +338,7 @@ describe('real auth', () => {
     expect(stub.calls).toEqual(['signOut:default', 'signOut:local']);
   });
 
-  it('the reset answer is neutral: only a missing connection is reported', async () => {
-    const stub = authStub();
-    await make(stub).requestPasswordReset(' foto@example.test ');
-    expect(stub.calls).toEqual(['reset:https://admin.example.test/prihlaseni']);
-    const unknownAddress = make(authStub({ resetPasswordForEmail: async () => ({ error: apiError(400, 'user_not_found') }) }));
-    await expect(unknownAddress.requestPasswordReset('nobody@example.test')).resolves.toBeUndefined();
-    const rateLimited = make(authStub({ resetPasswordForEmail: async () => ({ error: apiError(429) }) }));
-    await expect(rateLimited.requestPasswordReset('a@b.cz')).resolves.toBeUndefined();
-    const offline = make(authStub({ resetPasswordForEmail: async () => ({ error: { name: 'AuthRetryableFetchError', status: 0 } }) }));
-    await expect(offline.requestPasswordReset('a@b.cz')).rejects.toBeInstanceOf(NetworkError);
-  });
-
-  it('forwards sign-out and refresh events, and the recovery event even to late subscribers', async () => {
+  it('forwards sign-out and refresh events', async () => {
     vi.useFakeTimers();
     try {
       const stub = authStub();
@@ -385,28 +350,16 @@ describe('real auth', () => {
       stub.emit('INITIAL_SESSION', session());
       await vi.runAllTimersAsync();
       expect(changes).toEqual([null, 'user-1']);
-
-      stub.emit('PASSWORD_RECOVERY', session());
-      const recovered = vi.fn();
-      auth.onPasswordRecovery(recovered);
-      await vi.runAllTimersAsync();
-      expect(recovered).toHaveBeenCalledTimes(1);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('updatePassword maps a refusal to WEAK_PASSWORD', async () => {
-    await expect(make(authStub()).updatePassword('long-enough-1')).resolves.toBeUndefined();
-    const weak = make(authStub({ updateUser: async () => ({ error: apiError(422, 'weak_password') }) }));
-    await expect(weak.updatePassword('x')).rejects.toMatchObject({ code: 'WEAK_PASSWORD' });
-  });
-
   it('writes nothing to the console', async () => {
     const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m));
     const auth = make(authStub());
-    await auth.signIn('foto@example.test', 'secret-pw');
-    await auth.requestPasswordReset('foto@example.test');
+    await auth.getSession();
+    await auth.isAdmin();
     await auth.signOut();
     for (const spy of spies) expect(spy).not.toHaveBeenCalled();
   });

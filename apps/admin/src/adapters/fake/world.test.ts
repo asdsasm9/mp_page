@@ -371,7 +371,9 @@ describe('catalog rules and pending_changes', () => {
 
   it('a non-admin account sees nothing', async () => {
     const world = createFakeWorld({ clock: createManualClock() });
-    await world.ports.auth.signIn(FAKE_OUTSIDER.email, FAKE_OUTSIDER.password);
+    world.google.next = 'outsider';
+    await world.ports.auth.signInWithGoogle({ returnTo: '/' });
+    expect((await world.ports.auth.getSession())?.email).toBe(FAKE_OUTSIDER.email);
     expect(await world.ports.auth.isAdmin()).toBe(false);
     await expect(world.ports.catalog.listCategories()).rejects.toMatchObject({ code: 'NOT_ADMIN' });
   });
@@ -460,8 +462,8 @@ describe('failure injection', () => {
     const target = res.items[0]!.uploads![0]!;
     await expect(s.ports.upload.put(target, new Blob([new Uint8Array(1000)]))).rejects.toMatchObject({ status: 500 });
     await expect(s.ports.upload.put(target, new Blob([new Uint8Array(1000)]))).resolves.toBeUndefined();
-    s.world.failNext('auth.signIn', new AuthError('TOO_MANY_ATTEMPTS'));
-    await expect(s.ports.auth.signIn(FAKE_ADMIN.email, FAKE_ADMIN.password)).rejects.toMatchObject({ code: 'TOO_MANY_ATTEMPTS' });
+    s.world.failNext('auth.signInWithGoogle', new AuthError('TOO_MANY_ATTEMPTS'));
+    await expect(s.ports.auth.signInWithGoogle({ returnTo: '/' })).rejects.toMatchObject({ code: 'TOO_MANY_ATTEMPTS' });
   });
 
   it('dropNetwork fails every call with NetworkError until switched off', async () => {
@@ -484,7 +486,7 @@ describe('failure injection', () => {
     expect(await s.ports.auth.getSession()).toBeNull();
     await expect(s.ports.api.getStorage()).rejects.toMatchObject({ code: 'UNAUTHENTICATED', status: 401 });
     await expect(s.ports.catalog.listCategories()).rejects.toMatchObject({ status: 401 });
-    await s.ports.auth.signIn(FAKE_ADMIN.email, FAKE_ADMIN.password);
+    await s.ports.auth.signInWithGoogle({ returnTo: '/' });
     expect(seen).toEqual([null, FAKE_ADMIN.email]);
     await expect(s.ports.api.getStorage()).resolves.toBeDefined();
   });
@@ -514,12 +516,11 @@ describe('failure injection', () => {
     s.world.slowPut(null);
   });
 
-  it('snapshot() is plain data without tokens or passwords', async () => {
+  it('snapshot() is plain data without tokens', async () => {
     const s = await setup();
     await addPhoto(s, 1);
     const text = JSON.stringify(s.world.snapshot());
     expect(text).not.toContain('fake-token');
-    expect(text).not.toContain(FAKE_ADMIN.password);
     expect(s.world.snapshot()).toMatchObject({ signedInAs: FAKE_ADMIN.email, photos: [{ id: pid(1) }] });
     expect(JSON.parse(text)).toEqual(s.world.snapshot());
   });

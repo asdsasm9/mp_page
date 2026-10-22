@@ -19,9 +19,7 @@ export type ExtraErrorCode =
   | 'DUPLICATE_SLUG'
   | 'IN_USE'
   | 'INVALID'
-  | 'INVALID_CREDENTIALS'
   | 'TOO_MANY_ATTEMPTS'
-  | 'WEAK_PASSWORD'
   | 'UPLOAD_FAILED';
 
 type Entry = string | ((options: MessageOptions) => string);
@@ -62,9 +60,7 @@ const EXTRA: Record<ExtraErrorCode, Entry> = {
   DUPLICATE_SLUG: 'Tato adresa je už použitá.',
   IN_USE: 'Položka ještě něco obsahuje. Nejdřív její obsah přesuňte nebo smažte.',
   INVALID: 'Některá hodnota není platná. Zkontrolujte ji a zkuste to znovu.',
-  INVALID_CREDENTIALS: 'Nesprávný e-mail nebo heslo.',
   TOO_MANY_ATTEMPTS: 'Příliš mnoho pokusů, zkuste to za chvíli.',
-  WEAK_PASSWORD: 'Heslo nevyhovuje požadavkům. Zvolte delší nebo složitější heslo.',
   UPLOAD_FAILED: 'Nahrávání selhalo. Zkusit znovu',
 };
 

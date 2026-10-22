@@ -67,7 +67,7 @@ describe('docs/ADMIN.md goal map', () => {
   });
 
   it('documents the deploy steps', () => {
-    for (const s of ['/prihlaseni', 'PUBLIC_ADMIN_ORIGIN', 'R2 bucket CORS', 'ALLOWED_ORIGINS', 'admins', 'sign-ups off', '_redirects']) {
+    for (const s of ['/prihlaseni', 'PUBLIC_ADMIN_ORIGIN', 'R2 bucket CORS', 'ALLOWED_ORIGINS', 'admin_emails','sign-ups off', '_redirects']) {
       expect(doc, s).toContain(s);
     }
   });

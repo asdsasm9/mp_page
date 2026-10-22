@@ -116,7 +116,7 @@ describe('signInWithGoogle in the fake world', () => {
   });
 
   it('a different account after expiry rejects the waiting actions', async () => {
-    const other = { id: 'eeeeeeee-0000-4000-8000-000000000003', email: 'druhy@example.test', password: 'x', isAdmin: true } as const;
+    const other = { id: 'eeeeeeee-0000-4000-8000-000000000003', email: 'druhy@example.test', isAdmin: true } as const;
     const world = createFakeWorld({ signedIn: true, users: [{ ...FAKE_ADMIN }, { ...FAKE_OUTSIDER }, other] });
     const { session } = harness(world);
     await waitFor(() => expect(session().status).toBe('ready'));

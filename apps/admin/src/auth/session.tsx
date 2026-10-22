@@ -1,9 +1,7 @@
 /**
- * Session context: who is signed in, the admin check, sign-out, the password-recovery state and the
- * "login expired" flow.
+ * Session context: who is signed in, the admin check, sign-out and the "login expired" flow.
  *
- * Statuses: loading (reading the stored session), signedOut, recovery (arrived through the reset mail
- * link, a new password is due), ready (signed in and an admin), expired (was ready, the session ended:
+ * Statuses: loading (reading the stored session), signedOut, ready (signed in and an admin), expired (was ready, the session ended:
  * the app stays mounted under a modal so form state and the queue survive) and error (the check could
  * not be made). Nothing here logs; tokens and addresses never leave the ports.
  */
@@ -22,7 +20,7 @@ import { ApiError, type AuthSession } from '../ports';
 import { usePorts } from '../ports-context';
 import { storeReturnPath } from './returnPath';
 
-export type SessionStatus = 'loading' | 'signedOut' | 'recovery' | 'ready' | 'expired' | 'error';
+export type SessionStatus = 'loading' | 'signedOut' | 'ready' | 'expired' | 'error';
 export type SignInResult = 'ok' | 'denied';
 export type GoogleSignInResult = SignInResult | 'cancelled' | 'failed';
 
@@ -33,15 +31,11 @@ export interface SessionValue {
   denied: boolean;
   /** Why status is "error". */
   error: unknown;
-  /** Throws AuthError or NetworkError; 'denied' when the account is not an admin. */
-  signIn(email: string, password: string): Promise<SignInResult>;
   /**
    * Google sign-in. The return path is validated and kept in sessionStorage. With the real adapter the page is
    * left and this never resolves; with the fake one it resolves with the outcome. Throws NetworkError offline.
    */
   signInWithGoogle(options?: { returnTo?: string; loginHint?: string }): Promise<GoogleSignInResult>;
-  /** Sets the new password of the recovery session, then runs the admin check. */
-  completeRecovery(newPassword: string): Promise<SignInResult>;
   signOut(): Promise<void>;
   /** Repeats the start-up check after status "error". */
   retry(): void;
@@ -77,7 +71,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>({ status: 'loading', session: null, denied: false, error: null });
   const [attempt, setAttempt] = useState(0);
   const statusRef = useRef<SessionStatus>('loading');
-  const recoveryRef = useRef(false);
   const userIdRef = useRef<string | null>(null);
   const deferred = useRef<Deferred[]>([]);
 
@@ -98,7 +91,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const admit = useCallback(
     async (session: AuthSession): Promise<SignInResult> => {
       const admin = await auth.isAdmin();
-      if (recoveryRef.current) return 'ok';
       if (!admin) {
         userIdRef.current = null;
         rejectDeferred();
@@ -112,16 +104,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       return 'ok';
     },
     [auth, apply, rejectDeferred, queryClient],
-  );
-
-  // Password recovery arrives from the link in the reset mail.
-  useEffect(
-    () =>
-      auth.onPasswordRecovery(() => {
-        recoveryRef.current = true;
-        apply({ status: 'recovery', denied: false });
-      }),
-    [auth, apply],
   );
 
   // The session ended while the app was in use (expiry, sign-out in another tab).
@@ -141,7 +123,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       try {
         const session = await auth.getSession();
         if (cancelled) return;
-        if (recoveryRef.current) return apply({ status: 'recovery', session });
         if (!session) return apply({ status: 'signedOut', session: null });
         await admit(session);
       } catch (error) {
@@ -154,23 +135,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [auth, admit, apply, attempt]);
-
-  const signIn = useCallback(
-    async (email: string, password: string): Promise<SignInResult> => {
-      apply({ denied: false });
-      const session = await auth.signIn(email, password);
-      const wasExpired = statusRef.current === 'expired';
-      if (wasExpired && userIdRef.current !== null && userIdRef.current !== session.userId) {
-        // Somebody else signed in: the waiting actions were not theirs.
-        rejectDeferred();
-        queryClient.clear();
-      }
-      const result = await admit(session);
-      if (result === 'ok' && wasExpired) flushDeferred();
-      return result;
-    },
-    [auth, apply, admit, rejectDeferred, flushDeferred, queryClient],
-  );
 
   const signInWithGoogle = useCallback(
     async (options: { returnTo?: string; loginHint?: string } = {}): Promise<GoogleSignInResult> => {
@@ -201,23 +165,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [auth, apply, admit, rejectDeferred, flushDeferred, queryClient],
   );
 
-  const completeRecovery = useCallback(
-    async (newPassword: string): Promise<SignInResult> => {
-      await auth.updatePassword(newPassword);
-      recoveryRef.current = false;
-      const session = await auth.getSession();
-      if (!session) {
-        apply({ status: 'signedOut', session: null });
-        return 'ok';
-      }
-      return admit(session);
-    },
-    [auth, apply, admit],
-  );
-
   const signOut = useCallback(async () => {
     userIdRef.current = null;
-    recoveryRef.current = false;
     rejectDeferred();
     apply({ status: 'signedOut', session: null, denied: false });
     queryClient.clear();
@@ -241,8 +190,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   const value = useMemo<SessionValue>(
-    () => ({ ...state, signIn, signInWithGoogle, completeRecovery, signOut, retry, runAuthed }),
-    [state, signIn, signInWithGoogle, completeRecovery, signOut, retry, runAuthed],
+    () => ({ ...state, signInWithGoogle, signOut, retry, runAuthed }),
+    [state, signInWithGoogle, signOut, retry, runAuthed],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

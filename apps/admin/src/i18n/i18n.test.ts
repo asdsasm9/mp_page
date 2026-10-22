@@ -78,7 +78,7 @@ describe('messages', () => {
     expect(errorMessage(new NetworkError())).toBe(messageForCode('NETWORK'));
     expect(errorCode(new NetworkError())).toBe('NETWORK');
     expect(errorMessage(new CatalogError('DUPLICATE_SLUG'))).toBe('Tato adresa je už použitá.');
-    expect(errorMessage(new AuthError('INVALID_CREDENTIALS'))).toBe('Nesprávný e-mail nebo heslo.');
+    expect(errorMessage(new AuthError('TOO_MANY_ATTEMPTS'))).toBe('Příliš mnoho pokusů, zkuste to za chvíli.');
     expect(errorMessage(new UploadHttpError(403))).not.toMatch(/403/);
     expect(errorCode(new UploadHttpError(403))).toBe('HTTP 403');
     expect(errorMessage(new Error('boom'))).toBe(messageForCode('UNKNOWN'));

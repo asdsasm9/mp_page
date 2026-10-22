@@ -30,12 +30,20 @@ const all: readonly Crumb[] = [{ name: 'Úvod', path: '/' }, ...crumbs];
   .breadcrumb ol {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1) var(--space-2);
+    align-items: center;
+    gap: 0 var(--space-2);
     margin: 0;
     padding: 0;
     list-style: none;
     font-size: var(--font-size-small);
     color: var(--color-text-muted);
+  }
+
+  /* Every item is the same height box with centred text, so link and current page share one baseline. */
+  .breadcrumb li {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-compact);
   }
 
   .breadcrumb li:not(:last-child)::after {
@@ -46,6 +54,6 @@ const all: readonly Crumb[] = [{ name: 'Úvod', path: '/' }, ...crumbs];
   .breadcrumb a {
     display: inline-flex;
     align-items: center;
-    min-block-size: var(--target-min);
+    min-block-size: var(--target-compact);
   }
 </style>

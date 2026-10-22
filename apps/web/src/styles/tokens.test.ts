@@ -99,6 +99,12 @@ describe('design tokens', () => {
     expect(parseInt(tokens['--measure']!, 10)).toBeLessThanOrEqual(70);
   });
 
+  it('compact targets stay above the WCAG 2.2 minimum (24px) and the card cover ratio is a token (T-225)', () => {
+    expect(parseFloat(tokens['--target-compact']!)).toBeGreaterThanOrEqual(1.5);
+    expect(tokens['--ratio-card']).toBe('3 / 2');
+    expect(tokens['--cover-position']).toBeTruthy();
+  });
+
   it('the contrast helper turns red for a failing colour', () => {
     expect(contrast('#cccccc', '#fafafa')).toBeLessThan(4.5);
   });

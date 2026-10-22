@@ -104,10 +104,6 @@ const { prev, next } = catalog.neighbours(album.slug);
     gap: var(--space-2);
   }
 
-  h1 {
-    font-size: var(--font-size-5);
-  }
-
   .meta {
     display: flex;
     flex-wrap: wrap;
@@ -130,7 +126,8 @@ const { prev, next } = catalog.neighbours(album.slug);
   .album-nav a {
     display: inline-flex;
     align-items: center;
-    min-block-size: var(--target-min);
+    min-block-size: var(--target-compact);
+    font-size: var(--font-size-small);
   }
 
   /* Lightbox: full-viewport modal dialog on the overlay colour. */

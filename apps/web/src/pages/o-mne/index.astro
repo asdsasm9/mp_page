@@ -66,14 +66,15 @@ const blocks = [
 <style>
   .page {
     display: grid;
-    gap: var(--space-5);
+    gap: var(--space-4);
     max-inline-size: var(--layout-max);
     margin-inline: auto;
     padding: var(--space-4) var(--layout-gutter) var(--space-7);
   }
 
+  /* One rhythm: page gap (space-4) everywhere; sections add the rest of --section-gap; heading to text is --heading-gap. */
   h1 {
-    font-size: var(--font-size-5);
+    margin-block-start: var(--space-3);
   }
 
   .page :global(img) {
@@ -85,14 +86,18 @@ const blocks = [
 
   .block {
     display: grid;
-    gap: var(--space-5);
+    gap: var(--space-4);
     align-items: center;
-    margin-block-start: var(--space-5);
+    margin-block-start: calc(var(--section-gap) - var(--space-4));
+  }
+
+  h1 + .block {
+    margin-block-start: 0;
   }
 
   .text {
     display: grid;
-    gap: var(--space-3);
+    gap: var(--heading-gap);
   }
 
   .lead {

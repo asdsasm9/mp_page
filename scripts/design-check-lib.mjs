@@ -26,6 +26,12 @@ export const ROUTES = [
   { path: '/layout-check/9/', name: 'album-9' },
   { path: '/layout-check/60/', name: 'album-60' },
   { path: '/layout-check/120/', name: 'album-120' },
+  // Category layout fixtures (T-225): 3, 4 and 7 album cards with mixed portrait/landscape covers (same guard).
+  // Light (axe, overflow, keyboard, screenshots): seven full-size dev covers on the simulated slow phone make Lighthouse LCP
+  // 2.5-3.0 s, which says nothing about the layout; the real /svatby/ page above stays under the full Lighthouse gate.
+  { path: '/layout-check/categories/3/', name: 'category-3', light: true },
+  { path: '/layout-check/categories/4/', name: 'category-4', light: true },
+  { path: '/layout-check/categories/7/', name: 'category-7', light: true },
   { path: '/o-mne/', name: 'about' },
   { path: '/kontakt/', name: 'contact' },
   { path: '/cookies/', name: 'cookies', light: true },

@@ -13,7 +13,9 @@ const { card, base } = Astro.props;
 ---
 <li>
   <a href={card.path}>
-    <Photo photo={card.photo} base={base} alt="" context="card" eager={card.eager} priority={card.priority} />
+    <span class="cover">
+      <Photo photo={card.photo} base={base} alt="" context="card" eager={card.eager} priority={card.priority} />
+    </span>
     <span class="card-title">{card.title}</span>
     <span class="card-meta">
       {card.place && <span>{card.place}</span>}
@@ -29,8 +31,17 @@ const { card, base } = Astro.props;
     text-decoration: none;
   }
 
+  /* Uniform cover box: every card has the same shape, so a portrait cover cannot make its row tall and leave a hole.
+     The cover is cropped (top-weighted); the whole photo is in the album page. */
+  .cover :global(img) {
+    aspect-ratio: var(--ratio-card);
+    block-size: auto;
+    object-fit: cover;
+    object-position: var(--cover-position);
+  }
+
   .card-title {
-    font-size: var(--font-size-2);
+    font-size: var(--font-size-1);
     letter-spacing: var(--tracking-heading);
     text-decoration: underline;
     text-decoration-thickness: var(--border-width);

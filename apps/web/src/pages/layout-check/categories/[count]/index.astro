@@ -1,0 +1,74 @@
+---
+// Category layout fixtures for design-check (T-225): a category page with 3, 4 and 7 album cards whose covers alternate
+// landscape and portrait. Same guard as ../[count]: fixture mode only, noindex, never in a production or snapshot build
+// (site-checks fails on any layout-check/ file there).
+import AlbumCard from '../../../../components/AlbumCard.astro';
+import Breadcrumb from '../../../../components/Breadcrumb.astro';
+import Base from '../../../../layouts/Base.astro';
+import { layoutCheckPhotos } from '../../../../lib/album';
+import { getCatalog } from '../../../../lib/catalog';
+import { FIRST_ROW, type CategoryCard } from '../../../../lib/category';
+import { readRawEnv, resolveEnv } from '../../../../lib/env';
+import type { PageMeta } from '../../../../lib/seo';
+
+export async function getStaticPaths() {
+  const env = resolveEnv(readRawEnv());
+  if (env.source !== 'fixture') return [];
+  return [3, 4, 7].map((count) => ({ params: { count: String(count) } }));
+}
+
+const env = resolveEnv(readRawEnv());
+const catalog = await getCatalog(env);
+const count = Number(Astro.params.count);
+const pool = [...catalog.photoById.values()].map((e) => e.photo);
+const cards: CategoryCard[] = layoutCheckPhotos(pool, count).map((photo, i) => ({
+  slug: `album-${i + 1}`,
+  title: `Album ${i + 1}`,
+  place: i % 2 === 0 ? 'Brno' : null,
+  path: '/layout-check/',
+  photo,
+  countLabel: `${5 + i} fotografií`,
+  eager: i < FIRST_ROW,
+  priority: i === 0,
+}));
+const meta: PageMeta = {
+  title: `Rozložení kategorie, ${count} alb | Mullny Photos`,
+  ogTitle: `Rozložení kategorie, ${count} alb`,
+  description: `Zkušební rozložení kategorie s ${count} alby pro kontrolu vzhledu.`,
+  noindex: true,
+};
+---
+<Base meta={meta} path={`/layout-check/categories/${count}/`}>
+  <div class="page">
+    <Breadcrumb crumbs={[{ name: 'Rozložení kategorie', path: `/layout-check/categories/${count}/` }]} />
+    <h1>Rozložení kategorie, {count} alb</h1>
+    <ul class="albums">
+      {cards.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-5);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  .albums {
+    display: grid;
+    align-items: start;
+    gap: var(--space-6) var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 48rem) {
+    .albums {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

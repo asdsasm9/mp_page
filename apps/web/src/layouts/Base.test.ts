@@ -88,6 +88,14 @@ describe('Home page (built, shared build)', () => {
     expect(reviews).not.toContain('loading="eager"');
   });
 
+  it('orders the sections hero, hello, categories, quote, reviews, collage and has no hero button', () => {
+    const marks = ['class="hero"', 'class="hello"', 'id="kategorie"', '<section class="quote', '<section class="reviews', '<section class="collage'];
+    const at = marks.map((m) => html.indexOf(m));
+    for (const [i, p] of at.entries()) expect(p, marks[i]).toBeGreaterThan(-1);
+    expect(at).toEqual([...at].sort((a, b) => a - b));
+    expect(html).not.toMatch(/class="button"/);
+  });
+
   it('passes an absolute og:image', () => {
     expect(html).toMatch(/<meta property="og:image" content="https:\/\/www\.mullnyphotos\.cz\/[^"]+">/);
   });

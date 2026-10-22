@@ -1,5 +1,5 @@
 ---
-// Home: hero (the LCP image), hello text, category cards, collage, reviews.
+// Home: hero (the LCP image), hello text, category cards, quote, reviews (if any), collage.
 // Only the hero image is eager with fetchpriority="high"; every other image is lazy.
 import { Image, getImage } from 'astro:assets';
 import Photo from '../components/Photo.astro';
@@ -92,22 +92,6 @@ const collage = [
     </ul>
   </section>
 
-  <section class="collage" aria-label="Ukázky fotografií">
-    {
-      collage.map((item) => (
-        <Image
-          src={item.src}
-          alt={item.alt}
-          widths={[480, 960]}
-          sizes="(min-width: 48rem) 33vw, 50vw"
-          format="webp"
-          loading="lazy"
-          decoding="async"
-        />
-      ))
-    }
-  </section>
-
   <section class="quote" aria-label="Citát">
     <blockquote><p>{HOME.quote}</p></blockquote>
   </section>
@@ -130,6 +114,22 @@ const collage = [
       </section>
     )
   }
+
+  <section class="collage" aria-label="Ukázky fotografií">
+    {
+      collage.map((item) => (
+        <Image
+          src={item.src}
+          alt={item.alt}
+          widths={[480, 960]}
+          sizes="(min-width: 48rem) 33vw, 50vw"
+          format="webp"
+          loading="lazy"
+          decoding="async"
+        />
+      ))
+    }
+  </section>
 </Base>
 
 <style>
@@ -247,6 +247,13 @@ const collage = [
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-3);
+  }
+
+  /* Divider after the categories: more space above than between other sections, plus a thin rule. */
+  .quote {
+    margin-block-start: var(--space-8);
+    padding-block-start: var(--space-7);
+    border-block-start: var(--border-width) solid var(--color-border);
   }
 
   .quote blockquote p {

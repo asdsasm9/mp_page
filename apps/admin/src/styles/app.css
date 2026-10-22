@@ -569,7 +569,15 @@
     block-size: var(--space-2);
     margin-inline-start: var(--space-2);
     border-radius: var(--radius-full);
-    background: var(--color-focus);
+    background: var(--color-accent);
+    border: var(--border-width) solid var(--color-border-strong);
+    flex: none;
+  }
+
+  /* The publish link is set apart from "Kategorie" in the top bar. */
+  .desktop-nav li:has([data-pending]),
+  .desktop-nav li:last-child {
+    margin-inline-start: var(--space-4);
   }
 
   .pending-label {
@@ -1469,6 +1477,40 @@
 
   .publish-card > * + * {
     margin-block-start: var(--space-3);
+  }
+
+  /* Set well apart from whatever list or heading precedes the panel. */
+  .page > .publish-card {
+    margin-block-start: var(--space-7);
+  }
+
+  .publish-card[data-state='pending'] {
+    border-color: var(--color-border-strong);
+    border-inline-start-width: var(--space-2);
+    box-shadow: var(--shadow-md);
+  }
+
+  .publish-card[data-state='clean'] {
+    box-shadow: none;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+  }
+
+  .publish-flag {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .publish-flag .pending-dot {
+    margin-inline-start: 0;
+  }
+
+  .publish-card[data-state='pending'] .publish-status {
+    font-size: var(--font-size-1);
+    font-weight: 700;
   }
 
   .publish-live:empty {

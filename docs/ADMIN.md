@@ -171,7 +171,8 @@ ho máš. Na sdíleném počítači se odhlas i z Googlu.
   fronta ztratí a chybějící fotky se nahrají znovu.
 - **Titulní fotka, pořadí, přesun, smazání**: v nabídce u každé fotky. Podrobnosti fotky: popisek a alternativní text.
 - **Zveřejnit web**: všechny úpravy se ukládají hned, ale návštěvníci je uvidí až po „Zveřejnit web“ (chvíli to trvá, stránka ukazuje průběh).
-  Tečka s popiskem „Nezveřejněné změny“ říká, že na webu ještě nejsou všechny úpravy.
+  Tečka s popiskem „Nezveřejněné změny“ (v horní liště i na stránce Zveřejnit web) říká, že na webu ještě nejsou všechny úpravy;
+  panel je pak zvýrazněný, ukazuje počet úprav a tlačítko je hlavní. Když je vše zveřejněno, je panel klidný a tlačítko je obyčejné.
 - **Úložiště**: ukazuje, kolik místa zbývá. Při varování zbývá málo, při plném úložišti se nahrávání zastaví. Tlačítko
   „Zkontrolovat úložiště“ najde zbytky po přerušeném nahrávání a po potvrzení je smaže.
 - Texty stránek (Domů, O mně, Kontakt) se tady nemění; ty upravuje správce webu.
@@ -304,7 +305,10 @@ Recorded where the build differs from the spec on purpose. None of them removes 
    prompt defaults to skipping.
 8. **Pending-change wording.** The publish page shows "N úprav od posledního zveřejnění" (a count from
    `site_state.pending_changes`) and the shell shows a dot with "Nezveřejněné změny"; there is no list or summary of
-   what changed (ADMIN-UX 3.6 asks for a summary).
+   what changed (ADMIN-UX 3.6 asks for a summary). T-247: the publish card has `data-state` `pending` (thick start
+   border, larger count, the same dot and words as the header, primary button), `clean` (flat, muted surface,
+   neutral button) or `loading`; it sits `--space-7` below the heading, and the top-bar publish link is set apart
+   from "Kategorie". The header dot uses `--color-accent` with a strong border, the same as the primary button.
 9. **Reconcile has no "use the real value" step.** `docs/API.md` removed it: the database total is the sum of the
    photo rows and cannot drift. "Zkontrolovat úložiště" reports orphans, missing objects, size mismatches and unknown
    keys; only orphans can be deleted, in a separate confirmed action ("Smazat nepotřebné soubory", `apply: true`).

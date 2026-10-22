@@ -79,8 +79,18 @@ export function PublishScreen() {
       {site.isError ? (
         <LoadFailure error={site.error} message={cs.publish.loadFailed} onRetry={() => void site.refetch()} />
       ) : (
-        <section className="card publish-card" aria-label={cs.publish.statusLabel}>
-          <p>
+        <section
+          className="card publish-card"
+          aria-label={cs.publish.statusLabel}
+          data-state={site.data ? (pending > 0 ? 'pending' : 'clean') : 'loading'}
+        >
+          {pending > 0 ? (
+            <p className="publish-flag">
+              <span className="pending-dot" aria-hidden="true" />
+              {cs.publishIndicator.pending}
+            </p>
+          ) : null}
+          <p className="publish-status">
             {site.data
               ? pending > 0
                 ? fill(plural(pending, cs.publish.pending), { count: pending })
@@ -93,7 +103,7 @@ export function PublishScreen() {
           <p>
             <button
               type="button"
-              className="button button-primary"
+              className={pending > 0 ? 'button button-primary' : 'button'}
               disabled={disabled}
               aria-disabled={busy ? true : undefined}
               onClick={publish}

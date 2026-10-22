@@ -70,6 +70,10 @@ describe('publish screen', () => {
     expect(screen.getByText(new RegExp(`^${pending} úpr.* od posledního zveřejnění$`))).toBeTruthy();
     expect(screen.getByText(cs.publish.neverPublished)).toBeTruthy();
     expect((button() as HTMLButtonElement).disabled).toBe(false);
+    // Pending state: flag with the same words as the header dot, primary button.
+    expect(document.querySelector('.publish-card')!.getAttribute('data-state')).toBe('pending');
+    expect(document.querySelector('.publish-flag')!.textContent).toBe(cs.publishIndicator.pending);
+    expect(button().className).toContain('button-primary');
     expect(await screen.findByText(cs.publish.historyEmpty)).toBeTruthy();
 
     await userEvent.setup().click(button());
@@ -97,6 +101,8 @@ describe('publish screen', () => {
     expect(world.snapshot().site.pending_changes).toBe(0);
     await waitFor(() => expect(screen.getByText(cs.publish.noChanges)).toBeTruthy());
     expect(document.querySelector('[data-pending="true"]')).toBeNull();
+    expect(document.querySelector('.publish-card')!.getAttribute('data-state')).toBe('clean');
+    expect(button().className).not.toContain('button-primary');
 
     // History: one row, Prague time (08:00 UTC on 2026-10-20 is 10:00 summer time), Czech status and counts.
     const rows = publishRows();

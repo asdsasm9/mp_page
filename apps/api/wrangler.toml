@@ -1,0 +1,14 @@
+# Never deployed from a builder. No routes, no secrets, no vars with values.
+# Secrets are set with `wrangler secret put`, never in a file.
+name = "mullnyphotos-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-19"
+
+# Daily Supabase keepalive (scheduled handler), 03:17 UTC: an off-peak, non-round minute.
+[triggers]
+crons = ["17 3 * * *"]
+
+# R2 binding used by the Worker (bucket name only). One bucket: no photo backup bucket (T-222).
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "mullnyphotos"

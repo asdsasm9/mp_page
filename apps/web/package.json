@@ -1,0 +1,21 @@
+{
+  "name": "@mp/web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build && tsx scripts/postbuild.ts",
+    "icons": "tsx scripts/make-icons.ts",
+    "test":"vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/martel": "5.3.0",
+    "@mp/shared": "0.0.0",
+    "astro": "7.4.0"
+  },
+  "devDependencies": {
+    "sharp": "0.35.5"
+  }
+}

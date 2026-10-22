@@ -1,0 +1,68 @@
+{
+  "tables": {
+    "admin_emails": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "none", "insert": "none", "update": "none", "delete": "none" }
+    },
+    "albums": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "table", "update": "table", "delete": "table" }
+    },
+    "app_config": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "none", "update": "none", "delete": "none" }
+    },
+    "categories": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "table", "update": "table", "delete": "table" }
+    },
+    "keepalive": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "none", "insert": "none", "update": "none", "delete": "none" }
+    },
+    "photos": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": {
+        "select": "table",
+        "insert": "none",
+        "update": "columns:album_id,alt,caption,sort",
+        "delete": "none"
+      }
+    },
+    "publish_log": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "none", "update": "none", "delete": "none" }
+    },
+    "site_state": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "none", "update": "none", "delete": "none" }
+    },
+    "upload_reservations": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "none", "update": "none", "delete": "none" }
+    },
+    "url_history": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "table", "update": "table", "delete": "table" }
+    }
+  },
+  "functions": {
+    "albums_delete_history": { "anon": false, "authenticated": false },
+    "albums_slug_history": { "anon": false, "authenticated": false },
+    "bump_pending": { "anon": false, "authenticated": false },
+    "categories_slug_history": { "anon": false, "authenticated": false },
+    "check_album_cover": { "anon": false, "authenticated": false },
+    "clear_cover_on_photo_change": { "anon": false, "authenticated": false },
+    "delete_photos": { "anon": false, "authenticated": true },
+    "is_admin": { "anon": false, "authenticated": true },
+    "keepalive": { "anon": true, "authenticated": true },
+    "record_publish": { "anon": false, "authenticated": true },
+    "record_slug_redirect": { "anon": false, "authenticated": false },
+    "register_photo": { "anon": false, "authenticated": true },
+    "request_publish": { "anon": false, "authenticated": true },
+    "reserve_uploads": { "anon": false, "authenticated": true },
+    "set_updated_at": { "anon": false, "authenticated": false },
+    "storage_usage": { "anon": false, "authenticated": true },
+    "variants_bytes_sum": { "anon": false, "authenticated": false }
+  }
+}

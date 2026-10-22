@@ -1,0 +1,121 @@
+---
+// About: hero (the only fetchpriority=high image), three text blocks from texts.ts, lazy side photos.
+// JSON-LD: Person (worksFor #business) and BreadcrumbList.
+import { Image, getImage } from 'astro:assets';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { ABOUT, NAV } from '../../content/texts';
+import Base from '../../layouts/Base.astro';
+import { SITE_ORIGIN, breadcrumbList, person } from '../../lib/jsonld';
+import { aboutMeta } from '../../lib/seo';
+import hero from '../../assets/site/about/main_about.jpg';
+import cake from '../../assets/site/about/cake.jpg';
+import nature from '../../assets/site/about/nature.jpg';
+import wedding from '../../assets/site/about/wedding.jpg';
+
+const path = '/o-mne/';
+const meta = aboutMeta();
+const crumbs = [{ name: NAV.about, path }];
+
+const heroAlt = 'Nevěsta v bílých šatech zvednutá ženichem v pšeničném poli v zlatém světle';
+const og = await getImage({ src: hero, width: 1200, height: 630, format: 'jpg', quality: 70 });
+const ogImage = { url: `${SITE_ORIGIN}${og.src}`, width: 1200, height: 630, alt: heroAlt };
+
+const blocks = [
+  { block: ABOUT.me, id: 'o-mne', photo: wedding, alt: 'Ženich líbá nevěstu na čelo, nevěsta drží kytici z kapradí a trav' },
+  { block: ABOUT.experience, id: 'zkusenosti', photo: cake, alt: 'Svatební dort s lesním ovocem a dřevěným zápichem Pan & Paní na plátku kmene' },
+  { block: ABOUT.story, id: 'pribeh', photo: nature, alt: 'Muž sedí na houpačce pod starou vrbou a dívá se na malou holčičku' },
+];
+---
+<Base meta={meta} path={path} ogImage={ogImage} jsonLd={[person(ogImage.url), breadcrumbList(crumbs)]}>
+  <div class="page">
+    <Breadcrumb crumbs={crumbs} />
+    <Image
+      class="hero"
+      src={hero}
+      alt={heroAlt}
+      widths={[480, 960, 1600]}
+      sizes="(min-width: 80rem) 75rem, 100vw"
+      format="webp"
+      loading="eager"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <h1>{ABOUT.me.title}</h1>
+
+    {
+      blocks.map(({ block, id, photo, alt }, i) => (
+        <section class="block" aria-labelledby={i === 0 ? undefined : id}>
+          <div class="text">
+            {i === 0 ? <p class="lead">{block.body}</p> : (<><h2 id={id}>{block.title}</h2><p>{block.body}</p></>)}
+          </div>
+          <Image
+            src={photo}
+            alt={alt}
+            widths={[480, 960]}
+            sizes="(min-width: 48rem) 40vw, 100vw"
+            format="webp"
+            loading="lazy"
+            decoding="async"
+          />
+        </section>
+      ))
+    }
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-4);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  /* One rhythm: page gap (space-4) everywhere; sections add the rest of --section-gap; heading to text is --heading-gap. */
+  h1 {
+    margin-block-start: var(--space-3);
+  }
+
+  .page :global(img) {
+    inline-size: 100%;
+    block-size: auto;
+    border-radius: var(--radius-md);
+    background: var(--color-placeholder);
+  }
+
+  .block {
+    display: grid;
+    gap: var(--space-4);
+    align-items: center;
+    margin-block-start: calc(var(--section-gap) - var(--space-4));
+  }
+
+  h1 + .block {
+    margin-block-start: 0;
+  }
+
+  .text {
+    display: grid;
+    gap: var(--heading-gap);
+  }
+
+  .lead {
+    font-size: var(--font-size-1);
+  }
+
+  @media (min-width: 48rem) {
+    .block {
+      grid-template-columns: 3fr 2fr;
+      gap: var(--space-6);
+    }
+
+    .block:nth-of-type(even) {
+      grid-template-columns: 2fr 3fr;
+    }
+
+    .block:nth-of-type(even) .text {
+      order: 2;
+    }
+  }
+</style>

@@ -1,0 +1,12 @@
+---
+// Cloudflare Web Analytics beacon. Renders nothing unless a token is passed (Base passes env.analyticsToken,
+// which is non-null in production builds only). External script, so no CSP hash is needed.
+import { BEACON_SRC, beaconConfig } from '../lib/beacon';
+
+interface Props {
+  token: string | null;
+}
+
+const { token } = Astro.props;
+---
+{token !== null && <script is:inline type="module" src={BEACON_SRC} data-cf-beacon={beaconConfig(token)} />}

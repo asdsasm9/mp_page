@@ -1,0 +1,18 @@
+{
+  "name": "@mp/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261019.1",
+    "wrangler": "4.151.2"
+  },
+  "dependencies": {
+    "@mp/shared": "0.0.0",
+    "aws4fetch": "1.0.20"
+  }
+}

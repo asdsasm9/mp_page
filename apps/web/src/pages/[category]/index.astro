@@ -1,0 +1,67 @@
+---
+// Category page: breadcrumb, h1, album cards (cover 480/960 via Photo, title, place, count).
+// Only categories with at least one published album get a page (getStaticPaths from the catalog).
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import AlbumCard from '../../components/AlbumCard.astro';
+import Base from '../../layouts/Base.astro';
+import { getCatalog } from '../../lib/catalog';
+import { categoryCards, categoryPaths } from '../../lib/category';
+import { readRawEnv, resolveEnv } from '../../lib/env';
+import { ogImage as photoOgImage } from '../../lib/images';
+import { breadcrumbList, categoryGallery, pageUrl } from '../../lib/jsonld';
+import { categoryMeta } from '../../lib/seo';
+
+export async function getStaticPaths() {
+  const catalog = await getCatalog(resolveEnv(readRawEnv()));
+  return categoryPaths(catalog).map((category) => ({ params: { category } }));
+}
+
+const env = resolveEnv(readRawEnv());
+const catalog = await getCatalog(env);
+const category = catalog.categoryBySlug.get(Astro.params.category!)!;
+const path = `/${category.slug}/`;
+const meta = categoryMeta(category);
+const cards = categoryCards(catalog, category);
+const cover = catalog.categoryCover(category);
+const og = cover ? photoOgImage(cover, env.imgBaseUrl) : null;
+const crumbs = [{ name: category.name, path }];
+---
+<Base
+  meta={meta}
+  path={path}
+  ogImage={og ? { url: og.url, width: og.width, height: og.height, alt: category.name } : undefined}
+  jsonLd={[categoryGallery(category, meta.description ?? '', env.imgBaseUrl), breadcrumbList(crumbs)]}
+>
+  <div class="page">
+    <Breadcrumb crumbs={crumbs} />
+    <h1>{category.name}</h1>
+    <ul class="albums">
+      {cards.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-5);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  .albums {
+    display: grid;
+    align-items: start;
+    gap: var(--space-6) var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 48rem) {
+    .albums {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

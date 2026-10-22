@@ -1,0 +1,119 @@
+{
+  "_note": "Authority: this file is the machine-readable form of the approved MASTERPLAN architecture (section 3 and decision D-2). Changing it needs an architect-approved decision recorded in DECISIONS.md, not a builder edit to make a gate green. Keep it small. It holds names and shapes only, never secrets or secret-shaped strings.",
+  "components": {
+    "rootWorkspaces": ["apps/*", "packages/*"],
+    "directories": ["apps/web", "apps/admin", "apps/api", "packages/shared", "supabase/migrations", "scripts", "docs"],
+    "requiredDeps": {
+      "apps/web": ["astro", "@mp/shared"],
+      "apps/admin": ["react", "react-dom", "react-router-dom", "@supabase/supabase-js", "@tanstack/react-query", "@dnd-kit/core", "@dnd-kit/sortable", "zod", "@mp/shared"],
+      "apps/api": ["aws4fetch", "@mp/shared"],
+      "packages/shared": ["zod"]
+    },
+    "forbiddenDeps": ["@astrojs/cloudflare", "@astrojs/node"],
+    "webConfig": "apps/web/astro.config.mjs",
+    "forbiddenAstroOutputs": ["server", "hybrid"],
+    "pinnedExactly": ["astro"]
+  },
+  "api": {
+    "routes": ["/health", "/storage", "/uploads/reserve", "/uploads/commit", "/photos/delete", "/storage/reconcile", "/publish"],
+    "bindings": ["PHOTOS"],
+    "cronCount": 1,
+    "secrets": ["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "PAGES_DEPLOY_HOOK_URL"],
+    "_plainVarsNote": "plainVars = non-credential config names. In production DEPLOY-API.md sets all nine names (secrets plus plainVars) with `wrangler secret put`; wrangler.toml has no [vars]. The key name is kept because the arch-api-surface gate reads it; it only means 'not credential-shaped'.",
+    "plainVars": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "R2_ACCOUNT_ID", "R2_BUCKET","R2_PUBLIC_BASE_URL", "ALLOWED_ORIGINS"]
+  },
+  "storageKeys": {
+    "file": "packages/shared/src/keys.ts",
+    "testFile": "packages/shared/src/keys.test.ts",
+    "tiersFile": "packages/shared/src/variants.ts",
+    "webpTiers": [480, 720, 960, 1600, 2400],
+    "snippets": [
+      "export const SNAPSHOT_KEY = 'catalog/published.json'",
+      "return `photos/${id}/`",
+      "`${photoPrefix(id)}master.jpg`",
+      "`${photoPrefix(id)}${tier}.webp`",
+      "`${photoPrefix(id)}1600.jpg`",
+      "`${photoPrefix(id)}og.jpg`"
+    ]
+  },
+  "hosting": {
+    "web": {
+      "generators": [
+        { "name": "web _headers generator", "path": "apps/web/src/lib/headers.ts", "test": "apps/web/src/lib/headers.test.ts", "contains": ["export function buildHeaders", "block('/_publish.json'"] },
+        { "name": "web _redirects generator", "path": "apps/web/src/lib/redirects.ts", "test": "apps/web/src/lib/redirects.test.ts", "contains": ["export function buildRedirects"] },
+        { "name": "web _publish.json generator", "path": "apps/web/src/lib/publish-json.ts", "test": "apps/web/src/lib/postbuild.test.ts", "contains": ["export function buildPublishJson"] }
+      ],
+      "postbuild": { "path": "apps/web/scripts/postbuild.ts", "contains": ["'_redirects'", "'_headers'", "'_publish.json'"] }
+    },
+    "admin": {
+      "headers": {
+        "path": "apps/admin/headers.ts",
+        "test": "apps/admin/src/hosting.test.ts",
+        "contains": ["export function buildHeaders", "Content-Security-Policy", "X-Robots-Tag: noindex"]
+      },
+      "spaFallback": { "path": "apps/admin/public/_redirects", "pattern": "^/\\*\\s+/index\\.html\\s+200\\b" },
+      "indexHtml": { "path": "apps/admin/index.html", "pattern": "<meta\\s+name=\"robots\"\\s+content=\"[^\"]*noindex" }
+    },
+    "forbiddenRefs": {
+      "scope": ["package.json", "apps/*/package.json", "apps/*/index.html", "apps/*/public/**", "apps/*/src/**/*.astro", "apps/*/wrangler.toml", "apps/*/astro.config.*"],
+      "patterns": ["github\\.io", "gh-pages", "googletagmanager", "google-analytics", "gtag\\("]
+    }
+  },
+  "requiredSuites": [
+    { "name": "adapter contract", "globs": ["packages/shared/src/storage/*.test.ts"], "mustMention": ["contract"] },
+    { "name": "R2 adapter", "globs": ["apps/api/src/storage/r2.test.ts"] },
+    { "name": "variantPlan", "globs": ["packages/shared/src/variants.test.ts"], "mustMention": ["variantPlan"] },
+    { "name": "snapshot schema", "globs": ["packages/shared/src/snapshot.test.ts"] },
+    { "name": "slug rules", "globs": ["packages/shared/src/slug.test.ts"] },
+    { "name": "alt rules", "globs": ["packages/shared/src/alt.test.ts"] },
+    { "name": "web redirects", "globs": ["apps/web/src/lib/redirects.test.ts"] },
+    { "name": "migration redirects", "globs": ["scripts/migrate-legacy/redirects.test.ts"] },
+    { "name": "migration 13 albums", "globs": ["scripts/migrate-legacy/catalog.test.ts"], "mustMention": ["13 albums"] },
+    { "name": "migration 141 photos and rerun adds nothing", "globs": ["scripts/migrate-legacy/resume.test.ts"], "mustMention": ["141", "second run"] },
+    { "name": "RLS and grants", "globs": ["supabase/tests/hardening.test.ts", "supabase/tests/lint.test.ts"] },
+    { "name": "admin components", "globs": ["apps/admin/src/components/*.test.tsx", "apps/admin/src/screens/*.test.tsx"] }
+  ],
+  "dataModel": {
+    "tables": ["admin_emails", "categories", "albums", "photos", "url_history", "app_config", "site_state", "publish_log", "upload_reservations", "keepalive"],
+    "columns": {
+      "categories": ["id", "slug", "name", "description", "seo_title", "seo_description", "sort", "visible"],
+      "albums": ["id", "category_id", "slug", "title", "place", "shot_on", "description", "seo_title", "seo_description", "cover_photo_id", "sort", "published", "legacy_id"],
+      "photos": ["id", "album_id", "master_key", "width", "height", "variants", "bytes_total", "dominant_color", "alt", "caption", "sort", "legacy_key"]
+    },
+    "appConfigDefaults": {
+      "quota_hard_bytes": 9500000000,
+      "quota_warn_bytes": 8000000000,
+      "max_upload_bytes": 41943040,
+      "max_files_per_batch": 200,
+      "reservation_ttl_min": 60
+    },
+    "photoWriteFunctions": ["register_photo", "delete_photos"],
+    "anonExecute": ["keepalive"],
+    "functions": {
+      "set_updated_at": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "bump_pending": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "check_album_cover": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "clear_cover_on_photo_change": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "variants_bytes_sum": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "record_slug_redirect": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "albums_slug_history": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "categories_slug_history": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "albums_delete_history": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
+      "is_admin": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "storage_usage": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "reserve_uploads": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "register_photo": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "delete_photos": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "request_publish": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "record_publish": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
+      "keepalive": { "revokeFrom": ["public"], "grantTo": ["anon", "authenticated"] }
+    },
+    "requiredFiles": [
+      "supabase/tests/lint.test.ts",
+      "supabase/tests/golden/privilege-matrix.json",
+      "supabase/tests/hardening.test.ts",
+      "supabase/tests/photos-rpc.test.ts",
+      "supabase/tests/quota.test.ts"
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+---
+// 404 (built to dist/404.html). noindex comes from notFoundMeta(); Base also forces it per environment.
+import { NOT_FOUND } from '../content/texts';
+import Base from '../layouts/Base.astro';
+import { getCatalog } from '../lib/catalog';
+import { readRawEnv, resolveEnv } from '../lib/env';
+import { notFoundMeta } from '../lib/seo';
+
+const catalog = await getCatalog(resolveEnv(readRawEnv()));
+---
+<Base meta={notFoundMeta()} path="/404/">
+  <div class="page">
+    <h1>{NOT_FOUND.title}</h1>
+    <p>{NOT_FOUND.body}</p>
+    <ul>
+      <li><a href="/">Úvod</a></li>
+      {catalog.categories.map((c) => <li><a href={`/${c.slug}/`}>{c.name}</a></li>)}
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-4);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-6) var(--layout-gutter) var(--space-7);
+  }
+
+  ul {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-min);
+  }
+</style>

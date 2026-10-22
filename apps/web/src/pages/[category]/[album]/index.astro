@@ -1,0 +1,314 @@
+---
+// Album page: header (title, place, date, description), breadcrumb, photo grid, previous/next album, lightbox.
+// Each thumbnail is a link to the 1600 JPEG, so the grid works without JavaScript; lightbox.ts upgrades it
+// to a native <dialog>. The data-lb-* attributes (fit srcset, master URL and size) are read only by the zoom script.
+import AlbumGrid from '../../../components/AlbumGrid.astro';
+import Breadcrumb from '../../../components/Breadcrumb.astro';
+import Base from '../../../layouts/Base.astro';
+import { albumThumbs, formatShotOn } from '../../../lib/album';
+import { getCatalog } from '../../../lib/catalog';
+import { readRawEnv, resolveEnv } from '../../../lib/env';
+import { ogImage as photoOgImage } from '../../../lib/images';
+import { albumGallery, albumPath, breadcrumbList } from '../../../lib/jsonld';
+import { albumMeta } from '../../../lib/seo';
+
+export async function getStaticPaths() {
+  const catalog = await getCatalog(resolveEnv(readRawEnv()));
+  return catalog.categories.flatMap((category) =>
+    category.albums
+      .filter((album) => album.photos.length > 0)
+      .map((album) => ({ params: { category: category.slug, album: album.slug } })),
+  );
+}
+
+const env = resolveEnv(readRawEnv());
+const catalog = await getCatalog(env);
+const category = catalog.categoryBySlug.get(Astro.params.category!)!;
+const album = catalog.albumBySlug.get(Astro.params.album!)!.album;
+const path = albumPath(category, album);
+const meta = albumMeta(category, album);
+const thumbs = albumThumbs(category, album);
+const cover = catalog.coverOf(album);
+const og = cover ? photoOgImage(cover, env.imgBaseUrl) : null;
+const crumbs = [
+  { name: category.name, path: `/${category.slug}/` },
+  { name: album.title, path },
+];
+const date = formatShotOn(album.shotOn);
+const description = album.description?.trim() || null;
+const { prev, next } = catalog.neighbours(album.slug);
+---
+<Base
+  meta={meta}
+  path={path}
+  ogImage={og ? { url: og.url, width: og.width, height: og.height, alt: album.title } : undefined}
+  jsonLd={[albumGallery(category, album, meta.description ?? '', env.imgBaseUrl), breadcrumbList(crumbs)]}
+>
+  <div class="page">
+    <Breadcrumb crumbs={crumbs} />
+    <header class="album-head">
+      <h1>{album.title}</h1>
+      {
+        (album.place || date) && (
+          <p class="meta">
+            {album.place && <span>{album.place}</span>}
+            {date && <time datetime={album.shotOn!}>{date}</time>}
+          </p>
+        )
+      }
+      {description && <p class="description">{description}</p>}
+    </header>
+
+    <AlbumGrid thumbs={thumbs} base={env.imgBaseUrl} />
+
+    <nav class="album-nav" aria-label="Další alba">
+      {prev ? <a rel="prev" href={albumPath(category, prev)}>&larr; {prev.title}</a> : <span></span>}
+      {next ? <a rel="next" href={albumPath(category, next)}>{next.title} &rarr;</a> : <span></span>}
+    </nav>
+  </div>
+
+  <dialog class="lightbox" data-lightbox aria-label="Prohlížeč fotografií">
+    <div class="lb-stage" data-lb="stage">
+      <img class="lb-back" data-lb="back" alt="" hidden />
+      <img class="lb-front" data-lb="img" alt="" />
+    </div>
+    <p class="count" data-lb="count" aria-live="polite"></p>
+    <p class="lb-status" data-lb="status" role="status" aria-live="polite"></p>
+    <p class="lb-level" data-lb="level" role="status" aria-live="polite"></p>
+    <div class="lb-zoom" data-lb="zoom" role="group" aria-label="Přiblížení" hidden>
+      <button type="button" class="lb-btn" data-lb="zoom-out" aria-label="Oddálit">&minus;</button>
+      <button type="button" class="lb-btn" data-lb="zoom-fit" aria-label="Přizpůsobit 1×">1&times;</button>
+      <button type="button" class="lb-btn" data-lb="zoom-in" aria-label="Přiblížit">+</button>
+    </div>
+    <button type="button" class="lb-btn lb-close" data-lb="close" aria-label="Zavřít">&times;</button>
+    <button type="button" class="lb-btn lb-prev" data-lb="prev" aria-label="Předchozí fotografie">&lsaquo;</button>
+    <button type="button" class="lb-btn lb-next" data-lb="next" aria-label="Další fotografie">&rsaquo;</button>
+  </dialog>
+</Base>
+
+<script>
+  import '../../../scripts/lightbox';
+</script>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-5);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  .album-head {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  .description {
+    max-inline-size: var(--measure);
+    margin: 0;
+  }
+
+  .album-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .album-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-compact);
+    font-size: var(--font-size-small);
+  }
+
+  /* Lightbox: full-viewport modal dialog on the overlay colour. */
+  .lightbox {
+    inline-size: 100%;
+    max-inline-size: none;
+    block-size: 100dvh;
+    max-block-size: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--color-overlay);
+    color: var(--color-on-overlay);
+    z-index: var(--z-dialog);
+  }
+
+  .lightbox[open] {
+    display: grid;
+    place-items: center;
+  }
+
+  .lightbox [hidden] {
+    display: none;
+  }
+
+  /* Zoom area: both images share one grid cell; the front one is shown over the back (grid thumbnail) one. */
+  .lb-stage {
+    display: grid;
+    grid-template: 100% / 100%;
+    place-items: center;
+    inline-size: 100%;
+    block-size: 100dvh;
+    overflow: hidden;
+  }
+
+  /* The script sets data-zoom="on" when the master gives enough headroom; then gestures belong to the page script. */
+  .lb-stage[data-zoom='on'] {
+    touch-action: none;
+  }
+
+  .lb-stage img {
+    grid-area: 1 / 1;
+    display: block;
+    /* Both layers fill the stage and contain the photo, so the thumbnail and the sharper image sit exactly
+       on each other and the swap does not move anything; the script measures this box for the zoom limits. */
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+    transform: translate(var(--lb-x, 0), var(--lb-y, 0)) scale(var(--lb-scale, 1));
+  }
+
+  .lb-stage[data-zoom='on'] img {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .lb-stage[data-zoom='on'][data-zoomed] {
+    cursor: grab;
+  }
+
+  .lb-status {
+    position: absolute;
+    inset-block-start: var(--space-3);
+    inset-inline: var(--space-8);
+    margin: 0;
+    text-align: center;
+    font-size: var(--font-size-small);
+  }
+
+  .lb-status:empty {
+    display: none;
+  }
+
+  /* Zoom level announcement for screen readers only; it never takes focus. */
+  .lb-level {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Zoom buttons: the button alternative to pinch, double tap, wheel and drag (WCAG 2.5.1, 2.5.7). */
+  .lb-zoom {
+    position: absolute;
+    inset-block-end: var(--space-3);
+    inset-inline-end: var(--space-3);
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .lb-zoom .lb-btn {
+    position: static;
+    font-size: var(--font-size-0);
+  }
+
+  .count {
+    position: absolute;
+    inset-block-end: var(--space-3);
+    inset-inline: 0;
+    margin: 0;
+    text-align: center;
+    font-size: var(--font-size-small);
+  }
+
+  .lb-btn {
+    position: absolute;
+    inline-size: var(--target-min);
+    block-size: var(--target-min);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: var(--border-width) solid var(--color-on-overlay);
+    border-radius: var(--radius-full);
+    background: var(--color-overlay);
+    color: var(--color-on-overlay);
+    font: inherit;
+    font-size: var(--font-size-2);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .lb-btn:disabled,
+  .lb-btn[aria-disabled='true'] {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .lb-btn:focus-visible {
+    outline: var(--focus-width) solid var(--color-focus-on-dark);
+    outline-offset: var(--focus-offset);
+  }
+
+  .lb-close {
+    inset-block-start: var(--space-3);
+    inset-inline-end: var(--space-3);
+  }
+
+  .lb-prev,
+  .lb-next {
+    inset-block-start: 50%;
+    translate: 0 -50%;
+  }
+
+  .lb-prev {
+    inset-inline-start: var(--space-3);
+  }
+
+  .lb-next {
+    inset-inline-end: var(--space-3);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lb-stage img {
+      transition: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lb-stage img {
+      transition: transform var(--motion-fast) var(--motion-ease);
+    }
+
+    /* Fingers or a drag move the image directly; the transition would make it lag behind. */
+    .lb-stage[data-gesture] img {
+      transition: none;
+    }
+
+    .lightbox[open] {
+      animation: lb-in var(--motion-base) var(--motion-ease);
+    }
+
+    @keyframes lb-in {
+      from {
+        opacity: 0;
+      }
+    }
+  }
+</style>

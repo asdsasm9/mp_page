@@ -1,0 +1,9 @@
+---
+// Preloads both Martel files (latin and latin-ext) and loads the @font-face rules.
+// Put this once inside <head>. The font URLs are the hashed build outputs.
+import latinUrl from '@fontsource/martel/files/martel-latin-400-normal.woff2?url';
+import latinExtUrl from '@fontsource/martel/files/martel-latin-ext-400-normal.woff2?url';
+import '../styles/fonts.css';
+---
+<link rel="preload" href={latinUrl} as="font" type="font/woff2" crossorigin />
+<link rel="preload" href={latinExtUrl} as="font" type="font/woff2" crossorigin />

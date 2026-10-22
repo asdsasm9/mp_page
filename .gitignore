@@ -37,3 +37,26 @@ typings/
 /build
 
 .DS_Store
+
+# Secrets and local env
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# Tool output
+.wrangler/
+.astro/
+coverage/
+.tmp/
+
+# Dev images for fixture mode (npm run dev-images); never committed, never shipped
+_dev-img/
+supabase/.temp/
+
+# Migration dry-run/live reports and the generated old-image redirect table (npm run migrate-legacy)
+migration-report/
+legacy-image-redirects.txt
+
+# Kept so an old local backup folder (the removed masters backup tool wrote here) is never committed
+backup-out/

@@ -1,0 +1,137 @@
+/* Reset, typography, focus ring, skip link. Uses tokens only (see tokens.css). */
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    margin: 0;
+  }
+
+  img,
+  picture,
+  video,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+    block-size: auto;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+@layer base {
+  html {
+    scroll-padding-block-start: calc(var(--header-height) + var(--space-4));
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    /* Sticky footer (T-242): column shell, <main> takes the free space; footer is in flow, never fixed. */
+    display: flex;
+    flex-direction: column;
+    min-block-size: 100dvh;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: var(--font-size-0);
+    line-height: var(--line-height-body);
+    text-align: start;
+    overflow-wrap: break-word;
+  }
+
+  body > main {
+    flex: 1 0 auto;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: var(--line-height-heading);
+    letter-spacing: var(--tracking-heading);
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: var(--font-size-4);
+  }
+
+  h2 {
+    font-size: var(--font-size-3);
+  }
+
+  h3 {
+    font-size: var(--font-size-2);
+  }
+
+  h4 {
+    font-size: var(--font-size-1);
+  }
+
+  p,
+  li {
+    max-inline-size: var(--measure);
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+    text-decoration-thickness: var(--border-width);
+    text-underline-offset: var(--space-1);
+  }
+
+  a:hover {
+    text-decoration-thickness: var(--focus-offset);
+  }
+
+  :focus-visible {
+    outline: var(--focus-width) solid var(--color-focus);
+    outline-offset: var(--focus-offset);
+  }
+
+  .skip-link {
+    position: absolute;
+    inset-inline-start: var(--space-4);
+    inset-block-start: var(--space-4);
+    z-index: var(--z-skip);
+    min-block-size: var(--target-min);
+    display: inline-flex;
+    align-items: center;
+    padding-inline: var(--space-4);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    transform: translateY(-200%);
+  }
+
+  .skip-link:focus-visible {
+    transform: none;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    inline-size: var(--border-width);
+    block-size: var(--border-width);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .skip-link {
+      transition: transform var(--motion-fast) var(--motion-ease);
+    }
+  }
+}

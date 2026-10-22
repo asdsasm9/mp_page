@@ -1,0 +1,54 @@
+---
+import { FOOTER, INSTAGRAM_HANDLE, INSTAGRAM_URL, MAIL_ADDRESS, MAIL_URL, MYWED_URL } from '../content/texts';
+---
+<footer class="site-footer">
+  <div class="inner">
+    <p class="brand">{FOOTER.brand}</p>
+    <p>{FOOTER.region}</p>
+    <ul>
+      <li>
+        <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">Instagram {INSTAGRAM_HANDLE}</a>
+      </li>
+      <li><a href={MAIL_URL}>{MAIL_ADDRESS}</a></li>
+      <li><a href={MYWED_URL} target="_blank" rel="noopener noreferrer">MyWed</a></li>
+      <li><a href="/cookies/">Cookies a soukromí</a></li>
+    </ul>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-block-start: var(--space-7);
+    background: var(--color-surface);
+    border-block-start: var(--border-width) solid var(--color-border);
+    font-size: var(--font-size-small);
+  }
+
+  .inner {
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter);
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .brand {
+    font-size: var(--font-size-small);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--target-compact);
+  }
+</style>

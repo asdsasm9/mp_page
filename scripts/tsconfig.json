@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "noUncheckedIndexedAccess": true
+  },
+  "include": ["migrate-legacy.ts", "migrate-legacy/**/*.ts"]
+}

@@ -1,0 +1,104 @@
+---
+// Page shell: head (all tags from seo.ts), skip link, header, the single <main>, footer.
+// JSON-LD goes through serializeJsonLd only; it is the one allowed use of set:html besides the hash script.
+import Analytics from '../components/Analytics.astro';
+import Fonts from '../components/Fonts.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import type { NavItem } from '../lib/nav';
+import { NAV } from '../content/texts';
+import { getCatalog } from '../lib/catalog';
+import { readRawEnv, resolveEnv } from '../lib/env';
+import { pageUrl, serializeJsonLd, type JsonLd } from '../lib/jsonld';
+import { BRAND, type PageMeta } from '../lib/seo';
+import tokensCss from '../styles/tokens.css?raw';
+import '../styles/tokens.css';
+import '../styles/base.css';
+
+export interface OgImage {
+  /** Absolute URL. */
+  readonly url: string;
+  readonly width: number;
+  readonly height: number;
+  readonly alt: string;
+}
+
+interface Props {
+  meta: PageMeta;
+  /** Path of this page with leading and trailing slash, e.g. `/svatby/`. Canonical is built from it. */
+  path: string;
+  ogImage?: OgImage;
+  jsonLd?: readonly JsonLd[];
+}
+
+const { meta, path, ogImage, jsonLd = [] } = Astro.props;
+const env = resolveEnv(readRawEnv());
+const catalog = await getCatalog(env);
+const canonical = pageUrl(path);
+const noindex = env.noindex || meta.noindex;
+const robots = noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large';
+const themeColor = /--color-theme:\s*([^;]+);/.exec(tokensCss)?.[1]?.trim();
+
+const navItems: NavItem[] = [
+  { label: NAV.portfolio, path: '/portfolio/' },
+  ...catalog.categories.map((c) => ({ label: c.name, path: `/${c.slug}/` })),
+  { label: NAV.about, path: '/o-mne/' },
+  { label: NAV.contact, path: '/kontakt/' },
+];
+---
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{meta.title}</title>
+    {meta.description && <meta name="description" content={meta.description} />}
+    <meta name="robots" content={robots} />
+    <link rel="canonical" href={canonical} />
+    {themeColor && <meta name="theme-color" content={themeColor} />}
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={BRAND} />
+    <meta property="og:locale" content="cs_CZ" />
+    <meta property="og:title" content={meta.ogTitle} />
+    {meta.description && <meta property="og:description" content={meta.description} />}
+    <meta property="og:url" content={canonical} />
+    {
+      ogImage && (
+        <>
+          <meta property="og:image" content={ogImage.url} />
+          <meta property="og:image:width" content={String(ogImage.width)} />
+          <meta property="og:image:height" content={String(ogImage.height)} />
+          <meta property="og:image:alt" content={ogImage.alt} />
+        </>
+      )
+    }
+    <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={meta.ogTitle} />
+    {meta.description && <meta name="twitter:description" content={meta.description} />}
+    {ogImage && <meta name="twitter:image" content={ogImage.url} />}
+    {ogImage && <meta name="twitter:image:alt" content={ogImage.alt} />}
+
+    <Fonts />
+    <slot name="head" />
+    {jsonLd.map((data) => <script type="application/ld+json" set:html={serializeJsonLd(data)} />)}
+    <Analytics token={env.analyticsToken} />
+  </head>
+  <body>
+    <a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+    <Header items={navItems} current={path} />
+    <main id="obsah" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
+
+<style is:global>
+  main:focus {
+    outline: none;
+  }
+</style>

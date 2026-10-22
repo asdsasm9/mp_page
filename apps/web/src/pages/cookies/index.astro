@@ -1,0 +1,108 @@
+---
+// Cookies and privacy (option C, decision D-3): text only. The site stores nothing; the analytics section appears only in a build with the beacon.
+import AnalyticsSection from '../../components/AnalyticsSection.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { COOKIES, MAIL_ADDRESS, MAIL_URL } from '../../content/texts';
+import Base from '../../layouts/Base.astro';
+import { readRawEnv, resolveEnv } from '../../lib/env';
+import { breadcrumbList } from '../../lib/jsonld';
+import { cookiesMeta } from '../../lib/seo';
+
+const path = '/cookies/';
+const meta = cookiesMeta();
+const crumbs = [{ name: COOKIES.title, path }];
+const { controller, storage, hosting, fonts, mail, rights } = COOKIES;
+const hasBeacon = resolveEnv(readRawEnv()).analyticsToken !== null;
+---
+<Base meta={meta} path={path} jsonLd={[breadcrumbList(crumbs)]}>
+  <div class="page">
+    <Breadcrumb crumbs={crumbs} />
+    <h1>{COOKIES.title}</h1>
+    <p>{COOKIES.intro}</p>
+
+    <section aria-labelledby="spravce">
+      <h2 id="spravce">{controller.title}</h2>
+      <p>{controller.intro}</p>
+      <dl>
+        <dt>{controller.nameLabel}</dt>
+        <dd>{controller.placeholder}</dd>
+        <dt>{controller.addressLabel}</dt>
+        <dd>{controller.placeholder}</dd>
+        {controller.companyId !== null && (
+          <>
+            <dt>{controller.idLabel}</dt>
+            <dd>{controller.companyId}</dd>
+          </>
+        )}
+        <dt>{controller.mailLabel}</dt>
+        <dd><a href={MAIL_URL}>{MAIL_ADDRESS}</a></dd>
+      </dl>
+    </section>
+
+    <section aria-labelledby="uloziste">
+      <h2 id="uloziste">{storage.title}</h2>
+      <p>{storage.body}</p>
+    </section>
+
+    <section aria-labelledby="hosting">
+      <h2 id="hosting">{hosting.title}</h2>
+      <p>{hosting.body}</p>
+    </section>
+
+    <section aria-labelledby="pisma">
+      <h2 id="pisma">{fonts.title}</h2>
+      <p>{fonts.body}</p>
+    </section>
+
+    <section aria-labelledby="email">
+      <h2 id="email">{mail.title}</h2>
+      <p>{mail.body}</p>
+    </section>
+
+    <AnalyticsSection enabled={hasBeacon} />
+
+    <section aria-labelledby="prava">
+      <h2 id="prava">{rights.title}</h2>
+      <p>{rights.body}</p>
+      <p><a href={rights.complaintHref} rel="noopener noreferrer">{rights.complaintLabel}</a></p>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--space-4);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--space-7);
+  }
+
+  section {
+    display: grid;
+    gap: var(--space-3);
+    margin-block-start: var(--space-4);
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+  }
+
+  dd {
+    margin: 0 0 var(--space-3);
+    overflow-wrap: anywhere;
+  }
+
+  @media (min-width: 48rem) {
+    dl {
+      grid-template-columns: max-content minmax(0, 1fr);
+    }
+
+    dd {
+      margin-block-end: 0;
+    }
+  }
+</style>

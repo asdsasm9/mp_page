@@ -1,0 +1,18 @@
+---
+// Privacy-page section about the analytics beacon; renders nothing in a build without the beacon.
+import { COOKIES } from '../content/texts';
+
+interface Props {
+  enabled: boolean;
+}
+
+const { enabled } = Astro.props;
+---
+{
+  enabled && (
+    <section aria-labelledby="mereni">
+      <h2 id="mereni">{COOKIES.ANALYTICS_TITLE}</h2>
+      <p>{COOKIES.ANALYTICS_PARAGRAPH}</p>
+    </section>
+  )
+}

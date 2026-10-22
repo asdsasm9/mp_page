@@ -90,5 +90,7 @@
     --font-size-ui: 1rem;
     --bottom-nav-height: 3.5rem;
     --cover-size: 6rem;
+    --icon-size: 1.25rem;
+    --icon-stroke: 2;
   }
 }

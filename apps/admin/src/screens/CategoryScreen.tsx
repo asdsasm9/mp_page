@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { CoverThumb } from '../components/CoverThumb';
+import { IconButton } from '../components/IconButton';
 import { LoadFailure } from '../components/LoadFailure';
 import { useDocumentTitle } from '../components/Page';
 import { SortableList } from '../components/SortableList';
@@ -144,44 +145,33 @@ function CategoryBody({ category }: { category: CategoryRow }) {
               {cs.categoryDetail.open}
             </Link>
             {a.published ? (
-              <button
-                type="button"
-                className="button"
-                aria-label={`${glossary.hideAlbum}: ${a.title}`}
+              <IconButton
+                icon="hide"
+                label={`${glossary.hideAlbum}: ${a.title}`}
                 disabled={!canMutate}
                 onClick={() => setDialog({ kind: 'hide', id: a.id })}
-              >
-                {glossary.hideAlbum}
-              </button>
+              />
             ) : (
-              <button
-                type="button"
-                className="button"
-                aria-label={`${glossary.publishAlbum}: ${a.title}`}
+              <IconButton
+                icon="publish"
+                label={`${glossary.publishAlbum}: ${a.title}`}
                 disabled={!canMutate}
                 onClick={() => void publish(a)}
-              >
-                {glossary.publishAlbum}
-              </button>
+              />
             )}
-            <button
-              type="button"
-              className="button"
-              aria-label={`${cs.categoryDetail.moveToCategory}: ${a.title}`}
+            <IconButton
+              icon="move"
+              label={`${cs.categoryDetail.moveToCategory}: ${a.title}`}
               disabled={!canMutate || (categories.data?.length ?? 0) < 2}
               onClick={() => setDialog({ kind: 'move', id: a.id })}
-            >
-              {cs.categoryDetail.moveToCategory}
-            </button>
-            <button
-              type="button"
-              className="button button-danger"
-              aria-label={`${cs.delete.album}: ${a.title}`}
+            />
+            <IconButton
+              icon="trash"
+              danger
+              label={`${cs.delete.album}: ${a.title}`}
               disabled={!canMutate || !photos.get(a.id)}
               onClick={() => setDialog({ kind: 'delete', id: a.id })}
-            >
-              {glossary.delete}
-            </button>
+            />
           </>
         )}
       />

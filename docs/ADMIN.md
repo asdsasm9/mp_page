@@ -271,6 +271,16 @@ Recorded where the build differs from the spec on purpose. None of them removes 
 1. **Inline buttons instead of an overflow menu.** Row actions (rename, hide, delete, move) are visible buttons, not
    a "..." menu, so every action is one Tab stop and needs no pop-up logic. The photo tile does have a menu (a
    dialog, a bottom sheet on a phone) because a tile is too small for several buttons.
+   **Icon buttons (T-244, 2026-10-22).** In the category and album rows the buttons are icon-only: edit (pencil),
+   hide (crossed eye) or show (eye), publish (arrow up to a tray), move (folder with arrow) and delete (trash).
+   Icons are **inline SVG** from one small shared component, `apps/admin/src/components/IconButton.tsx` (24 x 24
+   strokes in `currentColor`, about 2 KB of source, no dependency, no icon font, no emoji); a library such as
+   lucide-react was not added because a new dependency needs a human decision. Size and stroke come from the tokens
+   `--icon-size` and `--icon-stroke`. Each button has a Czech accessible name (`aria-label`, the same
+   "Akce: název" text as before) plus the same text as `title` tooltip, and the 44 px target of `.button`
+   (`--target-min`, square). Delete is demoted to a quiet danger-coloured icon without a border and still opens the
+   confirm dialog. Kept as text: "Otevřít" (navigation), the page-header buttons and the photo tile menu (a sheet of
+   labelled actions), where a visible word is clearer than an icon.
 2. **Reordering is drag only (T-243, Adam's decision 2026-10-22).** Lists and the photo grid start a drag from
    the handle (or the long press on a phone for selection), never from anywhere on the row, so scrolling and
    clicking links stay reliable. The text buttons "Posunout nahoru / dolů", "Posunout na začátek / na konec" and

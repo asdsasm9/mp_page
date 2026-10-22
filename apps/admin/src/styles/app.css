@@ -690,6 +690,35 @@
     background: var(--color-surface);
   }
 
+  /* Icon buttons (T-244): square 44 px target, inline SVG sized and stroked from tokens. */
+  .icon {
+    flex: none;
+    inline-size: var(--icon-size);
+    block-size: var(--icon-size);
+    stroke-width: var(--icon-stroke);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .button-icon {
+    padding-inline: 0;
+    inline-size: var(--target-min);
+  }
+
+  .row-actions .button-icon.button-icon-danger {
+    color: var(--color-danger);
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .row-actions .button-icon.button-icon-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  }
+
+  .row-actions .button-icon.button-icon-danger:disabled {
+    color: var(--color-text-muted);
+  }
+
   .button[aria-disabled='true'] {
     cursor: not-allowed;
     color: var(--color-text-muted);

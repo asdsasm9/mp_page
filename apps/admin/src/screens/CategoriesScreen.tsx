@@ -3,6 +3,7 @@ import type { CategoryRow } from '@mp/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { IconButton } from '../components/IconButton';
 import { LoadFailure } from '../components/LoadFailure';
 import { useDocumentTitle } from '../components/Page';
 import { SortableList } from '../components/SortableList';
@@ -150,33 +151,25 @@ export function CategoriesScreen() {
           const known = albumsOf(c) !== undefined;
           return (
             <>
-              <button
-                type="button"
-                className="button"
-                aria-label={`${cs.categories.edit}: ${c.name}`}
+              <IconButton
+                icon="edit"
+                label={`${cs.categories.edit}: ${c.name}`}
                 disabled={!canMutate}
                 onClick={() => setDialog({ kind: 'edit', id: c.id })}
-              >
-                {cs.categories.edit}
-              </button>
-              <button
-                type="button"
-                className="button"
-                aria-label={`${c.visible ? cs.categories.hide : cs.categories.show}: ${c.name}`}
+              />
+              <IconButton
+                icon={c.visible ? 'hide' : 'show'}
+                label={`${c.visible ? cs.categories.hide : cs.categories.show}: ${c.name}`}
                 disabled={!canMutate || !known}
                 onClick={() => (c.visible ? setDialog({ kind: 'hide', id: c.id }) : void toggleVisible(c))}
-              >
-                {c.visible ? cs.categories.hide : cs.categories.show}
-              </button>
-              <button
-                type="button"
-                className="button"
-                aria-label={`${glossary.delete}: ${c.name}`}
+              />
+              <IconButton
+                icon="trash"
+                danger
+                label={`${glossary.delete}: ${c.name}`}
                 disabled={!canMutate || !known}
                 onClick={() => setDialog({ kind: 'delete', id: c.id })}
-              >
-                {glossary.delete}
-              </button>
+              />
             </>
           );
         }}

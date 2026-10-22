@@ -251,6 +251,34 @@ describe('queue lifetime and the browser', () => {
     expect(photosOf(world)).toHaveLength(5);
   }, 40_000);
 
+  it('T-246: no upload control in the header; a polite indicator shows the count only while uploading and opens the panel', async () => {
+    const { world, album } = await makeWorld();
+    world.slowPut(400);
+    await open(world, album);
+    const header = document.querySelector<HTMLElement>('.shell-header')!;
+    expect(within(header).queryByText(/^Nahrávání/)).toBeNull();
+    const region = document.querySelector('.upload-pill-region')!;
+    expect(region.getAttribute('aria-live')).toBe('polite');
+    expect(region.querySelector('.upload-pill')).toBeNull(); // idle: hidden
+
+    pick(...names.map((n) => pickedFile(n)));
+    await waitFor(() => expect(rows()).toHaveLength(5), SLOW);
+    expect(region.querySelector('.upload-pill')).toBeNull(); // the open panel is the queue
+    await userEvent.click(screen.getByRole('button', { name: cs.upload.collapse }));
+    const pill = await within(region as HTMLElement).findByRole('button', { name: /Nahráno \d z 5/ });
+    expect(pill.textContent).toMatch(/^Nahráno \d z 5/);
+    expect(pill.parentElement).toBe(region);
+
+    await userEvent.click(pill);
+    await screen.findByRole('button', { name: cs.upload.collapse });
+    expect(region.querySelector('.upload-pill')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: cs.upload.collapse }));
+    await waitFor(() => expect(region.querySelector('.upload-pill')).not.toBeNull(), SLOW);
+
+    await screen.findByText('Nahráno 5 fotek.', {}, { timeout: 15_000 });
+    await waitFor(() => expect(region.querySelector('.upload-pill')).toBeNull(), SLOW); // idle again: hidden
+  }, 40_000);
+
   it('beforeunload asks only while uploads are active, and the screen wake lock is held and released', async () => {
     const { world, album } = await makeWorld();
     world.slowPut(300);

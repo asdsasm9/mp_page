@@ -268,12 +268,11 @@
       flex: 1;
     }
 
-    .shell-header > .button:not(.upload-indicator) {
+    .shell-header > .button {
       order: 2;
     }
 
-    .shell-header .storage-mini,
-    .shell-header .upload-indicator {
+    .shell-header .storage-mini {
       order: 3;
     }
 
@@ -1282,8 +1281,48 @@
     inset: 0;
   }
 
-  .upload-indicator {
+  /* T-246: the upload indicator, fixed bottom right, only while uploading. The region is the always-mounted polite
+     live region; it has no box of its own. On phones it sits above the bottom nav; the page leaves room for it and
+     the sticky selection bar (the main actions of an album) moves up to make room, so nothing is covered.
+     A modal dialog (the bottom sheet) is in the top layer and always above it. */
+  .upload-pill-region:empty {
+    display: contents;
+  }
+
+  .upload-pill {
+    position: fixed;
+    inset-inline-end: var(--space-4);
+    inset-block-end: calc(var(--bottom-nav-height) + var(--space-4) + env(safe-area-inset-bottom));
+    z-index: var(--z-header);
+    max-inline-size: calc(100% - 2 * var(--space-4));
     font-variant-numeric: tabular-nums;
+    background: var(--color-surface-raised);
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-md);
+  }
+
+  .shell:has(.upload-pill) .shell-main {
+    padding-block-end: calc(var(--target-min) + var(--space-6));
+  }
+
+  .shell:has(.upload-pill) .selection-bar {
+    inset-block-end: calc(var(--space-3) + var(--target-min) + var(--space-4));
+  }
+
+  @media (max-width: 39.99rem) {
+    .shell:has(.upload-pill) .shell-main {
+      padding-block-end: calc(var(--bottom-nav-height) + var(--target-min) + var(--space-6));
+    }
+
+    .shell:has(.upload-pill) .selection-bar {
+      inset-block-end: calc(var(--bottom-nav-height) + var(--space-3) + var(--target-min) + var(--space-4));
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .upload-pill {
+      inset-block-end: var(--space-4);
+    }
   }
 
   .upload-drawer {
@@ -1399,9 +1438,9 @@
     margin-block-end: var(--space-3);
   }
 
-  /* Phone: the open queue is a full-height sheet above the bottom navigation (collapsed it stays a compact card). */
+  /* Phone: the open queue is a full-height sheet (the indicator is hidden while it is open). */
   @media (max-width: 39.99rem) {
-    .upload-drawer:not([data-collapsed]) {
+    .upload-drawer {
       inset: 0;
       z-index: var(--z-dialog);
       inline-size: auto;

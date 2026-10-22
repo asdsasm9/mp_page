@@ -387,14 +387,44 @@ async function runProfile(browser, profile) {
     });
     await step('upload 5 photos (one PUT fails once)', async () => {
       await world(page, '(w) => w.failNext("upload.put", "network", 1)');
+      await world(page, '(w) => w.slowPut(2500)'); // T-246: keep the batch running long enough to look at the indicator
       const input = await page.$('input[type=file]');
       await input.uploadFile(...fixtureFiles);
       await page.waitForFunction(() => /Fronta nahrávání/.test(document.body.innerText) || document.querySelectorAll('.photo-tile').length > 0, { timeout: 15000 });
       await checkpoint(ctx, 'upload drawer', { shot: true });
+
+      // T-246: no Nahrávání link in the header; collapsing the panel leaves the indicator fixed bottom right.
+      const headerLinks = await page.evaluate(() => [...document.querySelectorAll('.shell-header a, .shell-header button')].map((e) => e.textContent.trim()));
+      if (headerLinks.some((t) => /^Nahrávání/.test(t))) throw new Error(`the header still has an upload control: ${headerLinks.join(', ')}`);
+      await clickBy(ctx, 'button', /^Sbalit frontu$/);
+      await page.waitForSelector('.upload-pill', { timeout: 10000 });
+      const pill = await page.evaluate(() => {
+        const r = document.querySelector('.upload-pill').getBoundingClientRect();
+        const nav = document.querySelector('.bottom-nav');
+        const navTop = nav && nav.getClientRects().length > 0 ? nav.getBoundingClientRect().top : window.innerHeight;
+        const sel = document.querySelector('.selection-bar')?.getBoundingClientRect();
+        const live = document.querySelector('.upload-pill-region')?.getAttribute('aria-live');
+        const overlaps = (a, b) => a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        const header = document.querySelector('.shell-header').getBoundingClientRect();
+        return { right: window.innerWidth - r.right, bottom: r.bottom, navTop, w: r.width, h: r.height, text: document.querySelector('.upload-pill').textContent, live, overSelection: overlaps(r, sel), underHeader: r.top < header.bottom, vw: window.innerWidth, vh: window.innerHeight, left: r.left };
+      });
+      if (pill.live !== 'polite') throw new Error(`the indicator region is aria-live=${pill.live}, not polite`);
+      if (!/Nahráno \d+ z 5/.test(pill.text)) throw new Error(`indicator text "${pill.text}" has no progress count`);
+      if (pill.right > 40 || pill.left < pill.vw / 2) throw new Error(`indicator is not at the right edge (right gap ${pill.right}px)`);
+      if (pill.bottom > pill.navTop + 0.5) throw new Error(`indicator (bottom ${Math.round(pill.bottom)}px) covers the bottom nav (top ${Math.round(pill.navTop)}px)`);
+      if (pill.vh - pill.bottom > 200) throw new Error(`indicator is not at the bottom (${Math.round(pill.vh - pill.bottom)}px above the bottom)`);
+      if (pill.overSelection || pill.underHeader) throw new Error('the indicator covers the selection bar or the sticky header');
+      if (pill.h < 44) throw new Error(`indicator is ${pill.h}px tall (target 44px)`);
+      await checkpoint(ctx, 'upload indicator', { shot: true });
+      await clickBy(ctx, 'button', /^Zobrazit frontu nahrávání/); // the indicator opens the queue panel again
+      await find(page, 'button', /^Sbalit frontu$/);
+      if (await page.$('.upload-pill')) throw new Error('the indicator stays while the panel is open');
+      await world(page, '(w) => w.slowPut(0)');
       await waitText(page, /Nahráno 5 fotek\./, 60000);
       await waitTiles(page, 5);
       await checkpoint(ctx, 'upload done', { shot: false });
-      await clickBy(ctx, 'button', /^Sbalit frontu$/); // the drawer stays open until the photographer collapses it
+      await clickBy(ctx, 'button', /^Sbalit frontu$/); // the panel stays open until the photographer collapses it
+      if (await page.$('.upload-pill')) throw new Error('the indicator is still shown after the uploads finished');
     });
     await step('album grid', async () => {
       await sleep(400);
@@ -499,7 +529,9 @@ async function runProfile(browser, profile) {
       await checkpoint(ctx, 'storage reconcile');
     });
     await step('upload page', async () => {
-      await clickBy(ctx, 'a', /^Nahrávání$/);
+      // T-246: the header no longer links to it; phones keep the bottom-nav link, the route stays reachable everywhere.
+      if (ctx.profile.phone) await clickBy(ctx, 'a', /^Nahrávání$/);
+      else await spaGo(page, '/nahravani');
       await page.waitForFunction(() => location.pathname === '/nahravani', { timeout: 10000 });
       await checkpoint(ctx, 'upload page', { shot: false });
     });

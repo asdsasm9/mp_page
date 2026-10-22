@@ -30,7 +30,7 @@ facts and human steps: [VERIFY.md](VERIFY.md). Page texts (Home, About, Contact)
 | `/alba/:id/foto/:photoId` | Photo detail (alt text, caption) |
 | `/zverejnit` | Publish the site |
 | `/ulozeni` | Storage and reconcile |
-| `/nahravani` | Upload page (the queue also shows as a drawer) |
+| `/nahravani` | Upload page (the queue also shows as a panel; no header link since T-246, phones keep the bottom-nav entry) |
 | `*` | 404 |
 
 `a11y/scope.test.tsx` fixes this table as the information architecture; there is no pages or settings screen.
@@ -430,7 +430,7 @@ What the first real-browser run found, all fixed in `apps/admin` and guarded by
 | "Zkontrolovat úložiště" button touched its intro line and the result box | spacing in sections with a heading |
 
 Open observations (not changed): the upload queue stays open after a batch until it is collapsed (by design, 3.5),
-and its top-bar button then reads "Nahrávání: 0". The accent button colour is a muted tan; brand colour stays H-3.
+(T-246: the top-bar button is gone, see "Upload indicator" below). The accent button colour is a muted tan; brand colour stays H-3.
 
 Final run (2026-10-20, headless Chrome on macOS, fake world), `ADMIN_CHECK: PASS`, 57 page states:
 
@@ -487,6 +487,21 @@ Measured 2026-10-20 (headless Chrome on macOS, after step 7): `npm test` 133 fil
 before/after screenshots are in the gitignored `.tmp/admin-check/shots`.
 
 Open observations above: both stay open (the pass changed neither the upload queue behaviour nor the brand colour).
+
+## Upload indicator (T-246)
+
+The "Nahrávání" button and link are gone from the header (desktop nav and the old top-bar queue button). Instead
+`UploadIndicator` (`components/UploadDrawer.tsx`) renders a button fixed at the bottom right, text "Nahráno 3 z 10"
+(plus "selhalo n" when files failed), only while files are uploading or a file failed or was rejected; it is hidden when
+idle and while the queue panel or the `/nahravani` page is open. A click opens the queue panel (`UploadDrawer`, a
+full-height sheet on phones; "Sbalit frontu" closes it, and an upload that starts opens it as before). The button sits
+in an always-mounted `aria-live="polite"` region so the count is announced. On phones it is placed above the bottom nav;
+the page gets extra bottom padding and the sticky album selection bar moves up by the indicator height, so neither the
+main actions nor the nav are covered. A modal dialog (the bottom sheet) is in the top layer and always above it.
+Reachability: the route `/nahravani` stays (phones keep the bottom-nav entry "Nahrávání"); on larger screens the queue
+is reached through the indicator. Checks: `admin-check` step "upload 5 photos" (no header upload control, indicator
+geometry bottom right, clear of the bottom nav, selection bar and header, polite region, count text, opens the panel,
+gone when idle) and `screens/Upload.test.tsx` "T-246".
 
 ## Production build, CSP and bundle budget (WP5-29)
 

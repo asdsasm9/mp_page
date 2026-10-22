@@ -65,17 +65,11 @@ export function ShellLayout() {
               </NavLink>
             </li>
             <li>
-              <NavLink to="/nahravani" className={linkClass}>
-                {cs.nav.upload}
-              </NavLink>
-            </li>
-            <li>
               <PublishLink label={cs.nav.publishSite} className={linkClass} />
             </li>
           </ul>
         </nav>
         <StorageBar variant="mini" />
-        <UploadIndicator />
         <button type="button" className="button" onClick={() => void signOut()}>
           {glossary.logOut}
         </button>
@@ -85,6 +79,7 @@ export function ShellLayout() {
         <Outlet />
       </main>
       <UploadDrawer />
+      <UploadIndicator />
       <UploadDuplicateDialog />
       <nav className="bottom-nav" aria-label={cs.nav.bottom}>
         <ul className="nav-list">

@@ -105,6 +105,6 @@ What can need attention, who does it and when: [docs/MAINTENANCE.md](docs/MAINTE
 | `apps/api` | Cloudflare Worker API (not deployed yet) |
 | `packages/shared` | `@mp/shared` contracts, consumed as TypeScript source |
 | `supabase` | Migrations, seed and PGlite tests |
-| `scripts` | Gates, browser checks, migration and restore tooling |
-| `docs` | Specs, human steps, verification records, [VERIFY.md](docs/VERIFY.md) |
+| `scripts` | Gates, browser checks and legacy migration tooling |
+| `docs` | Specs, human steps, verification records, [VERIFY.md](docs/VERIFY.md), [OBSOLETE.md](docs/OBSOLETE.md) (what is left over from the old app and what may go) |
 | `legacy` | Old site photos, kept until removal is confirmed |

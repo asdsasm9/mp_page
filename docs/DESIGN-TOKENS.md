@@ -68,7 +68,7 @@ The current look is kept (H-3 is open): ink on paper, warm accent, Martel. A lat
 
 | Group | Tokens |
 |---|---|
-| Type | `--font-body` (Martel then serif stack), `--font-size-0..5` (fluid `clamp()`, base at least 17 px), `--font-size-small`, `--line-height-body` 1.6, `--line-height-heading`, `--tracking-heading`, `--measure` 70ch |
+| Type | The one global scale, see "Type system (T-252)" below: `--font-body`, `--font-heading`, `--weight-body`, `--weight-heading`, `--text-display..caption`, `--leading-*`, `--tracking-heading`, `--measure` 70ch |
 | Space | `--space-1..8` = 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4.5 rem |
 | Shape | `--radius-sm`, `--radius-md`, `--radius-full`, `--border-width`, `--focus-width`, `--focus-offset`, `--bar-thickness` (2 px: menu icon bars, section underline), `--shadow-sm`, `--shadow-md` |
 | Motion | `--motion-fast` 150 ms, `--motion-base` 250 ms, `--motion-ease`; anything beyond colour or shadow is inside `prefers-reduced-motion: no-preference` |
@@ -78,6 +78,54 @@ The current look is kept (H-3 is open): ink on paper, warm accent, Martel. A lat
 
 - Components use `var(--...)` only. No hex, `rgb()`, or `px` in components or layouts (the test greps them). Border width uses `--border-width`.
 - Body text is left-aligned, at most 70ch, 1.6 line height.
+- Type (T-252): no `font-size`, `font-family`, `font-weight`, `line-height` or `letter-spacing` in any page, layout or component. Use the element defaults (h1, h2, h3, p) or one of the `.t-display`, `.t-h3`, `.t-lead`, `.t-body`, `.t-small`, `.t-caption` classes from base.css. `tokens.test.ts` fails on a literal anywhere outside tokens.css and on a non-`var()` value in base.css.
 - Accent is a fill with ink text. A control that sits on the page in accent also has a `--color-border-strong` border so its boundary reaches 3:1.
 - Every interactive element has a visible `:focus-visible` ring from base.css; do not remove it.
 - Changing a colour token to a failing value turns `tokens.test.ts` red.
+
+## Type system (T-252)
+
+One global scale in `tokens.css`; fonts stay Martel (`--font-body`, `--font-heading` is the same stack). Only weight 400 is loaded (two WOFF2 files, latin and latin-ext, `fonts.css`), so `--weight-body` and `--weight-heading` are both 400: no faux bold anywhere, hierarchy comes from size, case and colour. Czech diacritics (čřěšžůýáéíóúďťňČŘĚŠŽŮÝÁÉÍÓÚĎŤŇ) are covered by the two unicode-ranges (checked in `fonts.test.ts`) and were read in the screenshots (cookies, o-mne, home).
+
+Reference: the old mullnyphotos.cz (docs/AUDIT.md) used 13 px body with 23 px line height and 14 px review text; the site before T-252 used 17 to 19 px body. The new body is the compromise: 15 px on a 360 px phone, 16 px at 1280. Ranges are kept narrow (at most 0.7 rem between min and max), phones are the smaller end.
+
+| Token | Class / element | 360 px | 1280 px | Before (360 / 1280) | Line height | Use |
+|---|---|---|---|---|---|---|
+| `--text-display` | `.t-display` | 30 | 39 | 37 / 56 (`--font-size-5`) | 1.2 | home hero h1 |
+| `--text-h1` | `h1` | 24 | 28.5 | 30 / 40 (`--font-size-4`) | 1.2 | page title |
+| `--text-h2` | `h2` | 20 | 22.7 | 24 / 30 (`--font-size-3`) | 1.2 | section title |
+| `--text-h3` | `h3`, `.t-h3` | 18 | 19.8 | 22 / 28 (cards on home, portfolio), 19 / 22 (album cards) | 1.2 | card titles, lightbox arrows |
+| `--text-lead` | `h4`, `.t-lead` | 17 | 18.4 | 19 / 22 | 1.5 | about intro, home quote |
+| `--text-body` | `body`, `.t-body` | 15 | 16.1 | 17 / 19 | 1.6 | running text, nav, buttons, links, reviews |
+| `--text-small` | `.t-small` | 14 | 14.9 | 15 / 15 | 1.5 | footer, breadcrumb, album prev/next, album place and date |
+| `--text-caption` | `.t-caption` | 13 | 13.8 | 15 / 15 (small) | 1.5 | card meta, review name, lightbox counter and status |
+
+### Inventory (element, page, before, after)
+
+| Element | Page | Before | After token |
+|---|---|---|---|
+| Hero h1 "Mullny Photos" | home | font-size-5 (37 to 56) | `--text-display` via `.t-display` |
+| Hero sentence, hello text, review text | home | body 17 to 19 | `--text-body` (element default) |
+| h2 Vítejte, Kategorie, Recenze | home | font-size-3 | `--text-h2` (element default) |
+| Category card name (Svatby, Portréty, Párové focení) | home, portfolio | font-size-2 + tracking, underlined | `--text-h3` via `.t-h3` |
+| Quote | home | font-size-1 | `--text-lead` via `.t-lead` |
+| Review name | home | font-size-small, muted | `--text-caption` via `.t-caption` |
+| Page h1 | portfolio, category, album, o-mne, kontakt, cookies, 404 | font-size-4 | `--text-h1` (element default) |
+| h2 | portfolio, o-mne, kontakt, cookies | font-size-3 | `--text-h2` (element default) |
+| Album card title | category, portfolio | font-size-1 (differed from category card name) | `--text-h3`, same as category cards |
+| Album card meta (place, count) | category, portfolio | font-size-small | `--text-caption` |
+| About lead paragraph | o-mne | font-size-1 | `--text-lead` via `.t-lead` |
+| Breadcrumb | all inner pages | font-size-small | `--text-small` |
+| Album place and date | album | body | `--text-small` |
+| Album description | album | body | `--text-body` |
+| Previous / next album links | album | font-size-small | `--text-small` |
+| Lightbox counter, status | album | font-size-small | `--text-caption` |
+| Lightbox arrows, close | album | font-size-2, line-height 1 literal | `--text-h3` |
+| Lightbox zoom buttons | album | font-size-0 | `--text-body` |
+| Header nav links, menu | all | body | `--text-body` (inherits) |
+| Buttons (Napište mi, Instagram) | kontakt | body | `--text-body` (inherits) |
+| Footer (brand, region, links) | all | font-size-small, brand with tracking | `--text-small`; brand now plain (T-253 redesigns the footer) |
+| Cookies dl, dd, p, links | cookies | body | `--text-body` |
+| 404 text and links | 404 | body | `--text-body` |
+
+The admin app keeps its own denser scale (`--font-size-*`); `apps/admin/src/styles/tokens.test.ts` compares only non-type tokens with the web.

@@ -43,8 +43,9 @@
     background: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-body);
-    font-size: var(--font-size-0);
-    line-height: var(--line-height-body);
+    font-size: var(--text-body);
+    font-weight: var(--weight-body);
+    line-height: var(--leading-body);
     text-align: start;
     overflow-wrap: break-word;
   }
@@ -57,26 +58,27 @@
   h2,
   h3,
   h4 {
-    line-height: var(--line-height-heading);
+    font-family: var(--font-heading);
+    font-weight: var(--weight-heading);
+    line-height: var(--leading-heading);
     letter-spacing: var(--tracking-heading);
-    font-weight: 400;
     text-wrap: balance;
   }
 
   h1 {
-    font-size: var(--font-size-4);
+    font-size: var(--text-h1);
   }
 
   h2 {
-    font-size: var(--font-size-3);
+    font-size: var(--text-h2);
   }
 
   h3 {
-    font-size: var(--font-size-2);
+    font-size: var(--text-h3);
   }
 
   h4 {
-    font-size: var(--font-size-1);
+    font-size: var(--text-lead);
   }
 
   p,
@@ -98,6 +100,39 @@
   :focus-visible {
     outline: var(--focus-width) solid var(--color-focus);
     outline-offset: var(--focus-offset);
+  }
+
+  /* Type classes: the only way a component picks a level other than the element default (T-252). */
+  .t-display {
+    font-size: var(--text-display);
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  .t-h3 {
+    font-size: var(--text-h3);
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  .t-lead {
+    font-size: var(--text-lead);
+    line-height: var(--leading-lead);
+  }
+
+  .t-body {
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+  }
+
+  .t-small {
+    font-size: var(--text-small);
+    line-height: var(--leading-ui);
+  }
+
+  .t-caption {
+    font-size: var(--text-caption);
+    line-height: var(--leading-ui);
   }
 
   .skip-link {

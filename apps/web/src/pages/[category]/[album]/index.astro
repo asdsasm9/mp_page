@@ -50,7 +50,7 @@ const { prev, next } = catalog.neighbours(album.slug);
       <h1>{album.title}</h1>
       {
         (album.place || date) && (
-          <p class="meta">
+          <p class="meta t-small">
             {album.place && <span>{album.place}</span>}
             {date && <time datetime={album.shotOn!}>{date}</time>}
           </p>
@@ -61,7 +61,7 @@ const { prev, next } = catalog.neighbours(album.slug);
 
     <AlbumGrid thumbs={thumbs} base={env.imgBaseUrl} />
 
-    <nav class="album-nav" aria-label="Další alba">
+    <nav class="album-nav t-small" aria-label="Další alba">
       {prev ? <a rel="prev" href={albumPath(category, prev)}>&larr; {prev.title}</a> : <span></span>}
       {next ? <a rel="next" href={albumPath(category, next)}>{next.title} &rarr;</a> : <span></span>}
     </nav>
@@ -72,17 +72,17 @@ const { prev, next } = catalog.neighbours(album.slug);
       <img class="lb-back" data-lb="back" alt="" hidden />
       <img class="lb-front" data-lb="img" alt="" />
     </div>
-    <p class="count" data-lb="count" aria-live="polite"></p>
-    <p class="lb-status" data-lb="status" role="status" aria-live="polite"></p>
+    <p class="count t-caption" data-lb="count" aria-live="polite"></p>
+    <p class="lb-status t-caption" data-lb="status" role="status" aria-live="polite"></p>
     <p class="lb-level" data-lb="level" role="status" aria-live="polite"></p>
     <div class="lb-zoom" data-lb="zoom" role="group" aria-label="Přiblížení" hidden>
-      <button type="button" class="lb-btn" data-lb="zoom-out" aria-label="Oddálit">&minus;</button>
-      <button type="button" class="lb-btn" data-lb="zoom-fit" aria-label="Přizpůsobit 1×">1&times;</button>
-      <button type="button" class="lb-btn" data-lb="zoom-in" aria-label="Přiblížit">+</button>
+      <button type="button" class="lb-btn t-body" data-lb="zoom-out" aria-label="Oddálit">&minus;</button>
+      <button type="button" class="lb-btn t-body" data-lb="zoom-fit" aria-label="Přizpůsobit 1×">1&times;</button>
+      <button type="button" class="lb-btn t-body" data-lb="zoom-in" aria-label="Přiblížit">+</button>
     </div>
-    <button type="button" class="lb-btn lb-close" data-lb="close" aria-label="Zavřít">&times;</button>
-    <button type="button" class="lb-btn lb-prev" data-lb="prev" aria-label="Předchozí fotografie">&lsaquo;</button>
-    <button type="button" class="lb-btn lb-next" data-lb="next" aria-label="Další fotografie">&rsaquo;</button>
+    <button type="button" class="lb-btn t-h3 lb-close" data-lb="close" aria-label="Zavřít">&times;</button>
+    <button type="button" class="lb-btn t-h3 lb-prev" data-lb="prev" aria-label="Předchozí fotografie">&lsaquo;</button>
+    <button type="button" class="lb-btn t-h3 lb-next" data-lb="next" aria-label="Další fotografie">&rsaquo;</button>
   </dialog>
 </Base>
 
@@ -127,7 +127,6 @@ const { prev, next } = catalog.neighbours(album.slug);
     display: inline-flex;
     align-items: center;
     min-block-size: var(--target-compact);
-    font-size: var(--font-size-small);
   }
 
   /* Lightbox: full-viewport modal dialog on the overlay colour. */
@@ -197,7 +196,6 @@ const { prev, next } = catalog.neighbours(album.slug);
     inset-inline: var(--space-8);
     margin: 0;
     text-align: center;
-    font-size: var(--font-size-small);
   }
 
   .lb-status:empty {
@@ -228,7 +226,6 @@ const { prev, next } = catalog.neighbours(album.slug);
 
   .lb-zoom .lb-btn {
     position: static;
-    font-size: var(--font-size-0);
   }
 
   /* Top row mirrors the close button: counter at the start, close at the end, both centred on the same line. */
@@ -243,7 +240,6 @@ const { prev, next } = catalog.neighbours(album.slug);
     padding-inline: var(--space-3);
     border-radius: var(--radius-full);
     background: var(--color-overlay);
-    font-size: var(--font-size-small);
   }
 
   .lb-btn {
@@ -258,9 +254,6 @@ const { prev, next } = catalog.neighbours(album.slug);
     border-radius: var(--radius-full);
     background: var(--color-overlay);
     color: var(--color-on-overlay);
-    font: inherit;
-    font-size: var(--font-size-2);
-    line-height: 1;
     cursor: pointer;
   }
 

@@ -16,8 +16,8 @@ const { card, base } = Astro.props;
     <span class="cover">
       <Photo photo={card.photo} base={base} alt="" context="card" eager={card.eager} priority={card.priority} />
     </span>
-    <span class="card-title">{card.title}</span>
-    <span class="card-meta">
+    <span class="card-title t-h3">{card.title}</span>
+    <span class="card-meta t-caption">
       {card.place && <span>{card.place}</span>}
       <span>{card.countLabel}</span>
     </span>
@@ -41,8 +41,6 @@ const { card, base } = Astro.props;
   }
 
   .card-title {
-    font-size: var(--font-size-1);
-    letter-spacing: var(--tracking-heading);
     text-decoration: underline;
     text-decoration-thickness: var(--border-width);
     text-underline-offset: var(--space-1);
@@ -56,7 +54,6 @@ const { card, base } = Astro.props;
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-1) var(--space-3);
-    font-size: var(--font-size-small);
     color: var(--color-text-muted);
   }
 </style>

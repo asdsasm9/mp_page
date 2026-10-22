@@ -29,16 +29,27 @@
     --color-danger: #a4262c;
     --color-theme: #fafafa;
 
-    /* Type: Martel (self-hosted 400) then a serif fallback stack */
+    /* Type (T-252): the one global scale. Components never set font-size, weight, family or line-height
+       themselves; they use the element defaults in base.css or the .t-* classes defined there.
+       Sizes are fluid clamp() ranges between a 360 px phone and a 1280 px desktop, kept narrow.
+       Martel is self-hosted in weight 400 only, so every weight token is 400 (no faux bold). */
     --font-body: 'Martel', 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
-    --font-size-0: clamp(1.0625rem, 1.02rem + 0.2vw, 1.1875rem);
-    --font-size-1: clamp(1.1875rem, 1.12rem + 0.3vw, 1.375rem);
-    --font-size-2: clamp(1.375rem, 1.25rem + 0.6vw, 1.75rem);
-    --font-size-3: clamp(1.5rem, 1.35rem + 0.7vw, 1.875rem);
-    --font-size-4: clamp(1.875rem, 1.6rem + 1.3vw, 2.5rem); /* page h1 */
-    --font-size-5: clamp(2.25rem, 1.8rem + 2.4vw, 3.5rem); /* home hero h1 only */
-    --font-size-small: 0.9375rem;    --line-height-body: 1.6;
-    --line-height-heading: 1.2;
+    --font-heading: var(--font-body);
+    --weight-body: 400;
+    --weight-heading: 400;
+    --text-display: clamp(1.875rem, 1.65rem + 1vw, 2.5rem); /* home hero h1 only */
+    --text-h1: clamp(1.5rem, 1.38rem + 0.5vw, 1.875rem); /* page title */
+    --text-h2: clamp(1.25rem, 1.18rem + 0.3vw, 1.5rem); /* section title */
+    --text-h3: clamp(1.125rem, 1.08rem + 0.2vw, 1.25rem); /* card title, h3 */
+    --text-lead: clamp(1.0625rem, 1.03rem + 0.15vw, 1.1875rem); /* intro paragraph, quote */
+    --text-body: clamp(0.9375rem, 0.91rem + 0.12vw, 1.0625rem); /* running text, nav, buttons */
+    --text-small: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem); /* footer, breadcrumb, secondary links */
+    --text-caption: clamp(0.8125rem, 0.79rem + 0.08vw, 0.875rem); /* meta lines, captions, counters */
+    --leading-body: 1.6;
+    --leading-lead: 1.5;
+    --leading-heading: 1.2;
+    --leading-ui: 1.5;
+    --leading-none: 1;
     --tracking-heading: 0.01em;
     --measure: 70ch;
 

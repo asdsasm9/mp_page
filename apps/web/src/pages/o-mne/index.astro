@@ -46,7 +46,7 @@ const blocks = [
       blocks.map(({ block, id, photo, alt }, i) => (
         <section class="block" aria-labelledby={i === 0 ? undefined : id}>
           <div class="text">
-            {i === 0 ? <p class="lead">{block.body}</p> : (<><h2 id={id}>{block.title}</h2><p>{block.body}</p></>)}
+            {i === 0 ? <p class="t-lead">{block.body}</p> : (<><h2 id={id}>{block.title}</h2><p>{block.body}</p></>)}
           </div>
           <Image
             src={photo}
@@ -98,10 +98,6 @@ const blocks = [
   .text {
     display: grid;
     gap: var(--heading-gap);
-  }
-
-  .lead {
-    font-size: var(--font-size-1);
   }
 
   @media (min-width: 48rem) {

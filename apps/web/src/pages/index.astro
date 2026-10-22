@@ -55,7 +55,7 @@ const collage = [
       fetchpriority="high"
     />
     <div class="hero-text">
-      <h1 id="nadpis">Mullny Photos</h1>
+      <h1 id="nadpis" class="t-display">Mullny Photos</h1>
       <p>{SITE.description}</p>
     </div>
   </section>
@@ -84,7 +84,7 @@ const collage = [
           <li>
             <a href={card.path}>
               <Photo photo={card.photo} base={env.imgBaseUrl} alt="" context="card" />
-              <span class="card-name">{card.name}</span>
+              <span class="card-name t-h3">{card.name}</span>
             </a>
           </li>
         ))
@@ -93,7 +93,7 @@ const collage = [
   </section>
 
   <section class="quote" aria-label="Citát">
-    <blockquote><p>{HOME.quote}</p></blockquote>
+    <blockquote><p class="t-lead">{HOME.quote}</p></blockquote>
   </section>
 
   {
@@ -106,7 +106,7 @@ const collage = [
               <figure>
                 <Photo photo={photo} base={env.imgBaseUrl} alt={alt} context="review" />
                 <blockquote><p>{review.text}</p></blockquote>
-                <figcaption>{review.name}</figcaption>
+                <figcaption class="t-caption">{review.name}</figcaption>
               </figure>
             </li>
           ))}
@@ -165,10 +165,6 @@ const collage = [
     max-inline-size: var(--layout-max);
     margin-inline: auto;
     padding: var(--space-6) var(--layout-gutter) 0;
-  }
-
-  h1 {
-    font-size: var(--font-size-5);
   }
 
   .hello {
@@ -232,8 +228,6 @@ const collage = [
   }
 
   .card-name {
-    font-size: var(--font-size-2);
-    letter-spacing: var(--tracking-heading);
     text-decoration: underline;
     text-decoration-thickness: var(--border-width);
     text-underline-offset: var(--space-1);
@@ -257,7 +251,6 @@ const collage = [
   }
 
   .quote blockquote p {
-    font-size: var(--font-size-1);
     margin-inline: auto;
     text-align: center;
   }
@@ -276,7 +269,6 @@ const collage = [
   }
 
   .reviews figcaption {
-    font-size: var(--font-size-small);
     color: var(--color-text-muted);
   }
 

@@ -21,13 +21,22 @@ describe('token parity with apps/web', () => {
     expect(admin.size).toBeGreaterThanOrEqual(web.size);
   });
 
-  it.each([...web.entries()])('%s has the web value', (name, value) => {
+  // T-252: the public site owns its own type scale (--text-*, --leading-*, --weight-*, --font-heading).
+  // The admin keeps its denser legacy scale (--font-size-*, --line-height-*), so type tokens are not compared.
+  const isWebType = (name: string) => /^--(text|leading|weight)-|^--font-heading$/.test(name);
+
+  it.each([...web.entries()].filter(([name]) => !isWebType(name)))('%s has the web value', (name, value) => {
     expect(admin.get(name)).toBe(value);
   });
 
   it('keeps the admin-only extras small and named', () => {
     const extras = [...admin.keys()].filter((k) => !web.has(k)).sort();
-    expect(extras).toEqual(['--bottom-nav-height', '--color-danger-active', '--color-danger-disabled', '--color-danger-hover', '--color-on-danger', '--cover-size', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke']);
+    expect(extras).toEqual([
+      '--bottom-nav-height', '--color-danger-active', '--color-danger-disabled', '--color-danger-hover', '--color-on-danger',
+      '--cover-size', '--font-size-0', '--font-size-1', '--font-size-2', '--font-size-3', '--font-size-4', '--font-size-5',
+      '--font-size-small', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke',
+      '--line-height-body', '--line-height-heading',
+    ]);
   });
 });
 

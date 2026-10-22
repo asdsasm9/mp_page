@@ -1,7 +1,7 @@
 ---
 import { FOOTER, INSTAGRAM_HANDLE, INSTAGRAM_URL, MAIL_ADDRESS, MAIL_URL, MYWED_URL } from '../content/texts';
 ---
-<footer class="site-footer">
+<footer class="site-footer t-small">
   <div class="inner">
     <p class="brand">{FOOTER.brand}</p>
     <p>{FOOTER.region}</p>
@@ -21,7 +21,6 @@ import { FOOTER, INSTAGRAM_HANDLE, INSTAGRAM_URL, MAIL_ADDRESS, MAIL_URL, MYWED_
     margin-block-start: var(--space-7);
     background: var(--color-surface);
     border-block-start: var(--border-width) solid var(--color-border);
-    font-size: var(--font-size-small);
   }
 
   .inner {
@@ -30,11 +29,6 @@ import { FOOTER, INSTAGRAM_HANDLE, INSTAGRAM_URL, MAIL_ADDRESS, MAIL_URL, MYWED_
     padding: var(--space-4) var(--layout-gutter);
     display: grid;
     gap: var(--space-1);
-  }
-
-  .brand {
-    font-size: var(--font-size-small);
-    letter-spacing: var(--tracking-heading);
   }
 
   ul {

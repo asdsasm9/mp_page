@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeWorld, fixtureSnapshot, type FakeWorld } from '../adapters/fake';
 import { App } from '../App';
 import { AppProviders } from '../AppProviders';
+import { keyboardDrag, mockRowRects } from '../components/keyboardDrag.testutil';
 import { cs } from '../i18n/cs';
 import { formatCount } from '../i18n/format';
 import { ApiError } from '../ports';
@@ -290,12 +291,21 @@ describe('delete', () => {
 });
 
 describe('reorder', () => {
-  it('"Posunout dolů" persists in the fake world and says "Pořadí uloženo"', async () => {
+  it('has no text move buttons, only drag handles', async () => {
+    const world = await worldWith([['Svatby', 0], ['Portréty', 0]]);
+    await open(world);
+    await screen.findByRole('link', { name: 'Svatby' });
+    expect(screen.queryByRole('button', { name: /Posunout|Přesunout do pozice/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Přetáhnout: Svatby' })).toBeTruthy();
+  });
+
+  it('a keyboard drag persists in the fake world and says "Pořadí uloženo"', async () => {
+    mockRowRects();
     const user = userEvent.setup();
     const world = await worldWith([['Svatby', 0], ['Portréty', 0], ['Rodina', 0]]);
     await open(world);
     await screen.findByRole('link', { name: 'Svatby' });
-    await user.click(screen.getByRole('button', { name: 'Posunout dolů: Svatby' }));
+    await keyboardDrag(user, 'Přetáhnout: Svatby', 1);
     await waitFor(() => expect(dbNames(world)).toEqual(['Portréty', 'Svatby', 'Rodina']));
     expect(await screen.findByText('Pořadí uloženo')).toBeTruthy();
     await waitFor(() => expect(rowNames()).toEqual(['Portréty', 'Svatby', 'Rodina']));
@@ -303,24 +313,24 @@ describe('reorder', () => {
     expect(dbCategories(world).map((c) => c.sort)).toEqual([20, 25, 30]);
   });
 
-  it('"Přesunout do pozice…" to the start persists', async () => {
+  it('a keyboard drag to the start persists', async () => {
+    mockRowRects();
     const user = userEvent.setup();
     const world = await worldWith([['Svatby', 0], ['Portréty', 0], ['Rodina', 0]]);
     await open(world);
     await screen.findByRole('link', { name: 'Rodina' });
-    await user.click(screen.getByRole('button', { name: 'Přesunout do pozice… Rodina' }));
-    await user.clear(screen.getByLabelText('Nová pozice (1 až 3)'));
-    await user.type(screen.getByLabelText('Nová pozice (1 až 3)'), '1{Enter}');
+    await keyboardDrag(user, 'Přetáhnout: Rodina', -2);
     await waitFor(() => expect(dbNames(world)).toEqual(['Rodina', 'Svatby', 'Portréty']));
   });
 
   it('a failed save puts the list back and offers a retry that then saves', async () => {
+    mockRowRects();
     const user = userEvent.setup();
     const world = await worldWith([['Svatby', 0], ['Portréty', 0]]);
     await open(world);
     await screen.findByRole('link', { name: 'Svatby' });
     world.failNext('catalog.updateCategory', new ApiError('INTERNAL'));
-    await user.click(screen.getByRole('button', { name: 'Posunout dolů: Svatby' }));
+    await keyboardDrag(user, 'Přetáhnout: Svatby', 1);
     const alert = await screen.findByText('Pořadí se nepodařilo uložit');
     expect(rowNames()).toEqual(['Svatby', 'Portréty']);
     expect(dbNames(world)).toEqual(['Svatby', 'Portréty']);

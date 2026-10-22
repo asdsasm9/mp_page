@@ -31,7 +31,7 @@ describe('docs/ADMIN.md goal map', () => {
     const deviations = doc.split('## Deviations from docs/ADMIN-UX.md and the plan')[1]!.split('\n## ')[0]!.toLowerCase();
     for (const word of [
       'inline buttons',
-      'handle only',
+      'reordering is drag only',
       'two album badges',
       'one request per album',
       'no heic library',

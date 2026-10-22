@@ -1,7 +1,7 @@
 /**
- * Reorderable list (ADMIN-UX F2, WCAG 2.5.7): drag with a mouse, long-press (250 ms) with a finger, or the
- * keyboard (dnd-kit sensors, Czech announcements and instructions), and always the same moves as plain
- * buttons ("Posunout nahoru / dolů", "Přesunout do pozice…"). The moves are planned by data/order.ts (minimal
+ * Reorderable list (ADMIN-UX F2): drag only, with a mouse, long-press (250 ms) with a finger, or the keyboard
+ * (dnd-kit KeyboardSensor on the handle: Space/Enter lifts, arrows move, Space/Enter drops, Escape cancels;
+ * Czech announcements and instructions). There are no move buttons (T-243). The moves are planned by data/order.ts (minimal
  * `{ id, sort }` updates), shown at once (optimistic) and handed to `onReorder`. If that rejects, the list
  * goes back to the saved order and offers "Zkusit znovu"; on success "Pořadí uloženo" is announced.
  *
@@ -23,26 +23,10 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { isStale } from '../data/concurrency';
 import { useCanMutate } from '../data/health';
-import {
-  applySortUpdates,
-  planMove,
-  planMoveToPosition,
-  sortedRows,
-  type SortUpdate,
-} from '../data/order';
+import { applySortUpdates, planMoveToPosition, sortedRows, type SortUpdate } from '../data/order';
 import { cs, glossary } from '../i18n/cs';
 import { fill } from '../i18n/format';
 import { StaleNotice } from './StaleNotice';
@@ -76,88 +60,14 @@ interface Props<T extends SortableItem> {
   staleEntity?: 'album' | 'category' | 'photo';
 }
 
-type Action = 'up' | 'down' | 'position';
-
 interface RowContext {
-  total: number;
-  index: number;
-  busy: boolean;
   canMutate: boolean;
-  positionOpen: boolean;
-  onMove: (direction: -1 | 1) => void;
-  onOpenPosition: () => void;
-  onClosePosition: () => void;
-  onMoveToPosition: (position: number) => void;
 }
 
 function reducedMotion(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false;
-}
-
-function PositionForm({ ctx, name }: { ctx: RowContext; name: string }) {
-  const inputId = useId();
-  const errorId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState(String(ctx.index + 1));
-  const [invalid, setInvalid] = useState(false);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-    inputRef.current?.select();
-  }, []);
-
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const n = Number(value);
-    if (value.trim() === '' || !Number.isInteger(n) || n < 1 || n > ctx.total) {
-      setInvalid(true);
-      inputRef.current?.focus();
-      return;
-    }
-    ctx.onMoveToPosition(n);
-  }
-
-  return (
-    <form className="position-form" onSubmit={onSubmit} noValidate aria-label={`${cs.reorder.moveToPosition} ${name}`}>
-      <div className="field">
-        <label htmlFor={inputId}>{fill(cs.reorder.positionLabel, { max: ctx.total })}</label>
-        <input
-          ref={inputRef}
-          id={inputId}
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={ctx.total}
-          value={value}
-          aria-invalid={invalid ? true : undefined}
-          aria-describedby={invalid ? errorId : undefined}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setInvalid(false);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              ctx.onClosePosition();
-            }
-          }}
-        />
-        {invalid ? (
-          <p id={errorId} className="field-error">
-            {fill(cs.reorder.positionInvalid, { max: ctx.total })}
-          </p>
-        ) : null}
-      </div>
-      <button type="submit" className="button button-primary">
-        {cs.reorder.positionSubmit}
-      </button>
-      <button type="button" className="button" onClick={ctx.onClosePosition}>
-        {glossary.cancel}
-      </button>
-    </form>
-  );
 }
 
 function SortableRow<T extends SortableItem>({
@@ -182,13 +92,6 @@ function SortableRow<T extends SortableItem>({
     transform: CSS.Transform.toString(transform),
     transition: reducedMotion() ? undefined : transition,
   };
-  const atStart = ctx.index === 0;
-  const atEnd = ctx.index === ctx.total - 1;
-  // aria-disabled (not disabled) keeps the focused button focusable after a move to the edge.
-  const stepProps = (edge: boolean) => ({
-    'aria-disabled': edge || ctx.busy || undefined,
-    disabled: !ctx.canMutate,
-  });
 
   return (
     <li
@@ -216,40 +119,8 @@ function SortableRow<T extends SortableItem>({
       </button>
       <div className="row-main">{children}</div>
       <div className="row-actions">
-        <button
-          type="button"
-          className="button"
-          data-action="up"
-          aria-label={`${glossary.moveUp}: ${name}`}
-          {...stepProps(atStart)}
-          onClick={() => ctx.onMove(-1)}
-        >
-          {glossary.moveUp}
-        </button>
-        <button
-          type="button"
-          className="button"
-          data-action="down"
-          aria-label={`${glossary.moveDown}: ${name}`}
-          {...stepProps(atEnd)}
-          onClick={() => ctx.onMove(1)}
-        >
-          {glossary.moveDown}
-        </button>
-        <button
-          type="button"
-          className="button"
-          data-action="position"
-          aria-label={`${cs.reorder.moveToPosition} ${name}`}
-          aria-expanded={ctx.positionOpen}
-          disabled={!ctx.canMutate || ctx.total < 2}
-          onClick={ctx.positionOpen ? ctx.onClosePosition : ctx.onOpenPosition}
-        >
-          {cs.reorder.moveToPosition}
-        </button>
         {actions}
       </div>
-      {ctx.positionOpen ? <PositionForm ctx={ctx} name={name} /> : null}
     </li>
   );
 }
@@ -269,11 +140,9 @@ export function SortableList<T extends SortableItem>({
   const listRef = useRef<HTMLOListElement>(null);
   const mounted = useRef(true);
   const busyRef = useRef(false);
-  const focusAfter = useRef<{ id: string; action: Action } | null>(null);
   const [overlay, setOverlay] = useState<SortUpdate[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<{ updates: SortUpdate[]; error: unknown } | null>(null);
-  const [positionFor, setPositionFor] = useState<string | null>(null);
   const [spoken, setSpoken] = useState('');
 
   useEffect(() => {
@@ -301,16 +170,6 @@ export function SortableList<T extends SortableItem>({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Put focus back on the pressed button after the row moved (a moved DOM node may lose focus).
-  useLayoutEffect(() => {
-    const target = focusAfter.current;
-    if (!target) return;
-    focusAfter.current = null;
-    listRef.current
-      ?.querySelector<HTMLElement>(`[data-sortable-id="${target.id}"] [data-action="${target.action}"]`)
-      ?.focus();
-  }, [displayed, positionFor]);
-
   async function commit(updates: SortUpdate[], movedId: string | null) {
     if (updates.length === 0 || busyRef.current) return;
     busyRef.current = true;
@@ -337,23 +196,6 @@ export function SortableList<T extends SortableItem>({
       busyRef.current = false;
       if (mounted.current) setBusy(false);
     }
-  }
-
-  function move(id: string, direction: -1 | 1) {
-    if (busyRef.current) return;
-    focusAfter.current = { id, action: direction === -1 ? 'up' : 'down' };
-    void commit(planMove(displayed, id, direction), id);
-  }
-
-  function moveToPosition(id: string, position: number) {
-    setPositionFor(null);
-    focusAfter.current = { id, action: 'position' };
-    void commit(planMoveToPosition(displayed, id, position), id);
-  }
-
-  function closePosition(id: string) {
-    setPositionFor(null);
-    focusAfter.current = { id, action: 'position' };
   }
 
   function onDragEnd(event: DragEndEvent) {
@@ -401,23 +243,13 @@ export function SortableList<T extends SortableItem>({
       >
         <SortableContext items={displayed.map((r) => r.id)} strategy={verticalListSortingStrategy}>
           <ol ref={listRef} className="sortable-list" aria-label={label} aria-describedby={hintId} aria-busy={busy}>
-            {displayed.map((item, index) => (
+            {displayed.map((item) => (
               <SortableRow
                 key={item.id}
                 item={item}
                 name={itemLabel(item)}
                 actions={renderActions?.(item)}
-                ctx={{
-                  total: displayed.length,
-                  index,
-                  busy,
-                  canMutate,
-                  positionOpen: positionFor === item.id,
-                  onMove: (direction) => move(item.id, direction),
-                  onOpenPosition: () => setPositionFor(item.id),
-                  onClosePosition: () => closePosition(item.id),
-                  onMoveToPosition: (position) => moveToPosition(item.id, position),
-                }}
+                ctx={{ canMutate }}
               >
                 {renderItem(item)}
               </SortableRow>

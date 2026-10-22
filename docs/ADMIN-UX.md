@@ -48,7 +48,7 @@ Persistent shell on every screen after login:
 - Row click opens the category detail.
 - New category: dialog with Název (required), Slug (auto from name, editable, unique, lowercase ASCII), Popis (optional), SEO titulek and SEO popis (optional, under "Pro vyhledávače"). Buttons "Vytvořit" / "Zrušit".
 - Rename: inline in the dialog "Upravit kategorii" (same fields). Changing the slug shows the warning "Změna adresy rozbije stávající odkazy na tuto kategorii a její alba." (old URL redirects are a MASTERPLAN question).
-- Reorder: drag handle on desktop and phone (long press), or "Posunout nahoru / dolů" buttons in the menu. Order saves instantly, toast "Pořadí uloženo".
+- Reorder: drag handle on desktop and phone (long press), or the keyboard sensor on the handle. No move buttons (T-243). Order saves instantly, toast "Pořadí uloženo".
 - Empty state: "Zatím tu nejsou žádné kategorie." + button "Nová kategorie".
 - Error: failed load "Kategorie se nepodařilo načíst." + "Zkusit znovu".
 
@@ -69,7 +69,7 @@ Top area:
 Photo area:
 - Upload drop zone at the top: "Přetáhněte sem fotky nebo klikněte pro výběr" with button "Vybrat fotky" (phone: opens camera roll). Accepts JPEG, PNG, HEIC, WebP; rejects other types with a per-file message.
 - Photo grid: square thumbnails (variant 480 px, never the original), cover marked with a "Titulní" badge, hidden-state not applicable to single photos (hiding exists at album level only; see 8), alt-text warning dot on photos without alt text. Drag handle on each tile. Selection mode: checkbox on each tile, a sticky action bar "Vybráno 5: Přesunout do alba, Smazat, Zrušit výběr".
-- Tile menu / photo detail: "Nastavit jako titulní", "Upravit popisek", "Přesunout do jiného alba", "Smazat fotku", "Posunout na začátek / na konec".
+- Tile menu / photo detail: "Nastavit jako titulní", "Upravit popisek", "Přesunout do jiného alba", "Smazat fotku".
 - Photo detail (side panel on desktop, full screen on phone): large preview (1600 px variant), Alternativní text (alt, with hint "Popište, co je na fotce, pro nevidomé a vyhledávače"), Popisek (caption), buttons "Uložit", "Předchozí", "Další".
 - Empty state: "V albu zatím nejsou žádné fotky." with the drop zone enlarged.
 - Desktop: grid 5 to 6 columns, detail in a right panel. Phone: 2 columns, detail full screen, drag by long press, selection mode as the primary way to bulk-act.
@@ -125,7 +125,7 @@ One queue for the whole session, visible from every screen (top-bar indicator op
 8. "Zveřejnit album" (status Zveřejněno) then "Zveřejnit web" (F6). Done.
 
 ### F2 Reorder
-- Photos: drag a tile (desktop: grab the handle or the tile; phone: long press, then drag) to the new place; or tile menu "Posunout na začátek / na konec", or "Přesunout do pozice…" with a number input (keyboard and large albums). Order saves instantly, toast "Pořadí uloženo", failure "Pořadí se nepodařilo uložit" with the grid reverting and "Zkusit znovu".
+- Photos: drag a tile (desktop: grab the handle or the tile; phone: long press, then drag) to the new place, or lift the handle with the keyboard (Space, arrows, Space). No move buttons (T-243). Order saves instantly, toast "Pořadí uloženo", failure "Pořadí se nepodařilo uložit" with the grid reverting and "Zkusit znovu".
 - Albums within a category and categories on the home list work the same way (3.2, 3.3).
 - Order changes count as an unpublished change.
 
@@ -190,7 +190,7 @@ One queue for the whole session, visible from every screen (top-bar indicator op
 
 ## 7. Czech UI labels (glossary)
 
-Přihlásit se, Odhlásit se, E-mail, Kategorie, Nová kategorie, Album/Alba, Nové album, Fotky, Vybrat fotky, Název, Adresa (slug), Místo, Datum focení, Popis, Popisek, Alternativní text, Pro vyhledávače, SEO titulek, SEO popis, Titulní fotka, Nastavit jako titulní, Zveřejnit album, Skrýt album, Zveřejnit web, Zveřejněno, Koncept, Skryto, Viditelná, Skrytá, Smazat, Zrušit, Uložit, Uloženo, Zkusit znovu, Přesunout, Přesunout do alba, Posunout nahoru/dolů, Nahrávání, Ve frontě, Zpracovávám, Nahrávám, Hotovo, Úložiště, Zkontrolovat úložiště, Podrobnosti.
+Přihlásit se, Odhlásit se, E-mail, Kategorie, Nová kategorie, Album/Alba, Nové album, Fotky, Vybrat fotky, Název, Adresa (slug), Místo, Datum focení, Popis, Popisek, Alternativní text, Pro vyhledávače, SEO titulek, SEO popis, Titulní fotka, Nastavit jako titulní, Zveřejnit album, Skrýt album, Zveřejnit web, Zveřejněno, Koncept, Skryto, Viditelná, Skrytá, Smazat, Zrušit, Uložit, Uloženo, Zkusit znovu, Přesunout, Přesunout do alba, Nahrávání, Ve frontě, Zpracovávám, Nahrávám, Hotovo, Úložiště, Zkontrolovat úložiště, Podrobnosti.
 Tone: short, polite, "vy" form, no jargon (not "slug", "URL", "variant": use "adresa", "odkaz", "verze fotky").
 
 ## 8. Data and behaviour notes the MASTERPLAN must honour

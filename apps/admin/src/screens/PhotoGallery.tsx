@@ -1,6 +1,7 @@
 /**
  * Photos of one album (ADMIN-UX 3.4, F2, F3, F7): grid, "bez alternativního textu" filter, tile menu (bottom
- * sheet on a phone), reordering with buttons next to the drag, selection mode and "Přesunout do alba".
+ * sheet on a phone), reordering by drag only (pointer, long press, keyboard sensor), selection mode and
+ * "Přesunout do alba".
  */
 import type { AlbumRow, CategoryRow, PhotoRow } from '@mp/shared';
 import { useState } from 'react';
@@ -13,7 +14,7 @@ import { usePhotoReorder } from '../components/usePhotoReorder';
 import { hasNoAlt } from '../data/altText';
 import { isStale } from '../data/concurrency';
 import { useCanMutate } from '../data/health';
-import { planMoveToPosition, type SortUpdate } from '../data/order';
+import type { SortUpdate } from '../data/order';
 import { usePhotoActions } from '../data/photoActions';
 import { cs, glossary } from '../i18n/cs';
 import { fill, formatCount, plural } from '../i18n/format';
@@ -31,53 +32,6 @@ interface Props {
   albums: readonly AlbumRow[];
 }
 
-function PositionForm({ total, current, onSubmit, onCancel }: { total: number; current: number; onSubmit: (n: number) => void; onCancel: () => void }) {
-  const [value, setValue] = useState(String(current));
-  const [invalid, setInvalid] = useState(false);
-  return (
-    <form
-      className="position-form"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        const n = Number(value);
-        if (value.trim() === '' || !Number.isInteger(n) || n < 1 || n > total) setInvalid(true);
-        else onSubmit(n);
-      }}
-    >
-      <div className="field">
-        <label htmlFor="photo-position">{fill(cs.reorder.positionLabel, { max: total })}</label>
-        <input
-          id="photo-position"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={total}
-          value={value}
-          data-autofocus=""
-          aria-invalid={invalid ? true : undefined}
-          aria-describedby={invalid ? 'photo-position-error' : undefined}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setInvalid(false);
-          }}
-        />
-        {invalid ? (
-          <p id="photo-position-error" className="field-error">
-            {fill(cs.reorder.positionInvalid, { max: total })}
-          </p>
-        ) : null}
-      </div>
-      <button type="submit" className="button button-primary">
-        {cs.reorder.positionSubmit}
-      </button>
-      <button type="button" className="button" onClick={onCancel}>
-        {glossary.cancel}
-      </button>
-    </form>
-  );
-}
-
 interface MenuProps {
   photo: PhotoRow;
   position: number;
@@ -86,9 +40,6 @@ interface MenuProps {
   canMove: boolean;
   onClose: () => void;
   onCover: () => void;
-  onStart: () => void;
-  onEnd: () => void;
-  onPosition: (n: number) => void;
   onMoveAlbum: () => void;
   onDelete: () => void;
   detailPath: string;
@@ -97,7 +48,6 @@ interface MenuProps {
 /** Tile menu: a dialog that is a bottom sheet on a phone. */
 function TileMenu(props: MenuProps) {
   const canMutate = useCanMutate();
-  const [positionOpen, setPositionOpen] = useState(false);
   return (
     <Modal title={fill(cs.photos.menuTitle, { n: props.position })} onClose={props.onClose} variant="sheet">
       <div className="menu-list">
@@ -111,34 +61,6 @@ function TileMenu(props: MenuProps) {
         </Link>
         {props.canMove ? (
           <>
-            <button type="button" className="button" disabled={!canMutate || props.position === 1} onClick={props.onStart}>
-              {cs.photos.moveToStart}
-            </button>
-            <button
-              type="button"
-              className="button"
-              disabled={!canMutate || props.position === props.total}
-              onClick={props.onEnd}
-            >
-              {cs.photos.moveToEnd}
-            </button>
-            <button
-              type="button"
-              className="button"
-              disabled={!canMutate || props.total < 2}
-              aria-expanded={positionOpen}
-              onClick={() => setPositionOpen((open) => !open)}
-            >
-              {cs.reorder.moveToPosition}
-            </button>
-            {positionOpen ? (
-              <PositionForm
-                total={props.total}
-                current={props.position}
-                onSubmit={props.onPosition}
-                onCancel={() => setPositionOpen(false)}
-              />
-            ) : null}
             <button type="button" className="button" disabled={!canMutate} onClick={props.onMoveAlbum}>
               {cs.photos.moveToOtherAlbum}
             </button>
@@ -352,18 +274,6 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
           detailPath={`/alba/${album.id}/foto/${menuPhoto.id}`}
           onClose={() => setMenuFor(null)}
           onCover={() => void setCover(menuPhoto.id)}
-          onStart={() => {
-            setMenuFor(null);
-            move(planMoveToPosition(displayed, menuPhoto.id, 1), menuPhoto.id);
-          }}
-          onEnd={() => {
-            setMenuFor(null);
-            move(planMoveToPosition(displayed, menuPhoto.id, displayed.length), menuPhoto.id);
-          }}
-          onPosition={(n) => {
-            setMenuFor(null);
-            move(planMoveToPosition(displayed, menuPhoto.id, n), menuPhoto.id);
-          }}
           onMoveAlbum={() => {
             setMenuFor(null);
             setMoveIds([menuPhoto.id]);

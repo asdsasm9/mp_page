@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeWorld, fixtureSnapshot, type FakeWorld } from '../adapters/fake';
 import { App } from '../App';
 import { AppProviders } from '../AppProviders';
+import { keyboardDrag, mockRowRects } from '../components/keyboardDrag.testutil';
 import { cs } from '../i18n/cs';
 import { ApiError } from '../ports';
 
@@ -335,14 +336,23 @@ describe('edit category', () => {
 });
 
 describe('reorder', () => {
-  it('"Posunout dolů" persists with the midpoint rule and says "Pořadí uloženo"', async () => {
+  it('has no text move buttons, only drag handles', async () => {
+    const world = await worldWith([{ name: 'Svatby', albums: [{ title: 'A1' }, { title: 'B2' }] }]);
+    await open(world, categoryPath(world, 'Svatby'), 'Svatby');
+    await screen.findByRole('link', { name: 'A1' });
+    expect(screen.queryByRole('button', { name: /Posunout|Přesunout do pozice/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Přetáhnout: A1' })).toBeTruthy();
+  });
+
+  it('a keyboard drag persists with the midpoint rule and says "Pořadí uloženo"', async () => {
+    mockRowRects();
     const user = userEvent.setup();
     const world = await worldWith([
       { name: 'Svatby', albums: [{ title: 'A1' }, { title: 'B2' }, { title: 'C3' }] },
     ]);
     await open(world, categoryPath(world, 'Svatby'), 'Svatby');
     await screen.findByRole('link', { name: 'A1' });
-    await user.click(screen.getByRole('button', { name: 'Posunout dolů: A1' }));
+    await keyboardDrag(user, 'Přetáhnout: A1', 1);
     await waitFor(() =>
       expect(
         dbAlbums(world)
@@ -357,12 +367,13 @@ describe('reorder', () => {
   });
 
   it('a failed save puts the list back and offers a retry', async () => {
+    mockRowRects();
     const user = userEvent.setup();
     const world = await worldWith([{ name: 'Svatby', albums: [{ title: 'A1' }, { title: 'B2' }] }]);
     await open(world, categoryPath(world, 'Svatby'), 'Svatby');
     await screen.findByRole('link', { name: 'A1' });
     world.failNext('catalog.updateAlbum', new ApiError('INTERNAL'));
-    await user.click(screen.getByRole('button', { name: 'Posunout dolů: A1' }));
+    await keyboardDrag(user, 'Přetáhnout: A1', 1);
     const alert = await screen.findByText('Pořadí se nepodařilo uložit');
     expect(rowTitles()).toEqual(['A1', 'B2']);
     await user.click(within(alert.closest('[role="alert"]') as HTMLElement).getByRole('button', { name: 'Zkusit znovu' }));

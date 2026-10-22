@@ -50,7 +50,7 @@ Fotky se zmenší samy. Nemusíš je před nahráním nijak upravovat.
 - Titulní fotka je ta, která se ukazuje jako obrázek celého alba. První nahraná fotka je titulní sama od sebe.
 - Jinou titulní fotku vybereš v nabídce u fotky: „Nastavit jako titulní“. Fotka dostane štítek „Titulní“.
 - Pořadí změníš přetažením fotky za úchyt „Přetáhnout“.
-- Bez myši použij v nabídce u fotky „Posunout na začátek“, „Posunout na konec“ nebo „Přesunout do pozice…“.
+- Bez myši přejdi klávesou Tab na úchyt, stiskni mezerník, šipkami vyber nové místo a mezerníkem ho potvrď (Escape přesun zruší).
 - Po každé změně pořadí uvidíš „Pořadí uloženo“.
 
 ### Popisky a alt texty
@@ -112,7 +112,7 @@ Na telefonu ve správě zvládneš malé úpravy:
 
 - přejmenovat kategorii nebo album,
 - skrýt album nebo ho zveřejnit,
-- změnit pořadí (podrž úchyt a přetáhni, nebo použij „Posunout na začátek“ a „Posunout na konec“),
+- změnit pořadí (podrž úchyt a přetáhni; z klávesnice úchyt zvedni mezerníkem a posuň šipkami),
 - nastavit titulní fotku,
 - doplnit „Alternativní text“ a „Popisek“,
 - zveřejnit web: ve spodní liště otevři „Zveřejnit“ a na té stránce klikni na tlačítko „Zveřejnit web“.

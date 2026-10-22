@@ -131,8 +131,8 @@ describe('glossary', () => {
     'Nové album', 'Fotky', 'Vybrat fotky', 'Název', 'Adresa', 'Místo', 'Datum focení', 'Popis', 'Popisek',
     'Alternativní text', 'Pro vyhledávače', 'SEO titulek', 'SEO popis', 'Titulní fotka', 'Nastavit jako titulní',
     'Zveřejnit album', 'Skrýt album', 'Zveřejnit web', 'Zveřejněno', 'Koncept', 'Skryto', 'Viditelná', 'Skrytá',
-    'Smazat', 'Zrušit', 'Uložit', 'Uloženo', 'Zkusit znovu', 'Přesunout', 'Přesunout do alba', 'Posunout nahoru',
-    'Posunout dolů', 'Nahrávání', 'Ve frontě', 'Zpracovávám', 'Nahrávám', 'Hotovo', 'Úložiště', 'Zkontrolovat úložiště',
+    'Smazat', 'Zrušit', 'Uložit', 'Uloženo', 'Zkusit znovu', 'Přesunout', 'Přesunout do alba',
+    'Nahrávání', 'Ve frontě', 'Zpracovávám', 'Nahrávám', 'Hotovo', 'Úložiště', 'Zkontrolovat úložiště',
     'Podrobnosti',
   ];
 

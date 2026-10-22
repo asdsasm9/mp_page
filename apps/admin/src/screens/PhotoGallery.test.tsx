@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeWorld, fixtureSnapshot, type FakeWorld } from '../adapters/fake';
 import { App } from '../App';
 import { AppProviders } from '../AppProviders';
+import { keyboardDrag, mockRowRects } from '../components/keyboardDrag.testutil';
 import { LONG_PRESS_MS } from '../components/PhotoGrid';
 import { planDragEnd } from '../components/SortableList';
 import { cs } from '../i18n/cs';
@@ -168,66 +169,49 @@ describe('cover', () => {
   });
 });
 
-describe('reordering without dragging', () => {
-  it('"Posunout na konec" and "Posunout na začátek" write only sort', async () => {
+describe('reordering by drag only (T-243)', () => {
+  it('a keyboard drag on the handle writes only sort', async () => {
+    mockRowRects();
     const user = userEvent.setup();
     const { world, album } = setup();
     const before = orderInDb(world, album.id);
     const update = vi.spyOn(world.ports.catalog, 'updatePhoto');
     await open(world, album);
-    await user.click(within(await openMenu(user, 2)).getByRole('button', { name: cs.photos.moveToEnd }));
-    await waitFor(() => expect(orderInDb(world, album.id)).toEqual([before[0], ...before.slice(2), before[1]]));
+    await keyboardDrag(user, fill(cs.photos.handle, { n: 2 }), 2);
+    await waitFor(() =>
+      expect(orderInDb(world, album.id)).toEqual([before[0], before[2], before[3], before[1], ...before.slice(4)]),
+    );
     expect(await screen.findByText('Pořadí uloženo')).toBeTruthy();
+    expect(update).toHaveBeenCalled();
     for (const call of update.mock.calls) expect(Object.keys(call[1])).toEqual(['sort']);
-    await user.click(within(await openMenu(user, before.length)).getByRole('button', { name: cs.photos.moveToStart }));
-    await waitFor(() => expect(orderInDb(world, album.id)[0]).toBe(before[1]));
   });
 
-  it('"Přesunout do pozice…" moves to the typed position and refuses a bad one', async () => {
+  it('the tile menu has no move-to-start, move-to-end or move-to-position buttons', async () => {
     const user = userEvent.setup();
     const { world, album } = setup();
-    const before = orderInDb(world, album.id);
     await open(world, album);
-    const menu = await openMenu(user, 1);
-    await user.click(within(menu).getByRole('button', { name: cs.reorder.moveToPosition }));
-    const input = within(menu).getByLabelText(fill(cs.reorder.positionLabel, { max: before.length }));
-    await user.clear(input);
-    await user.type(input, '99');
-    await user.click(within(menu).getByRole('button', { name: cs.reorder.positionSubmit }));
-    expect(within(menu).getByText(fill(cs.reorder.positionInvalid, { max: before.length }))).toBeTruthy();
-    await user.clear(input);
-    await user.type(input, '3');
-    await user.click(within(menu).getByRole('button', { name: cs.reorder.positionSubmit }));
-    await waitFor(() => expect(orderInDb(world, album.id).indexOf(before[0]!)).toBe(2));
-  });
-
-  it('the first photo cannot move to the start, the last not to the end', async () => {
-    const user = userEvent.setup();
-    const { world, album } = setup();
-    const total = photosOf(world, album.id).length;
-    await open(world, album);
-    const first = await openMenu(user, 1);
-    expect((within(first).getByRole('button', { name: cs.photos.moveToStart }) as HTMLButtonElement).disabled).toBe(true);
-    await user.click(within(first).getByRole('button', { name: cs.photos.close }));
-    const last = await openMenu(user, total);
-    expect((within(last).getByRole('button', { name: cs.photos.moveToEnd }) as HTMLButtonElement).disabled).toBe(true);
+    const menu = await openMenu(user, 2);
+    expect(within(menu).queryByRole('button', { name: /Posunout|Přesunout do pozice/ })).toBeNull();
+    expect(within(menu).getByRole('button', { name: cs.photos.moveToOtherAlbum })).toBeTruthy();
+    expect(screen.queryByRole('spinbutton')).toBeNull();
   });
 
   it('a failed save restores the order and "Zkusit znovu" saves it', async () => {
+    mockRowRects();
     const user = userEvent.setup();
     const { world, album } = setup();
     const before = orderInDb(world, album.id);
     await open(world, album);
     world.failNext('catalog.updatePhoto', new ApiError('INTERNAL'));
-    await user.click(within(await openMenu(user, 1)).getByRole('button', { name: cs.photos.moveToEnd }));
+    await keyboardDrag(user, fill(cs.photos.handle, { n: 1 }), 1);
     const alert = await screen.findByText(cs.reorder.failed);
     expect(orderInDb(world, album.id)).toEqual(before);
     expect(tiles().map((li) => li.getAttribute('data-photo-id'))).toEqual(before);
     await user.click(within(alert.closest('[role="alert"]') as HTMLElement).getByRole('button', { name: 'Zkusit znovu' }));
-    await waitFor(() => expect(orderInDb(world, album.id).at(-1)).toBe(before[0]));
+    await waitFor(() => expect(orderInDb(world, album.id)[1]).toBe(before[0]));
   });
 
-  it('dropping a tile on another plans the same moves as the buttons', () => {
+  it('dropping a tile on another plans the minimal move', () => {
     const rows = [
       { id: 'a', sort: 10 },
       { id: 'b', sort: 20 },

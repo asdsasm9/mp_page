@@ -246,7 +246,8 @@ and that all 21 goals are present, so a renamed test breaks the docs test, not t
 | 12 | Delete an album | `screens/Delete.test.tsx` | `deletes photos first, then the row` |
 | 13 | Upload many photos at once | `screens/Upload.test.tsx` | `5 files: step labels in order` |
 | 13 | (resize and convert in the browser) | `encode/encode.test.ts` | `files equal planUploadFiles` |
-| 14 | Reorder photos (buttons and drag handle) | `screens/PhotoGallery.test.tsx` | `write only sort` |
+| 14 | Reorder photos (drag only, no move buttons) | `screens/PhotoGallery.test.tsx` | `writes only sort` |
+| 14 | (the tile menu has no move buttons) | `screens/PhotoGallery.test.tsx` | `the tile menu has no move-to-start` |
 | 14 | (handle works with the keyboard sensor) | `screens/PhotoGallery.test.tsx` | `every tile has a drag handle that works with the keyboard sensor` |
 | 15 | Alt text and caption | `screens/PhotoDetailScreen.test.tsx` | `saves only alt and caption` |
 | 16 | Move photos between albums | `screens/PhotoGallery.test.tsx` | `moving 5 photos appends them in order` |
@@ -270,9 +271,14 @@ Recorded where the build differs from the spec on purpose. None of them removes 
 1. **Inline buttons instead of an overflow menu.** Row actions (rename, hide, delete, move) are visible buttons, not
    a "..." menu, so every action is one Tab stop and needs no pop-up logic. The photo tile does have a menu (a
    dialog, a bottom sheet on a phone) because a tile is too small for several buttons.
-2. **Drag by the handle only.** Lists and the photo grid start a drag from the handle (or the long press on a
-   phone for selection), never from anywhere on the row, so scrolling and clicking links stay reliable. Every drag
-   has buttons and "Přesunout do pozice…" next to it (WCAG 2.5.7).
+2. **Reordering is drag only (T-243, Adam's decision 2026-10-22).** Lists and the photo grid start a drag from
+   the handle (or the long press on a phone for selection), never from anywhere on the row, so scrolling and
+   clicking links stay reliable. The text buttons "Posunout nahoru / dolů", "Posunout na začátek / na konec" and
+   "Přesunout do pozice…" were removed for albums, categories and photos. Keyboard users keep the handle with the
+   dnd-kit keyboard sensor (Space or Enter lifts, arrows move, Space or Enter drops, Escape cancels; Czech
+   instructions and polite announcements). WCAG 2.5.7 (Dragging Movements) asks for a single-pointer alternative to
+   dragging; there is none now, which is a conscious deviation. The keyboard path covers keyboard users, but a
+   pointer user who cannot drag has no alternative. Revisit if that user group matters.
 3. **Two album badges.** Albums show "Zveřejněno" or "Nezveřejněno" only. The database has one `published` flag,
    so "Koncept" (never published) and "Skryto" (hidden after publishing) cannot be told apart without a status
    column. The glossary words stay in the dictionary.
@@ -336,7 +342,8 @@ Findings of the audit and what was done:
   the page body.
 - Renaming an album inline: Enter and Escape put focus back on "Přejmenovat album" (a blur leaves focus alone).
 - Already correct and now covered by tests: skip link first, one `h1` and landmarks per route, labelled fields,
-  `<dialog>` with Escape, live regions for saving, reordering and uploads, drag alternatives. Target size
+  `<dialog>` with Escape, live regions for saving, reordering and uploads, the keyboard sensor on every drag
+  handle (the move buttons were removed in T-243, see deviation 2 for WCAG 2.5.7). Target size
   (`--target-min`, 44 px) is a CSS token; its measured result belongs to `admin-check`.
 
 ## Browser encode check
@@ -385,7 +392,7 @@ into `apps/admin/dist`), serves it from a local static server with SPA fallback 
 
 Flows (docs/ADMIN-UX.md): the Google login with injected failures (offline, cancelled at Google, an account that is not allowed), create a
 category and an album (F1, F4), upload 5 generated JPEGs through the real in-browser encoder with one PUT failing once,
-tile menu and photo detail with alt text and caption saved (F7), set cover (F3), move to start (F2), delete a photo
+tile menu and photo detail with alt text and caption saved (F7), set cover (F3), reorder by dragging a tile (F2), delete a photo
 (F5), publish and hide the album (F4), publish the site with one injected failure first (F6), storage screen with
 reconcile, sign out. Phone also visits every route at 320 px.
 

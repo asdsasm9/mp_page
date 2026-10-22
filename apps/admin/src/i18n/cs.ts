@@ -43,8 +43,6 @@ export const glossary = {
   retry: 'Zkusit znovu',
   move: 'Přesunout',
   moveToAlbum: 'Přesunout do alba',
-  moveUp: 'Posunout nahoru',
-  moveDown: 'Posunout dolů',
   uploading: 'Nahrávání',
   queued: 'Ve frontě',
   processing: 'Zpracovávám',
@@ -215,10 +213,6 @@ export const cs = {
     failed: 'Pořadí se nepodařilo uložit',
     handle: 'Přetáhnout',
     roleDescription: 'řaditelná položka',
-    moveToPosition: 'Přesunout do pozice…',
-    positionLabel: 'Nová pozice (1 až {max})',
-    positionSubmit: 'Přesunout',
-    positionInvalid: 'Zadejte číslo od 1 do {max}.',
     instructions:
       'Pro přesun stiskněte mezerník, šipkou nahoru nebo dolů zvolte nové místo a mezerníkem ho potvrďte. Klávesa Escape přesun zruší. Na telefonu podržte úchyt a přetáhněte.',
     pickedUp: '{name} zvednuto. Pozice {position} z {total}.',
@@ -226,7 +220,7 @@ export const cs = {
     dropped: '{name} přesunuto na pozici {position} z {total}.',
     droppedSame: '{name} zůstává na pozici {position} z {total}.',
     cancelled: 'Přesun zrušen. {name} zůstává na pozici {position} z {total}.',
-    listHint: 'Pořadí lze měnit tlačítky u každé položky nebo přetažením.',
+    listHint: 'Pořadí změníte přetažením za úchyt. Z klávesnice zvedněte úchyt mezerníkem a posuňte šipkami.',
   },
   /** Categories screen (ADMIN-UX 3.2, F4, F5). */
   categories: {
@@ -341,8 +335,6 @@ export const cs = {
     menuTitle: 'Fotka {n}',
     editCaption: 'Upravit popisek',
     moveToOtherAlbum: 'Přesunout do jiného alba',
-    moveToStart: 'Posunout na začátek',
-    moveToEnd: 'Posunout na konec',
     close: 'Zavřít',
     select: 'Vybrat',
     selectPhoto: 'Vybrat fotku {n}',

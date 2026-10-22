@@ -425,8 +425,21 @@ async function runProfile(browser, profile) {
       await clickBy(ctx, 'button', /^Akce s fotkou 2$/);
       await clickBy(ctx, 'button', /^Nastavit jako titulní$/);
       await waitText(page, /Titulní fotka nastavena\./);
-      await clickBy(ctx, 'button', /^Akce s fotkou 3$/);
-      await clickBy(ctx, 'button', /^Posunout na začátek$/);
+      // T-243: reordering is drag only. Lift photo 3 on its handle with the keyboard sensor (Space), move it to
+      // the first place with the arrow keys (Left, Up, which one applies depends on the columns), drop with Space.
+      const dragHandle = await find(page, 'button', /^Přetáhnout fotku 3$/);
+      await dragHandle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
+      await dragHandle.focus();
+      await page.keyboard.press('Space');
+      await waitText(page, /zvednuto\. Pozice 3 z/);
+      for (const key of ['ArrowLeft', 'ArrowUp', 'ArrowLeft', 'ArrowUp', 'ArrowLeft', 'ArrowUp']) {
+        const atStart = await page.evaluate(() => /je nad pozicí 1 z/.test(document.body.innerText));
+        if (atStart) break;
+        await page.keyboard.press(key);
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+      await waitText(page, /je nad pozicí 1 z/);
+      await page.keyboard.press('Space');
       await page.waitForFunction((id) => document.querySelector('.photo-tile')?.dataset.photoId === id, { timeout: 10000 }, ids0[2]);
       await checkpoint(ctx, 'album grid after cover and reorder', { shot: false });
       await clickBy(ctx, 'button', /^Akce s fotkou 5$/);

@@ -6,7 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeWorld } from '../adapters/fake';
 import { AppProviders } from '../AppProviders';
-import { applySortUpdates, planMove, planMoveToPosition, type SortUpdate } from '../data/order';
+import { applySortUpdates, planMoveToPosition, type SortUpdate } from '../data/order';
 import { cs } from '../i18n/cs';
 import { CatalogError } from '../ports';
 import { planDragEnd, SortableList } from './SortableList';
@@ -62,65 +62,41 @@ const names = () =>
     .getAllByRole('listitem')
     .map((li) => li.querySelector('.row-main')!.textContent);
 
-describe('buttons', () => {
-  it('"Posunout dolů" saves the planned rows, shows the new order and says "Pořadí uloženo"', async () => {
-    const user = userEvent.setup();
-    const save = vi.fn<Save>(async () => undefined);
-    setup(save);
-    await user.click(screen.getByRole('button', { name: 'Posunout dolů: Svatby' }));
-    expect(save).toHaveBeenCalledTimes(1);
-    expect(save).toHaveBeenCalledWith(planMove(ROWS, 'a', 1));
-    expect(save.mock.calls[0]![0]).toEqual([{ id: 'a', sort: 25 }]);
-    await waitFor(() => expect(names()).toEqual(['Portréty', 'Svatby', 'Rodina']));
-    expect((await screen.findByText(cs.reorder.saved)).closest('[role="status"]')).not.toBeNull();
-    // The pressed button keeps focus, so a second press continues from the keyboard.
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Posunout dolů: Svatby' }));
-    // Spoken (polite) in Czech.
-    expect(screen.getByText('Svatby přesunuto na pozici 2 z 3.')).toBeTruthy();
+/** jsdom has no layout: give the rows rectangles in list order (restored by `cleanup` via restoreAllMocks). */
+function mockRects() {
+  return vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    const li = this.closest('[data-sortable-id]') ?? (this.matches('[data-sortable-id]') ? this : null);
+    const id = li?.getAttribute('data-sortable-id');
+    const top = id ? ['a', 'b', 'c'].indexOf(id) * 100 : 0;
+    return { x: 0, y: top, top, left: 0, right: 300, bottom: top + 80, width: 300, height: 80, toJSON: () => ({}) };
   });
+}
 
-  it('"Posunout nahoru" at the top does nothing', async () => {
-    const user = userEvent.setup();
-    const save = vi.fn<Save>(async () => undefined);
-    setup(save);
-    const up = screen.getByRole('button', { name: 'Posunout nahoru: Svatby' });
-    expect(up.getAttribute('aria-disabled')).toBe('true');
-    await user.click(up);
-    expect(save).not.toHaveBeenCalled();
-  });
+/** Lifts the handle of "Svatby" with Space, moves it one place down and drops it with Space. */
+async function dragSvatbyDown(user: ReturnType<typeof userEvent.setup>) {
+  const handle = screen.getByRole('button', { name: 'Přetáhnout: Svatby' });
+  handle.focus();
+  await user.keyboard(' ');
+  await user.keyboard('{ArrowDown}');
+  await user.keyboard(' ');
+}
 
-  it('"Přesunout do pozice…" moves to the typed position; a bad number is refused without saving', async () => {
-    const user = userEvent.setup();
-    const save = vi.fn<Save>(async () => undefined);
-    setup(save);
-    const open = screen.getByRole('button', { name: 'Přesunout do pozice… Rodina' });
-    await user.click(open);
-    const input = screen.getByLabelText('Nová pozice (1 až 3)');
-    expect(document.activeElement).toBe(input);
-    await user.clear(input);
-    await user.type(input, '9{Enter}');
-    expect(screen.getByText('Zadejte číslo od 1 do 3.')).toBeTruthy();
-    expect(save).not.toHaveBeenCalled();
-    await user.clear(input);
-    await user.type(input, '1{Enter}');
-    expect(save).toHaveBeenCalledWith(planMoveToPosition(ROWS, 'c', 1));
-    await waitFor(() => expect(names()).toEqual(['Rodina', 'Svatby', 'Portréty']));
-    expect(screen.queryByLabelText('Nová pozice (1 až 3)')).toBeNull();
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Přesunout do pozice… Rodina' })));
-  });
-
-  it('Escape closes the position form and returns focus to its button', async () => {
-    const user = userEvent.setup();
+describe('no move buttons (T-243)', () => {
+  it('has only the drag handle per row, no text buttons for moving', () => {
     setup(vi.fn<Save>(async () => undefined));
-    await user.click(screen.getByRole('button', { name: 'Přesunout do pozice… Portréty' }));
-    await user.keyboard('{Escape}');
-    expect(screen.queryByLabelText('Nová pozice (1 až 3)')).toBeNull();
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Přesunout do pozice… Portréty' }));
+    const rows = within(screen.getByRole('list', { name: 'Kategorie' })).getAllByRole('listitem');
+    for (const row of rows) {
+      const labels = within(row).getAllByRole('button').map((b) => b.getAttribute('aria-label'));
+      expect(labels).toHaveLength(1);
+      expect(labels[0]).toMatch(/^Přetáhnout: /);
+    }
+    expect(screen.queryByRole('button', { name: /Posunout|Přesunout do pozice/ })).toBeNull();
   });
 });
 
 describe('optimistic update and rollback', () => {
   it('shows the new order at once and goes back with "Pořadí se nepodařilo uložit" + retry when saving fails', async () => {
+    mockRects();
     const user = userEvent.setup();
     let reject: (e: Error) => void = () => undefined;
     const save = vi
@@ -128,9 +104,10 @@ describe('optimistic update and rollback', () => {
       .mockImplementationOnce(() => new Promise((_, r) => (reject = r)))
       .mockResolvedValue(undefined);
     setup(save);
-    await user.click(screen.getByRole('button', { name: 'Posunout dolů: Svatby' }));
+    await dragSvatbyDown(user);
     // Not saved yet, already shown.
-    expect(names()).toEqual(['Portréty', 'Svatby', 'Rodina']);
+    await waitFor(() => expect(names()).toEqual(['Portréty', 'Svatby', 'Rodina']));
+    expect(save.mock.calls[0]![0]).toEqual([{ id: 'a', sort: 25 }]);
     await act(async () => reject(new Error('boom')));
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('Pořadí se nepodařilo uložit');
@@ -145,21 +122,28 @@ describe('optimistic update and rollback', () => {
   });
 
   it('a conflict shows the "changed elsewhere" notice for the entity', async () => {
+    mockRects();
     const user = userEvent.setup();
     setup(vi.fn<Save>().mockRejectedValue(new CatalogError('STALE')));
-    await user.click(screen.getByRole('button', { name: 'Posunout dolů: Svatby' }));
+    await dragSvatbyDown(user);
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toBe(`Tato kategorie byla změněna jinde.${cs.data.reload}`);
     expect(names()).toEqual(['Svatby', 'Portréty', 'Rodina']);
   });
 
   it('ignores a second move while one is being saved', async () => {
+    mockRects();
     const user = userEvent.setup();
     let resolve: () => void = () => undefined;
     const save = vi.fn<Save>(() => new Promise<void>((r) => (resolve = r)));
     setup(save);
-    await user.click(screen.getByRole('button', { name: 'Posunout dolů: Svatby' }));
-    await user.click(screen.getByRole('button', { name: 'Posunout dolů: Rodina' }));
+    await dragSvatbyDown(user);
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    const handle = screen.getByRole('button', { name: 'Přetáhnout: Rodina' });
+    handle.focus();
+    await user.keyboard(' ');
+    await user.keyboard('{ArrowUp}');
+    await user.keyboard(' ');
     expect(save).toHaveBeenCalledTimes(1);
     await act(async () => resolve());
   });
@@ -174,13 +158,7 @@ describe('dragging', () => {
   });
 
   it('the keyboard sensor moves a row (Space, arrow, Space) and the instructions are Czech', async () => {
-    // jsdom has no layout: give the rows rectangles in list order.
-    const rect = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-      const li = this.closest('[data-sortable-id]') ?? (this.matches('[data-sortable-id]') ? this : null);
-      const id = li?.getAttribute('data-sortable-id');
-      const top = id ? ['a', 'b', 'c'].indexOf(id) * 100 : 0;
-      return { x: 0, y: top, top, left: 0, right: 300, bottom: top + 80, width: 300, height: 80, toJSON: () => ({}) };
-    });
+    const rect = mockRects();
     const user = userEvent.setup();
     const save = vi.fn<Save>(async () => undefined);
     setup(save);
@@ -197,13 +175,14 @@ describe('dragging', () => {
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     expect(save.mock.calls[0]![0]).toEqual(planMoveToPosition(ROWS, 'a', 2));
     await waitFor(() => expect(names()).toEqual(['Portréty', 'Svatby', 'Rodina']));
+    expect(screen.getByText('Svatby přesunuto na pozici 2 z 3.')).toBeTruthy();
+    expect((await screen.findByText(cs.reorder.saved)).closest('[role="status"]')).not.toBeNull();
     rect.mockRestore();
   });
 });
 
 describe('accessibility', () => {
-  it('has no serious axe violations (closed and with the position form open)', async () => {
-    const user = userEvent.setup();
+  it('has no serious axe violations', async () => {
     const { container } = setup(vi.fn<Save>(async () => undefined));
     const run = () =>
       axe.run(container, {
@@ -212,8 +191,6 @@ describe('accessibility', () => {
       });
     const bad = (r: Awaited<ReturnType<typeof run>>) =>
       r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
-    expect(bad(await run())).toEqual([]);
-    await user.click(screen.getByRole('button', { name: 'Přesunout do pozice… Portréty' }));
     expect(bad(await run())).toEqual([]);
   });
 });

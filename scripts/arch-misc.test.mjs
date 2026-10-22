@@ -38,9 +38,6 @@ describe('arch-storage-keys', () => {
   it('fails when the snapshot key changes', () => {
     expectFail(run(mutate('packages/shared/src/keys.ts', (t) => t.replace('catalog/published.json', 'catalog/live.json'))), 'SNAPSHOT_KEY');
   });
-  it('fails when the backup file name template changes', () => {
-    expectFail(run(mutate('packages/shared/src/keys.ts', (t) => t.replace('`full-${stamp}.json`', '`backup-${stamp}.json`'))), 'full-');
-  });
   it('does not accept a template that survives only in a comment', () => {
     const r = run(mutate('packages/shared/src/keys.ts', (t) => t.replace('`${photoPrefix(id)}og.jpg`', '`${photoPrefix(id)}x.jpg`').replace('/** Storage key scheme.', '// `${photoPrefix(id)}og.jpg`\n/** Storage key scheme.')));
     expectFail(r, 'og.jpg');

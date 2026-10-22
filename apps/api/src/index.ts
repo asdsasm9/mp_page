@@ -31,7 +31,7 @@ export interface AppDeps {
   env?: EnvOptions;
   /** Injected fetch for Supabase calls (default: global fetch). */
   fetch?: FetchFn;
-  /** Storage for the default routes (default: built from the `PHOTOS` and `BACKUP` R2 bindings). */
+  /** Storage for the default routes (default: built from the `PHOTOS` R2 binding). */
   storage?: (rawEnv: RawEnv | undefined, config: Config) => Storages | null;
 }
 

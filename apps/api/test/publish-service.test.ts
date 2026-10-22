@@ -2,19 +2,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   SNAPSHOT_KEY,
   SnapshotSchema,
-  backupKey,
   buildSnapshot,
   createFakeStorage,
   variantPlan,
   type PhotoVariants,
 } from '@mp/shared';
-import {
-  BACKUPS_TO_KEEP,
-  PublishServiceError,
-  buildAndStoreSnapshot,
-  loadCatalogRows,
-  pruneBackups,
-} from '../src/publish-service';
+import { PublishServiceError, buildAndStoreSnapshot, loadCatalogRows } from '../src/publish-service';
 import { createSupabaseClient } from '../src/supabase';
 import { SHIM_ANON_KEY, SHIM_SUPABASE_URL, makeWorld, type World } from './supabase-shim';
 
@@ -29,11 +22,10 @@ const T0 = new Date('2026-10-19T12:00:00.000Z');
 let world: World;
 let clock = T0;
 const publicBucket = createFakeStorage({ baseUrl: 'https://img.test' });
-const backupBucket = createFakeStorage({ baseUrl: 'https://backup.invalid' });
 
 const supabase = () =>
   createSupabaseClient({ supabaseUrl: SHIM_SUPABASE_URL, anonKey: SHIM_ANON_KEY, fetch: world.shim.fetch });
-const deps = () => ({ supabase: supabase(), publicBucket, backupBucket, now: () => clock });
+const deps = () => ({ supabase: supabase(), publicBucket, now: () => clock });
 
 function variants(): PhotoVariants {
   const p = variantPlan(1200, 800);
@@ -62,7 +54,6 @@ beforeEach(async () => {
       ('${PHOTO_DRAFT}', '${ALB_DRAFT}', 'photos/${PHOTO_DRAFT}/master.jpg', 1200, 800, '${JSON.stringify(variants())}'::jsonb, 60);
   `);
   await publicBucket.delete(publicBucket.keys());
-  await backupBucket.delete(backupBucket.keys());
 });
 
 /** Capture the bytes the service writes, keyed by object key, by wrapping put. */
@@ -88,7 +79,6 @@ function capture(bucket: typeof publicBucket) {
 describe('buildAndStoreSnapshot', () => {
   it('writes a snapshot equal to buildSnapshot of the same rows, valid, with Cache-Control no-cache', async () => {
     const cap = capture(publicBucket);
-    const bcap = capture(backupBucket);
     try {
       const result = await buildAndStoreSnapshot(deps(), world.tokens.admin);
       const written = cap.json(SNAPSHOT_KEY);
@@ -98,7 +88,6 @@ describe('buildAndStoreSnapshot', () => {
       expect(cap.meta.get(SNAPSHOT_KEY)).toEqual({ contentType: 'application/json', cacheControl: 'no-cache' });
       expect(result.snapshotBytes).toBe(cap.bodies.get(SNAPSHOT_KEY)!.byteLength);
       expect(result.counts).toEqual({ categories: 1, albums: 1, photos: 1 });
-      expect(result.backupKey).toBe(backupKey(T0));
 
       // The snapshot carries updatedAt and leaves out the draft and the hidden category.
       const album = written.categories[0].albums[0];
@@ -107,51 +96,30 @@ describe('buildAndStoreSnapshot', () => {
       expect(JSON.stringify(written)).not.toContain('draft');
       expect(JSON.stringify(written)).not.toContain(PHOTO_DRAFT);
 
-      // The backup keeps everything, drafts included.
-      const backup = bcap.json(backupKey(T0));
-      expect(backup.schemaVersion).toBe(1);
-      expect(backup.generatedAt).toBe(T0.toISOString());
-      expect(backup.albums.map((a: { slug: string }) => a.slug).sort()).toEqual(['draft', 'one']);
-      expect(backup.categories).toHaveLength(2);
-      expect(backup.photos).toHaveLength(2);
-      expect(bcap.meta.get(backupKey(T0))?.contentType).toBe('application/json');
-      expect(await backupBucket.head(backupKey(T0))).not.toBeNull();
+      // D-17: the public bucket holds only the snapshot, no backup copy of the draft rows, however often it is published.
+      expect(publicBucket.keys()).toEqual([SNAPSHOT_KEY]);
     } finally {
       cap.restore();
-      bcap.restore();
     }
   });
 
-  it('keeps only the newest 20 backups after 25 runs', async () => {
+  it('writes only catalog/published.json after 25 publishes (no backup files)', async () => {
     for (let i = 0; i < 25; i++) {
       clock = new Date(T0.getTime() + i * 1000);
       await buildAndStoreSnapshot(deps(), world.tokens.admin);
     }
-    const keys = backupBucket.keys();
-    expect(keys).toHaveLength(BACKUPS_TO_KEEP);
-    const expected = Array.from({ length: 20 }, (_, i) => backupKey(new Date(T0.getTime() + (i + 5) * 1000)));
-    expect(keys).toEqual(expected);
     expect(publicBucket.keys()).toEqual([SNAPSHOT_KEY]);
-  });
-
-  it('pruning ignores files that are not backups', async () => {
-    await backupBucket.put('notes.txt', new Uint8Array(1), { contentType: 'text/plain' });
-    await backupBucket.put('full-old.json', new Uint8Array(1), { contentType: 'application/json' });
-    expect(await pruneBackups(backupBucket, 0)).toBe(0);
-    expect(backupBucket.keys()).toEqual(['full-old.json', 'notes.txt']);
   });
 
   it('throws SNAPSHOT_EMPTY before anything is written when no album is published', async () => {
     await world.db.exec('update public.albums set published = false');
     await expect(buildAndStoreSnapshot(deps(), world.tokens.admin)).rejects.toMatchObject({ code: 'SNAPSHOT_EMPTY' });
     expect(publicBucket.keys()).toEqual([]);
-    expect(backupBucket.keys()).toEqual([]);
   });
 
   it('a non-admin token reads no rows and nothing is published', async () => {
     await expect(buildAndStoreSnapshot(deps(), world.tokens.nonAdmin)).rejects.toMatchObject({ code: 'SNAPSHOT_EMPTY' });
     expect(publicBucket.keys()).toEqual([]);
-    expect(backupBucket.keys()).toEqual([]);
   });
 
   it('a failing read is a PublishServiceError and writes nothing', async () => {
@@ -164,7 +132,6 @@ describe('buildAndStoreSnapshot', () => {
       PublishServiceError,
     );
     expect(publicBucket.keys()).toEqual([]);
-    expect(backupBucket.keys()).toEqual([]);
   });
 
   it('a failing write is UPSTREAM_ERROR', async () => {

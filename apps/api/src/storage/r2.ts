@@ -49,9 +49,9 @@ export interface R2PresignConfig {
 
 export interface R2AdapterOptions {
   bucket: R2BucketPort;
-  /** Public base URL without trailing slash. Omit for the private backup bucket. */
+  /** Public base URL without trailing slash. Optional (omitted in tests). */
   publicBaseUrl?: string;
-  /** Presign credentials. Omit for the private backup bucket. */
+  /** Presign credentials. Optional (omitted in tests). */
   presign?: R2PresignConfig;
   now?: () => Date;
 }

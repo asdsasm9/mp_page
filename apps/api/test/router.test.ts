@@ -13,7 +13,6 @@ import { makeWorld, type World } from './supabase-shim';
 let world: World;
 const fakeStorages = () => ({
   photos: createFakeStorage({ baseUrl: 'https://img.test' }),
-  backup: createFakeStorage({ baseUrl: 'https://backup.invalid' }),
 });
 
 beforeAll(async () => {
@@ -71,20 +70,20 @@ describe('router: every route requires auth', () => {
 });
 
 describe('router: R2 bindings', () => {
-  const buckets = () => ({ PHOTOS: createFakeBucket(), BACKUP: createFakeBucket() });
+  const buckets = () => ({ PHOTOS: createFakeBucket() });
 
-  it('missingBindings names what is absent or not bucket-shaped', () => {
-    expect(missingBindings({})).toEqual(['PHOTOS', 'BACKUP']);
-    expect(missingBindings({ PHOTOS: createFakeBucket(), BACKUP: 'x' })).toEqual(['BACKUP']);
+  it('missingBindings names what is absent or not bucket-shaped; a BACKUP binding is not needed', () => {
+    expect(missingBindings({})).toEqual(['PHOTOS']);
+    expect(missingBindings({ PHOTOS: 'x' })).toEqual(['PHOTOS']);
     expect(missingBindings({ ...buckets() })).toEqual([]);
   });
 
-  it('storagesFromEnv gives a presigning photos adapter and a private backup adapter', async () => {
+  it('storagesFromEnv gives a presigning photos adapter and nothing else', async () => {
     const parsed = parseEnv(goodEnv());
     if (!parsed.ok) throw new Error('env');
     const s = storagesFromEnv({ ...buckets() }, parsed.config)!;
     expect(s.photos.publicUrl('catalog/published.json')).toBe('https://img.mullnyphotos.cz/catalog/published.json');
-    expect(() => s.backup.publicUrl('catalog/published.json')).toThrow();
+    expect(Object.keys(s)).toEqual(['photos']);
     expect(storagesFromEnv({}, parsed.config)).toBeNull();
   });
 

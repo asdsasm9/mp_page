@@ -42,8 +42,9 @@ describe('docs/API.md', () => {
 describe('docs/DEPLOY-API.md', () => {
   const envNames = [...envSource.matchAll(/req\('([A-Z0-9_]+)'/g)].map((m) => m[1]!);
 
-  it('reads ten configuration names from env.ts', () => {
-    expect(envNames).toHaveLength(10);
+  it('reads nine configuration names from env.ts, none for a backup bucket', () => {
+    expect(envNames).toHaveLength(9);
+    expect(envNames).not.toContain('R2_BACKUP_BUCKET');
   });
 
   it('has an exact `wrangler secret put` line for every name in env.ts, and no other', () => {
@@ -69,9 +70,12 @@ describe('docs/DEPLOY-API.md', () => {
 
   it('names the bindings and the cron from wrangler.toml', () => {
     const toml = read('apps/api/wrangler.toml');
-    for (const b of ['PHOTOS', 'BACKUP', 'mullnyphotos-backup']) {
-      expect(toml).toContain(b);
-      expect(deploy).toContain(b);
+    expect(toml).toContain('PHOTOS');
+    expect(deploy).toContain('PHOTOS');
+    // T-222: there is no backup bucket or BACKUP binding any more.
+    for (const b of ['`BACKUP`', 'mullnyphotos-backup', 'R2_BACKUP_BUCKET']) {
+      expect(toml).not.toContain(b.replaceAll('`', ''));
+      expect(deploy).not.toContain(b);
     }
     expect(deploy).toContain('17 3 * * *');
     expect(toml).toContain('17 3 * * *');

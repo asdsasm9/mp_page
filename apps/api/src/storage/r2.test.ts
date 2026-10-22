@@ -84,16 +84,16 @@ describe('R2 presign', () => {
   });
 });
 
-describe('backup adapter (no presign, no public URL)', () => {
+describe('adapter without presign and public URL config', () => {
   const backup = () => createR2Storage({ bucket: createFakeR2Bucket() });
 
   it('presignPut and publicUrl throw NOT_CONFIGURED', async () => {
     await expect(
-      backup().presignPut('backup/full-1.json', { contentType: 'application/json', contentLength: 1, expiresInSec: 60 }),
+      backup().presignPut('photos/x/1.json', { contentType: 'application/json', contentLength: 1, expiresInSec: 60 }),
     ).rejects.toMatchObject({ code: 'NOT_CONFIGURED' });
-    expect(() => backup().publicUrl('backup/full-1.json')).toThrow(StorageError);
+    expect(() => backup().publicUrl('photos/x/1.json')).toThrow(StorageError);
     try {
-      backup().publicUrl('backup/full-1.json');
+      backup().publicUrl('photos/x/1.json');
     } catch (e) {
       expect((e as StorageError).code).toBe('NOT_CONFIGURED');
     }
@@ -101,7 +101,7 @@ describe('backup adapter (no presign, no public URL)', () => {
 
   it('still stores and lists objects', async () => {
     const s = backup();
-    await s.put('backup/full-1.json', new Uint8Array(3), { contentType: 'application/json' });
-    expect((await s.list('backup/')).objects.map((o) => o.key)).toEqual(['backup/full-1.json']);
+    await s.put('photos/x/1.json', new Uint8Array(3), { contentType: 'application/json' });
+    expect((await s.list('photos/x/')).objects.map((o) => o.key)).toEqual(['photos/x/1.json']);
   });
 });

@@ -1,9 +1,9 @@
 /**
- * Snapshot and backup service (WP-4 section 4.7, /publish steps 2 to 5). Reads every catalog table
- * under the caller's JWT (paged), builds the public snapshot with the shared `buildSnapshot` (which
- * carries the `updatedAt` timestamps), refuses an empty one, writes the full backup (drafts included)
- * to the private bucket and prunes it, then writes `catalog/published.json` to the public bucket
- * with `Cache-Control: no-cache`. Nothing is written when the snapshot is empty or a read fails.
+ * Snapshot service (WP-4 section 4.7, /publish steps 2 to 4). Reads every catalog table under the
+ * caller's JWT (paged), builds the public snapshot with the shared `buildSnapshot` (which carries the
+ * `updatedAt` timestamps), refuses an empty one, then writes `catalog/published.json` to the public
+ * bucket with `Cache-Control: no-cache`. Nothing is written when the snapshot is empty or a read fails.
+ * There are no backups (D-17): the public bucket holds only photos and the published snapshot.
  *
  * Failures throw: `SnapshotEmptyError` (code SNAPSHOT_EMPTY) from `assertPublishable`, and
  * `PublishServiceError` carrying a Worker error code for a failed read or write. Neither message
@@ -12,7 +12,6 @@
 import {
   SNAPSHOT_KEY,
   assertPublishable,
-  backupKey,
   buildSnapshot,
   type AlbumRow,
   type CategoryRow,
@@ -24,9 +23,6 @@ import {
 } from '@mp/shared';
 import type { SupabaseClient } from './supabase';
 
-/** Newest backups kept in the private bucket. */
-export const BACKUPS_TO_KEEP = 20;
-export const BACKUP_PREFIX = 'full-';
 export const SNAPSHOT_CACHE_CONTROL = 'no-cache';
 
 export class PublishServiceError extends Error {
@@ -43,25 +39,16 @@ export interface CatalogRows {
   urlHistory: UrlHistoryRow[];
 }
 
-/** Full backup document: every row including drafts and hidden categories. */
-export interface BackupDocument extends CatalogRows {
-  schemaVersion: 1;
-  generatedAt: string;
-}
-
 export interface PublishServiceDeps {
   supabase: SupabaseClient;
   /** Public bucket (snapshot). */
   publicBucket: StorageAdapter;
-  /** Private bucket (backups). */
-  backupBucket: StorageAdapter;
   now: () => Date;
 }
 
 export interface SnapshotResult {
   snapshot: Snapshot;
   snapshotBytes: number;
-  backupKey: string;
   counts: Snapshot['counts'];
 }
 
@@ -80,35 +67,15 @@ export async function loadCatalogRows(supabase: SupabaseClient, jwt: string): Pr
   };
 }
 
-/** Keep the newest `keep` `full-*.json` files (names sort chronologically), delete the rest. */
-export async function pruneBackups(bucket: StorageAdapter, keep: number = BACKUPS_TO_KEEP): Promise<number> {
-  const keys: string[] = [];
-  let cursor: string | undefined;
-  do {
-    const page = await bucket.list(BACKUP_PREFIX, cursor === undefined ? {} : { cursor });
-    for (const o of page.objects) if (/^full-\d{8}T\d{6}Z\.json$/.test(o.key)) keys.push(o.key);
-    cursor = page.cursor;
-  } while (cursor !== undefined);
-  keys.sort();
-  const stale = keys.slice(0, Math.max(0, keys.length - keep));
-  if (stale.length > 0) await bucket.delete(stale);
-  return stale.length;
-}
-
 const encode = (value: unknown): Uint8Array => new TextEncoder().encode(JSON.stringify(value));
 
 export async function buildAndStoreSnapshot(deps: PublishServiceDeps, jwt: string): Promise<SnapshotResult> {
   const rows = await loadCatalogRows(deps.supabase, jwt);
-  const generatedAt = deps.now();
-  const snapshot = buildSnapshot(rows, generatedAt);
+  const snapshot = buildSnapshot(rows, deps.now());
   assertPublishable(snapshot);
 
-  const backupDoc: BackupDocument = { schemaVersion: 1, generatedAt: generatedAt.toISOString(), ...rows };
-  const key = backupKey(generatedAt);
   const snapshotBody = encode(snapshot);
   try {
-    await deps.backupBucket.put(key, encode(backupDoc), { contentType: 'application/json' });
-    await pruneBackups(deps.backupBucket);
     await deps.publicBucket.put(SNAPSHOT_KEY, snapshotBody, {
       contentType: 'application/json',
       cacheControl: SNAPSHOT_CACHE_CONTROL,
@@ -116,5 +83,5 @@ export async function buildAndStoreSnapshot(deps: PublishServiceDeps, jwt: strin
   } catch {
     throw new PublishServiceError('UPSTREAM_ERROR');
   }
-  return { snapshot, snapshotBytes: snapshotBody.byteLength, backupKey: key, counts: snapshot.counts };
+  return { snapshot, snapshotBytes: snapshotBody.byteLength, counts: snapshot.counts };
 }

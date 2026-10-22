@@ -8,11 +8,7 @@ compatibility_date = "2026-10-19"
 [triggers]
 crons = ["17 3 * * *"]
 
-# R2 bindings used by the Worker (bucket names only).
+# R2 binding used by the Worker (bucket name only). One bucket: no photo backup bucket (T-222).
 [[r2_buckets]]
 binding = "PHOTOS"
 bucket_name = "mullnyphotos"
-
-[[r2_buckets]]
-binding = "BACKUP"
-bucket_name = "mullnyphotos-backup"

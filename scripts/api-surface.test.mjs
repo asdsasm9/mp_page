@@ -45,11 +45,15 @@ describe('arch-api-surface', () => {
     const toml = apiDefaults['apps/api/wrangler.toml'].replace('crons = ["17 3 * * *"]\n', '');
     expectFail(run({ 'apps/api/wrangler.toml': toml }), '0 cron schedule(s)');
   });
-  it('fails on a missing BACKUP binding', () => {
-    const toml = apiDefaults['apps/api/wrangler.toml'].replace('binding = "BACKUP"', 'binding = "OTHER"');
+  it('fails on a missing PHOTOS binding', () => {
+    const toml = apiDefaults['apps/api/wrangler.toml'].replace('binding = "PHOTOS"', 'binding = "OTHER"');
     const r = run({ 'apps/api/wrangler.toml': toml });
-    expectFail(r, 'R2 binding BACKUP missing');
+    expectFail(r, 'R2 binding PHOTOS missing');
     expect(r.details).toContain('R2 binding OTHER is not in the golden file');
+  });
+  it('fails on a second (backup) bucket binding', () => {
+    const toml = `${apiDefaults['apps/api/wrangler.toml']}[[r2_buckets]]\nbinding = "BACKUP"\nbucket_name = "b"\n`;
+    expectFail(run({ 'apps/api/wrangler.toml': toml }), 'R2 binding BACKUP is not in the golden file');
   });
   it('fails on routes in wrangler.toml and on other bindings', () => {
     expectFail(run({ 'apps/api/wrangler.toml': `routes = [{ pattern = "a.example/*" }]\n${apiDefaults['apps/api/wrangler.toml']}` }), 'top-level routes');
@@ -89,7 +93,7 @@ describe('arch-api-surface', () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), '..');
     const g = JSON.parse(loadFiles(root, [ARCH_GOLDEN])[0].text);
     expect([...g.api.routes].sort()).toEqual(['/health', '/photos/delete', '/publish', '/storage', '/storage/reconcile', '/uploads/commit', '/uploads/reserve']);
-    expect([...g.api.bindings].sort()).toEqual(['BACKUP', 'PHOTOS']);
+    expect([...g.api.bindings].sort()).toEqual(['PHOTOS']);
     expect(g.api.cronCount).toBe(1);
     expect([...g.api.secrets].sort()).toEqual(['PAGES_DEPLOY_HOOK_URL', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY']);
   });

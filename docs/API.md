@@ -60,7 +60,6 @@ A test (`apps/api/test/docs.test.ts`) fails when an endpoint in the route table 
 | JSON body | 256 KB | Worker constant |
 | Delete batch | 200 ids | shared schema |
 | Publish rate | 1 per 60 s | database `request_publish` |
-| Backups kept | newest 20 `full-*.json` | publish service |
 | Photo master edge | at most 3000 px | shared schema |
 
 ## GET /health
@@ -148,8 +147,8 @@ deleted, cursor? }`.
 ## POST /publish
 
 No body. In order: `request_publish` (admin check, one per 60 s, creates the publish-log row); read all catalog tables
-under the caller's token; build and validate the snapshot; refuse it when no album is published; write the full backup
-(drafts included) to the private bucket and prune it to 20; write `catalog/published.json` to the public bucket with
+under the caller's token; build and validate the snapshot; refuse it when no album is published; write
+`catalog/published.json` to the public bucket (the only thing publish stores; there are no backups) with
 `Cache-Control: no-cache`; POST the Pages deploy hook; `record_publish ok` (reduces `pending_changes` by exactly what was
 seen when the request started).
 

@@ -83,7 +83,7 @@ Když se změna hned neukáže, obnov stránku, nebo to zkus za pár minut.
 - **Přejmenovat album:** otevři album a použij „Přejmenovat album“. Přejmenovat jde i kategorie: „Přejmenovat“.
 - **Změnit pořadí:** fotky, alba i kategorie se řadí stejně jako v části 2. Pamatuj, že změna pořadí se na webu ukáže až po „Zveřejnit web“.
 - **Skrýt:** „Skrýt album“ nebo „Skrýt kategorii“. Z webu to zmizí po dalším „Zveřejnit web“. Fotky zůstanou uložené. Skrytí je bezpečné a jde vrátit zpět tlačítkem „Zveřejnit album“ nebo „Zobrazit kategorii“.
-- **Smazat:** „Smazat fotku“, „Smazat album“ nebo „Smazat kategorii“. Pozor: mazání je nevratné. Smazaná fotka se nedá vrátit. Pro novou fotku, kterou jsi do správy nahrála, neexistuje žádná záloha. Když si nejsi jistá, vyber „Skrýt album“.
+- **Smazat:** „Smazat fotku“, „Smazat album“ nebo „Smazat kategorii“. Pozor: mazání je nevratné. Smazaná fotka se nedá vrátit. Žádná záloha neexistuje (ani fotek, ani nastavení webu): po odstranění staré složky `legacy/` jsou fotky jen v úložišti webu a na tvých vlastních zařízeních. Smazanou fotku ani ztracené úložiště nejde obnovit. Zveřejněný web jde z uložené kopie přepsat jen ručně, rozpracovaná a skrytá alba ne. Proto si originály nech u sebe, dokud je můžeš potřebovat. Když si nejsi jistá, vyber „Skrýt album“.
 - U mazání alba musíš napsat název alba nebo slovo SMAZAT. Je to pojistka proti omylu.
 - Kategorii jde smazat jen prázdnou. Jinak uvidíš „Kategorie obsahuje“ a počet alb. Album nejdřív přesuň, smaž, nebo kategorii skryj.
 
@@ -146,7 +146,7 @@ Fotky klientů jsou osobní údaje. Chovej se k nim podle toho.
 - Když album skryješ nebo smažeš, zmizí z webu po „Zveřejnit web“. Dřív ne. Pamatuj na to, když klient chce fotky stáhnout z webu.
 - Skryté nebo nezveřejněné album není soukromé. Kdo zná přímý odkaz na obrázek, může ho otevřít. Říká to i správa: „Nezveřejněné album se na webu nezobrazuje, ale fotky nejsou soukromé: kdo zná přímý odkaz na obrázek, může ho otevřít.“
 - Rizikové je to hlavně u svateb a dalších osobních focení: originály (mastery) i všechny velikosti fotek jsou čitelné komukoli, kdo zná jejich adresu, i když album není na webu vidět. Odkaz může klient nebo host přeposlat dál. Proto klientům, kteří chtějí mít fotky opravdu soukromé (typicky svatební), nepředávej fotky přes toto album, ale soukromým doručením, například přes sdílený odkaz s heslem u jiné služby nebo osobním předáním na disku. Na web dávej jen fotky, se kterými klient souhlasí. Domluv to s klientem předem a v případě pochybností se zeptej Adama.
-- „Smazat fotku“ odstraní fotku z úložiště správy. Adam si ale může fotky z času na čas zálohovat na vlastní počítač. Kopie ve starší záloze proto může zůstat, i když jsi ji ve správě smazala. Když klient žádá o úplné odstranění, řekni to Adamovi, aby smazal i zálohu.
+- „Smazat fotku“ odstraní fotku z úložiště správy a nikde jinde už její kopie v záloze není, protože se nic nezálohuje. Je to nevratné. Kopie, které máš na vlastních zařízeních nebo které jsi někomu poslala, ale zůstávají. Když klient žádá o úplné odstranění, smaž i je.
 - Do popisků a alt textů nepiš příjmení, adresy ani jiné osobní údaje, které klient nechce mít na webu.
 
 ## Zvládla jsem sama

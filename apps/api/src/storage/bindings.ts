@@ -1,6 +1,6 @@
 /**
- * Builds the two StorageAdapters from the Worker's R2 bindings: `PHOTOS` (public bucket, presign
- * credentials, public URL) and `BACKUP` (private bucket, no presign, no public URL).
+ * Builds the StorageAdapter from the Worker's one R2 binding: `PHOTOS` (public bucket, presign
+ * credentials, public URL). There is no second (backup) bucket and no backups at all (T-222, D-17).
  */
 import type { StorageAdapter } from '@mp/shared';
 import type { Config, RawEnv } from '../env';
@@ -8,10 +8,9 @@ import { createR2Storage, type R2BucketPort } from './r2';
 
 export interface Storages {
   photos: StorageAdapter;
-  backup: StorageAdapter;
 }
 
-export const BINDING_NAMES = ['PHOTOS', 'BACKUP'] as const;
+export const BINDING_NAMES = ['PHOTOS'] as const;
 
 function isBucket(v: unknown): v is R2BucketPort {
   if (typeof v !== 'object' || v === null) return false;
@@ -37,6 +36,5 @@ export function storagesFromEnv(raw: RawEnv | undefined, config: Config): Storag
         bucketName: config.r2Bucket,
       },
     }),
-    backup: createR2Storage({ bucket: raw!.BACKUP as R2BucketPort }),
   };
 }

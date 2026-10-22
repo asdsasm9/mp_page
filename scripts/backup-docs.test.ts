@@ -1,50 +1,38 @@
-/** docs/BACKUP.md must cover every CLI flag, the three recovery situations and the coverage gap. */
+/** D-17: docs/BACKUP.md says plainly that there are no backups, and no backup tooling is left behind. */
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { USAGE as BACKUP_USAGE } from './backup/cli';
-import { USAGE as RESTORE_USAGE } from './restore-plan/cli';
 
 const root = `${import.meta.dirname}/..`;
 const docPath = `${root}/docs/BACKUP.md`;
 const doc = readFileSync(docPath, 'utf8');
-const flags = (usage: string): string[] => [...new Set(usage.match(/--[a-z][a-z-]*/g) ?? [])];
 
 describe('docs/BACKUP.md', () => {
-  it.each(flags(BACKUP_USAGE))('documents backup flag %s', (flag) => {
-    expect(doc).toContain(`\`${flag}`);
+  it('states that there are no backups and what cannot be recovered', () => {
+    expect(doc).toContain('Backups: there are none');
+    expect(doc).toContain('cannot be recovered');
+    expect(doc).toContain('catalog/published.json');
+    expect(doc).toContain('### Situation 1: ');
   });
 
-  it.each(flags(RESTORE_USAGE))('documents restore-plan flag %s', (flag) => {
-    expect(doc).toContain(`\`${flag}`);
-  });
-
-  it('names the environment variables of the backup usage', () => {
-    for (const name of BACKUP_USAGE.match(/\b[A-Z][A-Z_]{5,}\b/g) ?? []) expect(doc, name).toContain(name);
-  });
-
-  it.each(['### Situation 1: ', '### Situation 2: ', '### Situation 3: '])('has the heading %s', (h) => {
-    expect(doc).toContain(`\n${h}`);
-  });
-
-  it('states the coverage gap and the rolling backups', () => {
-    expect(doc).toContain('no automatic second copy');
-    expect(doc).toContain('newest 20');
-    expect(doc).toContain('Nothing described here was run against a live service');
+  it('names no removed tool or bucket as something to run or create', () => {
+    expect(doc).not.toContain('npm run backup');
+    expect(doc).not.toContain('npm run restore-plan');
+    expect(doc).not.toMatch(/mullnyphotos-backup/);
   });
 
   it('relative links resolve to files', () => {
     const links = [...doc.matchAll(/\]\(([^)\s]+)\)/g)].map((m) => m[1]!).filter((l) => !/^(https?:|#)/.test(l));
-    expect(links.length).toBeGreaterThanOrEqual(5);
-    for (const link of links) {
-      const file = link.split('#')[0]!;
-      expect(existsSync(resolve(dirname(docPath), file)), link).toBe(true);
-    }
+    expect(links.length).toBeGreaterThanOrEqual(3);
+    for (const link of links) expect(existsSync(resolve(dirname(docPath), link.split('#')[0]!)), link).toBe(true);
   });
 
-  it('VERIFY.md has the trigger row in the human table', () => {
-    const verify = readFileSync(`${root}/docs/VERIFY.md`, 'utf8');
-    const human = verify.split('\n## Needs a human\n')[1] ?? '';
-    expect(human).toMatch(/^\| 37 \| .*disable trigger user/m);
+  it('the backup and restore tools are gone', () => {
+    for (const p of ['scripts/backup.ts', 'scripts/backup', 'scripts/restore-plan.ts', 'scripts/restore-plan', 'packages/shared/src/backup.ts']) {
+      expect(existsSync(`${root}/${p}`), p).toBe(false);
+    }
+    const pkg = JSON.parse(readFileSync(`${root}/package.json`, 'utf8')) as { scripts: Record<string, string> };
+    expect(Object.keys(pkg.scripts)).not.toContain('backup');
+    expect(Object.keys(pkg.scripts)).not.toContain('restore-plan');
   });
 });

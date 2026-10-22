@@ -13,7 +13,7 @@ Photographer -> admin (Pages project "admin", Vite + React SPA)
                  |-> Supabase: Auth + Postgres under RLS (catalog CRUD with the user's JWT)
                  |-> Worker "api": quota, upload reservation, delete, publish, daily keepalive
                  |-> R2 presigned PUT (URL signed by the Worker)
-Publish: the Worker writes the snapshot and a backup, calls the Pages deploy hook; web rebuilds from the snapshot.
+Publish: the Worker writes the snapshot, calls the Pages deploy hook; web rebuilds from the snapshot.
 ```
 
 Contracts live in `packages/shared` (snapshot schema, storage keys, quota math). The full plan is the MASTERPLAN in the autopilot project folder.
@@ -62,7 +62,7 @@ Unconfirmed platform facts are collected in [docs/VERIFY.md](docs/VERIFY.md).
 
 Go-live checklist for the old GitHub Pages site. Human steps only; H-numbers are the human to-dos tracked in the autopilot STATE. Avoid wedding-busy weeks.
 
-1. H-2 finished: Cloudflare account, R2 buckets (public and private backup), CORS, bucket-scoped token, Worker secrets. See [docs/DEPLOY-API.md](docs/DEPLOY-API.md#0-prerequisites).
+1. H-2 finished: Cloudflare account, one public R2 bucket (there is no backup bucket), CORS, bucket-scoped token, Worker secrets. See [docs/DEPLOY-API.md](docs/DEPLOY-API.md#0-prerequisites).
 2. Supabase set up: migrations pushed, sign-ups off, two users with long unique passwords (the admin is password-only, no TOTP; it can be added later), `admins` rows, auth redirect URLs. See [docs/ADMIN.md](docs/ADMIN.md#deploying-the-admin-human-steps).
 3. H-6 done: the "Needs a human" items in [docs/VERIFY.md](docs/VERIFY.md) are worked through and the results recorded there.
 4. H-7: the photographer gives name and address for `/cookies/` (IČO only if she has one; the line is left out otherwise); replace the placeholder lines; while any remain, a production build is blocked. See [docs/WEB.md](docs/WEB.md#analytics).
@@ -80,17 +80,17 @@ Go-live checklist for the old GitHub Pages site. Human steps only; H-numbers are
 16. Submit `sitemap.xml` in Google Search Console.
 17. Test the github.io redirect; fallback in [docs/CONTENT-MAPPING.md](docs/CONTENT-MAPPING.md#74-other-legacy-host).
 18. Delete the old Google Tag Manager container.
-19. Legacy removal (`legacy/fotky_web`, stale `build/`) only after the photographer and Adam confirm in writing; the tag `legacy-cra` keeps history.
+19. Legacy removal (`legacy/fotky_web`, stale `build/`) only after the photographer and Adam confirm in writing; the tag `legacy-cra` keeps history. Once `legacy/` is removed, the photos exist only in R2 and on the photographer's own devices: there is no photo backup, so a deleted photo or a lost bucket cannot be recovered ([docs/BACKUP.md](docs/BACKUP.md)).
 
 Rollback at any point: point DNS back to GitHub Pages and delete nothing. Keep the `gh-pages` branch for at least 4 weeks. Migration rollback: [docs/MIGRATION.md](docs/MIGRATION.md#rollback).
 
 ## Environment
 
-Copy `.env.example` for local settings; never commit real values. The file lists names only, grouped by who sets them: web build, admin build, Worker plain vars, Worker secrets, migrate and backup scripts, optional check tooling. The gate `env-example-complete` keeps it equal to the names the production code reads. Per-part tables: [docs/WEB.md](docs/WEB.md#build-modes), [docs/ADMIN.md](docs/ADMIN.md#environment-variables), [docs/DEPLOY-API.md](docs/DEPLOY-API.md#5-secrets-and-configuration). With no web variables set, the web build runs in fixture mode.
+Copy `.env.example` for local settings; never commit real values. The file lists names only, grouped by who sets them: web build, admin build, Worker plain vars, Worker secrets, migrate script, optional check tooling. The gate `env-example-complete` keeps it equal to the names the production code reads. Per-part tables: [docs/WEB.md](docs/WEB.md#build-modes), [docs/ADMIN.md](docs/ADMIN.md#environment-variables), [docs/DEPLOY-API.md](docs/DEPLOY-API.md#5-secrets-and-configuration). With no web variables set, the web build runs in fixture mode.
 
 ## Backups
 
-The Worker keeps the newest 20 catalog backups on every publish. For a local copy of catalog and masters, and for recovery, see [docs/BACKUP.md](docs/BACKUP.md) (`npm run backup`, `npm run restore-plan`; neither has been run live).
+There are no backups (owner's decision). The photos exist only in R2 and on the photographer's own devices, so a deleted photo or a lost bucket cannot be recovered. The published catalog can be rebuilt from `catalog/published.json` (by hand, no tool); drafts and hidden albums cannot. What is and is not recoverable: [docs/BACKUP.md](docs/BACKUP.md).
 
 ## Maintenance
 
@@ -105,6 +105,6 @@ What can need attention, who does it and when: [docs/MAINTENANCE.md](docs/MAINTE
 | `apps/api` | Cloudflare Worker API (not deployed yet) |
 | `packages/shared` | `@mp/shared` contracts, consumed as TypeScript source |
 | `supabase` | Migrations, seed and PGlite tests |
-| `scripts` | Gates, browser checks, migration, backup and restore tooling |
+| `scripts` | Gates, browser checks, migration and restore tooling |
 | `docs` | Specs, human steps, verification records, [VERIFY.md](docs/VERIFY.md) |
 | `legacy` | Old site photos, kept until removal is confirmed |

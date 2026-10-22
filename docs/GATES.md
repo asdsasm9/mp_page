@@ -5,7 +5,7 @@
 What the gates are, and are not:
 
 - They are static text checks over source, configuration and docs. They catch drift (someone adds a service key, a second cron, a table nobody approved, an env variable nobody documented). They do not stop a determined bypass: a person who wants to hide a pattern from a regex can.
-- The behavioural suites remain the real proof: the RLS tests on PGlite (`supabase/tests`), the quota-guard tests (`apps/api/test/quota-guard.test.ts`), the restore round trip, and `npm run admin-prod-check` on the production admin build. A green gate with a red suite is red.
+- The behavioural suites remain the real proof: the RLS tests on PGlite (`supabase/tests`), the quota-guard tests (`apps/api/test/quota-guard.test.ts`), and `npm run admin-prod-check` on the production admin build. A green gate with a red suite is red.
 - Gates that need a build (`no-ga-in-dist`, `analytics-in-dist`, `page-checks`, `budget`, the four `admin-dist-*`) report SKIP when no build is on disk. They never build anything themselves, so they stay fast.
 - Golden means the rule reads its expected values from `scripts/architecture.golden.json` (the architecture file) or another committed golden file. Changing a golden file changes what the project promises; it needs an architect-approved decision, not a quiet edit to make a red gate green. Non-golden rules have their patterns in the gate code.
 
@@ -46,11 +46,6 @@ When a gate fails: read the one-line detail (it names the file or the item), fix
 | `migrate-no-photo-writes` | The migration script never writes `photos` directly (the Worker commit does) | Use the Worker commit path | no |
 | `migrate-no-r2` | The migration script has no R2 or S3 host or SDK | Use presigned URLs from the Worker | no |
 | `migrate-no-credentials` | No credential-shaped string in the migration script | Read credentials from the environment at run time | no |
-| `backup-no-service-key` | Backup and restore-plan scripts never use a service key | Use the admin's own token | no |
-| `backup-no-r2` | Backup and restore-plan scripts have no R2 or S3 host or SDK | Fetch public masters over https from the image host | no |
-| `backup-read-only` | No write method literal in backup or restore-plan except the one sign-in request | Remove the write; these tools only read | no |
-| `backup-no-credentials` | No credential-shaped string in backup or restore-plan scripts | Read credentials from the environment at run time | no |
-| `restore-plan-offline` | `restore-plan` sources make no network call and spawn no process (raw scan, comments included) | Remove the call, or reword a comment that contains a banned word | no |
 | `arch-components` | Workspaces, required dependencies, static Astro output with no server adapter, pinned `astro` | Restore the workspace or dependency; a real change needs an architect decision and a golden update | yes (`components`) |
 | `arch-data-model` | The ten approved tables, RLS and initial revoke on each, no anon grants, `app_config` defaults, required functions | Fix the migration (add a new one); a new table needs an architect decision | yes (`dataModel`) |
 | `arch-api-surface` | The seven Worker routes, bindings, one cron, no `[vars]`, the three secrets, a heading per route in `docs/API.md` | Restore the route or binding, or document it in `docs/API.md`; a new route needs a decision | yes (`api`) |

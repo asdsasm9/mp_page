@@ -13,7 +13,6 @@ const NOW = new Date('2026-10-19T12:00:00.000Z');
 
 let world: World;
 const publicBucket = createFakeStorage({ baseUrl: 'https://img.test' });
-const backupBucket = createFakeStorage({ baseUrl: 'https://backup.invalid' });
 let hookFetch: ReturnType<typeof vi.fn<(input: Request | string | URL, init?: RequestInit) => Promise<Response>>>;
 
 function variants(): PhotoVariants {
@@ -32,7 +31,6 @@ beforeAll(async () => {
       routes: {
         '/publish': createPublishRoute({
           publicBucket,
-          backupBucket,
           now: () => NOW,
           hookFetch: (input, init) => hookFetch(input, init),
         }),
@@ -57,7 +55,6 @@ async function seed(published = true) {
 beforeEach(async () => {
   hookFetch = vi.fn(async () => new Response(null, { status: 200 }));
   await publicBucket.delete(publicBucket.keys());
-  await backupBucket.delete(backupBucket.keys());
   await seed();
   world.shim.calls.length = 0;
 });
@@ -86,7 +83,6 @@ describe('POST /publish', () => {
     expect(await pending()).toBe(0);
     expect(await logRows()).toEqual([{ status: 'ok', error: null }]);
     expect(publicBucket.keys()).toEqual([SNAPSHOT_KEY]);
-    expect(backupBucket.keys()).toHaveLength(1);
   });
 
   it('edits made between request and record stay pending', async () => {
@@ -102,14 +98,12 @@ describe('POST /publish', () => {
   it('a second call within 60 s is 429 PUBLISH_TOO_SOON with retryAfter and writes no snapshot', async () => {
     expect((await publish()).status).toBe(200);
     await publicBucket.delete(publicBucket.keys());
-    await backupBucket.delete(backupBucket.keys());
     const second = await publish();
     expect(second.status).toBe(429);
     expect(second.body.error).toBe('PUBLISH_TOO_SOON');
     expect(second.body.retryAfter).toBeGreaterThan(0);
     expect(second.body.retryAfter).toBeLessThanOrEqual(60);
     expect(publicBucket.keys()).toEqual([]);
-    expect(backupBucket.keys()).toEqual([]);
     expect(hookFetch).toHaveBeenCalledTimes(1);
   });
 

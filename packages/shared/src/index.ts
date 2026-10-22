@@ -11,7 +11,6 @@ export * from './variants';
 export * from './quota';
 export * from './commit-rules';
 export * from './snapshot';
-export * from './backup';
 export * from './storage/adapter';
 export * from './storage/fake';
 export * from './legacy/albums';

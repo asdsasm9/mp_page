@@ -14,14 +14,14 @@ Dashboard menu names below are from memory of the Cloudflare UI and may have mov
 
 ## 1. R2 buckets
 
-**HUMAN** Create two buckets:
+**HUMAN** Create one bucket:
 
 | Purpose | Name | Access |
 |---------|------|--------|
 | Photos and `catalog/published.json` | `mullnyphotos` | public read (custom domain, e.g. `img.mullnyphotos.cz`, or r2.dev for previews only) |
-| Backups | `mullnyphotos-backup` | private, no public access |
 
-The names must equal `bucket_name` in `apps/api/wrangler.toml` and the `R2_BUCKET` / `R2_BACKUP_BUCKET` values below.
+There is no second (backup) bucket and no backup of anything: see [BACKUP.md](BACKUP.md). Nothing here needs a private bucket.
+The name must equal `bucket_name` in `apps/api/wrangler.toml` and the `R2_BUCKET` value below.
 Choose the location/jurisdiction deliberately and note it in `docs/VERIFY.md` row 6; do not claim EU-only until checked.
 
 ## 2. R2 API token (for presigned URLs)
@@ -29,7 +29,7 @@ Choose the location/jurisdiction deliberately and note it in `docs/VERIFY.md` ro
 **HUMAN** Create an R2 API token (R2, Manage API tokens):
 
 - Permission: Object Read and Write (presigning needs write; the Worker also lists and deletes objects through its bindings, not this token).
-- Scope: specific bucket `mullnyphotos` only. Not account-wide, not the backup bucket.
+- Scope: specific bucket `mullnyphotos` only. Not account-wide.
 - Copy the Access Key ID and Secret Access Key once; they become the secrets `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`.
 - Note the Account ID (a 32-character hex string) for `R2_ACCOUNT_ID`.
 
@@ -40,7 +40,6 @@ Choose the location/jurisdiction deliberately and note it in `docs/VERIFY.md` ro
 | Binding | Bucket |
 |---------|--------|
 | `PHOTOS` | `mullnyphotos` |
-| `BACKUP` | `mullnyphotos-backup` |
 
 Cron: `crons = ["17 3 * * *"]` (daily keepalive, 03:17 UTC). Free-plan availability of cron triggers is `docs/VERIFY.md` row 3.
 
@@ -52,7 +51,7 @@ the chosen hosting target is `docs/VERIFY.md` row 2.
 
 ## 5. Secrets and configuration
 
-**HUMAN** From `apps/api`, run each command and paste the value when prompted. All ten names are exactly the Worker names
+**HUMAN** From `apps/api`, run each command and paste the value when prompted. All nine names are exactly the Worker names
 in `.env.example` and `apps/api/src/env.ts`. Everything is set as a secret because secrets survive `wrangler deploy` and
 `wrangler.toml` must stay free of values (a gate enforces it).
 
@@ -63,7 +62,6 @@ npx wrangler secret put R2_ACCOUNT_ID
 npx wrangler secret put R2_ACCESS_KEY_ID
 npx wrangler secret put R2_SECRET_ACCESS_KEY
 npx wrangler secret put R2_BUCKET
-npx wrangler secret put R2_BACKUP_BUCKET
 npx wrangler secret put R2_PUBLIC_BASE_URL
 npx wrangler secret put PAGES_DEPLOY_HOOK_URL
 npx wrangler secret put ALLOWED_ORIGINS
@@ -76,7 +74,6 @@ npx wrangler secret put ALLOWED_ORIGINS
 | `R2_ACCOUNT_ID` | 32-character hex account id |
 | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | from step 2 |
 | `R2_BUCKET` | `mullnyphotos` |
-| `R2_BACKUP_BUCKET` | `mullnyphotos-backup` |
 | `R2_PUBLIC_BASE_URL` | public base of the photo bucket, e.g. `https://img.mullnyphotos.cz` (https, no credentials) |
 | `PAGES_DEPLOY_HOOK_URL` | from step 4 |
 | `ALLOWED_ORIGINS` | comma-separated exact origins, see below |
@@ -111,8 +108,6 @@ rejects it, use the dashboard form with the same origins, methods and headers.
 ]
 ```
 
-The backup bucket gets no CORS policy and no public access.
-
 ## 7. Recommended: rate-limit rule
 
 **HUMAN** Put the Worker on its own host (e.g. `api.mullnyphotos.cz`) and add a Cloudflare WAF rate-limiting rule on that
@@ -144,8 +139,8 @@ for the admin build to that origin. Check Workers, Triggers that the cron trigge
    422 `KEY_MISMATCH` and the objects must be gone; if it does not, that is a bug to report.
 4. Upload one correct photo, commit it, check it appears in the admin and the bucket.
 5. Publish from the admin (`POST /publish`). Expect 200 with `counts` and `snapshot_bytes`. Check that
-   `https://<R2_PUBLIC_BASE_URL>/catalog/published.json` is the new snapshot and that a backup `full-<time>.json` exists in
-   `mullnyphotos-backup`.
+   `https://<R2_PUBLIC_BASE_URL>/catalog/published.json` is the new snapshot and that
+   the bucket holds nothing else besides the photos (no backup files).
 6. Poll `https://<public-site>/_publish.json` until it shows the new snapshot time (the Pages build runs after the hook).
 7. A second publish within 60 s must return 429 `PUBLISH_TOO_SOON`.
 8. In the Worker's real-time logs, watch the publish request and note CPU time and the subrequest count for

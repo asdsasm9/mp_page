@@ -1,6 +1,6 @@
 # WP-8 final verification (T-198, step WP8-18)
 
-Date: 2026-10-21. Branch `autopilot`. Everything below ran offline against fakes and PGlite. Nothing was run live: no Supabase project, no R2 bucket, no Cloudflare dashboard, no `npm run backup -- --live`, no restore, no deploy. Commands ran one after another, `npm test` alone with nothing else running.
+Date: 2026-10-21. Branch `autopilot`. Everything below ran offline against fakes and PGlite. Nothing was run live: no Supabase project, no R2 bucket, no Cloudflare dashboard, no live masters backup (that tool was removed later by T-222), no restore, no deploy. Commands ran one after another, `npm test` alone with nothing else running.
 
 ## Commands run
 
@@ -56,8 +56,8 @@ Each gate went red on the synthetic change and green again once it was undone. N
 5. H-10: the live legacy migration.
 6. H-11: the Cloudflare analytics token.
 7. H-12: the photographer reads [NAVOD.md](NAVOD.md) and confirms the Czech wording and the 10-step checklist.
-8. VERIFY row 37: on a scratch Supabase project, check that `alter table ... disable trigger user` works in the SQL editor (the restore SQL depends on it; fallback is in the SQL comments). See [BACKUP.md](BACKUP.md).
-9. The first `npm run backup -- --live` after cutover, then a look at the output folder (about 10 minutes).
+8. (Dropped by T-222 and D-17: VERIFY row 37 and the restore tool were removed together with all backups, so there is nothing to check. See [BACKUP.md](BACKUP.md).)
+9. (Dropped by T-222: the masters backup tool and the backup bucket were removed at the owner's request, so there is nothing to run here.)
 
 ## Known unproven (0 EUR and no-care claims)
 

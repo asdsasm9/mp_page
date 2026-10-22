@@ -1,7 +1,7 @@
 // Synthetic Worker files for the arch-api-surface gate tests (shared by gates.test.mjs and api-surface.test.mjs).
 export const apiGolden = {
   routes: ['/health', '/storage', '/uploads/reserve', '/publish'],
-  bindings: ['PHOTOS', 'BACKUP'],
+  bindings: ['PHOTOS'],
   cronCount: 1,
   secrets: ['R2_SECRET_ACCESS_KEY'],
   plainVars: ['SUPABASE_URL'],
@@ -22,9 +22,6 @@ crons = ["17 3 * * *"]
 [[r2_buckets]]
 binding = "PHOTOS"
 bucket_name = "a"
-[[r2_buckets]]
-binding = "BACKUP"
-bucket_name = "b"
 `,
   'docs/API.md': '# API\n## GET /health\n## GET /storage\n## POST /uploads/reserve\n## POST /publish\n',
 };

@@ -13,7 +13,6 @@ export interface Config {
   r2AccessKeyId: string;
   r2SecretAccessKey: string;
   r2Bucket: string;
-  r2BackupBucket: string;
   r2PublicBaseUrl: string;
   pagesDeployHookUrl: string;
   allowedOrigins: string[];
@@ -81,7 +80,6 @@ export function parseEnv(raw: RawEnv | undefined, options: EnvOptions = {}): Env
   const r2AccessKeyId = req('R2_ACCESS_KEY_ID');
   const r2SecretAccessKey = req('R2_SECRET_ACCESS_KEY');
   const r2Bucket = req('R2_BUCKET', (v) => /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(v));
-  const r2BackupBucket = req('R2_BACKUP_BUCKET', (v) => /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(v));
   const r2PublicBaseUrl = req('R2_PUBLIC_BASE_URL', (v) => urlOk(v, insecure));
   const pagesDeployHookUrl = req('PAGES_DEPLOY_HOOK_URL', (v) => urlOk(v, false));
   const originsRaw = req('ALLOWED_ORIGINS', (v) => parseAllowedOrigins(v) !== null);
@@ -97,7 +95,6 @@ export function parseEnv(raw: RawEnv | undefined, options: EnvOptions = {}): Env
       r2AccessKeyId,
       r2SecretAccessKey,
       r2Bucket,
-      r2BackupBucket,
       r2PublicBaseUrl: r2PublicBaseUrl.replace(/\/+$/, ''),
       pagesDeployHookUrl,
       allowedOrigins: parseAllowedOrigins(originsRaw) ?? [],

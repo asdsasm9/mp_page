@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   SNAPSHOT_KEY,
   allKeys,
-  backupKey,
   isSafeKey,
   isValidPhotoId,
   jpegKey,
@@ -28,10 +27,6 @@ describe('key strings', () => {
     expect(jpegKey(ID)).toBe(`photos/${ID}/1600.jpg`);
     expect(ogKey(ID)).toBe(`photos/${ID}/og.jpg`);
     expect(SNAPSHOT_KEY).toBe('catalog/published.json');
-  });
-  it('backupKey formats UTC', () => {
-    expect(backupKey(new Date('2026-10-19T12:00:00Z'))).toBe('full-20261019T120000Z.json');
-    expect(backupKey(new Date('2026-01-02T03:04:05.678Z'))).toBe('full-20260102T030405Z.json');
   });
   it('refuses bad ids', () => {
     expect(() => masterKey(ID.toUpperCase())).toThrow();

@@ -1,6 +1,6 @@
 /**
  * POST /publish (WP-4 section 4.7). Steps: `request_publish` (admin check, 1 per 60 s, creates the
- * log row), build and store the snapshot and backup, POST the deploy hook (URL only from the secret
+ * log row), build and store the snapshot, POST the deploy hook (URL only from the secret
  * config), then `record_publish`. A failure after the log row exists is recorded as `failed` with a
  * short code (never a URL) and leaves `pending_changes` unchanged. Completion of the Pages build is
  * not known here; the admin polls `/_publish.json`.
@@ -17,9 +17,8 @@ import { PublishServiceError, buildAndStoreSnapshot } from '../publish-service';
 import type { FetchFn, SupabaseClient } from '../supabase';
 
 export interface PublishRouteDeps {
-  /** Public bucket (snapshot) and private bucket (backups). */
+  /** Public bucket (snapshot). */
   publicBucket: StorageAdapter;
-  backupBucket: StorageAdapter;
   now?: () => Date;
   /** Injected fetch for the deploy hook only (default: global fetch). */
   hookFetch?: FetchFn;
@@ -65,10 +64,7 @@ export function createPublishRoute(deps: PublishRouteDeps): Route {
 
       let result;
       try {
-        result = await buildAndStoreSnapshot(
-          { supabase, publicBucket: deps.publicBucket, backupBucket: deps.backupBucket, now },
-          jwt,
-        );
+        result = await buildAndStoreSnapshot({ supabase, publicBucket: deps.publicBucket, now }, jwt);
       } catch (e) {
         let code: WorkerErrorCode = 'UPSTREAM_ERROR';
         if (e instanceof SnapshotEmptyError) code = 'SNAPSHOT_EMPTY';

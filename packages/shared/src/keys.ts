@@ -36,13 +36,6 @@ export function ogKey(id: string): string {
   return `${photoPrefix(id)}og.jpg`;
 }
 
-/** Private-bucket backup file name: full-YYYYMMDDTHHMMSSZ.json (UTC). */
-export function backupKey(date: Date): string {
-  const iso = date.toISOString(); // 2026-10-19T12:00:00.000Z
-  const stamp = iso.replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-  return `full-${stamp}.json`;
-}
-
 export type ParsedKey =
   | { kind: 'master'; id: string }
   | { kind: 'webp'; id: string; tier: WebpTier }

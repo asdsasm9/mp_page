@@ -14,5 +14,5 @@ export const DEFAULT_ROUTES: Readonly<Record<string, (s: Storages) => Route>> = 
   '/uploads/commit': (s) => createCommitRoute({ storage: s.photos }),
   '/photos/delete': (s) => createDeleteRoute({ storage: s.photos }),
   '/storage/reconcile': (s) => createReconcileRoute({ storage: s.photos }),
-  '/publish': (s) => createPublishRoute({ publicBucket: s.photos, backupBucket: s.backup }),
+  '/publish': (s) => createPublishRoute({ publicBucket: s.photos }),
 };

@@ -27,7 +27,7 @@ A test (`apps/api/test/docs.test.ts`) fails when an endpoint in the route table 
 | Code | Status | Raised by |
 |------|--------|-----------|
 | UNAUTHENTICATED | 401 | missing, malformed or expired token |
-| NOT_ADMIN | 403 | valid user who is not in `admins` |
+| NOT_ADMIN | 403 | valid user whose verified Google e-mail is not in `admin_emails` |
 | INVALID_REQUEST | 400 (403 for a disallowed Origin) | body, type, schema |
 | INVALID_ID | 400 | an id is not a UUID |
 | INVALID_ITEMS | 400 | reserve items do not match the planned file set |

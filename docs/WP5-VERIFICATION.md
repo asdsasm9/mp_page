@@ -73,7 +73,7 @@ All are in `docs/VERIFY.md` rows 24 to 32 (also "Needs a human" rows 24 to 32) w
 - Row 29: real session refresh, expiry and the "Přihlášení vypršelo" modal.
 - Row 30: what the admin shows when the Supabase project is paused.
 - Row 31: SPA fallback and the generated CSP and `_headers` on the deployed Pages project.
-- Row 32: Supabase sign-ups off, two users plus `admins` rows, redirect URL, third-account and non-admin test.
+- Row 32: Supabase sign-ups off, the Google provider plus two `admin_emails` rows (WP-09), redirect URL, third-account and non-admin test.
 - Create the Pages project and set the six `VITE_*` variables; H-8 extended to the admin (5 photos from her real phone and laptop); H-3 brand colour.
 - Decisions listed under D-9 in the plan (dependencies, browser she uses, deviations) if not already answered.
 

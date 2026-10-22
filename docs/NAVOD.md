@@ -6,7 +6,7 @@ Tento návod je pro tebe. Vede tě po focení od přihlášení až po ověřen�
 
 - Počítač (notebook) s Chrome, Edge nebo Firefoxem. Na telefonu to jde jen částečně, viz část 5.
 - Adresu správy. Tu ti pošle Adam.
-- Svůj e-mail a heslo. Heslo ti dá Adam. Když ho zapomeneš, na přihlašovací stránce klikni na „Zapomenuté heslo“. Přijde ti e-mail s odkazem na nové heslo.
+- Svůj účet Google (Gmail), který Adam zapsal mezi povolené účty. Žádné další heslo do správy nemáš, přihlašuješ se heslem ke svému Googlu.
 - Fotky z focení, nejlépe hotové a vybrané. Formát JPEG, PNG, HEIC nebo WebP.
 - Stabilní internet. Při nahrávání fotek nezavírej stránku.
 
@@ -15,10 +15,17 @@ Tento návod je pro tebe. Vede tě po focení od přihlášení až po ověřen�
 ### Přihlásit se
 
 1. Otevři adresu správy.
-2. Do pole „E-mail“ napiš svůj e-mail a do pole „Heslo“ své heslo.
-3. Klikni na „Přihlásit se“.
+2. Klikni na „Přihlásit se přes Google“. Stránka tě krátce přesměruje na Google („Přesměrovávám na Google…“).
+3. Vyber svůj účet Google. Pokud se Google zeptá na heslo nebo na potvrzení v telefonu, zadej ho jako obvykle.
+4. Vrátíš se do správy. Chvíli uvidíš „Ověřuji přihlášení…“ a pak se otevře správa.
 
-Když napíšeš špatné údaje, uvidíš „Nesprávný e-mail nebo heslo.“
+Správa heslo k Googlu nikdy nevidí. Google jí předá jen tvoje jméno, e-mail a profilovou fotku.
+
+Když vybereš jiný účet, než který Adam povolil, uvidíš „Tento účet Google nemá přístup do správy. Zkuste se přihlásit jiným účtem Google.“ Zkus to znovu s tím správným účtem, nebo napiš Adamovi. Když na Googlu přihlášení zrušíš, uvidíš „Přihlášení přes Google bylo zrušeno.“ a stačí kliknout znovu.
+
+Tip: zapni si v účtu Google dvoustupňové ověření (na stránce zabezpečení svého účtu Google, myaccount.google.com/security). Správa je pak lépe chráněná. Správa sama dvoustupňové ověření nevynutí a nepozná, jestli ho máš zapnuté. Je to na tobě.
+
+Na sdíleném počítači se po práci kliknutím na „Odhlásit se“ odhlásíš jen ze správy. Odhlas se i z Googlu, jinak se do správy může dostat každý, kdo ten počítač po tobě použije.
 
 ### Vytvořit album
 
@@ -126,7 +133,9 @@ Na počítači dělej tyhle věci:
 | „Fotku se nepodařilo zpracovat.“ | Soubor je asi poškozený. Zkus ho znovu uložit z fotoaparátu nebo editoru. |
 | „Čekám na připojení…“ | Spadl internet. Počkej, nahrávání se samo obnoví. Stránku nezavírej. |
 | „Úložiště je plné. Nelze nahrát další fotky, uvolněte místo smazáním fotek.“ | Smaž fotky, které nepotřebuješ (nevratně), nebo napiš Adamovi. Viz část 4. Nic se přitom nenahrálo napůl. |
-| „Přihlášení vypršelo, přihlaste se znovu.“ | Přihlas se znovu. Rozpracované změny zůstávají zachované. |
+| „Přihlášení vypršelo“ | Klikni na „Přihlásit se přes Google“ a přihlas se znovu. Po přihlášení se stránka načte znovu, takže neuložené změny a fotky ve frontě se ztratí. Fotky nahraj znovu. |
+| „Tento účet Google nemá přístup do správy. Zkuste se přihlásit jiným účtem Google.“ | Přihlásila ses jiným účtem Google, než který Adam povolil. Klikni na „Přihlásit se přes Google“ a vyber ten správný. Když to nejde, napiš Adamovi. |
+| „Přihlášení přes Google se nepodařilo. Zkuste to znovu.“ | Klikni znovu na „Přihlásit se přes Google“. Když to nejde ani na třetí pokus, napiš Adamovi. |
 | „Nezveřejněné změny“ | Není to chyba. Na webu ještě nejsou všechny tvoje úpravy. Otevři „Zveřejnit web“ (na telefonu „Zveřejnit“) a na té stránce klikni na tlačítko „Zveřejnit web“. |
 | „Web se zatím neaktualizoval. Zkontrolujte ho za chvíli, případně zkuste zveřejnit znovu.“ | Zveřejnění trvá déle než obvykle. Počkej pár minut, obnov web a podívej se, jestli je změna vidět. Když ne, zveřejni znovu. |
 | „Zveřejnění se nepodařilo. Web zůstává ve stavu před touto změnou. Zkusit znovu.“ | Na webu zůstala předchozí verze, nic se nerozbilo. Klikni na „Zkusit znovu“. Když to nepomůže ani za pár minut, napiš Adamovi. |

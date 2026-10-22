@@ -38,10 +38,10 @@ Persistent shell on every screen after login:
 ## 3. Screens
 
 ### 3.1 Login (`/prihlaseni`)
-- Fields: E-mail, Heslo (show/hide toggle "Zobrazit heslo"). Button "Přihlásit se". Link "Zapomenuté heslo" (Supabase reset mail). No "Registrovat".
-- States: loading (button disabled, "Přihlašuji…"); wrong credentials "Nesprávný e-mail nebo heslo."; too many attempts "Příliš mnoho pokusů, zkuste to za chvíli."; offline "Chybí připojení k internetu."; signed in but not in the `admins` table "Tento účet nemá přístup do správy." and sign-out.
-- Session expiry during work: a modal "Přihlášení vypršelo, přihlaste se znovu" keeps the upload queue and unsaved form state, and resumes after login.
-- Layout: one centred card, max 24rem, same on phone and desktop. Browser password manager must work (proper `autocomplete`).
+- Sign-in is with Google only (WP-09, D-16): no e-mail or password fields, no reset link, no "Registrovat". Card title "Přihlášení", explanation "Do správy se přihlašujete účtem Google. Přístup mají jen dva povolené účty.", button "Přihlásit se přes Google", and under it the tip "Tip: zapněte si v účtu Google dvoustupňové ověření, správa je pak lépe chráněná." (the app cannot enforce or detect 2-step verification; it is only a tip).
+- States: busy (button not usable, "Přesměrovávám na Google…"); after the return from Google "Ověřuji přihlášení…"; account not allowed (not on the allow-list, unverified e-mail, sign-up refused; one text on purpose) "Tento účet Google nemá přístup do správy. Zkuste se přihlásit jiným účtem Google." and the local sign-out; cancelled at Google "Přihlášení přes Google bylo zrušeno."; other callback failure "Přihlášení přes Google se nepodařilo. Zkuste to znovu."; too many attempts "Příliš mnoho pokusů, zkuste to za chvíli."; offline "Chybí připojení k internetu.".
+- Session expiry during work: a modal "Přihlášení vypršelo" with the body "Přihlaste se znovu přes Google. Po přihlášení se stránka načte znovu, neuložené změny a fotky ve frontě se ztratí." and the Google button. Signing in again is a full-page redirect, so the in-memory upload queue and unsaved form state are lost (the text says so); the stored return path brings her back to the same screen.
+- Layout: one centred card, max 24rem, same on phone and desktop.
 
 ### 3.2 Categories list (`/`)
 - Content: header "Kategorie" with button "Nová kategorie"; storage bar; list of categories as cards/rows: name, number of albums, number of photos, visibility badge ("Viditelná" / "Skrytá"), drag handle, overflow menu (Přejmenovat, Skrýt/Zobrazit, Smazat).
@@ -90,7 +90,7 @@ One queue for the whole session, visible from every screen (top-bar indicator op
   - Cannot process (corrupt): "Fotku se nepodařilo zpracovat."
   - Network lost: file pauses with "Čekám na připojení…", resumes automatically when online, up to 3 automatic retries with backoff, then "Nahrávání selhalo. Zkusit znovu".
   - Upload URL expired: silently asks for a new URL once, then as a network failure.
-  - Session expired: queue pauses, login modal (3.1), then resumes.
+  - Session expired: queue pauses, sign-in modal (3.1); after the Google redirect the page reloads and the queue is gone, so the missing photos are uploaded again.
   - Storage full (T-6, refused by the server before any URL is issued): the whole batch (or the files that do not fit) gets "Úložiště je plné. Nelze nahrát další fotky, uvolněte místo smazáním fotek." and nothing partial is left behind. The browser shows the same check beforehand as a courtesy, but the server decides.
   - Storage near limit: warning banner (see 3.7) but uploads continue.
 - Duplicates: a file with the same name and size already in the album gets the prompt "Tato fotka už v albu je. Přeskočit / Nahrát znovu" (default skip).
@@ -190,7 +190,7 @@ One queue for the whole session, visible from every screen (top-bar indicator op
 
 ## 7. Czech UI labels (glossary)
 
-Přihlásit se, Odhlásit se, E-mail, Heslo, Zapomenuté heslo, Kategorie, Nová kategorie, Album/Alba, Nové album, Fotky, Vybrat fotky, Název, Adresa (slug), Místo, Datum focení, Popis, Popisek, Alternativní text, Pro vyhledávače, SEO titulek, SEO popis, Titulní fotka, Nastavit jako titulní, Zveřejnit album, Skrýt album, Zveřejnit web, Zveřejněno, Koncept, Skryto, Viditelná, Skrytá, Smazat, Zrušit, Uložit, Uloženo, Zkusit znovu, Přesunout, Přesunout do alba, Posunout nahoru/dolů, Nahrávání, Ve frontě, Zpracovávám, Nahrávám, Hotovo, Úložiště, Zkontrolovat úložiště, Podrobnosti.
+Přihlásit se, Odhlásit se, E-mail, Kategorie, Nová kategorie, Album/Alba, Nové album, Fotky, Vybrat fotky, Název, Adresa (slug), Místo, Datum focení, Popis, Popisek, Alternativní text, Pro vyhledávače, SEO titulek, SEO popis, Titulní fotka, Nastavit jako titulní, Zveřejnit album, Skrýt album, Zveřejnit web, Zveřejněno, Koncept, Skryto, Viditelná, Skrytá, Smazat, Zrušit, Uložit, Uloženo, Zkusit znovu, Přesunout, Přesunout do alba, Posunout nahoru/dolů, Nahrávání, Ve frontě, Zpracovávám, Nahrávám, Hotovo, Úložiště, Zkontrolovat úložiště, Podrobnosti.
 Tone: short, polite, "vy" form, no jargon (not "slug", "URL", "variant": use "adresa", "odkaz", "verze fotky").
 
 ## 8. Data and behaviour notes the MASTERPLAN must honour

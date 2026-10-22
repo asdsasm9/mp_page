@@ -9,7 +9,7 @@ Dashboard menu names below are from memory of the Cloudflare UI and may have mov
 ## 0. Prerequisites
 
 - **HUMAN** A Cloudflare account with R2 enabled (a payment method may be required to enable R2 even on the free tier; check before relying on a 0 EUR cap).
-- **HUMAN** The Supabase project from WP-2 with migrations applied and Adam's user in `admins`.
+- **HUMAN** The Supabase project from WP-2 with migrations applied and Adam's Google address in `admin_emails` (a user signs in with Google only; the Google provider and the one-line `insert into public.admin_emails (email) values ('<lowercase address 1>');` are in [ADMIN.md](ADMIN.md#deploying-the-admin-human-steps) step 5, V-1 to V-3; a real address is never written into the repository).
 - Node from `.nvmrc`, then `npm ci` in the repo root.
 
 ## 1. R2 buckets

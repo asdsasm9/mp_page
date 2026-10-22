@@ -51,7 +51,7 @@ Four parts, each with its own human steps. Do them in this order; the steps live
 
 | Part | Where the steps are |
 |------|---------------------|
-| Supabase migrations | `supabase db push` from the repo root on the linked project (migrations live in `supabase/migrations`), then users and `admins` rows: [docs/ADMIN.md](docs/ADMIN.md#deploying-the-admin-human-steps) step 5; schema: [docs/DATA-MODEL.md](docs/DATA-MODEL.md) |
+| Supabase migrations | `supabase db push` from the repo root on the linked project (migrations live in `supabase/migrations`), then the Google provider and the `admin_emails` rows: [docs/ADMIN.md](docs/ADMIN.md#deploying-the-admin-human-steps) step 5; schema: [docs/DATA-MODEL.md](docs/DATA-MODEL.md) |
 | api (Worker) | [docs/DEPLOY-API.md](docs/DEPLOY-API.md#8-deploy); routes: [docs/API.md](docs/API.md) |
 | admin (Pages) | [docs/ADMIN.md](docs/ADMIN.md#deploying-the-admin-human-steps) |
 | web (Pages) | [docs/WEB.md](docs/WEB.md#cutover-checklist-web-part); publish flow: [docs/WEB.md](docs/WEB.md#publish-to-deploy) |
@@ -63,7 +63,7 @@ Unconfirmed platform facts are collected in [docs/VERIFY.md](docs/VERIFY.md).
 Go-live checklist for the old GitHub Pages site. Human steps only; H-numbers are the human to-dos tracked in the autopilot STATE. Avoid wedding-busy weeks.
 
 1. H-2 finished: Cloudflare account, one public R2 bucket (there is no backup bucket), CORS, bucket-scoped token, Worker secrets. See [docs/DEPLOY-API.md](docs/DEPLOY-API.md#0-prerequisites).
-2. Supabase set up: migrations pushed, sign-ups off, two users with long unique passwords (the admin is password-only, no TOTP; it can be added later), `admins` rows, auth redirect URLs. See [docs/ADMIN.md](docs/ADMIN.md#deploying-the-admin-human-steps).
+2. Supabase and Google set up: Google provider and OAuth client, migrations pushed, sign-ups off, two `admin_emails` allow-list rows (no admin password; Google 2-step verification on both accounts, which the app cannot enforce), auth redirect URLs, VERIFY rows 37 to 48. See [docs/ADMIN.md](docs/ADMIN.md#deploying-the-admin-human-steps).
 3. H-6 done: the "Needs a human" items in [docs/VERIFY.md](docs/VERIFY.md) are worked through and the results recorded there.
 4. H-7: the photographer gives name and address for `/cookies/` (IČO only if she has one; the line is left out otherwise); replace the placeholder lines; while any remain, a production build is blocked. See [docs/WEB.md](docs/WEB.md#analytics).
 5. Hold point: do not go further until VERIFY rows 3, 11, 12, 13, 14 and 17 are marked checked with a date in [docs/VERIFY.md](docs/VERIFY.md) (the unproven free-plan and redirect facts, listed in [docs/WP8-VERIFICATION.md](docs/WP8-VERIFICATION.md#known-unproven-0-eur-and-no-care-claims)). Otherwise no cutover.

@@ -82,6 +82,7 @@ describe('docs/MIGRATION.md', () => {
 
   it('does not claim exit 2 for a sign-in failure and uses the Czech button name', () => {
     expect(read('docs/VERIFY.md').split('\n').find((l) => l.startsWith('| 36 | '))).not.toMatch(/fails with exit 2/);
+    expect(read('docs/VERIFY.md').split('\n').find((l) => l.startsWith('| 36 | '))).toContain('MIGRATE_ACCESS_TOKEN');
     expect(doc).toContain('Zveřejnit web');
     expect(doc).not.toContain('rows 33 to 36 below');
   });

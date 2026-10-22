@@ -23,7 +23,7 @@ facts and human steps: [VERIFY.md](VERIFY.md). Page texts (Home, About, Contact)
 
 | Route | Screen |
 |---|---|
-| `/prihlaseni` | Login, forgotten and new password (the only public route) |
+| `/prihlaseni` | Sign in with Google, and the return point of the Google round trip (the only public route) |
 | `/` | Categories |
 | `/kategorie/:id` | One category and its albums |
 | `/alba/:id` | One album and its photos |
@@ -80,15 +80,56 @@ match the CORS and redirect lists below.
 4. **Worker and bucket.** Add the admin origin to the Worker's `ALLOWED_ORIGINS` and to the R2 bucket CORS policy
    (`docs/DEPLOY-API.md` sections 5 and 6; the policy allows `PUT` with `content-type`, `content-length`,
    `cache-control`). Without the R2 CORS entry every upload fails in the browser (VERIFY row 27).
-5. **Supabase.** In the dashboard:
-   - Authentication, Sign In / Providers: turn **sign-ups off** (no "Allow new users to sign up"). Email sign-in stays on.
-   - Authentication, Users: create the two users (the photographer and Adam) with "Add user", confirmed, with a strong
-     password each. Then insert one row per user into `admins` (SQL editor: `insert into admins (user_id) values ('<auth user id>');`,
-     check the column name against `supabase/migrations`). A user without that row can sign in but the app refuses her.
-   - Authentication, URL Configuration: add `<admin origin>/prihlaseni` to the redirect URLs (for example
-     `https://admin.mullnyphotos.cz/prihlaseni`; it is where the password reset mail sends her), and set the site URL to the admin origin.
-   - The admin is password-only: a long unique password per user, sign-ups off, two accounts. TOTP is not used; it can
-     be added later (VERIFY row 5, [MAINTENANCE.md](MAINTENANCE.md)).
+5. **Google sign-in and Supabase** (WP-09; the admin has no password of its own). Do the sub-steps in this order;
+   V-1 to V-12 are rows 37 to 48 of [VERIFY.md](VERIFY.md) (V-0 is a question, not a row;
+   rows 5, 32 and 36 were rewritten for this). Dashboard menu names are from memory. Never paste the Google client secret into chat, a file or the
+   repository: it goes straight into the Supabase dashboard and nowhere else. Never write a real e-mail address into
+   a file in the repository; the examples use `<lowercase address 1>` and `<lowercase address 2>`.
+   - **V-0 Path question (2 min).** Were the live Supabase migrations pushed, were password users created, is an old
+     admin build deployed? If nothing is live (the README says so), this single-migration path applies: nothing to keep
+     working, nothing to lock out. If a live password user exists, stop and ask for the two-step (expand, then contract)
+     path before going on.
+   - **V-1 Google Cloud (Adam, about 10 min).** Sign in with Adam's Google account (2-step verification on). Create the
+     project "mullnyphotos-admin" without a billing account. Google Auth Platform: user type External, app name
+     "Mullny Photos správa", support and developer e-mail Adam's, scopes only `openid`, `email` and `profile`,
+     publishing status **Testing**, test users the photographer's Gmail and Adam's Gmail. Credentials, OAuth client ID,
+     Web application: one authorized redirect URI `https://<project-ref>.supabase.co/auth/v1/callback`
+     (the Supabase project's own callback URL, copied from the Supabase provider page), JavaScript origins empty. Copy the client ID and
+     secret straight into Supabase (V-2). Optional: add the photographer as a second Owner of the project.
+   - **V-2 Supabase dashboard (Adam, about 5 min).** Authentication, Providers, Google: enable, paste ID and secret,
+     check that the callback URL shown equals the one in V-1. URL Configuration: Site URL
+     `https://admin.mullnyphotos.cz`; Redirect URLs exactly `https://admin.mullnyphotos.cz/prihlaseni`, plus one exact
+     Pages preview URL `https://<branch>.<pages-project>.pages.dev/prihlaseni` until the cutover (no localhost, no
+     wildcard in production). Sign-ups stay off. The Email provider stays on until V-11.
+   - **V-3 Database.** `supabase db push` applies `supabase/migrations/20261022100000_admin_google_signin.sql`
+     (the `admin_emails` allow-list, the Google-only `is_admin()`, and the old `admins` table dropped). Then, in the
+     SQL editor: `insert into public.admin_emails (email) values ('<lowercase address 1>'), ('<lowercase address 2>');`.
+     Copy each address exactly as Authentication, Users shows it, in lower case (`googlemail.com` is a different
+     string from `gmail.com`). Then Authentication, Users, "Add user" for each address (auto-confirm, a random password
+     nobody will use) unless the user already exists with that exact e-mail.
+   - **V-4 Does it work with sign-ups off? (TO VERIFY, decides the variant).** First sign-in with Adam's account on the
+     preview URL. Expected: signed in, and the Users page shows a Google identity on the same user. If Supabase
+     answers with a sign-up error, use the fallback: switch sign-ups on for a few minutes, do the two first sign-ins
+     (in Testing mode only the two test users pass Google), switch sign-ups off again.
+   - **V-5 Adam on the preview.** Sign in; a third Google account is refused by Google (Testing mode) or shows the
+     denial text, and `select public.is_admin();` is false for it; a `curl` to `<supabase>/auth/v1/signup` is refused;
+     create content and publish.
+   - **V-6 Photographer on her own devices.** Sign in, read the Google consent screen (note any "unverified app"
+     warning and decide Testing versus production mode), try cancelling once, sign out.
+   - **V-7 Production origin.** Both admins sign in on `https://admin.mullnyphotos.cz`; no CSP violation in the browser
+     console; record the CSP header (it is unchanged and contains no `google`).
+   - **V-8 Session refresh.** After more than one hour the app still works without a prompt; record the access-token
+     lifetime and whether the "Přihlášení vypršelo" dialog ever appeared.
+   - **V-9 Callback robustness.** Open `/zverejnit` while signed out; after Google the app returns there.
+   - **V-10 2-step verification.** Both owners switch on 2-step verification on their Google account
+     (`https://myaccount.google.com/security`) and record the date. This is a human attestation: see "What the app cannot enforce" below.
+   - **V-11 Final cutover (at deploy).** Disable the Email provider and remove the preview URL from the redirect
+     list. A password sign-in with `curl` must now be refused and Google sign-in must still work.
+   - **V-12 Supabase Auth rate limits.** Record the OAuth, token and sign-in per-IP limits with the date.
+
+   Hard rules: never disable the Email provider before V-7 and V-8 passed; never leave the project with zero listed
+   addresses; Adam keeps his own Supabase login with 2-step verification. Lost access is in
+   [MAINTENANCE.md](MAINTENANCE.md).
 6. **Public site.** On the web Pages project set `PUBLIC_ADMIN_ORIGIN` to the exact admin origin (no path, no trailing
    slash) and redeploy, so the admin may read `/_publish.json` (`docs/WEB.md`, VERIFY row 28).
 7. **First run.** Sign in, create a test category and album, upload 3 photos, publish. Then do VERIFY rows 25 to 32
@@ -97,11 +138,30 @@ match the CORS and redirect lists below.
 If the CSP blocks something after deploy, the browser console names the blocked origin; fix the matching `VITE_*`
 value and rebuild (the five origins in `connect-src` / `img-src` must equal what the app really calls).
 
+### What the app cannot enforce
+
+The admin has no password. Whoever controls an allow-listed Google account is the admin, so the Google account is the
+only lock. Google 2-step verification (2SV) is a second factor only if the owner has switched it on for that account.
+The app cannot enforce it and cannot detect it: it only sees a signed-in Google identity. That is why the sign-in card
+carries a tip, [NAVOD.md](NAVOD.md) explains how to switch it on, and V-10 records the date both owners did it as a
+human attestation. Keep the allow-list to the two addresses. TOTP in Supabase (and an `aal2` check in `is_admin()` and
+the Worker) remains a possible later hardening (VERIFY row 5), not part of this build.
+
+### Which personal data Google passes to Supabase
+
+When one of the two admins signs in, Google gives Supabase the account's e-mail address, a flag that the address is
+verified, the display name and the address of the profile picture (scopes `openid`, `email`, `profile` only). Supabase
+Auth (EU region) stores them in its `auth.users` and `auth.identities` tables; the allow-list holds the e-mail address
+too. Nothing else is requested, and Google never passes the Google password. The public site and its visitors are not
+involved. People outside the two addresses leave data only in the short fallback window of V-4, if it is needed.
+
 ## Using it: short guide for the photographer (Czech)
 
 Podrobný návod krok za krokem je v [NAVOD.md](NAVOD.md).
 
-Přihlášení: otevři adresu správy, zadej e-mail a heslo. Heslo zapomenuté? Klikni na „Zapomenuté heslo“ a přijde ti odkaz.
+Přihlášení: otevři adresu správy a klikni na „Přihlásit se přes Google“. Přihlásit se dá jen povoleným účtem Google (dva
+účty). Žádné heslo do správy neexistuje. Zapni si v účtu Google dvoustupňové ověření; správa ho nevynutí a nepozná, jestli
+ho máš. Na sdíleném počítači se odhlas i z Googlu.
 
 - **Kategorie** (úvodní stránka): „Nová kategorie“, přejmenování, skrytí, smazání a pořadí. Pořadí měníš šipkami nebo
   přetažením za úchyt vlevo.
@@ -266,7 +326,7 @@ Colour contrast is not measurable in jsdom; it is checked by `design-check` and 
 
 Findings of the audit and what was done:
 
-- Busy buttons (login, forgot/recovery, every dialog's confirm and Cancel, the photo detail Save) were `disabled`
+- Busy buttons (login, every dialog's confirm and Cancel, the photo detail Save) were `disabled`
   while working, which drops keyboard focus to the page body. They use `aria-disabled` now and ignore the press
   while busy; the typed-name field of the album delete dialog is `readOnly` while deleting.
 - `components/FocusRescue.tsx` (mounted in `AppProviders`) is the safety net for the rest: a focused control that
@@ -323,7 +383,7 @@ into `apps/admin/dist`), serves it from a local static server with SPA fallback 
 `.tmp/admin-check/shots`; the paths are printed), `--no-build` (reuse the last build), `--break button,origin,axe`
 (deliberately break the page; the run must exit 1).
 
-Flows (docs/ADMIN-UX.md): login with injected failures (offline, wrong password, a non-admin account), create a
+Flows (docs/ADMIN-UX.md): the Google login with injected failures (offline, cancelled at Google, an account that is not allowed), create a
 category and an album (F1, F4), upload 5 generated JPEGs through the real in-browser encoder with one PUT failing once,
 tile menu and photo detail with alt text and caption saved (F7), set cover (F3), move to start (F2), delete a photo
 (F5), publish and hide the album (F4), publish the site with one injected failure first (F6), storage screen with

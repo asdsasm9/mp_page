@@ -96,7 +96,9 @@ describe('docs/NAVOD.md', () => {
     const required = [
       cs.glossary.retry, // upload failure
       'Úložiště je plné. Nelze nahrát další fotky, uvolněte místo smazáním fotek.',
-      'Přihlášení vypršelo, přihlaste se znovu.',
+      cs.login.expired.title,
+      cs.login.google.notAllowed,
+      cs.login.google.failed,
       cs.publishIndicator.pending,
       cs.publish.failed,
       cs.data.unavailable,

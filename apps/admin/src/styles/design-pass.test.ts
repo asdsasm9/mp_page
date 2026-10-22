@@ -78,8 +78,47 @@ describe('design pass: buttons, badges, destructive demotion', () => {
   it('keeps the base danger button solid and never demotes it inside dialogs', () => {
     const base = ruleOf('.button-danger');
     expect(base).toContain('background: var(--color-danger)');
-    expect(base).toContain('color: var(--color-on-overlay)');
+    expect(base).toContain('color: var(--color-on-danger)');
     expect(css).not.toMatch(/\.dialog[^{]*\.button-danger[^{]*\{[^}]*transparent/);
+  });
+
+  it('T-250: every solid danger state uses on-danger text and has >= 4.5:1 contrast', () => {
+    const tokens = read('./tokens.css');
+    const hex = (name: string) => tokens.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`))?.[1] ?? '';
+    const lum = (h: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((c) =>
+        c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
+      );
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const ratio = (a: string, b: string) => {
+      const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    const text = hex('color-on-danger');
+    expect(text).not.toBe('');
+    for (const bg of ['color-danger', 'color-danger-hover', 'color-danger-active', 'color-danger-disabled']) {
+      expect(hex(bg), bg).not.toBe('');
+      expect(ratio(text, hex(bg)), bg).toBeGreaterThanOrEqual(4.5);
+    }
+    // Each state rule sets the matching background and never a muted/filtered text colour.
+    for (const sel of [
+      '.button-danger',
+      '.button-danger:disabled',
+      ".button-danger[aria-disabled='true']",
+    ]) {
+      expect(ruleOf(sel), sel).toContain('color: var(--color-on-danger)');
+    }
+    expect(ruleOf('.button-danger:hover:not(:disabled)')).toContain('background: var(--color-danger-hover)');
+    expect(ruleOf('.button-danger:hover:not(:disabled)')).toContain('filter: none');
+    expect(ruleOf('.button-danger:active:not(:disabled)')).toContain('background: var(--color-danger-active)');
+    expect(ruleOf('.button-danger:active:not(:disabled)')).toContain('filter: none');
+    expect(ruleOf('.button-danger:disabled')).toContain('background: var(--color-danger-disabled)');
+  });
+
+  it('T-250: icon-only danger buttons stay red-on-transparent, with a readable tint on hover', () => {
+    expect(ruleOf('.row-actions .button-icon.button-icon-danger')).toContain('color: var(--color-danger)');
+    expect(ruleOf('.row-actions .button-icon.button-icon-danger:hover:not(:disabled)')).toContain('color-mix(in srgb, var(--color-danger) 10%');
   });
 
   it('gives row buttons a transparent base with a surface hover', () => {

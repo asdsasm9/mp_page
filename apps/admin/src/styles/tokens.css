@@ -93,5 +93,10 @@
     --cover-size: 6rem;
     --icon-size: 1.25rem;
     --icon-stroke: 2;
+    /* Solid red buttons: white text on every state, each pair >= 4.5:1 (design-pass.test.ts checks it) */
+    --color-on-danger: #ffffff;
+    --color-danger-hover: #8a1f24;
+    --color-danger-active: #731a1e;
+    --color-danger-disabled: #8c6467;
   }
 }

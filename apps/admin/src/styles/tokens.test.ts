@@ -27,7 +27,7 @@ describe('token parity with apps/web', () => {
 
   it('keeps the admin-only extras small and named', () => {
     const extras = [...admin.keys()].filter((k) => !web.has(k)).sort();
-    expect(extras).toEqual(['--bottom-nav-height', '--cover-size', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke']);
+    expect(extras).toEqual(['--bottom-nav-height', '--color-danger-active', '--color-danger-disabled', '--color-danger-hover', '--color-on-danger', '--cover-size', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke']);
   });
 });
 

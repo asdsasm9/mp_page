@@ -669,14 +669,22 @@
 
   .button-danger {
     font-weight: 700;
-    color: var(--color-on-overlay);
+    color: var(--color-on-danger);
     background: var(--color-danger);
     border-color: var(--color-danger);
   }
 
-  .button-danger:hover {
-    background: var(--color-danger);
-    filter: brightness(0.9);
+  /* Solid red states swap the background token; a brightness filter would also dim the text. */
+  .button-danger:hover:not(:disabled) {
+    background: var(--color-danger-hover);
+    border-color: var(--color-danger-hover);
+    filter: none;
+  }
+
+  .button-danger:disabled {
+    color: var(--color-on-danger);
+    background: var(--color-danger-disabled);
+    border-color: var(--color-danger-disabled);
   }
 
   /* Page-header destructive action is demoted to an outline; the solid red stays inside confirm dialogs. */
@@ -688,6 +696,7 @@
 
   .header-actions .button-danger:hover {
     background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+    border-color: var(--color-danger);
     filter: none;
   }
 
@@ -699,6 +708,17 @@
 
   .button:active:not(:disabled) {
     filter: brightness(0.92);
+  }
+
+  .button-danger:active:not(:disabled) {
+    background: var(--color-danger-active);
+    border-color: var(--color-danger-active);
+    filter: none;
+  }
+
+  .header-actions .button-danger:active:not(:disabled) {
+    background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+    border-color: var(--color-danger);
   }
 
   .row-actions .button:not(.button-primary):not(.button-danger) {
@@ -741,6 +761,12 @@
   .button[aria-disabled='true'] {
     cursor: not-allowed;
     color: var(--color-text-muted);
+  }
+
+  .button-danger[aria-disabled='true'] {
+    color: var(--color-on-danger);
+    background: var(--color-danger-disabled);
+    border-color: var(--color-danger-disabled);
   }
 
   .sortable > * + * {

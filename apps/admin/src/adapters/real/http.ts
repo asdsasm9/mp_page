@@ -36,6 +36,8 @@ export interface Rest {
   insert<T>(table: string, body: unknown): Promise<T[]>;
   patch<T>(table: string, query: Query, body: unknown): Promise<T[]>;
   remove(table: string, query: Query): Promise<void>;
+  /** POST /rest/v1/rpc/<fn> under the user's JWT; resolves with the parsed JSON result (null if unreadable). */
+  rpc(fn: string, args?: Record<string, unknown>): Promise<unknown>;
 }
 
 function field(body: unknown, name: string): string {
@@ -104,6 +106,10 @@ export function createRest(config: RestConfig): Rest {
     },
     async remove(table: string, query: Query) {
       await call('DELETE', table, query);
+    },
+    async rpc(fn: string, args: Record<string, unknown> = {}) {
+      const res = await call('POST', `rpc/${fn}`, {}, args);
+      return res.json().catch(() => null) as Promise<unknown>;
     },
   };
 }

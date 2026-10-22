@@ -62,13 +62,20 @@ const session = (over: Partial<Session> = {}): Session =>
 type AuthStub = SupabaseAuthLike & {
   emit(event: AuthChangeEvent, s: Session | null): void;
   calls: string[];
+  oauth: unknown[];
 };
 
 function authStub(over: Partial<SupabaseAuthLike> = {}): AuthStub {
   let callback: ((event: AuthChangeEvent, s: Session | null) => void) | null = null;
   const calls: string[] = [];
+  const oauth: unknown[] = [];
   return {
     calls,
+    oauth,
+    signInWithOAuth: async (credentials) => {
+      oauth.push(credentials);
+      return { data: {}, error: null };
+    },
     emit: (event, s) => callback?.(event, s),
     getSession: async () => ({ data: { session: session() }, error: null }),
     signInWithPassword: async () => ({ data: { session: session() }, error: null }),
@@ -405,6 +412,125 @@ describe('real auth', () => {
   });
 });
 
+// ---------------------------------------------------------------- Google sign-in
+
+describe('real auth: Google sign-in', () => {
+  const REDIRECT = `${location.origin}/prihlaseni`;
+  const at = (path: string) => history.replaceState(null, '', path);
+  const make = (stub: AuthStub = authStub()) => createRealAuth(stub, { isAdminUser: async () => true });
+  afterEach(() => at('/'));
+
+  it('starts the OAuth flow for google with redirectTo = origin + /prihlaseni and only prompt as query param', async () => {
+    const stub = authStub();
+    await make(stub).signInWithGoogle({ returnTo: '/zverejnit' });
+    expect(stub.oauth).toEqual([
+      { provider: 'google', options: { redirectTo: REDIRECT, queryParams: { prompt: 'select_account' } } },
+    ]);
+  });
+
+  it('passes login_hint only when one is given', async () => {
+    const stub = authStub();
+    await make(stub).signInWithGoogle({ returnTo: '/', loginHint: 'foto@example.test' });
+    expect(stub.oauth[0]).toEqual({
+      provider: 'google',
+      options: { redirectTo: REDIRECT, queryParams: { prompt: 'select_account', login_hint: 'foto@example.test' } },
+    });
+  });
+
+  it('sends no scopes and no query params beyond prompt and login_hint (fails if any are added)', async () => {
+    const stub = authStub();
+    const auth = make(stub);
+    await auth.signInWithGoogle({ returnTo: '/' });
+    await auth.signInWithGoogle({ returnTo: '/', loginHint: 'foto@example.test' });
+    for (const call of stub.oauth as Array<{ provider: string; options: Record<string, unknown> }>) {
+      expect(Object.keys(call).sort()).toEqual(['options', 'provider']);
+      expect(Object.keys(call.options).sort()).toEqual(['queryParams', 'redirectTo']);
+      expect('scopes' in call.options).toBe(false);
+      const extra = Object.keys(call.options.queryParams as object).filter((k) => !['prompt', 'login_hint'].includes(k));
+      expect(extra).toEqual([]);
+    }
+  });
+
+  it('does not store or forward returnTo itself (the session layer owns it)', async () => {
+    const stub = authStub();
+    await make(stub).signInWithGoogle({ returnTo: '/zverejnit' });
+    expect(JSON.stringify(stub.oauth)).not.toContain('zverejnit');
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it('uses the configured redirectTo when given', async () => {
+    const stub = authStub();
+    await createRealAuth(stub, { isAdminUser: async () => true, redirectTo: 'https://admin.example.test/prihlaseni' }).signInWithGoogle({
+      returnTo: '/',
+    });
+    expect((stub.oauth[0] as { options: { redirectTo: string } }).options.redirectTo).toBe('https://admin.example.test/prihlaseni');
+  });
+
+  it('maps start failures: offline, rate limit, upstream', async () => {
+    const failing = (error: SupabaseErrorLike) => make(authStub({ signInWithOAuth: async () => ({ data: {}, error }) }));
+    await expect(failing({ name: 'AuthRetryableFetchError', status: 0 }).signInWithGoogle({ returnTo: '/' })).rejects.toBeInstanceOf(NetworkError);
+    await expect(failing(apiError(429)).signInWithGoogle({ returnTo: '/' })).rejects.toMatchObject({ code: 'TOO_MANY_ATTEMPTS' });
+    await expect(failing(apiError(400)).signInWithGoogle({ returnTo: '/' })).rejects.toMatchObject({ code: 'UPSTREAM_ERROR' });
+  });
+
+  it('success: a clean URL gives no callback error', () => {
+    at('/prihlaseni?code=abc');
+    expect(make().takeCallbackError()).toBeNull();
+    expect(location.search).toBe('?code=abc');
+  });
+
+  it.each([
+    ['access_denied alone (cancelled at Google)', '?error=access_denied&error_description=x', 'CANCELLED'],
+    ['access_denied with signup_disabled', '?error=access_denied&error_code=signup_disabled&error_description=x', 'NOT_ALLOWED'],
+    ['signup_disabled code only', '?error_code=signup_disabled', 'NOT_ALLOWED'],
+    ['server_error / unknown code', '?error=server_error&error_code=unexpected_failure&error_description=x', 'FAILED'],
+    ['unknown code that looks like a cancel', '?error=weird&error_code=brand_new_code', 'FAILED'],
+    ['description only', '?error_description=something', 'FAILED'],
+  ])('callback in the query: %s', (_name, search, expected) => {
+    at(`/prihlaseni${search}`);
+    const auth = make();
+    expect(auth.takeCallbackError()).toBe(expected);
+  });
+
+  it('callback in the hash is read too, and the query wins when both are present', () => {
+    at('/prihlaseni#error=access_denied&error_code=signup_disabled&error_description=x');
+    expect(make().takeCallbackError()).toBe('NOT_ALLOWED');
+    at('/prihlaseni?error=access_denied#error=server_error&error_code=signup_disabled');
+    // error from the query (access_denied), error_code only in the hash: the codes are read per parameter.
+    expect(make().takeCallbackError()).toBe('NOT_ALLOWED');
+    at('/prihlaseni?error_code=other#error_code=signup_disabled&error=access_denied');
+    expect(make().takeCallbackError()).toBe('CANCELLED');
+  });
+
+  it('the error is returned once, and the URL is cleaned of exactly the three parameters', () => {
+    at('/prihlaseni?error=access_denied&error_code=signup_disabled&error_description=Signups+not+allowed&keep=1#error=x&frag=2');
+    const state = { marker: true };
+    history.replaceState(state, '', location.href);
+    const auth = make();
+    expect(location.pathname).toBe('/prihlaseni');
+    expect(location.search).toBe('?keep=1');
+    expect(location.hash).toBe('#frag=2');
+    expect(history.state).toEqual(state);
+    expect(auth.takeCallbackError()).toBe('NOT_ALLOWED');
+    expect(auth.takeCallbackError()).toBeNull();
+  });
+
+  it('a fully cleaned URL has neither query nor hash left', () => {
+    at('/prihlaseni?error=access_denied&error_code=signup_disabled&error_description=x#error=access_denied');
+    make();
+    expect(location.href).toBe(`${location.origin}/prihlaseni`);
+  });
+
+  it('writes nothing to the console and shows no code or description in any output', async () => {
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m));
+    at('/prihlaseni?error=access_denied&error_code=signup_disabled&error_description=secret-description');
+    const auth = make();
+    auth.takeCallbackError();
+    await auth.signInWithGoogle({ returnTo: '/', loginHint: 'foto@example.test' });
+    for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+  });
+});
+
 // ---------------------------------------------------------------- the assembled port set
 
 describe('createRealPorts', () => {
@@ -419,15 +545,26 @@ describe('createRealPorts', () => {
   };
 
   it('wires the token from getSession into the catalog, the Worker and the admin check', async () => {
-    const { fetch, calls } = stubFetch({ json: [{ user_id: 'user-1' }] });
+    const { fetch, calls } = stubFetch({ json: true }, { json: [] });
     const ports = createRealPorts(env, { auth: authStub(), fetch });
     expect(await ports.auth.isAdmin()).toBe(true);
     await ports.catalog.listCategories();
     await ports.api.getStorage().catch(() => undefined);
-    expect(calls[0]!.url).toBe(`${BASE}/rest/v1/admins?select=user_id&user_id=eq.user-1&limit=1`);
+    expect(calls[0]!.url).toBe(`${BASE}/rest/v1/rpc/is_admin`);
+    expect(calls[0]!.method).toBe('POST');
+    expect(calls[0]!.body).toEqual({});
     expect(calls[1]!.url.startsWith(`${BASE}/rest/v1/categories`)).toBe(true);
     expect(calls[2]!.url).toBe(`${WORKER}/storage`);
     for (const call of calls) expect(call.headers.authorization).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('isAdmin is the is_admin RPC result: false stays false, a refusal is false, a 401 is thrown', async () => {
+    const no = createRealPorts(env, { auth: authStub(), fetch: stubFetch({ json: false }).fetch });
+    expect(await no.auth.isAdmin()).toBe(false);
+    const refused = createRealPorts(env, { auth: authStub(), fetch: stubFetch({ status: 403, json: { code: '42501' } }).fetch });
+    expect(await refused.auth.isAdmin()).toBe(false);
+    const expired = createRealPorts(env, { auth: authStub(), fetch: stubFetch({ status: 401, json: {} }).fetch });
+    await expect(expired.auth.isAdmin()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   });
 
   it('the upload port is the XHR one and the publish status reads the public site', async () => {
@@ -609,6 +746,14 @@ describe('source hygiene', () => {
       expect(source, f).not.toMatch(new RegExp('service' + '_role', 'i'));
       expect(source, f).not.toMatch(/dangerouslySetInnerHTML|innerHTML|\beval\(|new Function/);
     }
+  });
+
+  it('creates the supabase client with the PKCE flow, session persistence, refresh and URL detection', () => {
+    const index = text('adapters/real/index.ts');
+    expect(index).toMatch(/flowType:\s*'pkce'/);
+    expect(index).toMatch(/persistSession:\s*true/);
+    expect(index).toMatch(/autoRefreshToken:\s*true/);
+    expect(index).toMatch(/detectSessionInUrl:\s*true/);
   });
 
   it('never inserts into or deletes from the photos table', () => {

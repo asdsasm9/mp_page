@@ -4,7 +4,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import type { AdminEnv } from '../../env';
-import { systemClock, systemIds, type Ports } from '../../ports';
+import { ApiError, systemClock, systemIds, type Ports } from '../../ports';
 import { createRealPublishStatus } from './publishStatus';
 import { createRealApi } from './api';
 import { createRealAuth, type SupabaseAuthLike } from './auth';
@@ -22,7 +22,8 @@ export function createRealPorts(env: AdminEnv, deps: RealPortsDeps = {}): Ports 
   const auth: SupabaseAuthLike =
     deps.auth ??
     createClient(env.supabaseUrl, env.supabaseAnonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      // flowType is explicit: auth-js 2.117.2 defaults to 'implicit'. See the header of ./auth.ts.
+      auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
     }).auth;
 
   // Bearer token from the session at call time: supabase-js refreshes it when needed.
@@ -34,9 +35,15 @@ export function createRealPorts(env: AdminEnv, deps: RealPortsDeps = {}): Ports 
 
   return {
     auth: createRealAuth(auth, {
-      isAdminUser: async (userId) =>
-        (await rest.select<{ user_id: string }>('admins', { select: 'user_id', user_id: `eq.${userId}`, limit: '1' }))
-          .length > 0,
+      // UX-only: the is_admin() RPC under the user's JWT (the same function RLS and the Worker use).
+      isAdminUser: async () => {
+        try {
+          return (await rest.rpc('is_admin')) === true;
+        } catch (error) {
+          if (error instanceof ApiError && error.code === 'NOT_ADMIN') return false;
+          throw error;
+        }
+      },
       ...(redirectTo === undefined ? {} : { redirectTo }),
     }),
     catalog: createRealCatalog(rest),

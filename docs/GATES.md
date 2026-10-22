@@ -6,7 +6,7 @@ What the gates are, and are not:
 
 - They are static text checks over source, configuration and docs. They catch drift (someone adds a service key, a second cron, a table nobody approved, an env variable nobody documented). They do not stop a determined bypass: a person who wants to hide a pattern from a regex can.
 - The behavioural suites remain the real proof: the RLS tests on PGlite (`supabase/tests`), the quota-guard tests (`apps/api/test/quota-guard.test.ts`), and `npm run admin-prod-check` on the production admin build. A green gate with a red suite is red.
-- Gates that need a build (`no-ga-in-dist`, `analytics-in-dist`, `page-checks`, `budget`, the four `admin-dist-*`) report SKIP when no build is on disk. They never build anything themselves, so they stay fast.
+- Gates that need a build (`no-ga-in-dist`, `analytics-in-dist`, `page-checks`, `budget`, the five `admin-dist-*`) report SKIP when no build is on disk. They never build anything themselves, so they stay fast.
 - Golden means the rule reads its expected values from `scripts/architecture.golden.json` (the architecture file) or another committed golden file. Changing a golden file changes what the project promises; it needs an architect-approved decision, not a quiet edit to make a red gate green. Non-golden rules have their patterns in the gate code.
 
 When a gate fails: read the one-line detail (it names the file or the item), fix the cause, rerun `npm run gates`. Do not loosen a pattern to get green.
@@ -41,6 +41,8 @@ When a gate fails: read the one-line detail (it names the file or the item), fix
 | `admin-dist-no-keys` | The production admin build contains no JWT, secret-looking value, `service_role` or private key | Find the string in the bundle source and remove it | no |
 | `admin-dist-no-analytics` | The production admin build has no analytics beacon | Remove the beacon from the admin | no |
 | `admin-dist-hosts` | The admin bundle talks only to library hosts and hosts from the build variables | Remove the stray URL or set the intended variable | no |
+| `no-password-code` | The admin signs in with Google only: `apps/admin/src` and `scripts/` (tests and the gate files excluded) contain no `signInWithPassword`, `resetPasswordForEmail`, `grant_type=password`, password input field, `current-password` autocomplete or `updateUser({ password` | Remove the password code; sign-in goes through Google (`signInWithGoogle`) | no |
+| `admin-dist-no-password` | The production admin build has no password input field and no `current-password` autocomplete (the supabase-js chunk may contain `grant_type=password`, so that is not checked here) | Find the field in the source and remove it, rebuild | no |
 | `migrate-no-service-key` | The legacy migration script never uses a service key | Use the photographer's own sign-in | no |
 | `migrate-no-signup` | The migration script never creates users | Remove the call | no |
 | `migrate-no-photo-writes` | The migration script never writes `photos` directly (the Worker commit does) | Use the Worker commit path | no |

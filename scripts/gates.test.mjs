@@ -14,6 +14,8 @@ import {
   checkAdminDistNoAnalytics,
   checkAdminDistNoFakeMarker,
   checkAdminDistNoKeyStrings,
+  checkAdminDistNoPassword,
+  checkNoPasswordCode,
   checkAnalyticsInDist,
   checkAnalyticsNotInAdminOrApi,
   checkAdminNoHtmlInjection,
@@ -387,6 +389,40 @@ describe('migrate-legacy source rules (WP6-13)', () => {
     for (const c of [checkMigrateNoServiceKey, checkMigrateNoSignUp, checkMigrateNoPhotoWrites, checkMigrateNoR2, checkMigrateNoCredentials]) {
       expect(status(c(src(http)))).toBe('PASS');
     }
+  });
+});
+
+describe('no-password-code (WP9-S10)', () => {
+  const planted = [
+    'await sb.auth.signInWithPassword({ email, password })',
+    'await sb.auth.resetPasswordForEmail(email)',
+    "body: 'grant_type=password'",
+    '<input type="password" />',
+    '<input autoComplete="current-password" />',
+    'await sb.auth.updateUser({ password: x })',
+  ];
+  for (const line of planted) {
+    it(`fails on the planted line ${line}`, () => {
+      expect(status(checkNoPasswordCode([f('apps/admin/src/a.tsx', line)]))).toBe('FAIL');
+      expect(status(checkNoPasswordCode([f('scripts/x.ts', line)]))).toBe('FAIL');
+    });
+  }
+  it('passes clean code, tests, gate files and files elsewhere', () => {
+    expect(status(checkNoPasswordCode([f('apps/admin/src/a.tsx', 'await sb.auth.signInWithOAuth({ provider: "google" })')]))).toBe('PASS');
+    expect(status(checkNoPasswordCode([f('apps/admin/src/a.test.tsx', planted[0])]))).toBe('PASS');
+    expect(status(checkNoPasswordCode([f('scripts/gates.mjs', planted[0])]))).toBe('PASS');
+    expect(status(checkNoPasswordCode([f('apps/web/src/a.ts', planted[0])]))).toBe('PASS');
+  });
+  it('the dist gate flags a password field but allows the supabase-js grant_type', () => {
+    const dist = (t) => [f('apps/admin/dist/assets/a.js', t)];
+    expect(status(checkAdminDistNoPassword([]))).toBe('SKIP');
+    expect(status(checkAdminDistNoPassword(dist('createElement("input",{type:"password"})')))).toBe('FAIL');
+    expect(status(checkAdminDistNoPassword(dist('<input type="password">')))).toBe('FAIL');
+    expect(status(checkAdminDistNoPassword(dist('autocomplete:"current-password"')))).toBe('FAIL');
+    expect(status(checkAdminDistNoPassword(dist('grant_type=password;signInWithPassword')))).toBe('PASS');
+  });
+  it('is registered', () => {
+    expect(CHECKS.map((c) => c.name)).toEqual(expect.arrayContaining(['no-password-code', 'admin-dist-no-password']));
   });
 });
 

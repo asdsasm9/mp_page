@@ -412,6 +412,34 @@ export const checkAdminDistNoKeyStrings = adminDistRule([
   ['secret-named long value', /(secret|password|token)[\w"' ]{0,20}[:=]\s*["'][A-Za-z0-9+/_-]{32,}["']/i],
 ]);
 
+// ---------------------------------------------------------------------------------------------- no password code (WP9-S10)
+// The admin signs in with Google only. Our own code (apps/admin/src and scripts/, tests and the gate files excluded)
+// may not call or build any password flow. The built bundle is scanned only for a password input field: the supabase-js
+// vendor chunk legitimately contains `grant_type=password`, so that string is not looked for in dist.
+export const PASSWORD_SOURCE_PATTERNS = [
+  ['signInWithPassword', /signInWithPassword/],
+  ['resetPasswordForEmail', /resetPasswordForEmail/],
+  ['grant_type=password', /grant_type=password/],
+  ['type="password"', /type\s*=\s*\{?\s*\\?["'`]password\\?["'`]/],
+  ['autoComplete current-password', /autoComplete\s*=\s*\{?\s*["'`]current-password["'`]/i],
+  ['updateUser({ password', /updateUser\s*\(\s*\{\s*password/],
+];
+export const PASSWORD_DIST_PATTERNS = [
+  ['password input field', /\btype\s*[=:]\s*\\?["']password\\?["']/],
+  ['current-password autocomplete', /current-password/],
+];
+const isPasswordScanned = (p) =>
+  (p.startsWith('apps/admin/src/') || p.startsWith('scripts/')) &&
+  /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(p) &&
+  !/\.test\.[cm]?[jt]sx?$/.test(p) &&
+  !/^scripts\/gates[^/]*\.mjs$/.test(p) &&
+  !isSelf(p);
+export function checkNoPasswordCode(files) {
+  const src = files.filter((f) => isPasswordScanned(f.path));
+  return result(findMatches(src, () => false, PASSWORD_SOURCE_PATTERNS), `${src.length} admin and script sources clean`);
+}
+export const checkAdminDistNoPassword = adminDistRule(PASSWORD_DIST_PATTERNS);
+
 // Hosts that libraries only mention in comments, error messages or XML namespaces (not requested by the app).
 export const LIBRARY_HOSTS = ['github.com', 'reactjs.org', 'reactrouter.com', 'json-schema.org', 'w3.org', 'localhost', '127.0.0.1'];
 const hostOf = (v) => {
@@ -534,6 +562,8 @@ export const CHECKS = [
   { name: 'admin-dist-no-keys', input: 'admindist', run: checkAdminDistNoKeyStrings },
   { name: 'admin-dist-no-analytics', input: 'admindist', run: checkAdminDistNoAnalytics },
   { name: 'admin-dist-hosts', input: 'admindist', run: (d) => checkAdminDistExternalHosts(d) },
+  { name: 'no-password-code', input: 'files', run: checkNoPasswordCode },
+  { name: 'admin-dist-no-password', input: 'admindist', run: checkAdminDistNoPassword },
   { name: 'migrate-no-service-key', input: 'files', run: checkMigrateNoServiceKey },
   { name: 'migrate-no-signup', input: 'files', run: checkMigrateNoSignUp },
   { name: 'migrate-no-photo-writes', input: 'files', run: checkMigrateNoPhotoWrites },

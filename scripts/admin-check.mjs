@@ -1,5 +1,5 @@
 // admin-check (WP5-28): the admin app in a real Chrome, built with VITE_BACKEND=fake (in-memory world, no network).
-// Drives the flows F1-F6 of docs/ADMIN-UX.md with failure injection at desktop 1280 and phone 390 (touch), and at every
+// Drives the flows F1-F6 of docs/ADMIN-UX.md with failure injection at desktop 1280, tablet 768 and phone 360 (touch), and at every
 // page/state runs: axe-core (serious/critical fail, colour contrast ON), horizontal overflow, tap/click target size
 // (phone >= 44 px, desktop >= 24 px), clean console (no errors/warnings), an origin allowlist (own origin, data:, blob:),
 // layout shift. Phone also sweeps the routes at 320 px. Saves screenshots and prints their paths.
@@ -115,7 +115,8 @@ const slug = (s) => s.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLower
 
 const PROFILES = [
   { name: 'desktop', width: 1280, height: 900, phone: false },
-  { name: 'phone', width: 390, height: 844, phone: true },
+  { name: 'tablet', width: 768, height: 1024, phone: false },
+  { name: 'phone', width: 360, height: 800, phone: true },
 ];
 
 /** First visible, enabled element of `selector` whose accessible label or text matches `re` (inside the open modal if any). */
@@ -213,6 +214,9 @@ async function checkpoint(ctx, name, { shot = true, targets = true, width = ctx.
   const label = `${profile.name} ${name}`;
   await imagesLoaded(page);
   await sleep(250); // let transitions and live regions settle
+  // The top bar is sticky (T-245): measure from the top of the page so a control that merely sits under it at some
+  // leftover scroll position is not judged as obscured. Focus-not-obscured has its own step ("sticky header").
+  await page.evaluate(() => window.scrollTo(0, 0));
   if (ctx.firstCheckpoint) {
     ctx.firstCheckpoint = false;
     await injectBreaks(ctx);
@@ -498,6 +502,33 @@ async function runProfile(browser, profile) {
       await clickBy(ctx, 'a', /^Nahrávání$/);
       await page.waitForFunction(() => location.pathname === '/nahravani', { timeout: 10000 });
       await checkpoint(ctx, 'upload page', { shot: false });
+    });
+
+    // ---- sticky header (T-245): stays at the top while scrolling, no Úložiště link in the nav, focus is not obscured (WCAG 2.4.11)
+    await step('sticky header', async () => {
+      await spaGo(page, urls.album);
+      await page.waitForSelector('.shell-header', { timeout: 10000 });
+      await sleep(500);
+      const r = await page.evaluate(() => {
+        const header = document.querySelector('.shell-header');
+        const navLinks = [...document.querySelectorAll('.shell-header nav a')].map((a) => a.textContent.trim());
+        const positioned = getComputedStyle(header).position;
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        const top = header.getBoundingClientRect().top;
+        const scrolled = window.scrollY;
+        // Focus the first focusable control of the page body from below: the browser scrolls it up and must stop under the bar.
+        const first = [...document.querySelectorAll('main a[href], main button:not([disabled]), main input:not([disabled])')].find((el) => el.getClientRects().length > 0);
+        first?.focus();
+        const bottom = header.getBoundingClientRect().bottom;
+        const t = first?.getBoundingClientRect().top ?? 0;
+        return { navLinks, positioned, top, scrolled, bottom, firstTop: t, pad: getComputedStyle(document.documentElement).scrollPaddingTop };
+      });
+      if (r.navLinks.some((t) => /Úložiště/.test(t))) throw new Error(`header nav still has Úložiště: ${r.navLinks.join(', ')}`);
+      if (r.positioned !== 'sticky') throw new Error(`header position is ${r.positioned}, not sticky`);
+      if (r.scrolled > 0 && Math.abs(r.top) > 0.5) throw new Error(`header moved to ${r.top}px while scrolled ${r.scrolled}px`);
+      if (r.firstTop < r.bottom - 0.5) throw new Error(`focused control at ${Math.round(r.firstTop)}px is under the header (bottom ${Math.round(r.bottom)}px, scroll-padding-top ${r.pad})`);
+      timings.push({ label: `${profile.name} sticky header: scrolled ${Math.round(r.scrolled)}px, header bottom ${Math.round(r.bottom)}px, first control top ${Math.round(r.firstTop)}px, scroll-padding-top ${r.pad}`, ms: 0 });
+      await page.evaluate(() => window.scrollTo(0, 0));
     });
 
     // ---- expired session: a modal over the running app (Escape ignored, Google button, honest copy)

@@ -65,7 +65,6 @@ export const cs = {
     bottom: 'Spodní navigace',
     categories: glossary.categories,
     upload: glossary.uploading,
-    storage: glossary.storage,
     publish: 'Zveřejnit',
     publishSite: glossary.publishSite,
   },

@@ -24,6 +24,15 @@
 @layer base {
   html {
     scroll-padding-block-end: var(--bottom-nav-height);
+    /* The top bar is sticky: anchors and focused fields must land below it (WCAG 2.4.11). */
+    scroll-padding-block-start: var(--header-height);
+  }
+
+  /* Below desktop width the top bar wraps to two rows (admin-check measured 113 px at 768 and 360 px). */
+  @media (max-width: 79.99rem) {
+    html {
+      scroll-padding-block-start: var(--header-height-wrapped);
+    }
   }
 
   body {
@@ -84,6 +93,9 @@
   }
 
   .shell-header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--z-header);
     display: flex;
     align-items: center;
     justify-content: space-between;

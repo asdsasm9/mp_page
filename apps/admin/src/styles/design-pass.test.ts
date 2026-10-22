@@ -167,9 +167,13 @@ describe('design pass: phone and shell polish', () => {
     expect(phone).toContain('min-block-size: var(--bottom-nav-height)');
   });
 
-  it('gives the shell header a small shadow on phone without making it sticky', () => {
+  it('gives the shell header a small shadow on phone and keeps it sticky (T-245)', () => {
     expect(phone.match(/\.shell-header \{[^}]*\}/)?.[0] ?? '').toContain('box-shadow: var(--shadow-sm)');
-    expect(css).not.toMatch(/\.shell-header[^{]*\{[^}]*position:\s*(?:sticky|fixed)/);
+    const rule = css.match(/\.shell-header \{[^}]*position: sticky[^}]*\}/)?.[0] ?? '';
+    expect(rule).toContain('inset-block-start: 0');
+    expect(rule).toContain('z-index: var(--z-header)');
+    expect(css).toMatch(/html \{[^}]*scroll-padding-block-start: var\(--header-height\)/);
+    expect(css).toMatch(/79\.99rem\) \{\s*html \{[^}]*scroll-padding-block-start: var\(--header-height-wrapped\)/);
   });
 });
 

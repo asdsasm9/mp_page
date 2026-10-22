@@ -72,7 +72,8 @@
     /* Layout */
     --layout-max: 80rem;
     --layout-gutter: clamp(1rem, 4vw, 2.5rem);
-    --header-height: 4.5rem;
+    --header-height: 4.5rem; /* sticky top bar on one row; scroll-padding-block-start keeps focus clear of it */
+    --header-height-wrapped: 8rem; /* phone top bar: brand and sign-out, then storage and queue on a second row */
     --target-min: 2.75rem;
     --target-compact: 2rem; /* quiet links (breadcrumb, footer): above the 24 px WCAG 2.2 minimum */
     --ratio-card: 3 / 2; /* album card covers are cropped to this, whatever the photo's own shape */

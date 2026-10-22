@@ -1,5 +1,5 @@
 import axe from 'axe-core';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -95,8 +95,17 @@ describe('keyboard', () => {
     const user = userEvent.setup();
     await renderAt('/');
     expect(document.activeElement).toBe(document.body);
-    await user.click(screen.getAllByRole('link', { name: cs.nav.storage })[0]!);
+    await user.click(screen.getAllByRole('link', { name: cs.nav.upload })[0]!);
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('main')));
+  });
+
+  it('has no Úložiště link in the header navigation; the storage bar links to the storage screen (T-245)', async () => {
+    await renderAt('/');
+    const header = screen.getByRole('banner');
+    const nav = within(header).getByRole('navigation', { name: cs.nav.main });
+    expect(within(nav).queryByRole('link', { name: /Úložiště/ })).toBeNull();
+    const bar = await within(header).findByRole('link', { name: /Úložiště/ });
+    expect(bar.getAttribute('href')).toBe('/ulozeni');
   });
 });
 

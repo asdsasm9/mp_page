@@ -462,7 +462,21 @@ markup, class name, route, role or Czech text changed; brand colour (H-3), dark 
 - Photo grid and upload (step 6): tile controls and badges carry `--shadow-sm`, a hovered tile `--shadow-md`;
   dropzone and upload-row spacing use `--space-*`; the gallery toolbar wraps with a gap on the phone.
 - Phone and shell (step 7): the row actions have a top divider, the active bottom-nav item is clearer (still 44 px),
-  and the shell header has `--shadow-sm` (not sticky).
+  and the shell header has `--shadow-sm`. Since T-245 the header is sticky (see "Sticky header" below).
+
+### Sticky header (T-245, 2026-10-22)
+
+- `.shell-header` is `position: sticky; inset-block-start: 0; z-index: var(--z-header)`. Dialogs (`--z-dialog`) and the
+  skip link (`--z-skip`) stay above it.
+- `html` has `scroll-padding-block-start: var(--header-height)` (4.5rem, one-row bar at 1280 px and wider) and
+  `var(--header-height-wrapped)` (8rem) below 80rem, where the bar wraps to two rows (measured 113 px at 360 and 768 px,
+  61 px at 1280 px). So anchors, `scrollIntoView` and a field that gets focus land below the bar and are never fully
+  covered (WCAG 2.4.11 Focus Not Obscured). `admin-check` has a "sticky header" step that scrolls down, focuses the
+  first control of the page and asserts it sits below the bar, that the bar is sticky and stays at the top.
+- "Úložiště" is no longer in the header navigation (desktop). The storage bar in the header (and the large bar on the
+  categories screen) is the link to `/ulozeni`; there is no text link in the phone bottom navigation either.
+- `admin-check` profiles are now desktop 1280, tablet 768 and phone 360. Each checkpoint measures from the top of the
+  page (scroll reset), so a control that merely sits under the sticky bar at a leftover scroll position is not judged.
 - Motion: only border-color, box-shadow and background-color transitions, all inside `prefers-reduced-motion: no-preference`.
 
 Measured 2026-10-20 (headless Chrome on macOS, after step 7): `npm test` 133 files, 2427 passed, 5 skipped;

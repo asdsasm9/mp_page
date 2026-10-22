@@ -70,11 +70,6 @@ export function ShellLayout() {
               </NavLink>
             </li>
             <li>
-              <NavLink to="/ulozeni" className={linkClass}>
-                {cs.nav.storage}
-              </NavLink>
-            </li>
-            <li>
               <PublishLink label={cs.nav.publishSite} className={linkClass} />
             </li>
           </ul>

@@ -507,6 +507,17 @@ is reached through the indicator. Checks: `admin-check` step "upload 5 photos" (
 geometry bottom right, clear of the bottom nav, selection bar and header, polite region, count text, opens the panel,
 gone when idle) and `screens/Upload.test.tsx` "T-246".
 
+## Favicon (T-248)
+
+`apps/admin/public/` holds `favicon.svg` (the camera outline of the public site's apple-touch-icon, white on the admin
+navy tile, plus an amber corner dot as the admin badge so the tab differs from the public site), `favicon-32.png`,
+`favicon.ico` (one 32 px PNG entry) and `apple-touch-icon.png` (180 px). The PNG/ICO files are generated from the SVG by
+`node scripts/make-admin-icons.mjs` (sharp, already approved); rerun it after editing the SVG. `index.html` links all four
+(replacing the old `data:` icon); Vite copies `public/` into `dist/`. CSP: the existing `img-src 'self'` covers them, so
+`headers.ts` is unchanged. Check: `admin-prod-check` (`judgeIcons`: the four links exist, no `data:` icon, the files are
+in the built site) and `scripts/admin-prod-check.test.mjs`. Seen at 16 and 32 px in an upscaled render, the camera and
+the amber dot stay readable.
+
 ## Production build, CSP and bundle budget (WP5-29)
 
 `npm run build -w apps/admin` emits `dist/_headers` next to `index.html` (Vite plugin `admin-headers` in

@@ -57,6 +57,19 @@ export function judgeDocumentHeaders(headers) {
   return bad;
 }
 
+/** Icon files index.html must link (T-248) and that must exist in dist. `files` = set of dist-relative paths. */
+export const ICON_FILES = ['favicon.svg', 'favicon-32.png', 'favicon.ico', 'apple-touch-icon.png'];
+export function judgeIcons(html, files) {
+  const bad = [];
+  const links = [...html.matchAll(/<link\b[^>]*>/g)].map((m) => m[0]).filter((l) => /rel="(icon|apple-touch-icon)"/.test(l));
+  for (const f of ICON_FILES) {
+    if (!links.some((l) => l.includes(`href="/${f}"`))) bad.push(`index.html has no icon link to /${f}`);
+    if (!files.has(f)) bad.push(`dist lacks ${f}`);
+  }
+  if (links.some((l) => /href="data:/.test(l))) bad.push('index.html still has a data: icon');
+  return bad;
+}
+
 /**
  * `violations` = securitypolicyviolation events [{ directive, blocked }] seen while the app ran (before the probes),
  * `probes` = the deliberate checks { allowed: [{ name, ok }], blocked: [{ name, directive, seen }] }.

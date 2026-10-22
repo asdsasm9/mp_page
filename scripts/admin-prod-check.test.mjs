@@ -1,5 +1,8 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { INITIAL_JS_GZIP_LIMIT, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders, judgeNoAnalytics } from './admin-prod-check-lib.mjs';
+import { ICON_FILES, INITIAL_JS_GZIP_LIMIT, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders, judgeIcons, judgeNoAnalytics } from './admin-prod-check-lib.mjs';
 
 describe('admin-prod-check judges', () => {
   it('finds the initial script, modulepreloads and stylesheet in index.html', () => {
@@ -18,6 +21,14 @@ describe('admin-prod-check judges', () => {
     const lazy = judgeBundle([{ file: 'assets/index.js', raw: 1, gzip: 200_000, initial: true }, { file: 'assets/real.js', raw: 1, gzip: 150_000, initial: false }]);
     expect(lazy.failures[0]).toMatch(/JS 350000 B gzip/);
     expect(judgeBundle([]).failures[0]).toMatch(/no script/);
+  });
+
+  it('requires the four icon links and files (T-248)', () => {
+    const html = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'admin', 'index.html'), 'utf8');
+    expect(judgeIcons(html, new Set(ICON_FILES))).toEqual([]);
+    expect(judgeIcons(html, new Set(['favicon.svg']))).toHaveLength(3);
+    expect(judgeIcons('<link rel="icon" href="data:image/svg+xml,x">', new Set(ICON_FILES)).length).toBe(5);
+    for (const f of ICON_FILES) expect(existsSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'admin', 'public', f))).toBe(true);
   });
 
   it('requires a hardened CSP on the document', () => {

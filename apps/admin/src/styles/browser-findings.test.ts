@@ -10,8 +10,10 @@ const css = read('./app.css');
 const html = read('../../index.html');
 
 describe('findings of the first real-browser run', () => {
-  it('has an inline icon, so the browser does not request /favicon.ico (404 in the console)', () => {
-    expect(html).toMatch(/<link rel="icon" href="data:/);
+  it('links real icon files (T-248), so /favicon.ico is not a 404 in the console', () => {
+    expect(html).toContain('<link rel="icon" href="/favicon.svg"');
+    expect(html).toContain('href="/favicon.ico"');
+    expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png"');
   });
 
   it('gives links that stand alone on a line, and list titles, a 44 px target', () => {

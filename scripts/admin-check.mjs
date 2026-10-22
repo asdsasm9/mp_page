@@ -37,8 +37,9 @@ if (!chrome) {
 const { default: puppeteer } = await import('puppeteer-core');
 const axeSource = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
 const WORLD = 'MP_ADMIN_FAKE_WORLD_7f3a9c'; // adapters/fake/marker.ts
-const ADMIN = { email: 'fotograf@example.test', password: 'fake-heslo-1' };
-const OUTSIDER = { email: 'host@example.test', password: 'fake-heslo-2' };
+const ADMIN_EMAIL = 'fotograf@example.test'; // the fake Google chooser signs this account in by default
+const GOOGLE_BUTTON = /^Přihlásit se přes Google$/;
+const DENIED_TEXT = /Tento účet Google nemá přístup do správy\. Zkuste se přihlásit jiným účtem Google\./;
 
 // ---------------------------------------------------------------------------------------------- build and fixtures
 if (!skipBuild) {
@@ -153,6 +154,16 @@ async function fieldByLabel(page, re, timeout = 10000) {
     re.source,
   );
   return handle.asElement();
+}
+
+/** The sign-in is Google only: no password field and no password label anywhere on the page. */
+async function expectNoPasswordUi(page) {
+  const found = await page.evaluate(() => {
+    if (document.querySelector('input[type=password], input[autocomplete$=password]')) return 'a password input';
+    const label = [...document.querySelectorAll('label')].find((l) => /heslo/i.test(l.textContent ?? ''));
+    return label ? `a label "${label.textContent.trim()}"` : null;
+  });
+  if (found) throw new Error(`the sign-in shows ${found}`);
 }
 
 async function waitText(page, re, timeout = 15000) {
@@ -305,10 +316,11 @@ async function runProfile(browser, profile) {
   };
 
   try {
-    // ---- login (F0): offline, wrong password, outsider, then the photographer
+    // ---- login (F0): the Google card; offline, cancel, outsider (fake chooser), then the photographer
     await step('open the app', async () => {
       await page.goto(`${origin}/`, { waitUntil: 'networkidle0' });
-      await page.waitForSelector('form');
+      await find(page, '.login-card button', GOOGLE_BUTTON);
+      await expectNoPasswordUi(page);
       const nav = await page.evaluate(() => {
         const n = performance.getEntriesByType('navigation')[0];
         const fcp = performance.getEntriesByName('first-contentful-paint')[0];
@@ -318,26 +330,26 @@ async function runProfile(browser, profile) {
       await checkpoint(ctx, 'login');
     });
     await step('login with injected failures', async () => {
-      const email = await fieldByLabel(page, /^E-mail/);
-      const password = await fieldByLabel(page, /^Heslo$/);
-      await typeInto(ctx, email, ADMIN.email);
-      await typeInto(ctx, password, ADMIN.password);
-      await world(page, '(w) => w.failNext("auth.signIn", "network")');
-      await clickBy(ctx, 'button', /^Přihlásit se$/);
+      // Offline: the fake chooser cannot be reached.
+      await world(page, '(w) => w.failNext("auth.signInWithGoogle", "network")');
+      await clickBy(ctx, '.login-card button', GOOGLE_BUTTON);
       await waitText(page, /Chybí připojení k internetu\./);
-      await checkpoint(ctx, 'login offline error', { shot: false });
-      await typeInto(ctx, password, 'spatne-heslo');
-      await clickBy(ctx, 'button', /^Přihlásit se$/);
-      await waitText(page, /Nesprávný e-mail nebo heslo\./);
-      await checkpoint(ctx, 'login wrong password');
-      await typeInto(ctx, email, OUTSIDER.email);
-      await typeInto(ctx, password, OUTSIDER.password);
-      await clickBy(ctx, 'button', /^Přihlásit se$/);
-      await waitText(page, /Tento účet nemá přístup do správy\./);
-      await checkpoint(ctx, 'login not an admin', { shot: false });
-      await typeInto(ctx, email, ADMIN.email);
-      await typeInto(ctx, password, ADMIN.password);
-      await clickBy(ctx, 'button', /^Přihlásit se$/);
+      await checkpoint(ctx, 'login offline error');
+      // Cancelled at Google.
+      await world(page, '(w) => { w.google.next = "cancel"; }');
+      await clickBy(ctx, '.login-card button', GOOGLE_BUTTON);
+      await waitText(page, /Přihlášení přes Google bylo zrušeno\./);
+      await checkpoint(ctx, 'login cancelled');
+      // A Google account that is not on the list.
+      await world(page, '(w) => { w.google.next = "outsider"; }');
+      await clickBy(ctx, '.login-card button', GOOGLE_BUTTON);
+      await waitText(page, DENIED_TEXT);
+      const signedIn = await world(page, '(w) => w.snapshot().signedInAs');
+      if (signedIn !== null) throw new Error(`the outsider stayed signed in as ${signedIn}`);
+      await expectNoPasswordUi(page);
+      await checkpoint(ctx, 'login not an admin');
+      // The photographer.
+      await clickBy(ctx, '.login-card button', GOOGLE_BUTTON);
       await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Kategorie', { timeout: 15000 });
     });
 
@@ -475,6 +487,24 @@ async function runProfile(browser, profile) {
       await checkpoint(ctx, 'upload page', { shot: false });
     });
 
+    // ---- expired session: a modal over the running app (Escape ignored, Google button, honest copy)
+    await step('expired session', async () => {
+      await world(page, '(w) => w.expireSession()');
+      await page.waitForFunction(() => document.querySelector('dialog:modal') !== null, { timeout: 10000 });
+      await waitText(page, /Přihlášení vypršelo/);
+      await waitText(page, /Po přihlášení se stránka načte znovu, neuložené změny a fotky ve frontě se ztratí\./);
+      await find(page, 'button', GOOGLE_BUTTON);
+      await expectNoPasswordUi(page);
+      await checkpoint(ctx, 'expired session dialog');
+      await page.keyboard.press('Escape');
+      await sleep(300);
+      if (!(await page.evaluate(() => document.querySelector('dialog:modal') !== null))) throw new Error('Escape closed the expired-session dialog');
+      await clickBy(ctx, 'button', GOOGLE_BUTTON);
+      await page.waitForFunction(() => document.querySelector('dialog:modal') === null, { timeout: 15000 });
+      const again = await world(page, '(w) => w.snapshot().signedInAs');
+      if (again !== ADMIN_EMAIL) throw new Error(`after the re-sign-in the session is ${again}`);
+    });
+
     // ---- phone: 320 px reflow sweep over every route (client-side navigation keeps the fake session)
     if (profile.phone) {
       await step('320 px sweep', async () => {
@@ -491,7 +521,7 @@ async function runProfile(browser, profile) {
       await page.setViewport({ width: profile.width, height: profile.height, deviceScaleFactor: profile.phone ? 2 : 1, hasTouch: profile.phone, isMobile: profile.phone });
       await spaGo(page, '/');
       await clickBy(ctx, 'button', /^Odhlásit se$/);
-      await page.waitForSelector('form', { timeout: 10000 });
+      await find(page, '.login-card button', GOOGLE_BUTTON);
     });
 
     // ---- layout shift and timing

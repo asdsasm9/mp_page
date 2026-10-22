@@ -24,4 +24,16 @@ describe('design-check regressions', () => {
     const footer = readFileSync(new URL('../components/Footer.astro', import.meta.url), 'utf8');
     expect(footer).not.toMatch(/position:\s*(fixed|sticky)/);
   });
+
+  it('footer (T-253): brand at h3 level, icon links with Czech names and 44 px targets, no underline, no phone', () => {
+    const footer = readFileSync(new URL('../components/Footer.astro', import.meta.url), 'utf8');
+    expect(footer).toMatch(/class="brand t-h3"/);
+    expect(footer).toMatch(/aria-label=\{`Instagram [^`]*otevře se v novém okně\)`\}/);
+    expect(footer).toMatch(/aria-label=\{`E-mail \$\{MAIL_ADDRESS\}`\}/);
+    expect(footer.match(/<svg [^>]*aria-hidden="true"/g)).toHaveLength(2);
+    expect(footer).toMatch(/\.icon-link \{[^}]*inline-size: var\(--target-min\);[^}]*block-size: var\(--target-min\)/s);
+    expect(footer).toMatch(/a \{[^}]*text-decoration: none/s);
+    expect(footer).not.toMatch(/tel:/);
+    expect(footer).toContain('href="/cookies/"');
+  });
 });

@@ -267,6 +267,11 @@ export interface World {
   /** Worker bindings that match the shim (`goodEnv`). */
   env: Record<string, string>;
   tokens: { admin: string; nonAdmin: string; expired: string };
+  /**
+   * Creates a user with a bearer token. `google` gives it a verified Google identity, `onList` puts
+   * its e-mail on admin_emails; without `google` it only has an `email` identity. Returns the token.
+   */
+  addUser(user: { id: string; email: string; token: string; google: boolean; onList: boolean }): Promise<string>;
   close(): Promise<void>;
 }
 
@@ -295,6 +300,23 @@ export async function makeWorld(options: WorldOptions = {}): Promise<World> {
     shim,
     env: goodEnv(),
     tokens: { admin: ADMIN_TOKEN, nonAdmin: NON_ADMIN_TOKEN, expired: EXPIRED_TOKEN },
+    async addUser({ id, email, token, google, onList }) {
+      const lower = email.trim().toLowerCase();
+      if (google) {
+        await seedAdmin(db, id, lower);
+        if (!onList) await db.query(`delete from public.admin_emails where email = $1`, [lower]);
+      } else {
+        await db.query(`insert into auth.users (id, email, email_confirmed_at) values ($1, $2, now())`, [id, lower]);
+        await db.query(
+          `insert into auth.identities (user_id, provider, identity_data)
+           values ($1, 'email', jsonb_build_object('email', $2::text, 'email_verified', true))`,
+          [id, lower],
+        );
+        if (onList) await db.query(`insert into public.admin_emails (email) values ($1) on conflict do nothing`, [lower]);
+      }
+      tokens.set(token, { userId: id });
+      return token;
+    },
     close: () => db.close(),
   };
 }

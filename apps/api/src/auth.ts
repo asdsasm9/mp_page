@@ -23,6 +23,8 @@ export function isTokenShapeValid(token: string): boolean {
 
 export type AuthResult = { ok: true; jwt: string } | { ok: false; response: Response };
 
+// `is_admin` (database, Google identity on the admin_emails allow-list) is the only authority.
+// Nothing else is inspected here: not the provider, not any JWT claim, not the e-mail address.
 export async function authenticate(request: Request, supabase: SupabaseClient): Promise<AuthResult> {
   const deny = (code: 'UNAUTHENTICATED' | 'NOT_ADMIN' | 'UPSTREAM_ERROR', reason: string): AuthResult => {
     // Reason is a fixed label: no token, header or upstream text.

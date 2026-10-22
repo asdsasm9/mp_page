@@ -34,8 +34,9 @@ export const ROUTES = [
   { path: '/layout-check/categories/7/', name: 'category-7', light: true },
   { path: '/o-mne/', name: 'about' },
   { path: '/kontakt/', name: 'contact' },
-  { path: '/cookies/', name: 'cookies', light: true },
-  { path: '/neexistuje/', name: '404', light: true },
+  // `short`: sticky footer cases (T-242), see STICKY_VIEWPORTS.
+  { path: '/cookies/', name: 'cookies', light: true, short: true },
+  { path: '/neexistuje/', name: '404', light: true, short: true },
 ];
 
 /** `--routes /a/,/b/ --runs 1 --out dir --dist dir`; throws on unknown flags or bad values. */
@@ -187,6 +188,33 @@ export function evaluateGrid(route, width, rows, edge, tol = GRID_TOLERANCE_PX) 
   return out;
 }
 
+/** Sticky footer cases (T-242): short pages are checked at these viewports; 1280x1600 is the tall monitor. */
+export const STICKY_VIEWPORTS = [
+  { width: 360, height: 900 },
+  { width: 768, height: 900 },
+  { width: 1280, height: 900 },
+  { width: 1280, height: 1600 },
+];
+
+export const STICKY_TOLERANCE_PX = 1;
+
+/**
+ * `m`: { footerBottom, footerPosition, viewport, scrollHeight } in CSS px. The footer's bottom edge must equal the
+ * viewport bottom when the page is shorter than the viewport, or the end of the document when it is longer.
+ * Never position: fixed/sticky (it must stay in flow).
+ */
+export function evaluateStickyFooter(route, vp, m, tol = STICKY_TOLERANCE_PX) {
+  const label = `${route} @${vp.width}x${vp.height}`;
+  if (!m || typeof m.footerBottom !== 'number') return [`${label}: no footer found`];
+  const out = [];
+  if (m.footerPosition === 'fixed' || m.footerPosition === 'sticky') out.push(`${label}: footer is ${m.footerPosition}, it must stay in flow`);
+  const expected = Math.max(m.viewport, m.scrollHeight);
+  if (Math.abs(m.footerBottom - expected) > tol) {
+    out.push(`${label}: footer bottom ${m.footerBottom.toFixed(1)}px, expected ${expected}px (${m.scrollHeight <= m.viewport ? 'viewport bottom' : 'page end'})`);
+  }
+  return out;
+}
+
 export function evaluateConsole(route, messages) {
   return messages.map((m) => `${route}: console error: ${m}`);
 }
@@ -203,6 +231,7 @@ export function aggregate(results, t = THRESHOLDS) {
     failures.push(...evaluateReflow(r.route, r.overflow ?? 0));
     if (r.keyboard) failures.push(...evaluateKeyboard(r.route, r.keyboard));
     failures.push(...(r.gridProblems ?? []));
+    failures.push(...(r.stickyProblems ?? []));
     failures.push(...evaluateConsole(r.route, r.consoleErrors ?? []));
   }
   if (!results.length) failures.push('no routes were checked');

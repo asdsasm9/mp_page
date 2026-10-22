@@ -36,6 +36,9 @@
   }
 
   body {
+    /* Sticky footer (T-242): column shell, <main> takes the free space; footer is in flow, never fixed. */
+    display: flex;
+    flex-direction: column;
     min-block-size: 100dvh;
     background: var(--color-bg);
     color: var(--color-text);
@@ -44,6 +47,10 @@
     line-height: var(--line-height-body);
     text-align: start;
     overflow-wrap: break-word;
+  }
+
+  body > main {
+    flex: 1 0 auto;
   }
 
   h1,

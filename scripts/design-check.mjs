@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  EXIT, REFLOW_WIDTH, SKIPPED_MESSAGE, evaluateGrid, isExpectedConsoleError, WIDTHS, aggregate, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
+  EXIT, REFLOW_WIDTH, SKIPPED_MESSAGE, STICKY_VIEWPORTS, evaluateStickyFooter, evaluateGrid, isExpectedConsoleError, WIDTHS, aggregate, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
 } from './design-check-lib.mjs';
 import { createDistServer, listen } from './serve-dist.mjs';
 
@@ -161,6 +161,27 @@ async function main() {
           entry.keyboard = [...(entry.keyboard ?? []), ...(await keyboardPass(page, width))];
         }
         await page.close();
+      }
+      if (route.short) {
+        entry.stickyProblems = [];
+        for (const vp of STICKY_VIEWPORTS) {
+          const page = await browser.newPage();
+          await page.setViewport(vp);
+          await page.goto(url, { waitUntil: 'networkidle0' });
+          const m = await page.evaluate(() => {
+            const f = document.querySelector('footer');
+            if (!f) return null;
+            return {
+              footerBottom: f.getBoundingClientRect().bottom + scrollY,
+              footerPosition: getComputedStyle(f).position,
+              viewport: innerHeight,
+              scrollHeight: document.documentElement.scrollHeight,
+            };
+          });
+          entry.stickyProblems.push(...evaluateStickyFooter(route.path, vp, m));
+          await page.screenshot({ path: join(out, `${route.name}-sticky-${vp.width}x${vp.height}.png`) });
+          await page.close();
+        }
       }
       if (!route.light) {
         const summaries = [];

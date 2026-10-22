@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
-  EXIT, THRESHOLDS, aggregate, evaluateGrid, evaluateKeyboard, evaluateLighthouse, isExpectedConsoleError, seoIgnoringCrawlable, median, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
+  EXIT, STICKY_VIEWPORTS, THRESHOLDS, aggregate, evaluateStickyFooter, evaluateGrid, evaluateKeyboard, evaluateLighthouse, isExpectedConsoleError, seoIgnoringCrawlable, median, medianSummary, parseArgs, selectRoutes, summarizeLhr, verdictLine,
 } from './design-check-lib.mjs';
 import { CHROME_FALLBACKS, findChrome } from './design-check.mjs';
 import { createDistServer, headersFor, listen, parseHeaders } from './serve-dist.mjs';
@@ -70,6 +70,32 @@ describe('evaluateGrid (justified album rows)', () => {
   it('lists the four album layout fixtures', () => {
     const names = selectRoutes(null).map((r) => r.name);
     expect(names).toEqual(expect.arrayContaining(['album-5', 'album-9', 'album-60', 'album-120']));
+  });
+});
+
+describe('evaluateStickyFooter (T-242)', () => {
+  const vp = { width: 1280, height: 1600 };
+  it('covers 360, 768, 1280 and the tall 1280x1600 viewport on the short routes', () => {
+    expect(STICKY_VIEWPORTS.map((v) => `${v.width}x${v.height}`)).toEqual(['360x900', '768x900', '1280x900', '1280x1600']);
+    expect(selectRoutes(['/cookies/', '/neexistuje/']).every((r) => r.short)).toBe(true);
+  });
+  it('passes when the footer bottom is the viewport bottom on a short page', () => {
+    expect(evaluateStickyFooter('/cookies/', vp, { footerBottom: 1600, footerPosition: 'static', viewport: 1600, scrollHeight: 1600 })).toEqual([]);
+  });
+  it('passes at the page end on a page longer than the viewport', () => {
+    expect(evaluateStickyFooter('/cookies/', vp, { footerBottom: 2100, footerPosition: 'static', viewport: 900, scrollHeight: 2100 })).toEqual([]);
+  });
+  it('fails when the footer floats above the viewport bottom', () => {
+    const p = evaluateStickyFooter('/neexistuje/', vp, { footerBottom: 700, footerPosition: 'static', viewport: 1600, scrollHeight: 1600 });
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatch(/viewport bottom/);
+  });
+  it('fails for a fixed footer and for a missing footer', () => {
+    expect(evaluateStickyFooter('/a/', vp, { footerBottom: 900, footerPosition: 'fixed', viewport: 900, scrollHeight: 900 })).toHaveLength(1);
+    expect(evaluateStickyFooter('/a/', vp, null)).toHaveLength(1);
+  });
+  it('is part of aggregate', () => {
+    expect(aggregate([{ route: '/a/', light: true, stickyProblems: ['x'] }]).verdict).toBe('FAIL');
   });
 });
 

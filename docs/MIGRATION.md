@@ -30,7 +30,7 @@ Default is a dry-run: no network, no writes except `migration-report/` (a `<time
 ### Environment variables (names only; values are never written to a file, a report or the log)
 
 These are class 5 of `.env.example`. `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `PUBLIC_IMG_BASE_URL` are listed there once,
-under the Worker and web classes; the table below lists all seven the script reads. You export them in your shell, they are not read from a file.
+under the Worker and web classes; the table below lists all five the script reads. You export them in your shell, they are not read from a file.
 
 | Name | Use |
 |------|-----|
@@ -38,17 +38,26 @@ under the Worker and web classes; the table below lists all seven the script rea
 | `SUPABASE_ANON_KEY` | Public anon key. |
 | `API_BASE_URL` | Origin of the deployed Worker. |
 | `PUBLIC_IMG_BASE_URL` | Public image origin (used for the redirect targets). |
-| `MIGRATE_ADMIN_EMAIL` | Sign-in of the admin account that runs the migration. |
-| `MIGRATE_ADMIN_PASSWORD` | Its password (password grant; the JWT stays in memory only). |
-| `MIGRATE_ACCESS_TOKEN` | Optional. An access token of that admin, used instead of the password grant. |
+| `MIGRATE_ACCESS_TOKEN` | Access token of a signed-in admin (Google sign-in; the script has no password login). Kept in memory only. |
 
-The script never sees R2 keys: only presigned URLs from the Worker. It has no service-role key. A non-admin account
-fails closed (`NOT_ADMIN`) before any write. Use your own second admin account, never the photographer's password.
+The script never sees R2 keys: only presigned URLs from the Worker. It has no service-role key. An account that is not
+on the allow-list fails closed (`NOT_ADMIN`) before any write; the check is the `is_admin` RPC under the token.
+
+#### Getting the access token
+
+1. Sign in to the admin app with an allow-listed Google account in your own browser.
+2. Open DevTools, Application (Chrome) or Storage (Firefox), Local Storage, the admin origin.
+3. Find the key `sb-<project-ref>-auth-token` (key name UNVERIFIED: check it against the real app, H-17/H-18). Its value is JSON; copy the `access_token` field.
+4. Export it in your shell as `MIGRATE_ACCESS_TOKEN` for the run.
+
+The token lives about one hour. The script is resumable, so when it expires (`UNAUTHENTICATED`) sign in again, copy a fresh
+token and re-run. Never paste the token into a chat, a ticket or a file, and never commit it. If it is missing, the script
+stops with an error that names only `MIGRATE_ACCESS_TOKEN`, never its value.
 
 ## Prerequisites (all must be true before `--live`)
 
 1. H-2 is finished (accounts and projects exist).
-2. Supabase is set up: migrations applied, sign-ups off, your admin user has an `admins` row (`docs/ADMIN.md`, deploy step 5).
+2. Supabase is set up: migrations applied, sign-ups off, your Google e-mail is on the `admin_emails` allow-list (`docs/ADMIN.md`).
 3. The Worker is deployed with its R2 bindings and secrets (`docs/DEPLOY-API.md`) and `API_BASE_URL` points to it.
 4. The VERIFY rows 33 to 36 in `docs/VERIFY.md` are understood; row 4 (presigned PUT and content-length) has been tested.
 5. At least one real photo was uploaded through the admin and displayed correctly. That proves the whole real chain once before 141 photos depend on it. Delete that test photo afterwards if you want a clean catalog.
@@ -156,5 +165,4 @@ JWT: `authenticated` has insert on `url_history` behind the `is_admin()` policy,
 ## Evidence still to collect
 
 VERIFY rows 33 to 36 (first real presigned PUT through the script, real quota figures, sharp output on live R2,
-live sign-in with the password grant). The admin is password-only (D-12). If TOTP is added later and the password
-grant is blocked because the account has it, sign in on the admin, copy the access token and pass it as `MIGRATE_ACCESS_TOKEN`; it expires after about an hour.
+live admin check with a copied access token). The token expires after about an hour; re-run with a fresh one (see "Getting the access token").

@@ -17,7 +17,7 @@ Options:
   --allow-host              Accept a Supabase host outside *.supabase.co and localhost
 
 Environment (names only, see .env.example):
-  MIGRATE_ADMIN_EMAIL, MIGRATE_ADMIN_PASSWORD, MIGRATE_ACCESS_TOKEN (optional),
+  MIGRATE_ACCESS_TOKEN (access token of a signed-in admin, lives about an hour),
   SUPABASE_URL, SUPABASE_ANON_KEY, API_BASE_URL, PUBLIC_IMG_BASE_URL
 `;
 

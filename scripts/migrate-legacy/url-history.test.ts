@@ -18,8 +18,7 @@ const env = {
   SUPABASE_URL: 'https://abcdefgh.supabase.co',
   SUPABASE_ANON_KEY: 'k',
   API_BASE_URL: 'https://api.example.test',
-  MIGRATE_ADMIN_EMAIL: 'a@example.test',
-  MIGRATE_ADMIN_PASSWORD: 'pw',
+  MIGRATE_ACCESS_TOKEN: 'tok',
   PUBLIC_IMG_BASE_URL: BASE,
 };
 

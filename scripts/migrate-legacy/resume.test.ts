@@ -114,7 +114,7 @@ describe('crash resume', () => {
 });
 
 describe('--album in live mode', () => {
-  const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ADMIN_EMAIL: 'a@example.test', MIGRATE_ADMIN_PASSWORD: 'pw' };
+  const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ACCESS_TOKEN: 'tok' };
   const live = (b: FakeBackend, extra: string[]) => main(['--live', '--confirm-project', 'abcdefgh', ...extra], () => {}, () => {}, { env, backend: b, upload: deps(), reportDir: tempReportDir() });
 
   it('writes only the chosen album and a later run for another album leaves the first alone', async () => {

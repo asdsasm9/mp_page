@@ -16,8 +16,7 @@ const env = {
   SUPABASE_URL: 'https://abcdefgh.supabase.co',
   SUPABASE_ANON_KEY: 'anon-key',
   API_BASE_URL: 'https://api.example.test',
-  MIGRATE_ADMIN_EMAIL: 'admin@example.test',
-  MIGRATE_ADMIN_PASSWORD: SECRET,
+  MIGRATE_ACCESS_TOKEN: SECRET,
 };
 
 let tiny: Buffer;
@@ -130,7 +129,7 @@ describe('live report files', () => {
     expect(r.files).toEqual(['2026-01-02T03-04-05-000Z.json', '2026-01-02T03-04-05-000Z.md']);
     const json = JSON.parse(r.texts[0]!);
     expect(json.result).toBe('INCOMPLETE');
-    expect(json.aborted).toContain('upload phase failed: kaboom [url] by [redacted] using [redacted] and [redacted], Bearer [redacted]');
+    expect(json.aborted).toContain('upload phase failed: kaboom [url] by [email] using [redacted] and [redacted], Bearer [redacted]');
     expect(r.texts[1]).toContain('ABORTED: upload phase failed');
     expect(r.texts[1]).toContain('RESULT: INCOMPLETE');
     for (const text of r.texts) {

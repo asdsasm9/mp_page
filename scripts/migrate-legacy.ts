@@ -125,8 +125,7 @@ async function runLive(
     err(`migrate-legacy: upload phase failed (${e instanceof BackendError ? e.code : (e as Error).message}).`);
     // Still leave a report behind: catalog drift and an error label scrubbed of URLs, e-mails and credentials.
     try {
-      const c = config.credentials;
-      const secrets = [config.anonKey, ...('accessToken' in c ? [c.accessToken] : [c.email, c.password])];
+      const secrets = [config.anonKey, config.credentials.accessToken];
       const label = e instanceof BackendError ? e.code : e instanceof Error ? e.message : 'UNKNOWN';
       writeLiveReport(buildFailedLiveReport(options.alt, pre.storage.used_bytes, catalog.drift, label, secrets), reportDir, stamp);
       out('report written to migration-report/');

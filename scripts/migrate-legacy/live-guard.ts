@@ -56,14 +56,10 @@ export function checkLive(options: Pick<MigrateOptions, 'confirmProject' | 'allo
   const api = parseUrl('API_BASE_URL', env.API_BASE_URL);
   if (!env.SUPABASE_ANON_KEY) throw new LiveGuardError('SUPABASE_ANON_KEY is not set');
 
-  let credentials: Credentials;
-  if (env.MIGRATE_ACCESS_TOKEN) {
-    credentials = { accessToken: env.MIGRATE_ACCESS_TOKEN };
-  } else if (env.MIGRATE_ADMIN_EMAIL && env.MIGRATE_ADMIN_PASSWORD) {
-    credentials = { email: env.MIGRATE_ADMIN_EMAIL, password: env.MIGRATE_ADMIN_PASSWORD };
-  } else {
-    throw new LiveGuardError('credentials missing: set MIGRATE_ADMIN_EMAIL and MIGRATE_ADMIN_PASSWORD (or MIGRATE_ACCESS_TOKEN)');
+  if (!env.MIGRATE_ACCESS_TOKEN) {
+    throw new LiveGuardError('MIGRATE_ACCESS_TOKEN is not set');
   }
+  const credentials: Credentials = { accessToken: env.MIGRATE_ACCESS_TOKEN };
   return {
     supabaseUrl: supa.href.replace(/\/+$/, ''),
     anonKey: env.SUPABASE_ANON_KEY,

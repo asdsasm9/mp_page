@@ -92,7 +92,7 @@ describe('syncCovers', () => {
 });
 
 describe('full live run, 141 photos', () => {
-  const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ADMIN_EMAIL: 'a@example.test', MIGRATE_ADMIN_PASSWORD: 'pw' };
+  const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ACCESS_TOKEN: 'tok' };
 
   it('sets all 13 covers per the table, orders are 1..n, the report shows both, a rerun changes nothing', async () => {
     const b = createFakeBackend();

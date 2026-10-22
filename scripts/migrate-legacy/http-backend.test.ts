@@ -6,7 +6,6 @@ import { createHttpBackend, type Credentials, type FetchLike } from './http-back
 import { checkLive, LiveGuardError } from './live-guard';
 import { tempReportDir } from './report-dir.helper';
 
-const SENTINEL_PASSWORD = 'SENTINEL-pw-7f3a9c-do-not-print';
 const SENTINEL_TOKEN = 'SENTINEL.jwt.token-91b2';
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 const PROJECT = 'abcdefgh';
@@ -23,8 +22,8 @@ interface Call {
   body: string | undefined;
 }
 
-/** A tiny fake Supabase + Worker + R2. `isAdmin` decides the admins lookup. */
-function fakeHttp(opts: { isAdmin?: boolean; authStatus?: number; extra?: (c: Call) => Response | undefined } = {}) {
+/** A tiny fake Supabase + Worker + R2. `isAdmin` decides the is_admin RPC answer, `rpcStatus` forces an error status. */
+function fakeHttp(opts: { isAdmin?: boolean; rpcStatus?: number; extra?: (c: Call) => Response | undefined } = {}) {
   const calls: Call[] = [];
   const fetch: FetchLike = async (input, init) => {
     const c: Call = {
@@ -36,27 +35,24 @@ function fakeHttp(opts: { isAdmin?: boolean; authStatus?: number; extra?: (c: Ca
     calls.push(c);
     const extra = opts.extra?.(c);
     if (extra) return extra;
-    if (c.url.includes('/auth/v1/token')) {
-      if (opts.authStatus) return json({ error: 'invalid_grant' }, opts.authStatus);
-      return json({ access_token: SENTINEL_TOKEN, user: { id: USER_ID } });
+    if (c.url.endsWith('/rest/v1/rpc/is_admin')) {
+      if (opts.rpcStatus) return json({ message: 'JWT expired' }, opts.rpcStatus);
+      return json(opts.isAdmin !== false);
     }
-    if (c.url.includes('/auth/v1/user')) return json({ id: USER_ID });
-    if (c.url.includes('/rest/v1/admins')) return json(opts.isAdmin === false ? [] : [{ user_id: USER_ID }]);
     return json({ error: 'NOT_FOUND' }, 404);
   };
   return { calls, fetch };
 }
 
-const pw: Credentials = { email: 'admin@example.test', password: SENTINEL_PASSWORD };
-const mk = (fetch: FetchLike, credentials: Credentials = pw) =>
+const tok: Credentials = { accessToken: SENTINEL_TOKEN };
+const mk = (fetch: FetchLike, credentials: Credentials = tok) =>
   createHttpBackend({ supabaseUrl: SUPA, anonKey: 'anon-key', apiBaseUrl: API, publicImgBaseUrl: 'https://img.example.test', credentials, fetch });
 
 const baseEnv = {
   SUPABASE_URL: SUPA,
   SUPABASE_ANON_KEY: 'anon-key',
   API_BASE_URL: API,
-  MIGRATE_ADMIN_EMAIL: 'admin@example.test',
-  MIGRATE_ADMIN_PASSWORD: SENTINEL_PASSWORD,
+  MIGRATE_ACCESS_TOKEN: SENTINEL_TOKEN,
 };
 
 describe('live guards', () => {
@@ -66,11 +62,9 @@ describe('live guards', () => {
   it('accepts a matching project over https', () => {
     const c = checkLive(ok, baseEnv);
     expect(c.projectLabel).toBe(PROJECT);
-    expect(c.credentials).toEqual({ email: 'admin@example.test', password: SENTINEL_PASSWORD });
+    expect(c.credentials).toEqual({ accessToken: SENTINEL_TOKEN });
   });
-  it('accepts a token instead of a password, and localhost over http', () => {
-    const { MIGRATE_ADMIN_EMAIL: _e, MIGRATE_ADMIN_PASSWORD: _p, ...rest } = baseEnv;
-    expect(checkLive(ok, { ...rest, MIGRATE_ACCESS_TOKEN: SENTINEL_TOKEN }).credentials).toEqual({ accessToken: SENTINEL_TOKEN });
+  it('accepts localhost over http', () => {
     expect(checkLive({ confirmProject: 'localhost', allowHost: false }, { ...baseEnv, SUPABASE_URL: 'http://localhost:54321', API_BASE_URL: 'http://localhost:8787' }).projectLabel).toBe('localhost');
   });
   it('refuses missing or wrong confirm', () => {
@@ -122,35 +116,33 @@ describe('live guards', () => {
     fails(ok, { ...baseEnv, SUPABASE_URL: undefined });
     fails(ok, { ...baseEnv, SUPABASE_ANON_KEY: undefined });
     fails(ok, { ...baseEnv, API_BASE_URL: undefined });
-    fails(ok, { ...baseEnv, MIGRATE_ADMIN_PASSWORD: undefined });
-    fails(ok, { ...baseEnv, MIGRATE_ADMIN_EMAIL: '' });
+    fails(ok, { ...baseEnv, MIGRATE_ACCESS_TOKEN: undefined });
+    fails(ok, { ...baseEnv, MIGRATE_ACCESS_TOKEN: '' });
   });
-  it('error messages never contain secrets', () => {
+  it('a missing token names only the variable; other errors never contain the token', () => {
+    let missing = '';
+    try {
+      checkLive(ok, { ...baseEnv, MIGRATE_ACCESS_TOKEN: undefined });
+    } catch (e) {
+      missing = String(e);
+    }
+    expect(missing).toContain('MIGRATE_ACCESS_TOKEN');
+    expect(missing).not.toMatch(/MIGRATE_ADMIN|password/i);
     try {
       checkLive({ confirmProject: 'wrong', allowHost: false }, baseEnv);
     } catch (e) {
-      expect(String(e)).not.toContain(SENTINEL_PASSWORD);
+      expect(String(e)).not.toContain(SENTINEL_TOKEN);
     }
   });
 });
 
 describe('HttpBackend sign-in', () => {
-  it('password grant, then admin check under the user JWT', async () => {
+  it('admin check is the is_admin RPC under the token, and nothing else', async () => {
     const h = fakeHttp();
     await mk(h.fetch).signIn();
-    expect(h.calls.map((c) => `${c.method} ${c.url.replace(SUPA, '')}`)).toEqual([
-      'POST /auth/v1/token?grant_type=password',
-      `GET /rest/v1/admins?select=user_id&user_id=eq.${USER_ID}&limit=1`,
-    ]);
+    expect(h.calls.map((c) => `${c.method} ${c.url.replace(SUPA, '')}`)).toEqual(['POST /rest/v1/rpc/is_admin']);
     expect(h.calls[0]!.headers.apikey).toBe('anon-key');
-    expect(JSON.parse(h.calls[0]!.body!)).toEqual({ email: 'admin@example.test', password: SENTINEL_PASSWORD });
-    expect(h.calls[1]!.headers.authorization).toBe(`Bearer ${SENTINEL_TOKEN}`);
-  });
-  it('access token path looks the user up first', async () => {
-    const h = fakeHttp();
-    await mk(h.fetch, { accessToken: SENTINEL_TOKEN }).signIn();
-    expect(h.calls[0]!.url).toBe(`${SUPA}/auth/v1/user`);
-    expect(h.calls.some((c) => c.url.includes('/auth/v1/token'))).toBe(false);
+    expect(h.calls[0]!.headers.authorization).toBe(`Bearer ${SENTINEL_TOKEN}`);
   });
   it('a non-admin fails closed with NOT_ADMIN and can then make no request', async () => {
     const h = fakeHttp({ isAdmin: false });
@@ -161,8 +153,8 @@ describe('HttpBackend sign-in', () => {
     await expect(b.listAlbums()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
     expect(h.calls).toHaveLength(before);
   });
-  it('wrong credentials map to UNAUTHENTICATED; transport failure to NETWORK', async () => {
-    await expect(mk(fakeHttp({ authStatus: 400 }).fetch).signIn()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+  it('an expired token maps to UNAUTHENTICATED; transport failure to NETWORK', async () => {
+    await expect(mk(fakeHttp({ rpcStatus: 401 }).fetch).signIn()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
     await expect(mk(async () => { throw new TypeError('boom'); }).signIn()).rejects.toMatchObject({ code: 'NETWORK' });
   });
   it('nothing is requested before sign-in', async () => {
@@ -293,14 +285,14 @@ describe('migrate-legacy --live entry', () => {
     const cases: Array<[string[], Record<string, string | undefined>]> = [
       [['--live'], baseEnv],
       [['--live', '--confirm-project', 'wrong'], baseEnv],
-      [live, { ...baseEnv, MIGRATE_ADMIN_PASSWORD: undefined }],
+      [live, { ...baseEnv, MIGRATE_ACCESS_TOKEN: undefined }],
       [live, { ...baseEnv, SUPABASE_URL: `http://${PROJECT}.supabase.co` }],
       [live, { ...baseEnv, SUPABASE_URL: `https://${PROJECT}.example.test` }],
     ];
     for (const [argv, env] of cases) {
       const r = await run(argv, env, f);
       expect(r.code).toBe(2);
-      expect(r.text).not.toContain(SENTINEL_PASSWORD);
+      expect(r.text).not.toContain(SENTINEL_TOKEN);
     }
     expect(spy).not.toHaveBeenCalled();
   });
@@ -310,24 +302,23 @@ describe('migrate-legacy --live entry', () => {
     const r = await run(live, baseEnv, h.fetch);
     expect(r.code).toBe(1);
     expect(r.text).toContain('NOT_ADMIN');
-    expect(h.calls.every((c) => c.method === 'GET' || c.url.includes('/auth/v1/token'))).toBe(true);
-    expect(h.calls.some((c) => c.method !== 'GET' && !c.url.includes('/auth/v1/'))).toBe(false);
+    expect(h.calls.every((c) => c.url.endsWith('/rest/v1/rpc/is_admin'))).toBe(true);
   });
 
-  it('an admin signs in, the read-only pre-flight starts (here the fake API refuses it); sentinel password in no output', async () => {
+  it('an admin signs in, the read-only pre-flight starts (here the fake API refuses it); sentinel token in no output', async () => {
     const h = fakeHttp();
     const r = await run(live, baseEnv, h.fetch);
     expect(r.code).toBe(1);
     expect(r.text).toContain('signed in as admin');
     expect(r.text).toContain('pre-flight failed');
     expect(h.calls.some((c) => c.url.includes('/rest/v1/photos') && c.method !== 'GET')).toBe(false);
-    for (const secret of [SENTINEL_PASSWORD, SENTINEL_TOKEN]) expect(r.text).not.toContain(secret);
+    expect(r.text).not.toContain(SENTINEL_TOKEN);
   });
 
   it('failed sign-in prints a code only', async () => {
-    const r = await run(live, baseEnv, fakeHttp({ authStatus: 400 }).fetch);
+    const r = await run(live, baseEnv, fakeHttp({ rpcStatus: 401 }).fetch);
     expect(r.code).toBe(1);
     expect(r.text).toContain('UNAUTHENTICATED');
-    expect(r.text).not.toContain(SENTINEL_PASSWORD);
+    expect(r.text).not.toContain(SENTINEL_TOKEN);
   });
 });

@@ -9,7 +9,7 @@ import { redirectLine } from './planner';
 import { tempReportDir } from './report-dir.helper';
 
 const BASE = 'https://img.example.test';
-const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ADMIN_EMAIL: 'a@example.test', MIGRATE_ADMIN_PASSWORD: 'pw' };
+const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ACCESS_TOKEN: 'tok' };
 
 let tiny: Buffer;
 beforeAll(async () => {

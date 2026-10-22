@@ -90,8 +90,7 @@ describe('migrate-legacy --live catalog phase', () => {
     SUPABASE_URL: 'https://abcdefgh.supabase.co',
     SUPABASE_ANON_KEY: 'anon-key',
     API_BASE_URL: 'https://api.example.test',
-    MIGRATE_ADMIN_EMAIL: 'admin@example.test',
-    MIGRATE_ADMIN_PASSWORD: 'SENTINEL-pw',
+    MIGRATE_ACCESS_TOKEN: 'SENTINEL-pw',
   };
   const run = async (backend: ReturnType<typeof createFakeBackend>, extra: string[] = []) => {
     const out: string[] = [];

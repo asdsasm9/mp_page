@@ -172,7 +172,7 @@ describe('preflight', () => {
     const b = createFakeBackend({ limits: { quotaHardBytes: 1000, quotaWarnBytes: 500 } });
     const out: string[] = [];
     const err: string[] = [];
-    const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ADMIN_EMAIL: 'a@example.test', MIGRATE_ADMIN_PASSWORD: 'pw' };
+    const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ACCESS_TOKEN: 'tok' };
     const code = await main(['--live', '--confirm-project', 'abcdefgh', '--album', 'frankovi'], (l) => out.push(l), (l) => err.push(l), { env, backend: b, upload: deps(), reportDir: tempReportDir() });
     expect(code).toBe(1);
     expect(err.join('\n')).toContain('refused, nothing was written');
@@ -187,7 +187,7 @@ describe('preflight', () => {
     expect(pre.refusal).toBeNull();
     expect(pre.warn).toBe(true);
     const out: string[] = [];
-    const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ADMIN_EMAIL: 'a@example.test', MIGRATE_ADMIN_PASSWORD: 'pw' };
+    const env = { SUPABASE_URL: 'https://abcdefgh.supabase.co', SUPABASE_ANON_KEY: 'k', API_BASE_URL: 'https://api.example.test', MIGRATE_ACCESS_TOKEN: 'tok' };
     const code = await main(['--live', '--confirm-project', 'abcdefgh', '--album', 'frankovi'], (l) => out.push(l), () => {}, { env, backend: b, upload: deps(), reportDir: tempReportDir() });
     expect(code).toBe(0);
     expect(out.join('\n')).toContain('WARNING: this run crosses the storage warn level');

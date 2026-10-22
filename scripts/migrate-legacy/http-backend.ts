@@ -24,7 +24,7 @@ import { BackendError, type AlbumInput, type BackendErrorCode, type CategoryInpu
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
-export type Credentials = { email: string; password: string } | { accessToken: string };
+export type Credentials = { accessToken: string };
 
 export interface HttpBackendConfig {
   /** Supabase project URL, no trailing slash needed. */
@@ -141,45 +141,28 @@ export function createHttpBackend(config: HttpBackendConfig): MigrationBackend {
     return parsed.data;
   }
 
-  // ---- Auth
+  // ---- Admin check
 
-  async function authRequest(path: string, init: RequestInit): Promise<unknown> {
-    const res = await send(`${supabase}/auth/v1/${path}`, init);
-    if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 422) throw new BackendError('UNAUTHENTICATED');
+  /** POST /rest/v1/rpc/is_admin under the token; answers a JSON boolean. */
+  async function isAdminRpc(): Promise<boolean> {
+    const res = await send(`${supabase}/rest/v1/rpc/is_admin`, {
+      method: 'POST',
+      headers: { apikey: config.anonKey, authorization: `Bearer ${bearer()}`, accept: 'application/json', 'content-type': 'application/json' },
+      body: '{}',
+      cache: 'no-store',
+    });
     if (!res.ok) throw new BackendError(byStatus(res.status));
-    return jsonOf(res);
+    return (await jsonOf(res)) === true;
   }
 
   return {
     async signIn() {
-      let accessToken: string;
-      let userId: string;
-      const creds = config.credentials;
-      if ('accessToken' in creds) {
-        accessToken = creds.accessToken;
-        const user = await authRequest('user', {
-          method: 'GET',
-          headers: { apikey: config.anonKey, authorization: `Bearer ${accessToken}`, accept: 'application/json' },
-        });
-        if (!isObject(user) || typeof user.id !== 'string') throw new BackendError('UNAUTHENTICATED');
-        userId = user.id;
-      } else {
-        const session = await authRequest('token?grant_type=password', {
-          method: 'POST',
-          headers: { apikey: config.anonKey, 'content-type': 'application/json', accept: 'application/json' },
-          body: JSON.stringify({ email: creds.email.trim(), password: creds.password }),
-        });
-        if (!isObject(session) || typeof session.access_token !== 'string' || !isObject(session.user) || typeof session.user.id !== 'string') {
-          throw new BackendError('UNAUTHENTICATED');
-        }
-        accessToken = session.access_token;
-        userId = session.user.id;
-      }
-      // Admin check under the user's own JWT (own row only), before anything else can run. Fails closed.
-      token = accessToken;
+      // The token comes from a signed-in admin session (MIGRATE_ACCESS_TOKEN). The admin check runs under it
+      // before anything else can run. Fails closed.
+      token = config.credentials.accessToken;
       let admin: boolean;
       try {
-        admin = (await rest<{ user_id: string }>('GET', 'admins', { select: 'user_id', user_id: `eq.${userId}`, limit: '1' })).length > 0;
+        admin = await isAdminRpc();
       } catch (e) {
         token = null;
         throw e;

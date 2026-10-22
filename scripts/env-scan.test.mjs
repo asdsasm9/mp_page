@@ -155,7 +155,7 @@ describe('env-scan on the real repo', () => {
     'PUBLIC_ADMIN_ORIGIN',
     'PUBLIC_CF_ANALYTICS_TOKEN',
     'VITE_R2_UPLOAD_ORIGIN',
-    'MIGRATE_ADMIN_EMAIL',
+    'MIGRATE_ACCESS_TOKEN',
     'CHROME_PATH',
   ])('finds %s', (n) => expect(names).toContain(n));
   it('finds the worker, admin, web and script groups, and nothing malformed', () => {

@@ -14,7 +14,7 @@ describe('docs/MIGRATION.md', () => {
   it('finds the flags and env names in the source (guards the extraction)', () => {
     expect(flags).toEqual(expect.arrayContaining(['--help', '--live', '--confirm-project', '--album', '--limit-bytes', '--repair', '--alt', '--allow-host']));
     expect(envNames).toEqual(
-      expect.arrayContaining(['MIGRATE_ADMIN_EMAIL', 'MIGRATE_ADMIN_PASSWORD', 'MIGRATE_ACCESS_TOKEN', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'API_BASE_URL', 'PUBLIC_IMG_BASE_URL']),
+      expect.arrayContaining(['MIGRATE_ACCESS_TOKEN', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'API_BASE_URL', 'PUBLIC_IMG_BASE_URL']),
     );
   });
 

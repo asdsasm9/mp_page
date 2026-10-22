@@ -916,10 +916,23 @@
     color: var(--color-text-muted);
   }
 
-  .breadcrumb a {
+  .breadcrumb ol {
+    align-items: center;
+  }
+
+  .breadcrumb li {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--target-min);
+  }
+
+  /* links and the current item share one box so they sit on one baseline */
+  .breadcrumb a,
+  .breadcrumb [aria-current='page'] {
     display: inline-flex;
     align-items: center;
     min-block-size: var(--target-min);
+    overflow-wrap: anywhere;
   }
 
   .header-actions {

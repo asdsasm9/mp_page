@@ -241,6 +241,25 @@ async function checkpoint(ctx, name, { shot = true, targets = true, width = ctx.
   );
   m.targets = targets ? await page.evaluate(collectTargetsInPage) : [];
   const bad = judgeCheckpoint(m, { phone: profile.phone });
+  // T-249: every breadcrumb item (links and the aria-current item) sits at the same vertical position within its row.
+  const crumbs = await page.evaluate(() =>
+    [...document.querySelectorAll('.breadcrumb li')].map((li) => {
+      const el = li.firstElementChild;
+      const l = li.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      return { row: Math.round(l.top), top: Math.round(r.top), height: Math.round(r.height), inset: Math.round(r.top - l.top), current: el.getAttribute('aria-current') };
+    }),
+  );
+  if (crumbs.length) {
+    if (crumbs.filter((c) => c.current === 'page').length !== 1 || crumbs[crumbs.length - 1].current !== 'page') bad.push('breadcrumb: exactly the last item must carry aria-current="page"');
+    const rows = new Map();
+    for (const c of crumbs) rows.set(c.row, [...(rows.get(c.row) ?? []), c]);
+    for (const items of rows.values()) {
+      if (new Set(items.map((c) => c.top)).size > 1) bad.push(`breadcrumb items in one row have different vertical positions: ${items.map((c) => c.top).join(', ')}`);
+    }
+    if (new Set(crumbs.map((c) => c.inset)).size > 1) bad.push(`breadcrumb items sit at different offsets in their rows: ${crumbs.map((c) => c.inset).join(', ')}`);
+    if (new Set(crumbs.map((c) => c.height)).size > 1 && rows.size === 1) bad.push(`breadcrumb items have different heights: ${crumbs.map((c) => c.height).join(', ')}`);
+  }
   for (const b of bad) failures.push(`${label}: ${b}`);
   for (const v of m.axe.filter((v) => v.impact !== 'serious' && v.impact !== 'critical')) console.log(`  note ${label}: axe ${v.impact} ${v.id} (${v.nodes}) ${v.target ?? ''}`);
   const smallest = m.targets.length ? Math.min(...m.targets.map((t) => Math.min(t.w, t.h))) : null;

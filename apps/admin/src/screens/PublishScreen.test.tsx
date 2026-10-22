@@ -10,6 +10,7 @@ import { AppProviders } from '../AppProviders';
 import { cs } from '../i18n/cs';
 import { formatPragueDateTime } from '../i18n/format';
 import { ApiError } from '../ports';
+import { CHANGES_SHOWN } from './ChangesDialog';
 
 afterEach(() => {
   cleanup();
@@ -247,6 +248,119 @@ describe('publish screen', () => {
     await screen.findByText(cs.publish.done);
     await check();
   }, 60_000);
+});
+
+describe('list of unpublished changes (T-251)', () => {
+  const showButton = () => screen.getByRole('button', { name: cs.publish.showChanges });
+  const dialog = () => screen.getByRole('dialog');
+  const lines = () => within(dialog()).queryAllByRole('listitem');
+
+  /** Two categories, two albums, photos: a realistic mix of kinds. */
+  async function richWorld() {
+    const { world, clock } = await makeWorld({ changes: false });
+    const c = world.ports.catalog;
+    const wedding = await c.createCategory({ slug: 'svatby', name: 'Svatby' });
+    const portraits = await c.createCategory({ slug: 'portrety', name: 'Portréty' });
+    const a1 = await c.createAlbum({ category_id: wedding.id, slug: 'novakovi', title: 'Novákovi', published: true });
+    await c.createAlbum({ category_id: portraits.id, slug: 'studio', title: 'Studio', published: true });
+    await world.ports.api.publish();
+    await clock.advance(61_000);
+    // After the publish: an edit, a rename and a reorder.
+    await c.updateAlbum(a1.id, { title: 'Novákovi 2026' });
+    await c.updateCategory(portraits.id, { sort: 50 });
+    return { world, clock, wedding, portraits, a1 };
+  }
+
+  it('the number equals the lines of the dialog, grouped by category and album with Czech kinds', async () => {
+    const { world } = await richWorld();
+    await open(world);
+    expect(screen.getByText(/^2 úpravy od posledního zveřejnění$/)).toBeTruthy();
+    await userEvent.setup().click(showButton());
+    expect(dialog().getAttribute('aria-labelledby')).toBeTruthy();
+    expect(within(dialog()).getByRole('heading', { level: 2, name: cs.publish.changes.title })).toBeTruthy();
+    expect(lines()).toHaveLength(2);
+    const headings = within(dialog()).getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(headings).toEqual(['Portréty', 'Svatby']); // newest change first
+    expect(lines().map((l) => l.textContent)).toEqual([
+      'Kategorie Portréty změněno pořadí',
+      'Album Novákovi 2026 upraveno',
+    ]);
+    expect(within(dialog()).getByRole('heading', { level: 4, name: 'Novákovi 2026' })).toBeTruthy();
+  });
+
+  it('the dialog count always equals the number shown on the panel, including photos and deletes', async () => {
+    const { world, a1 } = await richWorld();
+    await world.ports.catalog.deleteAlbum((world.snapshot().albums as { id: string; title: string }[]).find((a) => a.title === 'Studio')!.id);
+    await world.ports.catalog.updateAlbum(a1.id, { sort: 99 });
+    await open(world);
+    const n = world.snapshot().changeLog.length;
+    expect(screen.getByText(new RegExp(`^${n} úpr.* od posledního zveřejnění$`))).toBeTruthy();
+    await userEvent.setup().click(showButton());
+    expect(lines()).toHaveLength(n);
+    expect(lines().map((l) => l.textContent)).toContain('Album Studio smazáno');
+  });
+
+  it('keyboard: focus moves into the dialog, Escape closes it and focus returns to the button', async () => {
+    const { world } = await richWorld();
+    await open(world);
+    const user = userEvent.setup();
+    showButton().focus();
+    await user.keyboard('{Enter}');
+    expect(dialog().contains(document.activeElement)).toBe(true);
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(document.activeElement).toBe(showButton());
+  });
+
+  it('the Close button closes it', async () => {
+    const { world } = await richWorld();
+    await open(world);
+    const user = userEvent.setup();
+    await user.click(showButton());
+    await user.click(within(dialog()).getByRole('button', { name: cs.publish.changes.close }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('with nothing unpublished the dialog shows the empty state', async () => {
+    const { world } = await makeWorld({ changes: false });
+    await open(world);
+    await userEvent.setup().click(showButton());
+    expect(within(dialog()).getByText(cs.publish.changes.empty)).toBeTruthy();
+    expect(lines()).toHaveLength(0);
+  });
+
+  it('a long list is limited and ends with "a dalších N"', async () => {
+    const { world } = await makeWorld({ changes: false });
+    const category = await world.ports.catalog.createCategory({ slug: 'svatby', name: 'Svatby' });
+    for (let i = 0; i < CHANGES_SHOWN + 7; i++) {
+      await world.ports.catalog.createAlbum({ category_id: category.id, slug: `album-${i}`, title: `Album ${i}` });
+    }
+    await open(world);
+    const total = CHANGES_SHOWN + 8;
+    expect(screen.getByText(new RegExp(`^${total} úprav od posledního zveřejnění$`))).toBeTruthy();
+    await userEvent.setup().click(showButton());
+    expect(lines()).toHaveLength(CHANGES_SHOWN);
+    expect(within(dialog()).getByText('a dalších 8')).toBeTruthy();
+  });
+
+  it('a successful publish empties the list and the count', async () => {
+    const { world, clock } = await richWorld();
+    await open(world);
+    await userEvent.setup().click(button());
+    await screen.findByText(cs.publish.building);
+    await advance(clock, 90_000);
+    await screen.findByText(cs.publish.done);
+    await waitFor(() => expect(screen.getByText(cs.publish.noChanges)).toBeTruthy());
+    expect(world.snapshot().changeLog).toEqual([]);
+  }, 60_000);
+
+  it('has no accessibility violations with the dialog open', async () => {
+    const { world } = await richWorld();
+    await open(world);
+    await userEvent.setup().click(showButton());
+    const result = await axe.run(document.body, { rules: { 'color-contrast': { enabled: false } } });
+    expect(result.violations.map((v) => v.id)).toEqual([]);
+  });
 });
 
 describe('Prague time', () => {

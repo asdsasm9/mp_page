@@ -32,6 +32,7 @@ export const catalogKeys = {
   siteState: () => [...ALL, 'site-state'] as const,
   appConfig: () => [...ALL, 'app-config'] as const,
   publishLog: (limit: number) => [...ALL, 'publish-log', limit] as const,
+  changeLog: () => [...ALL, 'change-log'] as const,
 };
 
 function useCatalogQuery<T>(key: QueryKey, read: (catalog: CatalogPort) => Promise<T>, enabled = true) {
@@ -80,7 +81,21 @@ export function usePhotosByAlbum(albumIds: readonly string[]): ReadonlyMap<strin
 }
 
 export const useSiteState = () => useCatalogQuery(catalogKeys.siteState(), (c) => c.getSiteState());
-export const usePublishLog = (limit: number) =>
+export const useChangeLog = () => useCatalogQuery(catalogKeys.changeLog(), (c) => c.listChangeLog());
+
+/**
+ * Number of unpublished changes: the length of the change log, the same lines "Zobrazit změny" lists, so the
+ * number and the list cannot disagree. `undefined` while loading; if the log cannot be read it falls back to the
+ * raw site_state counter (which then may differ from the list, but the list is not shown either).
+ */
+export function usePendingCount(): number | undefined {
+  const changes = useChangeLog();
+  const site = useSiteState();
+  if (changes.data) return changes.data.length;
+  if (changes.isError) return site.data?.pending_changes;
+  return undefined;
+}
+export const usePublishLog =(limit: number) =>
   useCatalogQuery(catalogKeys.publishLog(limit), (c) => c.listPublishLog(limit));
 
 function useCatalogMutation<V, R>(write: (catalog: CatalogPort, variables: V) => Promise<R>) {

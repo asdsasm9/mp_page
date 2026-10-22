@@ -523,6 +523,20 @@ async function runProfile(browser, profile) {
       await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Zveřejnit web', { timeout: 10000 });
       await waitText(page, /úprav/);
       await checkpoint(ctx, 'publish');
+      // T-251: the list of unpublished changes; the number on the panel equals the listed lines (limit and "a dalších N" aside).
+      const panelCount = await page.evaluate(() => Number(/^(\d+)/.exec(document.querySelector('.publish-status')?.textContent ?? '')?.[1] ?? NaN));
+      await clickBy(ctx, 'button', /^Zobrazit změny$/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal .changes-line') !== null, { timeout: 10000 });
+      const listed = await page.evaluate(() => ({
+        lines: document.querySelectorAll('dialog:modal .changes-line').length,
+        more: Number(/(\d+)/.exec(document.querySelector('dialog:modal .changes-more')?.textContent ?? '')?.[1] ?? 0),
+        kinds: [...new Set([...document.querySelectorAll('dialog:modal .changes-kind')].map((e) => e.textContent.trim()))],
+      }));
+      if (!(panelCount > 0) || listed.lines + listed.more !== panelCount) throw new Error(`panel counts ${panelCount}, the dialog lists ${listed.lines} + ${listed.more} more`);
+      timings.push({ label: `${profile.name} changes dialog: panel ${panelCount}, listed ${listed.lines}, kinds ${listed.kinds.join('/')}`, ms: 0 });
+      await checkpoint(ctx, 'publish changes dialog');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => document.querySelector('dialog:modal') === null, { timeout: 10000 });
       await world(page, '(w) => { w.setBuildDelay(1500); w.failNext("api.publish", "network", 1); }');
       await clickBy(ctx, 'button', /^Zveřejnit web$/);
       await page.waitForSelector('.publish-card [role=alert]', { timeout: 10000 });

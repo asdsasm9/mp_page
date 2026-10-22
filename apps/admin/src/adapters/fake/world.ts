@@ -5,7 +5,8 @@
  *
  * Failure injection for tests and the browser checks: failNext, dropNetwork, expireSession, slowPut.
  */
-import { DEFAULT_LIMITS, type Limits, type Snapshot } from '@mp/shared';
+import { DEFAULT_LIMITS, type ChangeLogRow, type Limits, type Snapshot } from '@mp/shared';
+import { sortedChangeLog } from './changes';
 import type { Clock, Ids, Ports } from '../../ports';
 import { createFakeApi } from './api';
 import { FAKE_ADMIN, FAKE_OUTSIDER, createFakeAuth, notifyAuthChange } from './auth';
@@ -46,6 +47,7 @@ export interface WorldSnapshot {
   objects: { key: string; bytes: number }[];
   site: { pending_changes: number; last_published_at: string | null; last_publish_requested_at: string | null };
   publishLog: unknown[];
+  changeLog: ChangeLogRow[];
   published: unknown;
   queuedFailures: number;
 }
@@ -89,6 +91,8 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
     grants: new Map(),
     site: { id: true, pending_changes: 0, last_published_at: null, last_publish_requested_at: null },
     publishLog: [],
+    changeLog: [],
+    changeSeq: 0,
     published: null,
     pendingBuild: null,
     offline: false,
@@ -164,6 +168,7 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
         objects: [...state.objects.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([key, o]) => ({ key, bytes: o.bytes })),
         site: { ...state.site },
         publishLog: structuredClone(state.publishLog),
+        changeLog: sortedChangeLog(state.changeLog).map((l) => ({ ...l })),
         published: structuredClone(state.published),
         queuedFailures: state.failures.reduce((n, f) => n + f.times, 0),
       };

@@ -1,7 +1,9 @@
 /** Publish screen (`/zverejnit`, ADMIN-UX 3.6): button, live status, pending count and the last 10 publishes. */
 import type { PublishLogRow } from '@mp/shared';
 import { useCanMutate } from '../data/health';
-import { usePublishLog, useSiteState } from '../data/catalog';
+import { useState } from 'react';
+import { useChangeLog, usePendingCount, usePublishLog, useSiteState } from '../data/catalog';
+import { ChangesDialog } from './ChangesDialog';
 import { isPublishFailure, usePublishFlow, type PublishPhase } from '../data/publish';
 import { useDocumentTitle } from '../components/Page';
 import { LoadFailure } from '../components/LoadFailure';
@@ -61,14 +63,19 @@ function History() {
 export function PublishScreen() {
   useDocumentTitle(cs.routes.publish.title);
   const site = useSiteState();
+  const changes = useChangeLog();
+  const pendingCount = usePendingCount();
   const canMutate = useCanMutate();
   const siteUrl = useSiteUrl();
   const { phase, busy, repeatPressed, publish } = usePublishFlow();
+  const [listOpen, setListOpen] = useState(false);
 
-  const pending = site.data?.pending_changes ?? 0;
-  const noChanges = site.data !== undefined && pending === 0 && !busy;
+  // The number is the length of the change log, i.e. exactly the lines of "Zobrazit změny" (T-251).
+  const pending = pendingCount ?? 0;
+  const loaded = site.data !== undefined && pendingCount !== undefined;
+  const noChanges = loaded && pending === 0 && !busy;
   // While busy the button stays focusable (aria-disabled) so a repeat press can explain itself.
-  const disabled = !canMutate || noChanges || site.data === undefined;
+  const disabled = !canMutate || noChanges || !loaded;
   const live = liveText(phase, repeatPressed);
   const failure = failureText(phase);
   const last = site.data?.last_published_at;
@@ -82,7 +89,7 @@ export function PublishScreen() {
         <section
           className="card publish-card"
           aria-label={cs.publish.statusLabel}
-          data-state={site.data ? (pending > 0 ? 'pending' : 'clean') : 'loading'}
+          data-state={loaded ? (pending > 0 ? 'pending' : 'clean') : 'loading'}
         >
           {pending > 0 ? (
             <p className="publish-flag">
@@ -91,7 +98,7 @@ export function PublishScreen() {
             </p>
           ) : null}
           <p className="publish-status">
-            {site.data
+            {loaded
               ? pending > 0
                 ? fill(plural(pending, cs.publish.pending), { count: pending })
                 : busy
@@ -100,6 +107,13 @@ export function PublishScreen() {
               : cs.data.loading}
           </p>
           <p className="page-note">{last ? fill(cs.publish.lastPublished, { date: formatPragueDateTime(last) }) : cs.publish.neverPublished}</p>
+          {changes.data ? (
+            <p>
+              <button type="button" className="button" aria-haspopup="dialog" onClick={() => setListOpen(true)}>
+                {cs.publish.showChanges}
+              </button>
+            </p>
+          ) : null}
           <p>
             <button
               type="button"
@@ -128,6 +142,7 @@ export function PublishScreen() {
           ) : null}
         </section>
       )}
+      {listOpen && changes.data ? <ChangesDialog changes={changes.data} onClose={() => setListOpen(false)} /> : null}
       <section aria-labelledby="publish-history-title">
         <h2 id="publish-history-title">{cs.publish.historyTitle}</h2>
         <History />

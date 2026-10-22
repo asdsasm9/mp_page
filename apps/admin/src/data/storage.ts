@@ -32,6 +32,7 @@ export function refreshStorageAndSite(queryClient: QueryClient): Promise<void> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: storageKeys.all }),
     queryClient.invalidateQueries({ queryKey: catalogKeys.siteState() }),
+    queryClient.invalidateQueries({ queryKey: catalogKeys.changeLog() }),
   ]).then(() => undefined);
 }
 

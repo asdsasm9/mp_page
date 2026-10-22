@@ -173,6 +173,7 @@ ho máš. Na sdíleném počítači se odhlas i z Googlu.
 - **Zveřejnit web**: všechny úpravy se ukládají hned, ale návštěvníci je uvidí až po „Zveřejnit web“ (chvíli to trvá, stránka ukazuje průběh).
   Tečka s popiskem „Nezveřejněné změny“ (v horní liště i na stránce Zveřejnit web) říká, že na webu ještě nejsou všechny úpravy;
   panel je pak zvýrazněný, ukazuje počet úprav a tlačítko je hlavní. Když je vše zveřejněno, je panel klidný a tlačítko je obyčejné.
+  Tlačítko „Zobrazit změny“ otevře seznam těch úprav (kategorie, album, fotka, název a co se stalo: přidáno, upraveno, smazáno, změněno pořadí).
 - **Úložiště**: ukazuje, kolik místa zbývá. Při varování zbývá málo, při plném úložišti se nahrávání zastaví. Tlačítko
   „Zkontrolovat úložiště“ najde zbytky po přerušeném nahrávání a po potvrzení je smaže.
 - Texty stránek (Domů, O mně, Kontakt) se tady nemění; ty upravuje správce webu.
@@ -303,9 +304,17 @@ Recorded where the build differs from the spec on purpose. None of them removes 
 7. **The duplicate check is per session.** "Tato fotka už v albu je." compares album, file name and size with the
    files uploaded since the page was opened (forgotten on sign-out), not with photos from earlier sessions. The
    prompt defaults to skipping.
-8. **Pending-change wording.** The publish page shows "N úprav od posledního zveřejnění" (a count from
-   `site_state.pending_changes`) and the shell shows a dot with "Nezveřejněné změny"; there is no list or summary of
-   what changed (ADMIN-UX 3.6 asks for a summary). T-247: the publish card has `data-state` `pending` (thick start
+8. **Pending-change wording.** The publish page shows "N úprav od posledního zveřejnění" and the shell shows a dot
+   with "Nezveřejněné změny". T-251 (decision D-18 option A): N is the number of lines of the `change_log` table
+   (`docs/DATA-MODEL.md`, "Change log"), not the raw `site_state.pending_changes` counter, and the button
+   "Zobrazit změny" opens a dialog (the shared `Modal`) with exactly those lines: what (Kategorie, Album, Fotka), the
+   name at change time and the kind (přidáno, upraveno, smazáno, změněno pořadí), grouped by category (h3) and album
+   (h4), newest first. At most 40 lines are shown, then "a dalších N"; with nothing unpublished the dialog says
+   "Žádné nové změny." Focus starts on the summary line, Escape or "Zavřít" closes and focus returns to the button.
+   The header dot uses the same count (`usePendingCount`). If `change_log` cannot be read (for example before the
+   migration is applied) the page falls back to the raw counter and hides the button. The log holds one line per
+   changed row (a photo edited five times is one line), and a row added and deleted before a publish leaves none.
+   The fake world implements the same rules (`adapters/fake/changes.ts`). T-247: the publish card has `data-state` `pending` (thick start
    border, larger count, the same dot and words as the header, primary button), `clean` (flat, muted surface,
    neutral button) or `loading`; it sits `--space-7` below the heading, and the top-bar publish link is set apart
    from "Kategorie". The header dot uses `--color-accent` with a strong border, the same as the primary button.

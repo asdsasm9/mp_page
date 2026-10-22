@@ -1,6 +1,7 @@
 /** Fake PostgREST: the table constraints, grants, triggers and RLS-free paths of supabase/migrations, in memory. */
 import { isReservedCategorySlug, isValidSlug, type AlbumRow, type CategoryRow, type PhotoRow } from '@mp/shared';
 import { CatalogError, type CatalogPort } from '../../ports';
+import { logChange, sortedChangeLog } from './changes';
 import { bySortThenId, copy, type Core } from './core';
 
 const PHOTO_PATCH_COLUMNS = ['album_id', 'sort', 'alt', 'caption'];
@@ -69,6 +70,7 @@ export function createFakeCatalog(core: Core): CatalogPort {
       checkCategory(row);
       state.categories.set(row.id, row);
       core.bump();
+      logChange(core, 'categories', { op: 'insert', after: row });
       return copy(row);
     },
     async updateCategory(id, patch, options = {}) {
@@ -81,14 +83,17 @@ export function createFakeCatalog(core: Core): CatalogPort {
       next.updated_at = core.stamp(row.updated_at);
       state.categories.set(id, next);
       core.bump();
+      logChange(core, 'categories', { op: 'update', before: row, after: next });
       return copy(next);
     },
     async deleteCategory(id) {
       guard('catalog.deleteCategory');
-      if (!state.categories.has(id)) return;
+      const row = state.categories.get(id);
+      if (!row) return;
       for (const a of state.albums.values()) if (a.category_id === id) throw new CatalogError('IN_USE');
       state.categories.delete(id);
       core.bump();
+      logChange(core, 'categories', { op: 'delete', before: row });
     },
 
     async listAlbums(filter = {}) {
@@ -125,6 +130,7 @@ export function createFakeCatalog(core: Core): CatalogPort {
       checkAlbum(row);
       state.albums.set(row.id, row);
       core.bump();
+      logChange(core, 'albums', { op: 'insert', after: row });
       return copy(row);
     },
     async updateAlbum(id, patch, options = {}) {
@@ -144,14 +150,17 @@ export function createFakeCatalog(core: Core): CatalogPort {
       next.updated_at = core.stamp(row.updated_at);
       state.albums.set(id, next);
       core.bump();
+      logChange(core, 'albums', { op: 'update', before: row, after: next });
       return copy(next);
     },
     async deleteAlbum(id) {
       guard('catalog.deleteAlbum');
-      if (!state.albums.has(id)) return;
+      const row = state.albums.get(id);
+      if (!row) return;
       for (const p of state.photos.values()) if (p.album_id === id) throw new CatalogError('IN_USE');
       state.albums.delete(id);
       core.bump();
+      logChange(core, 'albums', { op: 'delete', before: row });
     },
 
     async listPhotos(albumId) {
@@ -177,6 +186,7 @@ export function createFakeCatalog(core: Core): CatalogPort {
       next.updated_at = core.stamp(row.updated_at);
       state.photos.set(id, next);
       core.bump();
+      logChange(core, 'photos', { op: 'update', before: row, after: next });
       return copy(next);
     },
 
@@ -196,6 +206,10 @@ export function createFakeCatalog(core: Core): CatalogPort {
       guard('catalog.getSiteState');
       return copy(state.site);
     },
+    async listChangeLog() {
+      guard('catalog.listChangeLog');
+      return copy(sortedChangeLog(state.changeLog));
+    },
     async listPublishLog(limit) {
       guard('catalog.listPublishLog');
       const rows = [...state.publishLog].sort(
@@ -210,8 +224,10 @@ export function createFakeCatalog(core: Core): CatalogPort {
 export function clearCoversOfPhoto(core: Core, photoId: string): void {
   for (const album of core.state.albums.values()) {
     if (album.cover_photo_id !== photoId) continue;
+    const before = { ...album };
     album.cover_photo_id = null;
     album.updated_at = core.stamp(album.updated_at);
     core.bump();
+    logChange(core, 'albums', { op: 'update', before, after: album });
   }
 }

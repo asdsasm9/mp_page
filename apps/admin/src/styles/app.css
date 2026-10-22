@@ -1581,6 +1581,71 @@
     color: var(--color-danger);
   }
 
+  /* "Zobrazit změny" dialog (T-251): groups by category and album, one line per change. */
+  .dialog:has(.changes-groups) {
+    inline-size: min(100% - 2 * var(--space-4), 38rem);
+  }
+
+  .changes-groups {
+    display: grid;
+    gap: var(--space-5);
+    margin-block: var(--space-4);
+  }
+
+  .changes-group > h3 {
+    font-size: var(--font-size-0);
+    padding-block-end: var(--space-1);
+    border-block-end: var(--border-width) solid var(--color-border-strong);
+  }
+
+  .changes-album {
+    margin-block-start: var(--space-3);
+  }
+
+  .changes-album > h4 {
+    font-size: var(--font-size-0);
+    color: var(--color-text-muted);
+  }
+
+  .changes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .changes-line {
+    padding-block: var(--space-2);
+    border-block-end: var(--border-width) solid var(--color-border);
+    overflow-wrap: anywhere;
+  }
+
+  .changes-what {
+    color: var(--color-text-muted);
+  }
+
+  .changes-name {
+    font-weight: 700;
+  }
+
+  .changes-kind {
+    white-space: nowrap;
+  }
+
+  /* A dash between the name and the kind; the empty alternative keeps it out of the accessible text. */
+  .changes-kind::before {
+    content: '\2013\00a0';
+    content: '\2013\00a0' / '';
+  }
+
+  .changes-line[data-kind='deleted'] .changes-kind {
+    font-weight: 700;
+    color: var(--color-danger);
+  }
+
+  .changes-more {
+    font-weight: 700;
+  }
+
   /* Storage screen (WP5-26): breakdown table and reconcile report. */
   .data-table {
     inline-size: 100%;

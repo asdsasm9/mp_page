@@ -205,6 +205,21 @@ export const cs = {
     loadFailed: 'Stav zveřejnění se nepodařilo načíst.',
     log: { started: 'Probíhá', ok: 'Zveřejněno', failed: 'Nepodařilo se' },
     logCounts: '{albums}, {photos}',
+    showChanges: 'Zobrazit změny',
+    /** The list of unpublished changes (T-251): a dialog with one line per changed category, album or photo. */
+    changes: {
+      title: 'Nezveřejněné změny',
+      empty: 'Žádné nové změny.',
+      close: 'Zavřít',
+      more: 'a dalších {count}',
+      loadFailed: 'Seznam změn se nepodařilo načíst.',
+      noCategory: 'Bez kategorie',
+      noAlbum: 'Bez alba',
+      unnamedPhoto: 'bez popisu',
+      unnamed: 'bez názvu',
+      what: { categories: 'Kategorie', albums: 'Album', photos: 'Fotka' },
+      kind: { added: 'přidáno', edited: 'upraveno', deleted: 'smazáno', reordered: 'změněno pořadí' },
+    },
   },
   /** Reorderable lists (ADMIN-UX F2, 3.2). {name}, {position}, {total}, {max} are filled in by the component. */
   reorder: {

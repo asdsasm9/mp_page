@@ -41,6 +41,7 @@ import {
 } from '@mp/shared';
 import { ApiError, NetworkError, type ApiPort } from '../../ports';
 import { clearCoversOfPhoto } from './catalog';
+import { logChange } from './changes';
 import { copy, type Core } from './core';
 
 const PRESIGN_EXPIRY_MS = PRESIGN_EXPIRY_SEC * 1000;
@@ -286,6 +287,7 @@ export function createFakeApi(core: Core): ApiPort {
       };
       state.photos.set(photo.id, photo);
       core.bump();
+      logChange(core, 'photos', { op: 'insert', after: photo });
       return respond(CommitResponseSchema, { photo: copy(photo), already_existed: false });
     },
 
@@ -297,8 +299,10 @@ export function createFakeApi(core: Core): ApiPort {
       for (const id of new Set(ids)) {
         if (!state.photos.has(id)) continue;
         clearCoversOfPhoto(core, id);
+        const gone = state.photos.get(id)!;
         state.photos.delete(id);
         core.bump();
+        logChange(core, 'photos', { op: 'delete', before: gone });
         deleted++;
         objectsDeleted += removeObjectsOf(id);
       }
@@ -419,6 +423,8 @@ export function createFakeApi(core: Core): ApiPort {
       log.snapshot_bytes = snapshotBytes;
       state.site.pending_changes = Math.max(state.site.pending_changes - pendingSeen, 0);
       state.site.last_published_at = log.finished_at;
+      // record_publish: lines written up to the request are published; later ones stay.
+      state.changeLog = state.changeLog.filter((l) => l.at > log.requested_at);
 
       state.pendingBuild =
         state.buildDelayMs === null

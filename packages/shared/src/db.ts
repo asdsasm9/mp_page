@@ -99,6 +99,24 @@ export interface UploadReservationRow {
   expires_at: string;
 }
 
+export type ChangeKind = 'added' | 'edited' | 'deleted' | 'reordered';
+export type ChangeTable = 'categories' | 'albums' | 'photos';
+
+/** One catalog row that differs from the last published site (written by the log_change trigger). */
+export interface ChangeLogRow {
+  id: number;
+  at: string;
+  table_name: ChangeTable;
+  row_id: string;
+  kind: ChangeKind;
+  /** Name at change time; may be '' for a photo without alt text or caption. */
+  label: string;
+  category_id: string | null;
+  category_name: string | null;
+  album_id: string | null;
+  album_title: string | null;
+}
+
 export interface KeepaliveRow {
   id: true;
   last_ping: string | null;
@@ -133,6 +151,10 @@ export const DB_COLUMNS = {
   ],
   upload_reservations: ['photo_id', 'requested_by', 'bytes', 'created_at', 'expires_at'],
   keepalive: ['id', 'last_ping', 'pings'],
+  change_log: [
+    'id', 'at', 'table_name', 'row_id', 'kind', 'label',
+    'category_id', 'category_name', 'album_id', 'album_title',
+  ],
 } as const;
 
 export type TableName = keyof typeof DB_COLUMNS;

@@ -6,7 +6,17 @@
  * Failures: CatalogError (STALE, NOT_FOUND, DUPLICATE_SLUG, IN_USE, COVER_NOT_IN_ALBUM, INVALID),
  * ApiError UNAUTHENTICATED (401, expired token), NetworkError.
  */
-import type { AlbumRow, AppConfigRow, CategoryRow, PhotoRow, PublishLogRow, SiteStateRow } from '@mp/shared';
+import type {
+  AlbumRow,
+  AppConfigRow,
+  CategoryRow,
+  ChangeLogRow,
+  PhotoRow,
+  PublishLogRow,
+  SiteStateRow,
+} from '@mp/shared';
+
+export const CHANGE_LOG_MAX = 1000;
 
 export type CategoryInput = Pick<CategoryRow, 'slug' | 'name'> &
   Partial<Pick<CategoryRow, 'description' | 'seo_title' | 'seo_description' | 'sort' | 'visible'>>;
@@ -50,4 +60,9 @@ export interface CatalogPort {
   getSiteState(): Promise<SiteStateRow>;
   /** Newest first. */
   listPublishLog(limit: number): Promise<PublishLogRow[]>;
+  /**
+   * The unpublished changes (table change_log), newest first. Its length is the number the publish screen shows.
+   * Reads at most CHANGE_LOG_MAX rows, which is the PostgREST page size.
+   */
+  listChangeLog(): Promise<ChangeLogRow[]>;
 }

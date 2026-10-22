@@ -257,6 +257,7 @@ export function renderSeedSql(rows: SeedRows): string {
   out.push('');
   out.push('-- The seed is not a pending change.');
   out.push('update public.site_state set pending_changes = 0;');
+  out.push('delete from public.change_log;');
   return out.join('\n') + '\n';
 }
 

@@ -16,6 +16,10 @@
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
       "authenticated": { "select": "table", "insert": "table", "update": "table", "delete": "table" }
     },
+    "change_log": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "none", "update": "none", "delete": "none" }
+    },
     "keepalive": {
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
       "authenticated": { "select": "none", "insert": "none", "update": "none", "delete": "none" }
@@ -56,6 +60,7 @@
     "delete_photos": { "anon": false, "authenticated": true },
     "is_admin": { "anon": false, "authenticated": true },
     "keepalive": { "anon": true, "authenticated": true },
+    "log_change": { "anon": false, "authenticated": false },
     "record_publish": { "anon": false, "authenticated": true },
     "record_slug_redirect": { "anon": false, "authenticated": false },
     "register_photo": { "anon": false, "authenticated": true },

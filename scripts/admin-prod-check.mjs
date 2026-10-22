@@ -43,6 +43,11 @@ const ROWS = {
   app_config: [{ id: true, quota_hard_bytes: 10_000_000_000, quota_warn_bytes: 8_000_000_000, max_upload_bytes: 12_000_000, max_files_per_batch: 100, reservation_ttl_min: 30 }],
   site_state: [{ id: true, pending_changes: 2, last_published_at: NOW, last_publish_requested_at: null }],
   publish_log: [],
+  // T-251: the publish screen counts these lines (2), the same as the raw counter above.
+  change_log: [
+    { id: 2, at: NOW, table_name: 'albums', row_id: '22222222-2222-4222-8222-222222222222', kind: 'added', label: 'Novákovi', category_id: '11111111-1111-4111-8111-111111111111', category_name: 'Svatby', album_id: '22222222-2222-4222-8222-222222222222', album_title: 'Novákovi' },
+    { id: 1, at: NOW, table_name: 'categories', row_id: '11111111-1111-4111-8111-111111111111', kind: 'edited', label: 'Svatby', category_id: '11111111-1111-4111-8111-111111111111', category_name: 'Svatby', album_id: null, album_title: null },
+  ],
 };
 const hits = { supabase: 0, api: 0, img: 0, site: 0, r2: 0 };
 // The Google round trip as the mock Supabase sees it: authorize (302 back to redirect_to?code=mock), PKCE token, is_admin RPC.
@@ -214,6 +219,14 @@ try {
   await h1('Zveřejnit web');
   await page.waitForFunction(() => /úprav/.test(document.body.innerText), { timeout: 15000 });
   await sleep(500); // publish status read from the public site
+  // T-251: "Zobrazit změny" reads change_log through the real adapter and lists as many lines as the panel counts.
+  await page.waitForFunction(() => /^2 úpravy od posledního zveřejnění$/m.test(document.body.innerText), { timeout: 15000 });
+  await (await page.waitForFunction(() => [...document.querySelectorAll('button')].find((b) => /^Zobrazit změny$/.test(b.textContent.trim())) ?? false, { timeout: 15000 })).asElement().click();
+  await page.waitForFunction(() => document.querySelector('dialog:modal') !== null, { timeout: 15000 });
+  const changeLines = await page.evaluate(() => document.querySelectorAll('dialog:modal .changes-line').length);
+  if (changeLines !== 2) failures.push(`"Zobrazit změny" lists ${changeLines} lines, the panel counts 2`);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.querySelector('dialog:modal') === null, { timeout: 15000 });
   await spaGo('/ulozeni');
   await h1('Úložiště');
   await page.waitForFunction(() => /Využití podle alb|Úložiště/.test(document.body.innerText), { timeout: 15000 });

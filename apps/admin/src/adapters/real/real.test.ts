@@ -211,6 +211,14 @@ describe('real catalog', () => {
     expect(calls[1]!.url).toContain('order=requested_at.desc%2Cid.desc');
     expect(calls[1]!.url).toContain('limit=10');
   });
+
+  it('lists the change log newest first from the change_log table', async () => {
+    const { fetch, calls } = stubFetch({ json: [] });
+    await createRealCatalog(restWith(fetch)).listChangeLog();
+    expect(calls[0]!.url).toContain('/change_log?');
+    expect(calls[0]!.url).toContain('order=at.desc%2Cid.desc');
+    expect(calls[0]!.url).toContain('limit=1000');
+  });
 });
 
 // ---------------------------------------------------------------- Worker

@@ -36,6 +36,7 @@ All tables are in `public` with row level security on. Every migration starts ea
 | `publish_log` | One row per publish request (newest 100 kept). |
 | `upload_reservations` | `photo_id` (pk), `bytes`, `expires_at`. Reserved bytes count only while unexpired. |
 | `keepalive` | Single row touched by `keepalive()`; no API role can read it. |
+| `change_log` | The unpublished changes (migration `20261022160000_change_log.sql`, T-251, D-18 option A): one row per catalog row (`table_name` categories/albums/photos, `row_id`, unique together) that differs from the last published site. `kind` is added, edited, deleted or reordered; `label` is the name at change time (category name, album title, photo alt else caption else empty); `category_id/category_name/album_id/album_title` are the grouping context at change time (no foreign keys). Admins can select; nobody can write through the API. Written by the `log_change` trigger, cleared by `record_publish`. See "Change log" below. |
 
 Reserved category slugs: portfolio, o-mne, kontakt, 404, admin, api, img, assets, _astro, fotky_web,
 sitemap, robots, cookies, ochrana-udaju (the same list as `RESERVED_CATEGORY_SLUGS`).
@@ -72,6 +73,8 @@ Generated from the catalog (`has_table_privilege`, `has_column_privilege`). `tab
 | app_config | authenticated | table | none | none | none |
 | categories | anon | none | none | none | none |
 | categories | authenticated | table | table | table | table |
+| change_log | anon | none | none | none | none |
+| change_log | authenticated | table | none | none | none |
 | keepalive | anon | none | none | none | none |
 | keepalive | authenticated | none | none | none | none |
 | photos | anon | none | none | none | none |
@@ -101,6 +104,7 @@ All functions are `security definer` (except the immutable helper `variants_byte
 | delete_photos | no | yes |
 | is_admin | no | yes |
 | keepalive | yes | yes |
+| log_change | no | no |
 | record_publish | no | yes |
 | record_slug_redirect | no | no |
 | register_photo | no | yes |
@@ -134,11 +138,32 @@ COVER_NOT_IN_ALBUM (SQLSTATE 23514) comes from the cover trigger.
 
 - `set_updated_at` before update on categories, albums, photos.
 - `bump_pending` after insert, update or delete, per row, on categories, albums, photos, url_history.
+- `log_change` after insert, update or delete, per row, on categories, albums, photos (see "Change log").
 - `check_album_cover`: a cover photo must belong to its album.
 - `clear_cover_on_photo_change`: moving or deleting a photo clears covers that point at it.
 - Slug history (migration `20261019100700_slug_history.sql`): renaming an album slug or moving it to another
   category writes a 301 `/<cat>/<old>/` to the new path (earlier redirects are repointed, no chains); changing a
   category slug writes 301 rows for the category and each of its albums; deleting an album writes a 410 row.
+
+## Change log
+
+`change_log` answers "what is unpublished?" and is what the admin shows (the publish screen counts its rows and
+"Zobrazit zmeny" lists them). `site_state.pending_changes` and `bump_pending` are unchanged and remain the publish
+bookkeeping (`pending_seen`), but the UI no longer shows that raw counter.
+
+- Insert: `added`. Delete: `deleted`, except that a row which was only added since the last publish is removed
+  from the log (net change zero). Update touching only `sort`: `reordered`. Any other update: `edited`.
+  An update that changes nothing but `updated_at` is not logged.
+- At most one line per row: later changes refresh time, label and context of the existing line. `added` stays
+  `added`; `reordered` becomes `edited` when something else changes too; a re-created row after `deleted` is `edited`.
+- `url_history` is deliberately not logged: its rows come from the slug and delete triggers of albums and
+  categories, which already produce an `edited` or `deleted` line.
+- A cover photo cleared by `clear_cover_on_photo_change` shows as an `edited` album (the cover really changed).
+- Clearing: `record_publish(..., 'ok', ...)` deletes every line with `at <=` the request time of that publish
+  (`publish_log.requested_at`). Lines written while the build runs stay listed, like the counter keeps them. A failed
+  publish clears nothing. (A filter on `last_published_at` was rejected: it would hide edits made during the build.)
+- Lines exist only from the moment the migration is applied. Publish once before applying it (or accept that older
+  unpublished edits are not listed). The seed clears the log the same way it resets the counter.
 
 ## Seed and fixtures
 

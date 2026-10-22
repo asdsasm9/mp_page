@@ -219,3 +219,4 @@ update public.albums set cover_photo_id = '27336a01-6d6a-5851-9266-40dafc22fbbb'
 
 -- The seed is not a pending change.
 update public.site_state set pending_changes = 0;
+delete from public.change_log;

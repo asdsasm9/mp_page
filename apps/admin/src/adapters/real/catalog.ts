@@ -4,8 +4,8 @@
  * removed by /photos/delete. Updates carry `updated_at=eq.<value read earlier>` as optimistic
  * concurrency: no matching row means somebody else changed it (STALE) or it is gone (NOT_FOUND).
  */
-import type { AlbumRow, AppConfigRow, CategoryRow, PhotoRow, PublishLogRow, SiteStateRow } from '@mp/shared';
-import { CatalogError, type CatalogPort } from '../../ports';
+import type { AlbumRow, AppConfigRow, CategoryRow, ChangeLogRow, PhotoRow, PublishLogRow, SiteStateRow } from '@mp/shared';
+import { CHANGE_LOG_MAX, CatalogError, type CatalogPort } from '../../ports';
 import type { Rest } from './http';
 
 const PHOTO_PATCH_COLUMNS: readonly string[] = ['album_id', 'sort', 'alt', 'caption'];
@@ -75,6 +75,12 @@ export function createRealCatalog(rest: Rest): CatalogPort {
       if (!rows[0]) throw new CatalogError('NOT_FOUND');
       return rows[0];
     },
+    listChangeLog: () =>
+      rest.select<ChangeLogRow>('change_log', {
+        select: '*',
+        order: 'at.desc,id.desc',
+        limit: String(CHANGE_LOG_MAX),
+      }),
     listPublishLog: (limit) =>
       rest.select<PublishLogRow>('publish_log', {
         select: '*',

@@ -2,6 +2,7 @@
 import type {
   AlbumRow,
   CategoryRow,
+  ChangeLogRow,
   Limits,
   PhotoRow,
   PublishLogRow,
@@ -75,6 +76,9 @@ export interface State {
   grants: Map<string, FakeGrant>;
   site: SiteStateRow;
   publishLog: PublishLogRow[];
+  /** Unpublished changes (the change_log table); see changes.ts. */
+  changeLog: ChangeLogRow[];
+  changeSeq: number;
   /** What `/_publish.json` currently shows. */
   published: PublishStatus | null;
   /** A build that has been triggered and becomes visible at atMs. */

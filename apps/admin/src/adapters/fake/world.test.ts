@@ -314,6 +314,48 @@ describe('catalog rules and pending_changes', () => {
     expect((await s.ports.catalog.getSiteState()).pending_changes).toBe(1);
   });
 
+  it('change log: one line per row with the trigger rules of migration 20261022160000, cleared by publish', async () => {
+    const s = await setup();
+    const log = async () => (await s.ports.catalog.listChangeLog()).map((l) => `${l.table_name}:${l.kind}:${l.label}`);
+    expect(await log()).toEqual(['albums:added:One', 'categories:added:Svatby']);
+    await addPhoto(s, 1);
+    await s.ports.catalog.updatePhoto(pid(1), { alt: 'Nevěsta' });
+    await s.clock.advance(1000);
+    await s.ports.catalog.updateAlbum(s.album.id, { title: 'Dva' });
+    // added stays added, label refreshed, the album line moved to the front (newest first).
+    expect(await log()).toEqual(['albums:added:Dva', 'photos:added:Nevěsta', 'categories:added:Svatby']);
+    expect((await s.ports.catalog.listChangeLog())[1]).toMatchObject({ category_name: 'Svatby', album_title: 'One' });
+
+    await s.ports.api.publish();
+    expect(await log()).toEqual([]);
+
+    // After the publish: sort only is "reordered", a no-op is not logged, then a content edit upgrades it.
+    await s.ports.catalog.updatePhoto(pid(1), { sort: 77 });
+    expect(await log()).toEqual(['photos:reordered:Nevěsta']);
+    await s.ports.catalog.updatePhoto(pid(1), { sort: 77 });
+    await s.ports.catalog.updatePhoto(pid(1), { caption: 'Podpis' });
+    expect(await log()).toEqual(['photos:edited:Nevěsta']);
+
+    // Added and deleted before a publish cancel out; a published row deleted is a "deleted" line.
+    await addPhoto(s, 2);
+    await s.ports.api.deletePhotos({ ids: [pid(2)] });
+    expect(await log()).toEqual(['photos:edited:Nevěsta']);
+    await s.ports.api.deletePhotos({ ids: [pid(1)] });
+    expect(await log()).toEqual(['photos:deleted:Nevěsta']);
+  });
+
+  it('change log: lines written after the publish request stay, a failed publish keeps all', async () => {
+    const s = await setup();
+    s.world.failNext('api.publish', new ApiError('PUBLISH_FAILED'));
+    await expect(s.ports.api.publish()).rejects.toMatchObject({ code: 'PUBLISH_FAILED' });
+    expect(await s.ports.catalog.listChangeLog()).toHaveLength(2);
+    await s.clock.advance(61_000);
+    await s.ports.api.publish();
+    await s.clock.advance(1000);
+    await s.ports.catalog.updateCategory(s.category.id, { name: 'Svatby 2' });
+    expect((await s.ports.catalog.listChangeLog()).map((l) => l.label)).toEqual(['Svatby 2']);
+  });
+
   it('enforces slug rules, uniqueness and the reserved category slugs', async () => {
     const s = await setup();
     await expect(s.ports.catalog.createCategory({ slug: 'portfolio', name: 'x' })).rejects.toMatchObject({ code: 'INVALID' });

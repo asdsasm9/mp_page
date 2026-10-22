@@ -91,7 +91,7 @@ export function LoginForm({ defaultEmail = '', onForgot }: Props) {
         <PasswordField
           ref={passwordRef}
           id={passwordId}
-          label={glossary.password}
+          label={cs.login.password}
           value={password}
           onChange={setPassword}
           autoComplete="current-password"
@@ -109,7 +109,7 @@ export function LoginForm({ defaultEmail = '', onForgot }: Props) {
       </button>
       {onForgot ? (
         <button type="button" className="button button-link" onClick={onForgot}>
-          {glossary.forgotPassword}
+          {cs.login.forgotPassword}
         </button>
       ) : null}
     </form>

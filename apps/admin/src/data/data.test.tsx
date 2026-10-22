@@ -237,9 +237,7 @@ describe('logout', () => {
     await waitFor(() => expect(screen.getAllByRole('listitem').length).toBeGreaterThan(0));
     expect(spy).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: glossary.logOut }));
-    await user.type(await screen.findByLabelText(glossary.email), 'fotograf@example.test');
-    await user.type(screen.getByLabelText(glossary.password), 'fake-heslo-1');
-    await user.click(screen.getByRole('button', { name: glossary.logIn }));
+    await user.click(await screen.findByRole('button', { name: cs.login.google.button }));
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(2)); // inside staleTime, so only a cleared cache reads again
     await waitFor(() => expect(screen.getAllByRole('listitem').length).toBeGreaterThan(0));
   });

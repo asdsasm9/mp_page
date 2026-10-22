@@ -30,7 +30,32 @@ describe('messages', () => {
     expect(messageForCode('NETWORK')).toBe('Chybí připojení k internetu.');
     expect(messageForCode('UPSTREAM_ERROR')).toBe('Správa je dočasně nedostupná. Veřejný web funguje dál.');
     expect(messageForCode('CONFLICT')).toBe('Toto album bylo změněno jinde. Načíst znovu.');
-    expect(messageForCode('NOT_ADMIN')).toBe('Tento účet nemá přístup do správy.');
+    expect(messageForCode('NOT_ADMIN')).toBe('Tento účet Google nemá přístup do správy.');
+  });
+
+  it('has the exact Google sign-in texts of WP-09 section 5', () => {
+    expect(cs.login.google).toEqual({
+      title: 'Přihlášení',
+      intro: 'Do správy se přihlašujete účtem Google. Přístup mají jen dva povolené účty.',
+      button: 'Přihlásit se přes Google',
+      busy: 'Přesměrovávám na Google…',
+      tip: 'Tip: zapněte si v účtu Google dvoustupňové ověření, správa je pak lépe chráněná.',
+      notAllowed: 'Tento účet Google nemá přístup do správy. Zkuste se přihlásit jiným účtem Google.',
+      cancelled: 'Přihlášení přes Google bylo zrušeno.',
+      failed: 'Přihlášení přes Google se nepodařilo. Zkuste to znovu.',
+    });
+    expect(cs.session.checking).toBe('Ověřuji přihlášení…');
+    expect(cs.login.expired.title).toBe('Přihlášení vypršelo');
+    expect(cs.login.expired.body).toBe(
+      'Přihlaste se znovu přes Google. Po přihlášení se stránka načte znovu, neuložené změny a fotky ve frontě se ztratí.',
+    );
+    expect(messageForCode('NETWORK')).toBe('Chybí připojení k internetu.');
+    expect(messageForCode('TOO_MANY_ATTEMPTS')).toBe('Příliš mnoho pokusů, zkuste to za chvíli.');
+  });
+
+  it('the glossary no longer has password words', () => {
+    expect(Object.values(cs.glossary)).not.toContain('Heslo');
+    expect(Object.values(cs.glossary)).not.toContain('Zapomenuté heslo');
   });
 
   it('PUBLISH_TOO_SOON names the seconds with Czech plurals', () => {
@@ -102,7 +127,7 @@ describe('plural and dates', () => {
 describe('glossary', () => {
   // docs/ADMIN-UX.md section 7, split on commas and slashes.
   const words = [
-    'Přihlásit se', 'Odhlásit se', 'E-mail', 'Heslo', 'Zapomenuté heslo', 'Kategorie', 'Nová kategorie', 'Album', 'Alba',
+    'Přihlásit se', 'Odhlásit se', 'E-mail', 'Kategorie', 'Nová kategorie', 'Album', 'Alba',
     'Nové album', 'Fotky', 'Vybrat fotky', 'Název', 'Adresa', 'Místo', 'Datum focení', 'Popis', 'Popisek',
     'Alternativní text', 'Pro vyhledávače', 'SEO titulek', 'SEO popis', 'Titulní fotka', 'Nastavit jako titulní',
     'Zveřejnit album', 'Skrýt album', 'Zveřejnit web', 'Zveřejněno', 'Koncept', 'Skryto', 'Viditelná', 'Skrytá',

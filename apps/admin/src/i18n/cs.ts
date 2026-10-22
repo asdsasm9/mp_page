@@ -9,8 +9,6 @@ export const glossary = {
   logIn: 'Přihlásit se',
   logOut: 'Odhlásit se',
   email: 'E-mail',
-  password: 'Heslo',
-  forgotPassword: 'Zapomenuté heslo',
   categories: 'Kategorie',
   newCategory: 'Nová kategorie',
   album: 'Album',
@@ -83,8 +81,23 @@ export const cs = {
     storage: { title: glossary.storage },
     upload: { title: glossary.uploading },
   },
-  /** Login screen, set-new-password mode and the expiry modal (ADMIN-UX 3.1). */
+  /** Login screen (Google card) and the expiry modal (WP-09 section 5). */
   login: {
+    /** The Google card; the only thing /prihlaseni shows. */
+    google: {
+      title: 'Přihlášení',
+      intro: 'Do správy se přihlašujete účtem Google. Přístup mají jen dva povolené účty.',
+      button: 'Přihlásit se přes Google',
+      busy: 'Přesměrovávám na Google…',
+      tip: 'Tip: zapněte si v účtu Google dvoustupňové ověření, správa je pak lépe chráněná.',
+      /** Same text for every "not allowed" cause on purpose (not listed, unverified e-mail, sign-up refused). */
+      notAllowed: 'Tento účet Google nemá přístup do správy. Zkuste se přihlásit jiným účtem Google.',
+      cancelled: 'Přihlášení přes Google bylo zrušeno.',
+      failed: 'Přihlášení přes Google se nepodařilo. Zkuste to znovu.',
+    },
+    // The password pieces below are unreachable (nothing renders them); T-233 deletes them with their components.
+    password: 'Heslo',
+    forgotPassword: 'Zapomenuté heslo',
     submit: glossary.logIn,
     submitting: 'Přihlašuji…',
     showPassword: 'Zobrazit heslo',
@@ -92,7 +105,7 @@ export const cs = {
     emailRequired: 'Vyplňte e-mail.',
     passwordRequired: 'Vyplňte heslo.',
     forgot: {
-      title: glossary.forgotPassword,
+      title: 'Zapomenuté heslo',
       intro: 'Zadejte e-mail, na který pošleme odkaz pro nastavení nového hesla.',
       submit: 'Poslat odkaz',
       submitting: 'Odesílám…',
@@ -113,7 +126,7 @@ export const cs = {
     },
     expired: {
       title: 'Přihlášení vypršelo',
-      body: 'Přihlaste se znovu. Rozpracované změny zůstávají zachované a po přihlášení se dokončí.',
+      body: 'Přihlaste se znovu přes Google. Po přihlášení se stránka načte znovu, neuložené změny a fotky ve frontě se ztratí.',
     },
   },
   session: {

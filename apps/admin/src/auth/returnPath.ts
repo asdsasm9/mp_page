@@ -35,6 +35,16 @@ export function storeReturnPath(value: unknown): string {
   return path;
 }
 
+/** The stored path (re-validated) without clearing it; null when nothing usable is stored. Safe to call while rendering. */
+export function peekReturnPath(): string | null {
+  try {
+    const raw = storage()?.getItem(KEY) ?? null;
+    return raw === null ? null : sanitizeReturnPath(raw);
+  } catch {
+    return null;
+  }
+}
+
 /** Reads and clears the stored path (re-validated); the start page when nothing usable is stored. */
 export function takeReturnPath(): string {
   const s = storage();

@@ -28,7 +28,7 @@ type Entry = string | ((options: MessageOptions) => string);
 
 const WORKER: Record<WorkerErrorCode, Entry> = {
   UNAUTHENTICATED: 'Přihlášení vypršelo, přihlaste se znovu.',
-  NOT_ADMIN: 'Tento účet nemá přístup do správy.',
+  NOT_ADMIN: 'Tento účet Google nemá přístup do správy.',
   INVALID_REQUEST: 'Server požadavek nepřijal. Zkuste to znovu.',
   INVALID_ID: 'Odkaz na položku není platný. Načtěte stránku znovu.',
   INVALID_ITEMS: 'Některé položky nejsou platné. Načtěte stránku znovu.',

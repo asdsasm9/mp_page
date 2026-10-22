@@ -4,22 +4,29 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FAKE_ADMIN, FAKE_OUTSIDER, createFakeWorld, fixtureSnapshot, type FakeWorld } from '../adapters/fake';
+import { FAKE_ADMIN, createFakeWorld, fixtureSnapshot, type FakeWorld } from '../adapters/fake';
 import { App } from '../App';
 import { AppProviders } from '../AppProviders';
 import { useAlbum, useUpdateAlbum } from '../data/catalog';
 import { cs, glossary } from '../i18n/cs';
-import { ApiError, AuthError, type Ports } from '../ports';
+import { ApiError, AuthError, NetworkError, type CallbackError, type GoogleSignInOptions, type Ports } from '../ports';
+import { takeReturnPath } from './returnPath';
 import { useSession } from './session';
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  sessionStorage.clear();
 });
 
 function Where() {
-  const { pathname } = useLocation();
-  return <output data-testid="where">{pathname}</output>;
+  const { pathname, search } = useLocation();
+  return (
+    <>
+      <output data-testid="where">{pathname}</output>
+      <output data-testid="search">{search}</output>
+    </>
+  );
 }
 
 function setup(path: string, options: { signedIn?: boolean; world?: FakeWorld; ports?: Ports } = {}) {
@@ -36,14 +43,46 @@ function setup(path: string, options: { signedIn?: boolean; world?: FakeWorld; p
 }
 
 const where = () => screen.getByTestId('where').textContent;
-const email = () => screen.getByLabelText(glossary.email) as HTMLInputElement;
-const password = () => screen.getByLabelText(glossary.password) as HTMLInputElement;
+const search = () => screen.getByTestId('search').textContent;
+const googleButton = () => screen.getByRole('button', { name: cs.login.google.button });
+const findGoogleButton = () => screen.findByRole('button', { name: cs.login.google.button });
 
-async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>, mail: string, pw: string) {
-  await user.clear(email());
-  await user.type(email(), mail);
-  await user.type(password(), pw);
-  await user.click(screen.getByRole('button', { name: glossary.logIn }));
+/** Ports whose auth reports a callback error once (what the adapter does after a failed Google round trip). */
+function portsWithCallbackError(world: FakeWorld, error: CallbackError): Ports {
+  let pending: CallbackError | null = error;
+  return {
+    ...world.ports,
+    auth: {
+      ...world.ports.auth,
+      takeCallbackError: () => {
+        const taken = pending;
+        pending = null;
+        return taken;
+      },
+    },
+  };
+}
+
+/** Ports whose Google sign-in never finishes (the real adapter has left the page) and records its options. */
+function portsThatNeverReturn(world: FakeWorld, calls: GoogleSignInOptions[] = []): Ports {
+  return {
+    ...world.ports,
+    auth: {
+      ...world.ports.auth,
+      signInWithGoogle: (options) => {
+        calls.push(options);
+        return new Promise<void>(() => undefined);
+      },
+    },
+  };
+}
+
+async function axeSerious(container: Element): Promise<string[]> {
+  const result = await axe.run(container, {
+    runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'],
+    rules: { 'color-contrast': { enabled: false }, region: { enabled: false } },
+  });
+  return result.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
 }
 
 describe('route guard', () => {
@@ -83,71 +122,29 @@ describe('route guard', () => {
   });
 });
 
-describe('login screen', () => {
-  it('has the fields, attributes and no registration', async () => {
+describe('login screen: the Google card', () => {
+  it('has the fields, attributes and no registration: the exact Google card and nothing else to sign in with', async () => {
     setup('/prihlaseni');
-    await screen.findByRole('heading', { level: 1, name: cs.routes.login.title });
-    expect(email().type).toBe('email');
-    expect(email().autocomplete).toBe('username');
-    expect(password().autocomplete).toBe('current-password');
-    expect(password().type).toBe('password');
-    expect(screen.getByRole('button', { name: glossary.logIn })).toBeTruthy();
-    expect(screen.getByRole('button', { name: glossary.forgotPassword })).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/Registr|Vytvořit účet/i);
+    await findGoogleButton();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Přihlášení');
+    expect(screen.getByText('Do správy se přihlašujete účtem Google. Přístup mají jen dva povolené účty.')).toBeTruthy();
+    expect(googleButton().textContent).toBe('Přihlásit se přes Google');
+    expect(screen.getByText('Tip: zapněte si v účtu Google dvoustupňové ověření, správa je pak lépe chráněná.')).toBeTruthy();
+    // Only the Google card: no password form, no forgot link, no e-mail field, no registration.
+    expect(document.querySelectorAll('input')).toHaveLength(0);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(document.body.textContent).not.toMatch(/Heslo|Zapomenuté|Registr|Vytvořit účet/i);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('the show-password toggle has an accessible name and reveals the value', async () => {
-    const user = userEvent.setup();
+  it('focus lands on the Google button', async () => {
     setup('/prihlaseni');
-    await screen.findByLabelText(glossary.password);
-    await user.type(password(), 'tajne-heslo');
-    await user.click(screen.getByRole('button', { name: cs.login.showPassword }));
-    expect(password().type).toBe('text');
-    expect(password().value).toBe('tajne-heslo');
-    await user.click(screen.getByRole('button', { name: cs.login.hidePassword }));
-    expect(password().type).toBe('password');
+    const button = await findGoogleButton();
+    await waitFor(() => expect(document.activeElement).toBe(button));
   });
 
-  it('empty fields give field errors and move focus to the first one', async () => {
-    const user = userEvent.setup();
-    setup('/prihlaseni');
-    await screen.findByLabelText(glossary.password);
-    await user.click(screen.getByRole('button', { name: glossary.logIn }));
-    expect(screen.getByText(cs.login.emailRequired)).toBeTruthy();
-    expect(document.activeElement).toBe(email());
-    expect(email().getAttribute('aria-invalid')).toBe('true');
-    await user.type(email(), FAKE_ADMIN.email);
-    await user.click(screen.getByRole('button', { name: glossary.logIn }));
-    expect(screen.getByText(cs.login.passwordRequired)).toBeTruthy();
-    expect(document.activeElement).toBe(password());
-  });
-
-  it('wrong credentials: exact text in an alert, password cleared', async () => {
-    const user = userEvent.setup();
-    setup('/prihlaseni');
-    await screen.findByLabelText(glossary.password);
-    await fillAndSubmit(user, FAKE_ADMIN.email, 'spatne');
-    expect((await screen.findByRole('alert')).textContent).toBe('Nesprávný e-mail nebo heslo.');
-    expect(password().value).toBe('');
-    expect(where()).toBe('/prihlaseni');
-  });
-
-  it('too many attempts and offline have their own texts', async () => {
-    const user = userEvent.setup();
-    const { world } = setup('/prihlaseni');
-    await screen.findByLabelText(glossary.password);
-    world.failNext('auth.signIn', new AuthError('TOO_MANY_ATTEMPTS'));
-    await fillAndSubmit(user, FAKE_ADMIN.email, 'x');
-    expect((await screen.findByRole('alert')).textContent).toBe('Příliš mnoho pokusů, zkuste to za chvíli.');
-    world.failNext('auth.signIn', 'network');
-    await user.type(password(), 'x');
-    await user.click(screen.getByRole('button', { name: glossary.logIn }));
-    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Chybí připojení k internetu.'));
-  });
-
-  it('shows "Přihlašuji…" and disables the button while signing in', async () => {
-    const user = userEvent.setup();
-    const world = createFakeWorld();
+  it('shows "Ověřuji přihlášení…" while the session is being checked, without the button', async () => {
+    const world = createFakeWorld({ signedIn: true });
     let release!: () => void;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
@@ -156,144 +153,200 @@ describe('login screen', () => {
       ...world.ports,
       auth: {
         ...world.ports.auth,
-        signIn: async (mail, pw) => {
+        getSession: async () => {
           await gate;
-          return world.ports.auth.signIn(mail, pw);
+          return world.ports.auth.getSession();
         },
       },
     };
     setup('/prihlaseni', { world, ports });
-    await screen.findByLabelText(glossary.password);
-    await fillAndSubmit(user, FAKE_ADMIN.email, FAKE_ADMIN.password);
-    const busy = await screen.findByRole('button', { name: cs.login.submitting });
-    // aria-disabled, not disabled: the button keeps keyboard focus while it works.
-    expect(busy.getAttribute('aria-disabled')).toBe('true');
-    expect(document.activeElement).toBe(busy);
+    const status = await screen.findByText('Ověřuji přihlášení…');
+    expect(status.getAttribute('role')).toBe('status');
+    expect(screen.queryByRole('button', { name: cs.login.google.button })).toBeNull();
     release();
     await screen.findByRole('heading', { level: 1, name: cs.routes.categories.title });
   });
 
-  it('signs in and returns to the page the guard turned away', async () => {
+  it('shows "Přesměrovávám na Google…" and ignores clicks while busy, keeping focus on the button', async () => {
+    const user = userEvent.setup();
+    const calls: GoogleSignInOptions[] = [];
+    const world = createFakeWorld();
+    setup('/prihlaseni', { world, ports: portsThatNeverReturn(world, calls) });
+    await user.click(await findGoogleButton());
+    const busy = await screen.findByRole('button', { name: 'Přesměrovávám na Google…' });
+    expect(busy.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(busy);
+    await user.click(busy);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('signs in and returns to the page the guard turned away (fake Google chooser)', async () => {
     const user = userEvent.setup();
     setup('/zverejnit');
-    await screen.findByLabelText(glossary.password);
-    expect(where()).toBe('/prihlaseni');
-    await fillAndSubmit(user, FAKE_ADMIN.email, FAKE_ADMIN.password);
+    await user.click(await findGoogleButton());
     await screen.findByRole('heading', { level: 1, name: cs.routes.publish.title });
     expect(where()).toBe('/zverejnit');
+    expect(takeReturnPath()).toBe('/');
   });
 
-  it('an account that is not an admin sees the exact text and is signed out again', async () => {
+  it('stores the page the guard turned away before it leaves for Google', async () => {
+    const user = userEvent.setup();
+    const calls: GoogleSignInOptions[] = [];
+    const world = createFakeWorld();
+    setup('/zverejnit?x=1', { world, ports: portsThatNeverReturn(world, calls) });
+    await user.click(await findGoogleButton());
+    expect(calls).toEqual([{ returnTo: '/zverejnit?x=1' }]);
+    expect(takeReturnPath()).toBe('/zverejnit?x=1');
+  });
+
+  it('after the redirect back it restores the stored path, then forgets it', async () => {
+    sessionStorage.setItem('mp-admin-return-to', '/ulozeni');
+    setup('/prihlaseni', { signedIn: true });
+    await screen.findByRole('heading', { level: 1, name: cs.routes.storage.title });
+    expect(where()).toBe('/ulozeni');
+    expect(takeReturnPath()).toBe('/');
+  });
+
+  it('never follows a hostile stored path', async () => {
+    sessionStorage.setItem('mp-admin-return-to', '//evil.example');
+    setup('/prihlaseni', { signedIn: true });
+    await screen.findByRole('heading', { level: 1, name: cs.routes.categories.title });
+    expect(where()).toBe('/');
+  });
+
+  it('an account that is not allowed sees the exact text and is signed out again', async () => {
     const user = userEvent.setup();
     const { world } = setup('/prihlaseni');
-    await screen.findByLabelText(glossary.password);
-    await fillAndSubmit(user, FAKE_OUTSIDER.email, FAKE_OUTSIDER.password);
-    expect((await screen.findByRole('alert')).textContent).toBe('Tento účet nemá přístup do správy.');
+    world.google.next = 'outsider';
+    await user.click(await findGoogleButton());
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Tento účet Google nemá přístup do správy. Zkuste se přihlásit jiným účtem Google.',
+    );
     expect(world.snapshot().signedInAs).toBeNull();
     expect(where()).toBe('/prihlaseni');
+    expect(googleButton()).toBeTruthy();
   });
 
-  it('a stored non-admin session is refused at start-up', async () => {
+  it('cancelling at Google shows its text', async () => {
+    const user = userEvent.setup();
+    const { world } = setup('/prihlaseni');
+    world.google.next = 'cancel';
+    await user.click(await findGoogleButton());
+    expect((await screen.findByRole('alert')).textContent).toBe('Přihlášení přes Google bylo zrušeno.');
+    expect(document.activeElement).toBe(googleButton());
+  });
+
+  it('offline and too many attempts have their own texts', async () => {
+    const user = userEvent.setup();
     const world = createFakeWorld();
-    await world.ports.auth.signIn(FAKE_OUTSIDER.email, FAKE_OUTSIDER.password);
+    let failure: Error = new NetworkError();
+    const ports: Ports = {
+      ...world.ports,
+      auth: {
+        ...world.ports.auth,
+        signInWithGoogle: async () => {
+          throw failure;
+        },
+      },
+    };
+    setup('/prihlaseni', { world, ports });
+    await user.click(await findGoogleButton());
+    expect((await screen.findByRole('alert')).textContent).toBe('Chybí připojení k internetu.');
+    failure = new AuthError('TOO_MANY_ATTEMPTS');
+    await user.click(googleButton());
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Příliš mnoho pokusů, zkuste to za chvíli.'));
+    // A new attempt clears the old notice.
+    failure = new ApiError('UPSTREAM_ERROR');
+    await user.click(googleButton());
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe(cs.data.unavailable));
+  });
+
+  it('a stored non-admin session is refused at start-up with the same text', async () => {
+    const world = createFakeWorld();
+    world.google.next = 'outsider';
+    await world.ports.auth.signInWithGoogle({ returnTo: '/' });
     setup('/', { world });
-    expect((await screen.findByRole('alert')).textContent).toBe('Tento účet nemá přístup do správy.');
+    expect((await screen.findByRole('alert')).textContent).toBe(cs.login.google.notAllowed);
     expect(world.snapshot().signedInAs).toBeNull();
   });
+});
 
-  it('has no serious axe violations in the login states', async () => {
+describe('login screen: the callback of the Google round trip', () => {
+  it.each([
+    ['NOT_ALLOWED', 'Tento účet Google nemá přístup do správy. Zkuste se přihlásit jiným účtem Google.'],
+    ['CANCELLED', 'Přihlášení přes Google bylo zrušeno.'],
+    ['FAILED', 'Přihlášení přes Google se nepodařilo. Zkuste to znovu.'],
+  ] as const)('%s is shown once in an alert', async (code, text) => {
+    const world = createFakeWorld();
+    setup('/prihlaseni', { world, ports: portsWithCallbackError(world, code) });
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe(text);
+    expect(googleButton()).toBeTruthy();
+  });
+
+  it('a failed code exchange leaves ?code= and no session: generic failure text and the URL is cleaned', async () => {
+    setup('/prihlaseni?code=abc123&keep=1');
+    expect((await screen.findByRole('alert')).textContent).toBe('Přihlášení přes Google se nepodařilo. Zkuste to znovu.');
+    await waitFor(() => expect(search()).toBe('?keep=1'));
+    expect(where()).toBe('/prihlaseni');
+    expect(document.body.textContent).not.toContain('abc123');
+  });
+
+  it('a ?code= while the session is still being checked is left alone, and no failure shows on success', async () => {
+    setup('/prihlaseni?code=abc123', { signedIn: true });
+    await screen.findByRole('heading', { level: 1, name: cs.routes.categories.title });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('login screen: accessibility and console', () => {
+  it('has no serious axe violations in any login state', async () => {
     const user = userEvent.setup();
     const { container } = setup('/prihlaseni');
-    await screen.findByLabelText(glossary.password);
-    const run = async () => {
-      const result = await axe.run(container, {
-        runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'],
-        rules: { 'color-contrast': { enabled: false }, region: { enabled: false } },
-      });
-      return result.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
-    };
-    expect(await run()).toEqual([]);
-    await user.click(screen.getByRole('button', { name: glossary.logIn }));
-    expect(await run()).toEqual([]);
-    await user.click(screen.getByRole('button', { name: glossary.forgotPassword }));
-    expect(await run()).toEqual([]);
-  });
-});
+    await findGoogleButton();
+    expect(await axeSerious(container)).toEqual([]);
+    cleanup();
 
-describe('forgot password', () => {
-  it('answers with the same neutral text for a known and an unknown address', async () => {
-    const user = userEvent.setup();
-    setup('/prihlaseni');
-    await screen.findByLabelText(glossary.password);
-    await user.click(screen.getByRole('button', { name: glossary.forgotPassword }));
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(cs.login.forgot.title);
-    const texts: string[] = [];
-    for (const address of [FAKE_ADMIN.email, 'nikdo@example.test']) {
-      await user.clear(email());
-      await user.type(email(), address);
-      await user.click(screen.getByRole('button', { name: cs.login.forgot.submit }));
-      const status = await screen.findByText(cs.login.forgot.neutral);
-      texts.push(status.textContent ?? '');
-      expect(status.closest('[role="status"]')).toBeTruthy();
+    // each notice
+    for (const code of ['NOT_ALLOWED', 'CANCELLED', 'FAILED'] as const) {
+      const world = createFakeWorld();
+      const view = setup('/prihlaseni', { world, ports: portsWithCallbackError(world, code) });
+      await screen.findByRole('alert');
+      expect(await axeSerious(view.container)).toEqual([]);
+      cleanup();
     }
-    expect(texts[0]).toBe(texts[1]);
-    expect(texts[0]).not.toContain(FAKE_ADMIN.email);
+
+    // busy
+    const world = createFakeWorld();
+    const busy = setup('/prihlaseni', { world, ports: portsThatNeverReturn(world) });
+    await user.click(await findGoogleButton());
+    await screen.findByRole('button', { name: cs.login.google.busy });
+    expect(await axeSerious(busy.container)).toEqual([]);
+    cleanup();
+
+    // after return (checking)
+    const slow = createFakeWorld({ signedIn: true });
+    const checking = setup('/prihlaseni', {
+      world: slow,
+      ports: { ...slow.ports, auth: { ...slow.ports.auth, getSession: () => new Promise(() => undefined) } },
+    });
+    await screen.findByText('Ověřuji přihlášení…');
+    expect(await axeSerious(checking.container)).toEqual([]);
   });
 
-  it('asks for an address first, reports a lost connection, and goes back', async () => {
+  it('sign-in, notices and busy state write nothing to the console', async () => {
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m));
     const user = userEvent.setup();
     const { world } = setup('/prihlaseni');
-    await screen.findByLabelText(glossary.password);
-    await user.click(screen.getByRole('button', { name: glossary.forgotPassword }));
-    await user.click(screen.getByRole('button', { name: cs.login.forgot.submit }));
-    expect(screen.getByText(cs.login.emailRequired)).toBeTruthy();
-    expect(document.activeElement).toBe(email());
-    world.failNext('auth.requestPasswordReset', 'network');
-    await user.type(email(), 'a@b.cz');
-    await user.click(screen.getByRole('button', { name: cs.login.forgot.submit }));
-    expect((await screen.findByRole('alert')).textContent).toBe('Chybí připojení k internetu.');
-    await user.click(screen.getByRole('button', { name: cs.login.forgot.back }));
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(cs.routes.login.title);
-  });
-});
-
-describe('set new password', () => {
-  it('shows the new-password form after the reset link and signs in with the new password', async () => {
-    const user = userEvent.setup();
-    const world = createFakeWorld();
-    world.startPasswordRecovery(FAKE_ADMIN.email);
-    setup('/prihlaseni', { world });
-    await screen.findByRole('heading', { level: 1, name: cs.login.recovery.title });
-    const first = screen.getByLabelText(cs.login.recovery.newPassword) as HTMLInputElement;
-    const second = screen.getByLabelText(cs.login.recovery.repeat) as HTMLInputElement;
-    expect(first.autocomplete).toBe('new-password');
-    expect(second.autocomplete).toBe('new-password');
-
-    await user.type(first, 'kratke');
-    await user.click(screen.getByRole('button', { name: cs.login.recovery.submit }));
-    expect(screen.getByText(cs.login.recovery.tooShort)).toBeTruthy();
-    expect(document.activeElement).toBe(first);
-
-    await user.clear(first);
-    await user.type(first, 'nove-heslo-123');
-    await user.type(second, 'nove-heslo-124');
-    await user.click(screen.getByRole('button', { name: cs.login.recovery.submit }));
-    expect(screen.getByText(cs.login.recovery.mismatch)).toBeTruthy();
-
-    await user.clear(second);
-    await user.type(second, 'nove-heslo-123');
-    await user.click(screen.getByRole('button', { name: cs.login.recovery.submit }));
+    world.google.next = 'cancel';
+    await user.click(await findGoogleButton());
+    await screen.findByRole('alert');
+    world.google.next = 'outsider';
+    await user.click(googleButton());
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe(cs.login.google.notAllowed));
+    await user.click(googleButton());
     await screen.findByRole('heading', { level: 1, name: cs.routes.categories.title });
-    await world.ports.auth.signOut();
-    await expect(world.ports.auth.signIn(FAKE_ADMIN.email, 'nove-heslo-123')).resolves.toMatchObject({ email: FAKE_ADMIN.email });
-  });
-
-  it('the guard keeps a recovery session out of the app until the password is set', async () => {
-    const world = createFakeWorld();
-    world.startPasswordRecovery(FAKE_ADMIN.email);
-    setup('/ulozeni', { world });
-    await screen.findByRole('heading', { level: 1, name: cs.login.recovery.title });
-    expect(where()).toBe('/prihlaseni');
+    for (const spy of spies) expect(spy).not.toHaveBeenCalled();
   });
 });
 
@@ -337,92 +390,107 @@ function editorWorld() {
   return { world, albumId };
 }
 
+function renderEditor(world: FakeWorld, albumId: string, ports: Ports = world.ports) {
+  return render(
+    <AppProviders ports={ports} retry={false}>
+      <MemoryRouter>
+        <Editor albumId={albumId} />
+      </MemoryRouter>
+    </AppProviders>,
+  );
+}
+
 describe('expiry modal', () => {
-  it('keeps the form, and after login the pending save completes', async () => {
+  it('has the exact title and honest body, focus on the Google button, and after login the pending save completes', async () => {
     const user = userEvent.setup();
     const { world, albumId } = editorWorld();
-    render(
-      <AppProviders ports={world.ports} retry={false}>
-        <MemoryRouter>
-          <Editor albumId={albumId} />
-        </MemoryRouter>
-      </AppProviders>,
-    );
+    renderEditor(world, albumId);
     const field = (await screen.findByLabelText('Titulek')) as HTMLInputElement;
     await user.type(field, 'Nový název');
 
     world.expireSession();
-    const dialog = await screen.findByRole('dialog', { name: cs.login.expired.title });
-    expect(within(dialog).getByText(cs.login.expired.body)).toBeTruthy();
+    const dialog = await screen.findByRole('dialog', { name: 'Přihlášení vypršelo' });
+    expect(
+      within(dialog).getByText(
+        'Přihlaste se znovu přes Google. Po přihlášení se stránka načte znovu, neuložené změny a fotky ve frontě se ztratí.',
+      ),
+    ).toBeTruthy();
+    const button = within(dialog).getByRole('button', { name: 'Přihlásit se přes Google' });
+    expect(document.activeElement).toBe(button);
+    expect(within(dialog).queryByLabelText(/heslo/i)).toBeNull();
     expect((screen.getByLabelText('Titulek') as HTMLInputElement).value).toBe('Nový název');
-    expect(document.activeElement).toBe(within(dialog).getByLabelText(glossary.password));
 
     // Save while expired: it waits instead of failing.
     await user.click(screen.getByRole('button', { name: 'Ulozit titulek' }));
     expect(screen.queryByText('Ulozeno')).toBeNull();
     expect((world.snapshot().albums[0] as { title: string }).title).not.toBe('Nový název');
 
-    const mail = within(dialog).getByLabelText(glossary.email) as HTMLInputElement;
-    expect(mail.value).toBe(FAKE_ADMIN.email);
-    await user.type(within(dialog).getByLabelText(glossary.password), FAKE_ADMIN.password);
-    await user.click(within(dialog).getByRole('button', { name: glossary.logIn }));
-
+    await user.click(button);
     await screen.findByText('Ulozeno');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect((world.snapshot().albums.find((a) => (a as { id: string }).id === albumId) as { title: string }).title).toBe('Nový název');
     expect((screen.getByLabelText('Titulek') as HTMLInputElement).value).toBe('Nový název');
   });
 
+  it('passes the current e-mail as login_hint and the current address as the return path', async () => {
+    const user = userEvent.setup();
+    const { world, albumId } = editorWorld();
+    const calls: GoogleSignInOptions[] = [];
+    renderEditor(world, albumId, portsThatNeverReturn(world, calls));
+    await screen.findByLabelText('Titulek');
+    world.expireSession();
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: cs.login.google.button }));
+    expect(calls).toEqual([{ returnTo: '/', loginHint: FAKE_ADMIN.email }]);
+    expect(within(dialog).getByRole('button', { name: cs.login.google.busy }).getAttribute('aria-disabled')).toBe('true');
+  });
+
   it('a 401 on a call opens the modal and the call is repeated after login', async () => {
     const user = userEvent.setup();
     const { world, albumId } = editorWorld();
-    render(
-      <AppProviders ports={world.ports} retry={false}>
-        <MemoryRouter>
-          <Editor albumId={albumId} />
-        </MemoryRouter>
-      </AppProviders>,
-    );
+    renderEditor(world, albumId);
     await user.type(await screen.findByLabelText('Titulek'), 'Druhý');
     world.failNext('catalog.updateAlbum', new ApiError('UNAUTHENTICATED'));
     await user.click(screen.getByRole('button', { name: 'Ulozit titulek' }));
     const dialog = await screen.findByRole('dialog', { name: cs.login.expired.title });
-    await user.type(within(dialog).getByLabelText(glossary.password), FAKE_ADMIN.password);
-    await user.click(within(dialog).getByRole('button', { name: glossary.logIn }));
+    await user.click(within(dialog).getByRole('button', { name: cs.login.google.button }));
     await screen.findByText('Ulozeno');
   });
 
-  it('a wrong password in the modal keeps it open and the save waiting', async () => {
+  it('cancelling at Google keeps the modal open and the save waiting; a non-allowed account is signed out and the save dropped', async () => {
     const user = userEvent.setup();
     const { world, albumId } = editorWorld();
-    render(
-      <AppProviders ports={world.ports} retry={false}>
-        <MemoryRouter>
-          <Editor albumId={albumId} />
-        </MemoryRouter>
-      </AppProviders>,
-    );
+    renderEditor(world, albumId);
     await user.type(await screen.findByLabelText('Titulek'), 'Třetí');
     world.expireSession();
     const dialog = await screen.findByRole('dialog');
     await user.click(screen.getByRole('button', { name: 'Ulozit titulek' }));
-    await user.type(within(dialog).getByLabelText(glossary.password), 'spatne');
-    await user.click(within(dialog).getByRole('button', { name: glossary.logIn }));
-    expect((await within(dialog).findByRole('alert')).textContent).toBe('Nesprávný e-mail nebo heslo.');
+    world.google.next = 'cancel';
+    await user.click(within(dialog).getByRole('button', { name: cs.login.google.button }));
+    expect((await within(dialog).findByRole('alert')).textContent).toBe('Přihlášení přes Google bylo zrušeno.');
     expect(screen.getByRole('dialog')).toBeTruthy();
+    world.google.next = 'outsider';
+    await user.click(within(dialog).getByRole('button', { name: cs.login.google.button }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.queryByText('Ulozeno')).toBeNull();
+    expect(world.snapshot().signedInAs).toBeNull();
+  });
+
+  it('Escape does not dismiss it', async () => {
+    const user = userEvent.setup();
+    const { world, albumId } = editorWorld();
+    renderEditor(world, albumId);
+    await screen.findByLabelText('Titulek');
+    world.expireSession();
+    await screen.findByRole('dialog');
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog')).toBeTruthy();
   });
 
   it('signing out from the modal ends the session and the waiting save is dropped', async () => {
     const user = userEvent.setup();
     const { world, albumId } = editorWorld();
-    render(
-      <AppProviders ports={world.ports} retry={false}>
-        <MemoryRouter>
-          <Editor albumId={albumId} />
-        </MemoryRouter>
-      </AppProviders>,
-    );
+    renderEditor(world, albumId);
     await user.type(await screen.findByLabelText('Titulek'), 'Čtvrtý');
     world.expireSession();
     const dialog = await screen.findByRole('dialog');
@@ -433,35 +501,32 @@ describe('expiry modal', () => {
     expect((world.snapshot().albums.find((a) => (a as { id: string }).id === albumId) as { title: string }).title).not.toBe('Čtvrtý');
   });
 
-  it('the modal has no serious axe violations', async () => {
+  it('the modal has no serious axe violations, also with a notice and while busy', async () => {
+    const user = userEvent.setup();
     const { world } = editorWorld();
     const { container } = setup('/', { world });
     await screen.findByRole('heading', { level: 1, name: cs.routes.categories.title });
     world.expireSession();
-    await screen.findByRole('dialog');
-    const result = await axe.run(container, {
-      runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'],
-      rules: { 'color-contrast': { enabled: false }, region: { enabled: false } },
-    });
-    expect(result.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+    const dialog = await screen.findByRole('dialog');
+    expect(await axeSerious(container)).toEqual([]);
+    world.google.next = 'cancel';
+    await user.click(within(dialog).getByRole('button', { name: cs.login.google.button }));
+    await within(dialog).findByRole('alert');
+    expect(await axeSerious(container)).toEqual([]);
   });
-});
 
-describe('console', () => {
-  it('login, expiry and sign-out write nothing to the console', async () => {
+  it('writes nothing to the console through expiry and re-sign-in', async () => {
     const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m));
     const user = userEvent.setup();
     const { world } = setup('/', { signedIn: false });
-    await screen.findByLabelText(glossary.password);
-    await fillAndSubmit(user, FAKE_ADMIN.email, FAKE_ADMIN.password);
+    await user.click(await findGoogleButton());
     await screen.findByRole('heading', { level: 1, name: cs.routes.categories.title });
     world.expireSession();
     const dialog = await screen.findByRole('dialog');
-    await user.type(within(dialog).getByLabelText(glossary.password), FAKE_ADMIN.password);
-    await user.click(within(dialog).getByRole('button', { name: glossary.logIn }));
+    await user.click(within(dialog).getByRole('button', { name: cs.login.google.button }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await user.click(screen.getByRole('button', { name: glossary.logOut }));
-    await screen.findByLabelText(glossary.password);
+    await findGoogleButton();
     for (const spy of spies) expect(spy).not.toHaveBeenCalled();
   });
 });

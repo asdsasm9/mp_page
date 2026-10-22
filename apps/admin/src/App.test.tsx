@@ -83,10 +83,11 @@ describe('keyboard', () => {
     expect(skip.getAttribute('href')).toBe(`#${screen.getByRole('main').id}`);
   });
 
-  it('login page also starts at the skip link', async () => {
+  it('login page: focus is on the Google button and the skip link is the stop right before it', async () => {
     const user = userEvent.setup();
     await renderAt('/prihlaseni');
-    await user.tab();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: cs.login.google.button })));
+    await user.tab({ shift: true });
     expect(document.activeElement).toBe(screen.getByRole('link', { name: cs.skipLink }));
   });
 

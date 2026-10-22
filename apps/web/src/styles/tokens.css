@@ -76,6 +76,7 @@
     --target-compact: 2rem; /* quiet links (breadcrumb, footer): above the 24 px WCAG 2.2 minimum */
     --ratio-card: 3 / 2; /* album card covers are cropped to this, whatever the photo's own shape */
     --cover-position: center 30%; /* keeps heads of portrait people photos in the crop */
+    --ratio-portrait: 4 / 5; /* home collage tiles and review photos: one shape, so rows have no ragged gaps */
     --section-gap: var(--space-6); /* between page sections */
     --heading-gap: var(--space-4); /* heading to its text */
     --z-header: 10;

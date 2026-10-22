@@ -223,6 +223,27 @@ const collage = [
     text-decoration: none;
   }
 
+  /* Same pattern as AlbumCard: one cover shape, cropped, so Portréty is not taller than its neighbours. */
+  .categories a :global(img) {
+    aspect-ratio: var(--ratio-card);
+    block-size: auto;
+    object-fit: cover;
+    object-position: var(--cover-position);
+  }
+
+  .collage :global(img) {
+    aspect-ratio: var(--ratio-portrait);
+    object-fit: cover;
+    object-position: var(--cover-position);
+  }
+
+  .reviews :global(img) {
+    aspect-ratio: var(--ratio-portrait);
+    object-fit: cover;
+    object-position: var(--cover-position);
+    border-radius: var(--radius-md);
+  }
+
   .card-name {
     font-size: var(--font-size-2);
     letter-spacing: var(--tracking-heading);

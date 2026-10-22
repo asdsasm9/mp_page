@@ -86,7 +86,15 @@ try {
   // Dev photos may lack a 1600/2400 WebP; then the lightbox set holds the largest existing tier (here 960).
   const set = await page.$eval('a[data-lb-item]', (a) => a.dataset.lbSet);
   check(set.includes(new URL(front.src).pathname), `open: the front image is a tier of data-lb-set (${new URL(front.src).pathname.split('/').pop()})`);
-  check(opened.some((p) => p === new URL(front.src).pathname), 'open: the fit tier was requested on open');
+  // The fit tier must be requested on open, unless it equals a tier the grid already loaded (dev photos: 960 only);
+  // then no further request for it is needed, and it must be served from what the page already requested.
+  const frontPath = new URL(front.src).pathname;
+  const alreadyLoaded = requests.slice(0, before).includes(frontPath);
+  const frontDir = frontPath.slice(0, frontPath.lastIndexOf('/') + 1);
+  check(
+    alreadyLoaded ? !opened.some((p) => p.startsWith(frontDir)) : opened.includes(frontPath),
+    alreadyLoaded ? 'open: the fit tier equals a tier the grid already loaded, so no extra request for that photo is needed' : 'open: the fit tier was requested on open',
+  );
   check(!opened.some(isMaster), 'open: no master request');
   check(!(await page.$eval('[data-lb="back"]', (i) => !i.hidden)), 'open: back layer hidden after the front swap');
 

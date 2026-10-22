@@ -109,7 +109,7 @@ describe('sizesFor', () => {
     expect(sizesFor('card')).toBe('(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)');
     expect(sizesFor('grid')).toBe('(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 2rem)');
     expect(sizesFor('hero')).toBe('100vw');
-    expect(sizesFor('review')).toBe('(min-width: 48rem) min(44vw, 36.5rem), calc(100vw - 2rem)');
+    expect(sizesFor('review')).toBe('10rem');
   });
 });
 

@@ -22,6 +22,7 @@
     "phone-bytes": "node scripts/phone-bytes.mjs",
     "lightbox-network": "node scripts/lightbox-network.mjs",
     "lightbox-a11y": "node scripts/lightbox-a11y.mjs",
+    "lightbox-layout": "node scripts/lightbox-layout.mjs",
     "admin-encode-check": "node scripts/admin-encode-check.mjs",
     "admin-check": "node scripts/admin-check.mjs",
     "admin-prod-check": "node scripts/admin-prod-check.mjs",

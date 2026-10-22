@@ -144,9 +144,11 @@ const { prev, next } = catalog.neighbours(album.slug);
     z-index: var(--z-dialog);
   }
 
+  /* Block, not grid: the absolutely positioned controls must be placed against the dialog's own box
+     (in a grid they used a grid area and the counter and zoom group drifted off the viewport centre). */
   .lightbox[open] {
-    display: grid;
-    place-items: center;
+    display: block;
+    overflow: hidden;
   }
 
   .lightbox [hidden] {
@@ -218,7 +220,8 @@ const { prev, next } = catalog.neighbours(album.slug);
   .lb-zoom {
     position: absolute;
     inset-block-end: var(--space-3);
-    inset-inline-end: var(--space-3);
+    inset-inline-start: 50%;
+    translate: -50% 0;
     display: flex;
     gap: var(--space-2);
   }
@@ -228,12 +231,18 @@ const { prev, next } = catalog.neighbours(album.slug);
     font-size: var(--font-size-0);
   }
 
+  /* Top row mirrors the close button: counter at the start, close at the end, both centred on the same line. */
   .count {
     position: absolute;
-    inset-block-end: var(--space-3);
-    inset-inline: 0;
+    inset-block-start: var(--space-3);
+    inset-inline-start: var(--space-3);
+    display: inline-flex;
+    align-items: center;
+    block-size: var(--target-min);
     margin: 0;
-    text-align: center;
+    padding-inline: var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--color-overlay);
     font-size: var(--font-size-small);
   }
 

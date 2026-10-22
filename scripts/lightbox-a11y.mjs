@@ -35,9 +35,12 @@ const serveDist = distServer.listeners('request')[0];
 distServer.removeAllListeners('request');
 distServer.on('request', (req, res) => {
   const path = new URL(req.url, 'http://x').pathname;
-  const stand = join(dist, path.replace(/master\.jpg$/, '1600.jpg'));
-  if (path.endsWith('/master.jpg') && existsSync(stand)) {
-    res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=31536000, immutable' });
+  // Dev images are .webp and may lack a 1600 tier: use the largest tier that exists as the stand-in.
+  const stand = ['1600.jpg', '1600.webp', '960.webp', '720.webp', '480.webp']
+    .map((t) => join(dist, path.replace(/master\.jpg$/, t)))
+    .find((p) => existsSync(p));
+  if (path.endsWith('/master.jpg') && stand) {
+    res.writeHead(200, { 'content-type': stand.endsWith('.webp') ? 'image/webp' : 'image/jpeg', 'cache-control': 'public, max-age=31536000, immutable' });
     res.end(readFileSync(stand));
   } else {
     serveDist(req, res);

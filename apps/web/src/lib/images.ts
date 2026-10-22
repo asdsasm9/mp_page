@@ -73,9 +73,8 @@ const SIZES: Record<SizesContext, string> = {
   // Below the cap the column is (100vw - 7rem) / 3: measured 219.5 px at 768 px (33vw said 253 and made the
   // browser take 720 instead of 480 at DPR 2).
   card: '(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)',
-  // Home page review photo: the wider 3fr column from 48rem, measured 337 px at 768 and 584 px (36.5rem) from ~1280
-  // (image-fit check); 44vw reproduces 338 px at 768 and the cap reaches 584 px.
-  review: '(min-width: 48rem) min(44vw, 36.5rem), calc(100vw - 2rem)',
+  // Home page review photo: a fixed profile-like box, --size-avatar (10rem) at every width.
+  review: '10rem',
   // Lightbox and full-width hero use the whole viewport.
   lightbox: '100vw',
   hero: '100vw',

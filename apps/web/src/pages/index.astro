@@ -57,7 +57,6 @@ const collage = [
     <div class="hero-text">
       <h1 id="nadpis">Mullny Photos</h1>
       <p>{SITE.description}</p>
-      <a class="button" href="#kategorie">{HOME.categoriesTitle}</a>
     </div>
   </section>
 
@@ -172,22 +171,6 @@ const collage = [
     font-size: var(--font-size-5);
   }
 
-  .button {
-    display: inline-flex;
-    align-items: center;
-    min-block-size: var(--target-min);
-    padding-inline: var(--space-5);
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    border-radius: var(--radius-md);
-    text-decoration: none;
-    transition: background-color var(--motion-fast) var(--motion-ease);
-  }
-
-  .button:hover {
-    background: var(--color-accent-hover);
-  }
-
   .hello {
     display: grid;
     gap: var(--space-5);
@@ -237,11 +220,15 @@ const collage = [
     object-position: var(--cover-position);
   }
 
+  /* Profile-like: one fixed square size for every review, cropped round, centred above the text. */
   .reviews :global(img) {
-    aspect-ratio: var(--ratio-portrait);
+    inline-size: var(--size-avatar);
+    block-size: var(--size-avatar);
+    aspect-ratio: 1;
     object-fit: cover;
     object-position: var(--cover-position);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-full);
+    background: var(--color-placeholder);
   }
 
   .card-name {
@@ -275,8 +262,10 @@ const collage = [
 
   .reviews figure {
     display: grid;
+    justify-items: center;
     gap: var(--space-4);
     margin: 0;
+    text-align: center;
   }
 
   .reviews figcaption {

@@ -49,6 +49,7 @@ typings/
 .astro/
 coverage/
 .tmp/
+design-check-out/
 
 # Dev images for fixture mode (npm run dev-images); never committed, never shipped
 _dev-img/

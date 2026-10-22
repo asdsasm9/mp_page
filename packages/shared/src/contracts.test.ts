@@ -42,7 +42,7 @@ describe('ApiErrorCode', () => {
 describe('DB_COLUMNS', () => {
   it('covers the 10 tables', () => {
     expect(Object.keys(DB_COLUMNS).sort()).toEqual(
-      ['admins', 'albums', 'app_config', 'categories', 'keepalive', 'photos', 'publish_log', 'site_state', 'upload_reservations', 'url_history'].sort(),
+      ['admin_emails', 'albums', 'app_config', 'categories', 'keepalive', 'photos', 'publish_log', 'site_state', 'upload_reservations', 'url_history'].sort(),
     );
   });
   it('photos columns are the PhotoRow keys', () => {

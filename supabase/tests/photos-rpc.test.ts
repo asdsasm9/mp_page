@@ -1,7 +1,7 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { sumBytes, type PhotoVariants } from '../../packages/shared/src/variants';
-import { asRole, createMigratedDb } from './helpers/db';
+import { asRole, createMigratedDb, seedAdmin } from './helpers/db';
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const OTHER = '22222222-2222-2222-2222-222222222222';
@@ -56,11 +56,11 @@ beforeAll(async () => {
   db = await createMigratedDb();
   await db.exec(`
     insert into auth.users (id, email) values ('${ADMIN}', 'a@example.test'), ('${OTHER}', 'o@example.test');
-    insert into public.admins (user_id) values ('${ADMIN}');
     insert into public.categories (id, slug, name) values ('${CAT}', 'svatby', 'Svatby');
     insert into public.albums (id, category_id, slug, title) values
       ('${ALB}', '${CAT}', 'one', 'One'), ('${ALB2}', '${CAT}', 'two', 'Two');
   `);
+  await seedAdmin(db, ADMIN, 'a@example.test');
 });
 
 afterAll(async () => {

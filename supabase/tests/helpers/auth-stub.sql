@@ -4,7 +4,18 @@ create schema if not exists auth;
 
 create table if not exists auth.users (
   id uuid primary key,
-  email text
+  email text,
+  email_confirmed_at timestamptz,
+  banned_until timestamptz,
+  deleted_at timestamptz,
+  raw_app_meta_data jsonb
+);
+
+create table if not exists auth.identities (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  provider text not null,
+  identity_data jsonb
 );
 
 create or replace function auth.uid() returns uuid

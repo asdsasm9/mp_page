@@ -1,8 +1,8 @@
 {
   "tables": {
-    "admins": {
+    "admin_emails": {
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
-      "authenticated": { "select": "table", "insert": "none", "update": "none", "delete": "none" }
+      "authenticated": { "select": "none", "insert": "none", "update": "none", "delete": "none" }
     },
     "albums": {
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },

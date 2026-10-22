@@ -107,7 +107,7 @@ export interface KeepaliveRow {
 
 /** Column names per table; a drift test compares these with information_schema (WP2-19). */
 export const DB_COLUMNS = {
-  admins: ['user_id', 'created_at'],
+  admin_emails: ['email', 'created_at'],
   categories: [
     'id', 'slug', 'name', 'description', 'seo_title', 'seo_description',
     'sort', 'visible', 'created_at', 'updated_at',

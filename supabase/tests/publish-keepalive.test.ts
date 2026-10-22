@@ -1,6 +1,6 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { asRole, createMigratedDb } from './helpers/db';
+import { asRole, createMigratedDb, seedAdmin } from './helpers/db';
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const OTHER = '22222222-2222-2222-2222-222222222222';
@@ -32,9 +32,9 @@ const requestedAgo = (seconds: number | null) =>
 beforeAll(async () => {
   db = await createMigratedDb();
   await db.exec(`
-    insert into auth.users (id, email) values ('${ADMIN}', 'a@example.test'), ('${OTHER}', 'o@example.test');
-    insert into public.admins (user_id) values ('${ADMIN}');
+    insert into auth.users (id, email) values ('${OTHER}', 'o@example.test');
   `);
+  await seedAdmin(db, ADMIN, 'a@example.test');
 });
 
 afterAll(async () => {

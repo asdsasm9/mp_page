@@ -39,6 +39,25 @@ export async function createMigratedDb(): Promise<PGlite> {
 }
 
 /**
+ * Makes `id` an admin the way production does: a confirmed user with a verified Google identity
+ * whose e-mail is on public.admin_emails. Creates or updates the user. Use @example.test addresses only.
+ */
+export async function seedAdmin(db: PGlite, id: string, email: string): Promise<void> {
+  const lower = email.trim().toLowerCase();
+  await db.query(
+    `insert into auth.users (id, email, email_confirmed_at) values ($1, $2, now())
+     on conflict (id) do update set email = excluded.email, email_confirmed_at = now()`,
+    [id, lower],
+  );
+  await db.query(
+    `insert into auth.identities (user_id, provider, identity_data)
+     values ($1, 'google', jsonb_build_object('email', $2::text, 'email_verified', true))`,
+    [id, lower],
+  );
+  await db.query(`insert into public.admin_emails (email) values ($1) on conflict do nothing`, [lower]);
+}
+
+/**
  * Runs fn with the session acting as `role` (and, for authenticated, as user `userId`
  * through the request.jwt.claims setting). Always resets afterwards.
  */

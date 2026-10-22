@@ -2,7 +2,7 @@ import type { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RESERVED_CATEGORY_SLUGS, isValidSlug } from '../../packages/shared/src/slug';
 import { DB_COLUMNS } from '../../packages/shared/src/db';
-import { asRole, createMigratedDb } from './helpers/db';
+import { asRole, createMigratedDb, seedAdmin } from './helpers/db';
 import { tablePrivilegeMatrix } from './helpers/privileges';
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
@@ -27,14 +27,14 @@ const variants = JSON.stringify({
 beforeAll(async () => {
   db = await createMigratedDb();
   await db.exec(`
-    insert into auth.users (id, email) values ('${ADMIN}', 'a@example.test'), ('${OTHER}', 'o@example.test');
-    insert into public.admins (user_id) values ('${ADMIN}');
+    insert into auth.users (id, email) values ('${OTHER}', 'o@example.test');
     insert into public.categories (id, slug, name) values ('${CAT}', 'svatby', 'Svatby');
     insert into public.albums (id, category_id, slug, title) values ('${ALB}', '${CAT}', 'pavla_rafael', 'Pavla');
     insert into public.photos (id, album_id, master_key, width, height, variants, bytes_total)
       values ('${PHO}', '${ALB}', 'photos/${PHO}/master.jpg', 3000, 2000, '${variants}', 135);
     insert into public.url_history (old_path, target, status) values ('/stara/', '/nova/', 301);
   `);
+  await seedAdmin(db, ADMIN, 'a@example.test');
 });
 
 afterAll(async () => {

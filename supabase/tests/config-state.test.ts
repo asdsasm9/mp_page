@@ -2,7 +2,7 @@ import type { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DB_COLUMNS } from '../../packages/shared/src/db';
 import { DEFAULT_LIMITS } from '../../packages/shared/src/limits';
-import { asRole, createMigratedDb } from './helpers/db';
+import { asRole, createMigratedDb, seedAdmin } from './helpers/db';
 import { tablePrivilegeMatrix } from './helpers/privileges';
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
@@ -21,11 +21,11 @@ beforeAll(async () => {
   db = await createMigratedDb();
   await db.exec(`
     insert into auth.users (id, email) values ('${ADMIN}', 'a@example.test'), ('${OTHER}', 'o@example.test');
-    insert into public.admins (user_id) values ('${ADMIN}');
     insert into public.publish_log (requested_by, status) values ('${ADMIN}', 'ok');
     insert into public.upload_reservations (photo_id, requested_by, bytes, expires_at)
       values ('dddddddd-0000-4000-8000-000000000001', '${ADMIN}', 1000, now() + interval '1 hour');
   `);
+  await seedAdmin(db, ADMIN, 'a@example.test');
 });
 
 afterAll(async () => {

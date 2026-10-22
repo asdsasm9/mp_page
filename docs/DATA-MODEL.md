@@ -26,7 +26,7 @@ All tables are in `public` with row level security on. Every migration starts ea
 
 | Table | Purpose and key constraints |
 |---|---|
-| `admins` | `user_id` (pk, references `auth.users`). Who is an admin. No admin user is created by migrations or seed. |
+| `admin_emails` | `email` (pk, lowercase, trimmed). The Google sign-in allow-list: `is_admin()` is true only for a confirmed user with a verified Google identity whose e-mail is listed and equals the user's e-mail (migration `20261022100000_admin_google_signin.sql`, which also dropped the old `admins` table). RLS on, no grant to any API role; only the definer reads it. No address is created by migrations or seed. |
 | `categories` | `slug` unique, `^[a-z0-9]+(-[a-z0-9]+)*$`, 2..60, not in the reserved list; `name`, SEO fields, `sort`, `visible`. |
 | `albums` | `category_id` (restrict), `slug` unique (`^[a-z0-9]+([-_][a-z0-9]+)*$`, 2..60), `title`, `place`, `shot_on`, `cover_photo_id` (set null), `published`, `legacy_id` unique. |
 | `photos` | `album_id` (restrict), `master_key` unique and equal to `photos/<id>/master.jpg`, `width`, `height`, `variants` jsonb, `bytes_total`, `dominant_color` (null or `^#[0-9a-f]{6}$`), `alt` (at most 300 chars), `caption`, `sort`, `legacy_key` unique (null or 1..200 chars of `A-Za-z0-9_./-`, constraint `photos_legacy_key_format` from migration `20261019100900_photo_input_checks.sql`). A direct `register_photo` call that violates a check fails with SQLSTATE 23514, which the Worker maps to the generic `UPSTREAM_ERROR`. |
@@ -58,14 +58,14 @@ regenerated: the seed and the snapshot fixture are regenerated from `scripts/gen
 
 Generated from the catalog (`has_table_privilege`, `has_column_privilege`). `table` means the whole table,
 `none` no privilege, `columns:...` a column-limited privilege. Policies on every granted command require
-`is_admin()` (admins: own row only). anon holds nothing anywhere.
+`is_admin()` (`admin_emails`: no API access). anon holds nothing anywhere.
 
 ### Table privileges
 
 | table | role | select | insert | update | delete |
 |---|---|---|---|---|---|
-| admins | anon | none | none | none | none |
-| admins | authenticated | table | none | none | none |
+| admin_emails | anon | none | none | none | none |
+| admin_emails | authenticated | none | none | none | none |
 | albums | anon | none | none | none | none |
 | albums | authenticated | table | table | table | table |
 | app_config | anon | none | none | none | none |

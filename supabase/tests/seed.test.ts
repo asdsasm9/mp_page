@@ -7,7 +7,7 @@ import { LEGACY_ALBUMS } from '../../packages/shared/src/legacy/albums';
 import { buildSnapshot, SnapshotSchema, type Snapshot } from '../../packages/shared/src/snapshot';
 import type { AlbumRow, CategoryRow, PhotoRow, UrlHistoryRow } from '../../packages/shared/src/db';
 import { SEED_SQL, SNAPSHOT_FIXTURE_JSON } from '../../scripts/gen-fixtures';
-import { asRole, createMigratedDb } from './helpers/db';
+import { asRole, createMigratedDb, seedAdmin } from './helpers/db';
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const here = dirname(fileURLToPath(import.meta.url));
@@ -68,8 +68,7 @@ describe('seed.sql on a freshly migrated database', () => {
   });
 
   it('storage_usage().used_bytes equals the sum in the fixture', async () => {
-    await db.exec(`insert into auth.users (id, email) values ('${ADMIN}', 'a@example.test')`);
-    await db.exec(`insert into public.admins (user_id) values ('${ADMIN}')`);
+    await seedAdmin(db, ADMIN, 'a@example.test');
     const usage = await asRole(
       db,
       'authenticated',

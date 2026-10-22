@@ -652,7 +652,7 @@ describe('arch-data-model', () => {
   it('the golden file lists the MASTERPLAN tables', () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), '..');
     const g = JSON.parse(loadFiles(root, [ARCH_GOLDEN])[0].text);
-    expect([...g.dataModel.tables].sort()).toEqual(['admins', 'albums', 'app_config', 'categories', 'keepalive', 'photos', 'publish_log', 'site_state', 'upload_reservations', 'url_history']);
+    expect([...g.dataModel.tables].sort()).toEqual(['admin_emails', 'albums', 'app_config', 'categories', 'keepalive', 'photos', 'publish_log', 'site_state', 'upload_reservations', 'url_history']);
   });
   it('the real repo is green', () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), '..');

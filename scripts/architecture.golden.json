@@ -74,7 +74,7 @@
     { "name": "admin components", "globs": ["apps/admin/src/components/*.test.tsx", "apps/admin/src/screens/*.test.tsx"] }
   ],
   "dataModel": {
-    "tables": ["admins", "categories", "albums", "photos", "url_history", "app_config", "site_state", "publish_log", "upload_reservations", "keepalive"],
+    "tables": ["admin_emails", "categories", "albums", "photos", "url_history", "app_config", "site_state", "publish_log", "upload_reservations", "keepalive"],
     "columns": {
       "categories": ["id", "slug", "name", "description", "seo_title", "seo_description", "sort", "visible"],
       "albums": ["id", "category_id", "slug", "title", "place", "shot_on", "description", "seo_title", "seo_description", "cover_photo_id", "sort", "published", "legacy_id"],

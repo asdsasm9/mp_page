@@ -8,7 +8,7 @@
  * `limit`, `offset`, and the `Range` header. PostgREST status codes for errors are TO VERIFY live.
  */
 import type { PGlite } from '@electric-sql/pglite';
-import { asRole, createMigratedDb, type Role } from '../../../supabase/tests/helpers/db';
+import { asRole, createMigratedDb, seedAdmin, type Role } from '../../../supabase/tests/helpers/db';
 import { createApp, type AppDeps } from '../src/index';
 import type { FetchFn } from '../src/supabase';
 import { goodEnv } from '../src/test-support';
@@ -279,10 +279,9 @@ export interface WorldOptions {
 export async function makeWorld(options: WorldOptions = {}): Promise<World> {
   const db = await createMigratedDb();
   await db.exec(`
-    insert into auth.users (id, email) values
-      ('${ADMIN_USER}', 'admin@example.test'), ('${OTHER_USER}', 'other@example.test');
-    insert into public.admins (user_id) values ('${ADMIN_USER}');
+    insert into auth.users (id, email) values ('${OTHER_USER}', 'other@example.test');
   `);
+  await seedAdmin(db, ADMIN_USER, 'admin@example.test');
   const tokens = new Map<string, TokenInfo>([
     [ADMIN_TOKEN, { userId: ADMIN_USER }],
     [NON_ADMIN_TOKEN, { userId: OTHER_USER }],

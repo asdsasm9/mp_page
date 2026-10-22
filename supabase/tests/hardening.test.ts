@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { asRole, createMigratedDb } from './helpers/db';
+import { asRole, createMigratedDb, seedAdmin } from './helpers/db';
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const CAT = 'aaaaaaaa-0000-4000-8000-000000000001';
@@ -45,10 +45,10 @@ beforeAll(async () => {
   db = await createMigratedDb();
   await db.exec(`
     insert into auth.users (id, email) values ('${ADMIN}', 'a@example.test');
-    insert into public.admins (user_id) values ('${ADMIN}');
     insert into public.categories (id, slug, name) values ('${CAT}', 'svatby', 'Svatby');
     insert into public.albums (id, category_id, slug, title) values ('${ALB}', '${CAT}', 'one', 'One');
   `);
+  await seedAdmin(db, ADMIN, 'a@example.test');
 });
 
 afterAll(async () => {

@@ -28,6 +28,8 @@ describe('admin-prod-check judges', () => {
     expect(judgeDocumentHeaders({ ...good, 'content-security-policy': "connect-src https://x.test; frame-ancestors 'none'; img-src *" })[0]).toMatch(/wildcard/);
     expect(judgeDocumentHeaders({ ...good, 'content-security-policy': "default-src 'none'" })[0]).toMatch(/frame-ancestors/);
     expect(judgeDocumentHeaders({ ...good, 'x-robots-tag': '' })[0]).toMatch(/noindex/);
+    const withGoogle = { ...good, 'content-security-policy': `${good['content-security-policy']}; connect-src https://accounts.google.com` };
+    expect(judgeDocumentHeaders(withGoogle).join('\n')).toMatch(/must not mention google/);
   });
 
   it('fails when the admin dist carries the analytics beacon', () => {

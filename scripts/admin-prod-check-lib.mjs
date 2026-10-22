@@ -50,6 +50,8 @@ export function judgeDocumentHeaders(headers) {
   const csp = headers['content-security-policy'];
   if (!csp) return ['document has no Content-Security-Policy header'];
   if (/\*|unsafe-/.test(csp)) bad.push(`CSP has a wildcard or unsafe-*: ${csp}`);
+  // Google sign-in is a top-level navigation, so the policy needs no Google origin (WP-09 section 6).
+  if (/google/i.test(csp)) bad.push(`CSP must not mention google: ${csp}`);
   if (!/frame-ancestors 'none'/.test(csp)) bad.push("CSP lacks frame-ancestors 'none'");
   if (!/noindex/.test(headers['x-robots-tag'] ?? '')) bad.push('no X-Robots-Tag noindex');
   return bad;

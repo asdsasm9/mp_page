@@ -30,14 +30,13 @@ if (!chrome) {
 const { default: puppeteer } = await import('puppeteer-core');
 
 // ---------------------------------------------------------------------------------------------- mock origins
-const ADMIN = { id: '3b1f6c1e-6d1c-4b43-9a6e-2f0d8f7a1c11', email: 'fotograf@example.test', password: 'mock-heslo-1' };
+const ADMIN = { id: '3b1f6c1e-6d1c-4b43-9a6e-2f0d8f7a1c11', email: 'fotograf@example.test' };
 const NOW = new Date().toISOString();
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const jwt = () => `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: ADMIN.id, role: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600 })}.mock`;
 const placeholder = await sharp({ create: { width: 64, height: 64, channels: 3, background: '#8aa4b8' } }).webp().toBuffer();
 
 const ROWS = {
-  admins: [{ user_id: ADMIN.id, created_at: NOW }],
   categories: [{ id: '11111111-1111-4111-8111-111111111111', slug: 'svatby', name: 'Svatby', description: null, seo_title: null, seo_description: null, sort: 1, visible: true, created_at: NOW, updated_at: NOW }],
   albums: [],
   photos: [],
@@ -46,6 +45,8 @@ const ROWS = {
   publish_log: [],
 };
 const hits = { supabase: 0, api: 0, img: 0, site: 0, r2: 0 };
+// The Google round trip as the mock Supabase sees it: authorize (302 back to redirect_to?code=mock), PKCE token, is_admin RPC.
+const oauth = { authorize: 0, token: 0, isAdmin: 0, redirectTo: null, provider: null, extraParams: [] };
 
 function mock(kind) {
   return createServer((req, res) => {
@@ -61,8 +62,24 @@ function mock(kind) {
     const json = (status, body) => res.writeHead(status, { ...cors, 'content-type': 'application/json' }).end(JSON.stringify(body));
     req.resume();
     if (kind === 'supabase') {
+      if (url.pathname === '/auth/v1/authorize') {
+        // What Supabase does after Google: back to redirect_to with ?code=. No Google is involved in the mock.
+        oauth.authorize += 1;
+        oauth.provider = url.searchParams.get('provider');
+        oauth.redirectTo = url.searchParams.get('redirect_to');
+        oauth.extraParams = [...url.searchParams.keys()].filter((k) => !['provider', 'redirect_to', 'code_challenge', 'code_challenge_method', 'prompt', 'login_hint'].includes(k));
+        const back = new URL(oauth.redirectTo ?? 'http://127.0.0.1:9/');
+        back.searchParams.set('code', 'mock-code');
+        return res.writeHead(302, { ...cors, location: back.toString() }).end();
+      }
       if (url.pathname === '/auth/v1/token') {
-        return json(200, { access_token: jwt(), token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: 'mock-refresh', user: { id: ADMIN.id, aud: 'authenticated', role: 'authenticated', email: ADMIN.email, app_metadata: {}, user_metadata: {}, created_at: NOW } });
+        if (url.searchParams.get('grant_type') === 'pkce') oauth.token += 1;
+        const identity = { id: ADMIN.id, user_id: ADMIN.id, provider: 'google', identity_data: { email: ADMIN.email, email_verified: true, sub: 'mock-google-sub' }, created_at: NOW, last_sign_in_at: NOW };
+        return json(200, { access_token: jwt(), token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: 'mock-refresh', user: { id: ADMIN.id, aud: 'authenticated', role: 'authenticated', email: ADMIN.email, email_confirmed_at: NOW, app_metadata: { provider: 'google', providers: ['google'] }, user_metadata: {}, identities: [identity], created_at: NOW } });
+      }
+      if (url.pathname === '/rest/v1/rpc/is_admin') {
+        oauth.isAdmin += 1;
+        return json(200, true);
       }
       if (url.pathname === '/auth/v1/logout') return res.writeHead(204, cors).end();
       const table = url.pathname.replace('/rest/v1/', '');
@@ -187,10 +204,9 @@ try {
   documentHeaders = response.headers();
   failures.push(...judgeDocumentHeaders(documentHeaders));
 
-  await page.waitForSelector('form', { timeout: 15000 });
-  await type(await field(/^E-mail/), ADMIN.email);
-  await type(await field(/^Heslo$/), ADMIN.password);
-  await (await page.waitForFunction(() => [...document.querySelectorAll('button')].find((b) => /^Přihlásit se$/.test(b.textContent.trim())) ?? false)).asElement().click();
+  // Google sign-in: the button navigates to the mock /auth/v1/authorize, which answers 302 to /prihlaseni?code=mock-code,
+  // supabase-js exchanges it at /auth/v1/token?grant_type=pkce, the is_admin RPC admits and the app opens the return path.
+  await (await page.waitForFunction(() => [...document.querySelectorAll('button')].find((b) => /^Přihlásit se přes Google$/.test(b.textContent.trim())) ?? false, { timeout: 15000 })).asElement().click();
   await h1('Kategorie');
   await page.waitForFunction(() => /Svatby/.test(document.body.innerText), { timeout: 15000 });
   await spaGo('/zverejnit');
@@ -203,6 +219,13 @@ try {
   await sleep(500);
   console.log(`app flow done: sign in, categories, publish, storage. mock hits ${JSON.stringify(hits)}`);
   if (hits.supabase === 0 || hits.api === 0) failures.push(`the real adapters did not reach every mock (hits ${JSON.stringify(hits)})`);
+  console.log(`google flow: ${JSON.stringify(oauth)}`);
+  if (oauth.authorize < 1) failures.push('the sign-in button never reached /auth/v1/authorize');
+  if (oauth.provider !== 'google') failures.push(`authorize was called with provider ${oauth.provider}, not google`);
+  if (oauth.redirectTo !== `${origin}/prihlaseni`) failures.push(`redirect_to was ${oauth.redirectTo}, not ${origin}/prihlaseni`);
+  if (oauth.extraParams.length) failures.push(`authorize carried unexpected parameters: ${oauth.extraParams.join(', ')} (no scopes allowed)`);
+  if (oauth.token < 1) failures.push('no PKCE token exchange (/auth/v1/token?grant_type=pkce) after the redirect');
+  if (oauth.isAdmin < 1) failures.push('the is_admin RPC was never called');
 
   const appViolations = await page.evaluate(() => window.__csp.filter((v) => !v.probe));
 
@@ -214,7 +237,7 @@ try {
       const xhrPut = (url) => new Promise((ok, fail) => { const x = new XMLHttpRequest(); x.open('PUT', url); x.onload = () => ok(); x.onerror = () => fail(); x.send(new Blob(['x'])); });
       const img = (url) => new Promise((ok, fail) => { const i = new Image(); i.onload = ok; i.onerror = fail; i.src = url; });
       const allowed = [
-        { name: 'fetch Supabase origin', ok: await attempt(() => fetch(`${o.supabase}/rest/v1/admins`)) },
+        { name: 'fetch Supabase origin', ok: await attempt(() => fetch(`${o.supabase}/rest/v1/categories`)) },
         { name: 'fetch Worker API origin', ok: await attempt(() => fetch(`${o.api}/storage`)) },
         { name: 'fetch public site origin', ok: await attempt(() => fetch(`${o.site}/_publish.json`)) },
         { name: 'XHR PUT to R2 upload origin', ok: await attempt(() => xhrPut(`${o.r2}/photos/x`)) },

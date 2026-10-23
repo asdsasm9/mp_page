@@ -91,23 +91,22 @@ describe('home data', () => {
     expect(src.webp.map((e) => e.width)).toEqual([480, 720]);
   });
 
-  it('shows the covers of pati and anez next to the reviews', () => {
+  it('lists pati and anez with the category name of their album', () => {
     const catalog = buildCatalog(fixture);
     const out = homeReviews(catalog, REVIEWS);
     expect(out.map((r) => r.review.albumId)).toEqual(['pati', 'anez']);
     for (const r of out) {
-      expect(r.photo.id).toBe(catalog.coverOf(catalog.albumBySlug.get(r.review.albumId)!.album)!.id);
       expect(r.categoryName).toBe(catalog.albumBySlug.get(r.review.albumId)!.category.name);
     }
   });
 
-  it('builds without the anez review when the snapshot lacks that album', () => {
-    const catalog = buildCatalog(without('anez'));
-    const out = homeReviews(catalog, REVIEWS);
-    expect(out.map((r) => r.review.albumId)).toEqual(['pati']);
+  it('keeps a review whose album is gone from the snapshot, without a category name', () => {
+    const out = homeReviews(buildCatalog(without('anez')), REVIEWS);
+    expect(out.map((r) => r.review.albumId)).toEqual(['pati', 'anez']);
+    expect(out[1]!.categoryName).toBeNull();
   });
 
-  it('shows no reviews when both albums are missing', () => {
-    expect(homeReviews(buildCatalog(without('anez')), REVIEWS.filter((r) => r.albumId === 'anez'))).toEqual([]);
+  it('shows no reviews when there are none', () => {
+    expect(homeReviews(buildCatalog(fixture), [])).toEqual([]);
   });
 });

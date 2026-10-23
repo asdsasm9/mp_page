@@ -8,6 +8,7 @@ import Section from '../components/Section.astro';
 import About from '../components/sections/About.astro';
 import Contact from '../components/sections/Contact.astro';
 import Hero from '../components/sections/Hero.astro';
+import Reference from '../components/sections/Reference.astro';
 import { REVIEWS } from '../content/reviews';
 import Base from '../layouts/Base.astro';
 import { getCatalog } from '../lib/catalog';
@@ -78,30 +79,7 @@ const ogImage = chosenHero
     )
   }
 
-  {
-    reviews.length > 0 && (
-      <Section id="reference" title="Reference" band="dark">
-        <ul class="reviews">
-          {reviews.map(({ review, categoryName }) => (
-            <li>
-              <figure>
-                <blockquote class="t-quote">
-                  <p>{review.short}</p>
-                </blockquote>
-                <figcaption class="t-kicker">
-                  {review.name} · {categoryName}
-                </figcaption>
-                <details class="full">
-                  <summary class="btn-ghost">Celá recenze</summary>
-                  <p class="t-prose">{review.text}</p>
-                </details>
-              </figure>
-            </li>
-          ))}
-        </ul>
-      </Section>
-    )
-  }
+  <Reference reviews={reviews} />
 
   <Contact />
 </Base>
@@ -115,41 +93,5 @@ const ogImage = chosenHero
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  .reviews {
-    display: grid;
-    gap: var(--space-7);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .reviews li {
-    max-inline-size: none;
-  }
-
-  .reviews figure {
-    display: grid;
-    justify-items: start;
-    gap: var(--space-4);
-    margin: 0;
-  }
-
-  .reviews blockquote {
-    margin: 0;
-  }
-
-  .reviews figcaption {
-    color: var(--band-dark-muted);
-  }
-
-  .full p {
-    padding-block-start: var(--space-3);
-  }
-
-  .full summary:hover {
-    color: var(--band-dark-accent);
-    text-decoration-color: var(--band-dark-accent);
   }
 </style>

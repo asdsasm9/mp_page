@@ -1,0 +1,172 @@
+---
+// Reference (WP-12 e, T-278): the client reviews on the dark band. Server HTML: every review as a slide, the first one
+// marked active. Without JavaScript (`@media (scripting: none)`) all slides are stacked and the arrows and counter are
+// hidden; with it the slides share one grid cell (the band is as tall as the tallest slide, nothing shifts) and
+// scripts/reference-carousel.ts moves the active marker. No autoplay. The full text stays in a native <details>.
+// Zero reviews renders nothing; one review renders no arrows and no counter.
+import type { HomeReview } from '../../lib/home';
+import Icon from '../Icon.astro';
+import Section from '../Section.astro';
+
+interface Props {
+  reviews: readonly HomeReview[];
+}
+
+const { reviews } = Astro.props;
+const total = reviews.length;
+---
+{
+  total > 0 && (
+    <Section id="reference" title="Reference" band="dark">
+      <div class="carousel" data-carousel role="region" aria-roledescription="carousel" aria-label="Recenze klientů">
+        <div class="viewport" data-viewport>
+          {reviews.map(({ review, categoryName }, i) => (
+            <div
+              class="slide"
+              data-slide
+              data-active={i === 0 ? '' : undefined}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${i + 1} z ${total}`}
+            >
+              <figure>
+                <blockquote class="t-quote">
+                  <p>{review.short}</p>
+                </blockquote>
+                <figcaption class="t-kicker">{categoryName ? `${review.name} · ${categoryName}` : review.name}</figcaption>
+                <details class="full">
+                  <summary class="btn-ghost">Celá recenze</summary>
+                  <p class="t-prose">{review.text}</p>
+                </details>
+              </figure>
+            </div>
+          ))}
+        </div>
+        {
+          total > 1 && (
+            <div class="controls" data-controls>
+              <button type="button" class="arrow" data-prev aria-label="Předchozí reference">
+                <Icon name="chevron-left" />
+              </button>
+              <p class="count t-kicker" data-counter>
+                1 / {total}
+              </p>
+              <button type="button" class="arrow" data-next aria-label="Další reference">
+                <Icon name="chevron-right" />
+              </button>
+            </div>
+          )
+        }
+      </div>
+    </Section>
+  )
+}
+
+<script>
+  import '../../scripts/reference-carousel';
+</script>
+
+<style>
+  .carousel {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .viewport {
+    display: grid;
+    gap: var(--space-7);
+  }
+
+  .slide figure {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+    margin: 0;
+  }
+
+  .slide blockquote {
+    margin: 0;
+  }
+
+  .slide figcaption {
+    color: var(--band-dark-muted);
+  }
+
+  .full p {
+    padding-block-start: var(--space-3);
+  }
+
+  .full summary:hover {
+    color: var(--band-dark-accent);
+    text-decoration-color: var(--band-dark-accent);
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .count {
+    margin: 0;
+    min-inline-size: 4ch;
+    text-align: center;
+    color: var(--band-dark-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .arrow {
+    display: inline-grid;
+    place-items: center;
+    inline-size: var(--target-min);
+    block-size: var(--target-min);
+    padding: 0;
+    border: var(--border-width) solid color-mix(in srgb, var(--band-dark-text) 40%, transparent);
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--band-dark-text);
+    cursor: pointer;
+    transition:
+      color var(--motion-fast) var(--motion-ease),
+      border-color var(--motion-fast) var(--motion-ease);
+  }
+
+  .arrow:hover {
+    color: var(--band-dark-accent);
+    border-color: var(--band-dark-accent);
+  }
+
+  /* No scripting: all reviews stacked, nothing to operate */
+  @media (scripting: none) {
+    .controls {
+      display: none;
+    }
+  }
+
+  /* Scripting: one slide at a time, all in the same grid cell so the band keeps the height of the tallest one */
+  @media (scripting: enabled) {
+    .viewport {
+      gap: 0;
+      touch-action: pan-y;
+    }
+
+    .slide {
+      grid-area: 1 / 1;
+      visibility: hidden;
+      opacity: 0;
+    }
+
+    .slide[data-active] {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+
+  @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+    .slide {
+      transition:
+        opacity var(--motion-drawer) var(--motion-ease),
+        visibility var(--motion-drawer) var(--motion-ease);
+    }
+  }
+</style>

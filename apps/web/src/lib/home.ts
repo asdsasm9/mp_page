@@ -1,9 +1,9 @@
 /**
  * Data for the home page, kept pure so it can be tested without a build: category cards (the category's
- * chosen photo, else the cover of the first album) and reviews (cover of the album the review belongs to). A review whose album is missing
- * from the snapshot, or has no photo, is dropped, so a snapshot without `anez` still builds.
+ * chosen photo, else the cover of the first album) and reviews (no photos; the album only gives the category name,
+ * and a review whose album is missing from the snapshot is kept without one).
  */
-import { effectiveAlt, type SnapshotPhoto } from '@mp/shared';
+import type { SnapshotPhoto } from '@mp/shared';
 import type { Review } from '../content/reviews';
 import type { Catalog } from './catalog';
 import { ogImage } from './images';
@@ -22,10 +22,8 @@ export interface HomeCategoryCard {
 
 export interface HomeReview {
   review: Review;
-  photo: SnapshotPhoto;
-  alt: string;
-  /** Name of the category the review's album belongs to (the name line reads `Name · Category`). */
-  categoryName: string;
+  /** Name of the category the review's album belongs to (the name line reads `Name · Category`), or null. */
+  categoryName: string | null;
 }
 
 export interface HomeHero {
@@ -61,24 +59,10 @@ export function homeCategoryCards(catalog: Catalog): HomeCategoryCard[] {
   return cards;
 }
 
+/** Every review is kept; the album only supplies the category name (null when the album is not in the snapshot). */
 export function homeReviews(catalog: Catalog, reviews: readonly Review[]): HomeReview[] {
-  const out: HomeReview[] = [];
-  for (const review of reviews) {
-    const entry = catalog.albumBySlug.get(review.albumId);
-    const photo = entry ? catalog.coverOf(entry.album) : null;
-    if (!entry || !photo) continue;
-    const n = entry.album.photos.findIndex((p) => p.id === photo.id) + 1;
-    out.push({
-      review,
-      photo,
-      categoryName: entry.category.name,
-      alt: effectiveAlt(photo, {
-        albumTitle: entry.album.title,
-        categoryKey: entry.category.slug,
-        n,
-        total: entry.album.photos.length,
-      }),
-    });
-  }
-  return out;
+  return reviews.map((review) => ({
+    review,
+    categoryName: catalog.albumBySlug.get(review.albumId)?.category.name ?? null,
+  }));
 }

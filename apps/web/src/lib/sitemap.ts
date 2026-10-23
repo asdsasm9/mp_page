@@ -2,8 +2,8 @@
  * Sitemap and robots.txt builders (docs/SEO.md section 6). Pure: take the catalog categories and return text.
  *
  * URL set: `/`, `/portfolio/`, every category, every album with photos (the same filter as the album route),
- * `/o-mne/`, `/kontakt/`, `/cookies/`. With the fixture that is 1 home + 1 portfolio + 3 categories + 13 albums
- * + 3 fixed = 21 URLs (the plan's "21" was 1 + 3 + 13 + 3 = 20 before D-6 added /portfolio/).
+ * `/cookies/`. With the fixture that is 1 home + 1 portfolio + 3 categories + 13 albums + 1 fixed = 19 URLs
+ * (T-288: /o-mne/ and /kontakt/ are home sections, redirected, not listed).
  * 404 and noindex pages are never listed. Fixed pages carry no `lastmod`; categories and albums use `updatedAt`.
  */
 import { effectiveAlt, jpegKey, type SnapshotAlbum, type SnapshotCategory } from '@mp/shared';
@@ -14,7 +14,7 @@ export const MAX_IMAGES_PER_URL = 1000;
 
 /** Fixed pages in listing order; the home page comes first, the rest after the categories and albums. */
 export const FIXED_PATHS_BEFORE = ['/', '/portfolio/'] as const;
-export const FIXED_PATHS_AFTER = ['/o-mne/', '/kontakt/', '/cookies/'] as const;
+export const FIXED_PATHS_AFTER = ['/cookies/'] as const;
 
 export function xmlEscape(text: string): string {
   return text

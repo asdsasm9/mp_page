@@ -14,8 +14,8 @@ const TABLE: Array<[string, string]> = [
   ['#/weddings/suranovi', '/svatby/suranovi/'],
   ['#/portraits', '/portrety/'],
   ['#/couples', '/parove-foceni/'],
-  ['#/about', '/o-mne/'],
-  ['#/contact', '/kontakt/'],
+  ['#/about', '/#o-mne'],
+  ['#/contact', '/#kontakt'],
   ['#/weddings/unknown-id', '/svatby/'],
   ['#/nonsense', '/'],
   ['#/portraits/anez', '/portrety/anez/'],
@@ -48,7 +48,7 @@ const TABLE: Array<[string, string]> = [
   ['#/https://evil.example', '/'],
 ];
 
-const NO_CALL = ['', '#', '#section', '#kategorie', 'x#/home', '/#/home'];
+const NO_CALL = ['', '#', '#section', '#kategorie', 'x#/home', '/#/home', '#uvod', '#o-mne', '#portfolio', '#reference', '#kontakt'];
 
 /** Runs the exact script text with a fake `location`; returns the replace() arguments. */
 function run(hash: string): string[] {
@@ -74,7 +74,7 @@ describe('hash-redirect', () => {
 
   it('only ever redirects to a path from the fixed tables', () => {
     for (const hash of ['#/constructor', '#/weddings/<script>', '#/portraits/%2e%2e', '#/couples/a/b']) {
-      expect(run(hash)[0], hash).toMatch(/^\/(?:(?:svatby|portrety|parove-foceni|portfolio|o-mne|kontakt)\/)?$/);
+      expect(run(hash)[0], hash).toMatch(/^\/(?:(?:svatby|portrety|parove-foceni|portfolio)\/|#o-mne|#kontakt)?$/);
     }
   });
 

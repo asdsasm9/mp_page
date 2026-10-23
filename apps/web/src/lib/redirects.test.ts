@@ -15,10 +15,14 @@ const DOC_TABLE: Array<[string, string]> = [
   ['/portraits/', '/portrety/'],
   ['/couples', '/parove-foceni/'],
   ['/couples/', '/parove-foceni/'],
-  ['/about', '/o-mne/'],
-  ['/about/', '/o-mne/'],
-  ['/contact', '/kontakt/'],
-  ['/contact/', '/kontakt/'],
+  ['/o-mne/', '/#o-mne'],
+  ['/o-mne', '/#o-mne'],
+  ['/about', '/#o-mne'],
+  ['/about/', '/#o-mne'],
+  ['/kontakt/', '/#kontakt'],
+  ['/kontakt', '/#kontakt'],
+  ['/contact', '/#kontakt'],
+  ['/contact/', '/#kontakt'],
   ['/manifest.json', '/manifest.webmanifest'],
   ['/fotky_web/site/preview/preview.jpg', OG],
 ];
@@ -45,6 +49,16 @@ describe('static redirects', () => {
       expect(rows.find((r) => r.from === from), from).toEqual({ from, to, status: 301 });
     }
     expect(rows).toHaveLength(DOC_TABLE.length);
+  });
+
+  it('sends the removed /o-mne/ and /kontakt/ pages to home sections, without a chain', () => {
+    const rows = staticRedirects(OG);
+    const about = rows.filter((r) => r.to === '/#o-mne').map((r) => r.from);
+    const contact = rows.filter((r) => r.to === '/#kontakt').map((r) => r.from);
+    expect(about.sort()).toEqual(['/about', '/about/', '/o-mne', '/o-mne/']);
+    expect(contact.sort()).toEqual(['/contact', '/contact/', '/kontakt', '/kontakt/']);
+    expect(() => collectRedirects({ imgOrigin: IMG, ogImagePath: OG })).not.toThrow();
+    expect(buildRedirects({ imgOrigin: IMG, ogImagePath: OG })).toContain('/o-mne/ /#o-mne 301\n');
   });
 
   it('has no /portfolio rows (D-6) and no wildcard', () => {

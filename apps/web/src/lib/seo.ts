@@ -69,6 +69,8 @@ export const portfolioMeta = (): PageMeta =>
     'Portfolio fotografky z Brna: ukázky svateb, portrétů a párového focení. Prohlédněte si všechny kategorie a výběr mých alb.',
   );
 
+// T-288: aboutMeta and contactMeta are used only by the pages/o-mne and pages/kontakt stubs, which T-281 deletes;
+// delete both functions (and their seo.test.ts cases) together with those pages. Not listed in the sitemap any more.
 export const aboutMeta = (): PageMeta =>
   meta(
     'O mně – fotografka Terezie Müllnerová, Brno',

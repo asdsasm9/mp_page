@@ -17,7 +17,7 @@ const urlBlocks = (xml: string): string[] => [...xml.matchAll(/<url>[\s\S]*?<\/u
 const locOf = (block: string): string => /<loc>([^<]*)<\/loc>/.exec(block)![1]!;
 
 describe('sitemapPaths', () => {
-  it('lists home, portfolio, categories, albums and the three fixed pages: 1 + 1 + 3 + 13 + 3 = 21', () => {
+  it('lists home, portfolio, categories, albums and /cookies/: 1 + 1 + 3 + 13 + 1 = 19', () => {
     const albums = fixture.categories.flatMap((c) => c.albums.map((a) => `/${c.slug}/${a.slug}/`));
     const expected = [
       ...FIXED_PATHS_BEFORE,
@@ -26,15 +26,17 @@ describe('sitemapPaths', () => {
       ...FIXED_PATHS_AFTER,
     ];
     expect(sitemapPaths(fixture.categories)).toEqual(expected);
-    expect(expected).toHaveLength(2 + fixture.categories.length + albums.length + 3);
-    expect(expected).toHaveLength(21);
+    expect(expected).toHaveLength(2 + fixture.categories.length + albums.length + 1);
+    expect(expected).toHaveLength(19);
     expect(expected).not.toContain('/404/');
+    expect(expected).not.toContain('/o-mne/');
+    expect(expected).not.toContain('/kontakt/');
   });
 
   it('skips albums without photos, like the album route', () => {
     const copy = structuredClone(fixture);
     copy.categories[0]!.albums[0]!.photos = [];
-    expect(sitemapPaths(copy.categories)).toHaveLength(20);
+    expect(sitemapPaths(copy.categories)).toHaveLength(18);
   });
 });
 

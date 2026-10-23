@@ -10,7 +10,7 @@ import { getCatalog } from '../lib/catalog';
 import { readRawEnv, resolveEnv } from '../lib/env';
 import { HASH_REDIRECT_SCRIPT } from '../lib/hash-redirect';
 import { homeCategoryCards, homeReviews } from '../lib/home';
-import { SITE_ORIGIN, photographerFull, website } from '../lib/jsonld';
+import { SITE_ORIGIN, person, photographerFull, website } from '../lib/jsonld';
 import { homeMeta } from '../lib/seo';
 import hero from '../assets/site/home/main.jpg';
 import hello from '../assets/site/home/hello.jpg';
@@ -40,7 +40,7 @@ const collage = [
   { src: portraits, alt: 'Portrétní fotografie' },
 ];
 ---
-<Base meta={meta} path="/" ogImage={ogImage} heroHeader jsonLd={[photographerFull(ogImage.url), website()]}>
+<Base meta={meta} path="/" ogImage={ogImage} heroHeader jsonLd={[photographerFull(ogImage.url), website(), person(ogImage.url)]}>
   <!-- Must be inline to run before first paint; T-67's CSP gets its sha256 from the postbuild. -->
   <script is:inline slot="head" set:html={HASH_REDIRECT_SCRIPT} />
   <section class="hero" aria-labelledby="nadpis">

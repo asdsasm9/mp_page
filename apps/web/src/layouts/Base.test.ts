@@ -113,7 +113,7 @@ describe('Home page (built, shared build)', () => {
   });
 
   it('emits Photographer and WebSite JSON-LD only, no Review', () => {
-    expect(jsonLdTypes().sort()).toEqual(['Photographer', 'WebSite']);
+    expect(jsonLdTypes().sort()).toEqual(['Person', 'Photographer', 'WebSite']);
     expect(html).not.toMatch(/"@type":"(Review|AggregateRating)"/);
   });
 });
@@ -428,7 +428,7 @@ describe('Cookies page and 404 (built, shared build)', () => {
 });
 
 describe('Sitemap and robots (built, shared build)', () => {
-  it('sitemap.xml lists the 21 fixture URLs (1 + 1 + 3 + 13 + 3), without 404, and sedlakovi has 44 images', () => {
+  it('sitemap.xml lists the 19 fixture URLs (1 + 1 + 3 + 13 + 1), without 404 and without /o-mne/ and /kontakt/, and sedlakovi has 44 images', () => {
     const xml = readFileSync(join(out, 'sitemap.xml'), 'utf8');
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     const albums = fixture.categories.flatMap((c) => c.albums.map((a) => `/${c.slug}/${a.slug}/`));
@@ -437,11 +437,9 @@ describe('Sitemap and robots (built, shared build)', () => {
       '/portfolio/',
       ...fixture.categories.map((c) => `/${c.slug}/`),
       ...albums,
-      '/o-mne/',
-      '/kontakt/',
       '/cookies/',
     ].map((p) => `https://www.mullnyphotos.cz${p}`);
-    expect(locs).toHaveLength(21);
+    expect(locs).toHaveLength(19);
     expect([...locs].sort()).toEqual([...expected].sort());
     expect(locs.filter((l) => /404/.test(l!))).toEqual([]);
     const sedlakovi = xml.slice(xml.indexOf('/svatby/sedlakovi/</loc>'));

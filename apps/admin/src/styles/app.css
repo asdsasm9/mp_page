@@ -201,7 +201,7 @@
 
     .bottom-nav .nav-list {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 0;
     }
 
@@ -2147,5 +2147,67 @@
     .cover-tile {
       transition: box-shadow var(--motion-fast) var(--motion-ease);
     }
+  }
+}
+
+/* Home hero photo (WP-12 step 28, T-286): the block reuses the category-cover layout; the two crops show how the hero
+   is cut (the public hero is object-fit: cover at center 40%; wide on a desktop, tall on a phone). */
+@layer components {
+  .hero-photo .category-cover-info {
+    flex-basis: 14rem;
+  }
+
+  .hero-preview {
+    flex-basis: 100%;
+  }
+
+  .hero-preview h3 {
+    font-size: var(--font-size-0);
+  }
+
+  .hero-preview-frames {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-4);
+    margin-block-start: var(--space-2);
+  }
+
+  .hero-preview-frame {
+    margin: 0;
+    min-inline-size: 0;
+  }
+
+  .hero-preview-frame img {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    object-fit: cover;
+    object-position: center 40%;
+    background: var(--color-placeholder);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .hero-preview-frame figcaption {
+    margin-block-start: var(--space-1);
+    color: var(--color-text-muted);
+  }
+
+  .hero-preview-desktop {
+    flex: 1 1 16rem;
+    max-inline-size: 28rem;
+  }
+
+  .hero-preview-desktop img {
+    aspect-ratio: 16 / 9;
+  }
+
+  .hero-preview-phone {
+    flex: 0 0 7rem;
+  }
+
+  .hero-preview-phone img {
+    aspect-ratio: 9 / 16;
   }
 }

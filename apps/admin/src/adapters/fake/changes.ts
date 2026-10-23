@@ -3,7 +3,7 @@
  * One line per catalog row; added stays added, a row added and deleted before publishing leaves no line,
  * a sort-only update is "reordered", an update that changes nothing is not logged. url_history is not logged.
  */
-import type { AlbumRow, CategoryRow, ChangeKind, ChangeLogRow, ChangeTable, PhotoRow } from '@mp/shared';
+import type { AlbumRow, CategoryRow, ChangeKind, ChangeLogRow, ChangeTable, PhotoRow, SiteSettingsRow } from '@mp/shared';
 import type { Core } from './core';
 
 type Row = CategoryRow | AlbumRow | PhotoRow;
@@ -53,7 +53,6 @@ export function logChange(
   table: ChangeTable,
   change: { op: 'insert'; after: Row } | { op: 'update'; before: Row; after: Row } | { op: 'delete'; before: Row },
 ): void {
-  const { state } = core;
   let kind: ChangeKind;
   let row: Row;
   if (change.op === 'insert') {
@@ -68,12 +67,34 @@ export function logChange(
     kind = sameExcept(change.before, change.after, ['updated_at', 'sort']) ? 'reordered' : 'edited';
   }
 
-  const ctx = context(core, table, row);
+  record(core, table, row.id, kind, context(core, table, row));
+}
+
+/** change_log row id of the single site_settings row (its own key is a boolean); same uuid as the migration logs. */
+export const SITE_SETTINGS_LOG_ID = '00000000-0000-4000-8000-000000000001';
+export const SITE_SETTINGS_LABEL = 'Hlavní fotka úvodní stránky';
+
+/** Trigger log_change for site_settings (an update that changes nothing is not logged). */
+export function logSettingsChange(core: Core, before: SiteSettingsRow, after: SiteSettingsRow): void {
+  if (before.hero_photo_id === after.hero_photo_id) return;
+  record(core, 'site_settings', SITE_SETTINGS_LOG_ID, 'edited', {
+    label: SITE_SETTINGS_LABEL,
+    category_id: null,
+    category_name: null,
+    album_id: null,
+    album_title: null,
+  });
+}
+
+type Context = Pick<ChangeLogRow, 'label' | 'category_id' | 'category_name' | 'album_id' | 'album_title'>;
+
+function record(core: Core, table: ChangeTable, rowId: string, kind: ChangeKind, ctx: Context): void {
+  const { state } = core;
   const log = state.changeLog;
-  const i = log.findIndex((l) => l.table_name === table && l.row_id === row.id);
+  const i = log.findIndex((l) => l.table_name === table && l.row_id === rowId);
   const old = log[i];
   if (!old) {
-    log.push({ id: ++state.changeSeq, at: core.iso(), table_name: table, row_id: row.id, kind, ...ctx });
+    log.push({ id: ++state.changeSeq, at: core.iso(), table_name: table, row_id: rowId, kind, ...ctx });
     return;
   }
   if (kind === 'deleted' && old.kind === 'added') {

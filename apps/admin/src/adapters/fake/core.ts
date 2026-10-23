@@ -6,6 +6,7 @@ import type {
   Limits,
   PhotoRow,
   PublishLogRow,
+  SiteSettingsRow,
   SiteStateRow,
 } from '@mp/shared';
 import {
@@ -75,6 +76,8 @@ export interface State {
   objects: Map<string, FakeObject>;
   grants: Map<string, FakeGrant>;
   site: SiteStateRow;
+  /** The single site_settings row (home hero photo). */
+  settings: SiteSettingsRow;
   publishLog: PublishLogRow[];
   /** Unpublished changes (the change_log table); see changes.ts. */
   changeLog: ChangeLogRow[];

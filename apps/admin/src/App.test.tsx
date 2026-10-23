@@ -62,7 +62,7 @@ describe('routes', () => {
     await renderAt('/');
     const nav = screen.getByRole('navigation', { name: cs.nav.bottom });
     const labels = Array.from(nav.querySelectorAll('a')).map((a) => a.textContent);
-    expect(labels).toEqual([cs.nav.categories, cs.nav.upload, cs.nav.publish]);
+    expect(labels).toEqual([cs.nav.categories, cs.nav.upload, cs.nav.homePageShort, cs.nav.publish]);
   });
 
   it('marks the current page in the navigation', async () => {

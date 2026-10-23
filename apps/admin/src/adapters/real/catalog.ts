@@ -4,7 +4,16 @@
  * removed by /photos/delete. Updates carry `updated_at=eq.<value read earlier>` as optimistic
  * concurrency: no matching row means somebody else changed it (STALE) or it is gone (NOT_FOUND).
  */
-import type { AlbumRow, AppConfigRow, CategoryRow, ChangeLogRow, PhotoRow, PublishLogRow, SiteStateRow } from '@mp/shared';
+import type {
+  AlbumRow,
+  AppConfigRow,
+  CategoryRow,
+  ChangeLogRow,
+  PhotoRow,
+  PublishLogRow,
+  SiteSettingsRow,
+  SiteStateRow,
+} from '@mp/shared';
 import { CHANGE_LOG_MAX, CatalogError, type CatalogPort } from '../../ports';
 import type { Rest } from './http';
 
@@ -72,6 +81,18 @@ export function createRealCatalog(rest: Rest): CatalogPort {
     },
     async getSiteState() {
       const rows = await rest.select<SiteStateRow>('site_state', { select: '*', limit: '1' });
+      if (!rows[0]) throw new CatalogError('NOT_FOUND');
+      return rows[0];
+    },
+    async getSiteSettings() {
+      const rows = await rest.select<SiteSettingsRow>('site_settings', { select: '*', limit: '1' });
+      if (!rows[0]) throw new CatalogError('NOT_FOUND');
+      return rows[0];
+    },
+    async updateSiteSettings(patch) {
+      // The database grants update on hero_photo_id only; refuse anything else before the request.
+      if (Object.keys(patch).some((k) => k !== 'hero_photo_id')) throw new CatalogError('INVALID');
+      const rows = await rest.patch<SiteSettingsRow>('site_settings', { id: 'eq.true' }, patch);
       if (!rows[0]) throw new CatalogError('NOT_FOUND');
       return rows[0];
     },

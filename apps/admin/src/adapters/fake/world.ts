@@ -5,7 +5,7 @@
  *
  * Failure injection for tests and the browser checks: failNext, dropNetwork, expireSession, slowPut.
  */
-import { DEFAULT_LIMITS, type ChangeLogRow, type Limits, type Snapshot } from '@mp/shared';
+import { DEFAULT_LIMITS, type ChangeLogRow, type Limits, type SiteSettingsRow, type Snapshot } from '@mp/shared';
 import { sortedChangeLog } from './changes';
 import type { Clock, Ids, Ports } from '../../ports';
 import { createFakeApi } from './api';
@@ -46,6 +46,7 @@ export interface WorldSnapshot {
   reservations: { photo_id: string; bytes: number; expires_at: string }[];
   objects: { key: string; bytes: number }[];
   site: { pending_changes: number; last_published_at: string | null; last_publish_requested_at: string | null };
+  settings: SiteSettingsRow;
   publishLog: unknown[];
   changeLog: ChangeLogRow[];
   published: unknown;
@@ -90,6 +91,7 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
     objects: new Map(),
     grants: new Map(),
     site: { id: true, pending_changes: 0, last_published_at: null, last_publish_requested_at: null },
+    settings: { id: true, hero_photo_id: null },
     publishLog: [],
     changeLog: [],
     changeSeq: 0,
@@ -167,6 +169,7 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
           .map(([photo_id, r]) => ({ photo_id, bytes: r.bytes, expires_at: new Date(r.expiresAtMs).toISOString() })),
         objects: [...state.objects.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([key, o]) => ({ key, bytes: o.bytes })),
         site: { ...state.site },
+        settings: { ...state.settings },
         publishLog: structuredClone(state.publishLog),
         changeLog: sortedChangeLog(state.changeLog).map((l) => ({ ...l })),
         published: structuredClone(state.published),

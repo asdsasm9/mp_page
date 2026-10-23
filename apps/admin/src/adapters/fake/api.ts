@@ -393,6 +393,7 @@ export function createFakeApi(core: Core): ApiPort {
           photos: [...state.photos.values()],
           // Fake world keeps no slug history; the real Worker passes the real url_history rows (see docs/ADMIN.md).
           urlHistory: [],
+          siteSettings: { ...state.settings },
         },
         new Date(now),
       );

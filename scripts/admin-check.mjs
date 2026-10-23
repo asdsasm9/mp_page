@@ -586,6 +586,65 @@ async function runProfile(browser, profile) {
       await checkpoint(ctx, 'album grid with category badge', { shot: false });
     });
 
+    // ---- home hero photo (T-286): none chosen, picker open, low-resolution warning, chosen with both crops
+    await step('home hero photo', async () => {
+      // The fixture ships with a chosen hero; this check starts from "automatic".
+      await world(page, '(w) => w.ports.catalog.updateSiteSettings({ hero_photo_id: null })');
+      await clickBy(ctx, 'a', ctx.profile.phone ? /^Úvod$/ : /^Úvodní stránka$/);
+      await page.waitForFunction(() => location.pathname === '/uvodni-stranka' && document.querySelector('h1')?.textContent === 'Úvodní stránka', { timeout: 10000 });
+      await page.waitForFunction(
+        () => {
+          const button = [...document.querySelectorAll('.hero-photo button')].find((b) => /^Vybrat$/.test(b.textContent.trim()));
+          return Boolean(button) && !button.disabled;
+        },
+        { timeout: 15000 },
+      );
+      await waitText(page, /Automaticky \(výchozí\)/);
+      await checkpoint(ctx, 'home hero none');
+      await clickBy(ctx, '.hero-photo button', /^Vybrat$/);
+      await page.waitForFunction(() => document.querySelectorAll('dialog:modal input[name=hero-photo]').length > 0, { timeout: 15000 });
+      await imagesLoaded(page);
+      await checkpoint(ctx, 'home hero picker');
+      // The album of the quality examples holds a 1480 px photo (first) and 3000 px photos.
+      const q = await world(
+        page,
+        `(w) => {
+          const s = w.snapshot();
+          const good = s.photos.find((p) => p.width === 3000);
+          const album = s.albums.find((a) => a.id === good.album_id);
+          return { title: album.title, count: s.photos.filter((p) => p.album_id === album.id).length, id: good.id };
+        }`,
+      );
+      await clickBy(ctx, 'label.picker-option', new RegExp(q.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      await page.waitForFunction((n) => document.querySelectorAll('dialog:modal input[name=hero-photo]').length === n, { timeout: 15000 }, q.count);
+      await imagesLoaded(page);
+      let tiles = await page.$$('dialog:modal .cover-tile');
+      await press(ctx, tiles[0]);
+      await waitText(page, /Nízké rozlišení pro velkou fotku/);
+      await checkpoint(ctx, 'home hero picker low resolution');
+      tiles = await page.$$('dialog:modal .cover-tile');
+      await press(ctx, tiles[1]);
+      await page.waitForFunction(() => !/Nízké rozlišení pro velkou fotku/.test(document.querySelector('dialog:modal')?.textContent ?? ''), { timeout: 5000 });
+      await clickBy(ctx, 'button', /^Nastavit jako hlavní$/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal') === null, { timeout: 15000 });
+      await page.waitForFunction(() => document.querySelectorAll('.hero-photo img').length === 2, { timeout: 10000 });
+      const stored = await world(page, '(w) => w.snapshot().settings.hero_photo_id');
+      if (stored !== q.id) throw new Error(`the hero photo is ${stored}, expected ${q.id}`);
+      await find(page, '.hero-photo button', /^Zrušit výběr$/);
+      await imagesLoaded(page);
+      await checkpoint(ctx, 'home hero chosen');
+      // A small photo that is already chosen keeps showing the warning on the screen.
+      await clickBy(ctx, '.hero-photo button', /^Změnit$/);
+      await page.waitForFunction((n) => document.querySelectorAll('dialog:modal input[name=hero-photo]').length === n, { timeout: 15000 }, q.count);
+      tiles = await page.$$('dialog:modal .cover-tile');
+      await press(ctx, tiles[0]);
+      await clickBy(ctx, 'button', /^Nastavit jako hlavní$/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal') === null, { timeout: 15000 });
+      await waitText(page, /Nízké rozlišení pro velkou fotku/);
+      await imagesLoaded(page);
+      await checkpoint(ctx, 'home hero low resolution chosen');
+    });
+
     // ---- F6 publish the site, with one failure first
     await step('publish site', async () => {
       await clickBy(ctx, 'a', /^Zveřejnit/);
@@ -800,6 +859,9 @@ try {
   await browser.close();
   server.close();
 }
+
+// Failures first as well: the screenshot list below is long and a tool that keeps only the head and tail of the output hides the middle.
+if (failures.length) console.log(`failures so far:\n${failures.map((f) => `- ${f}`).join('\n')}`);
 
 const cols = [['page / state', 'label'], ['width', 'width'], ['axe s/c', 'axe'], ['axe all', 'axeAll'], ['overflow px', 'overflow'], ['targets', 'targets'], ['smallest px', 'smallest'], ['result', 'result']];
 const cell = (r, c) => String(r[c[1]] ?? '');

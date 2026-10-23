@@ -7,6 +7,7 @@ import { cs } from './i18n/cs';
 import { AlbumScreen } from './screens/AlbumScreen';
 import { CategoriesScreen } from './screens/CategoriesScreen';
 import { CategoryScreen } from './screens/CategoryScreen';
+import { HomePageScreen } from './screens/HomePageScreen';
 import { PhotoDetailScreen } from './screens/PhotoDetailScreen';
 import { PublishScreen } from './screens/PublishScreen';
 import { StorageScreen } from './screens/StorageScreen';
@@ -38,6 +39,7 @@ export function App() {
           <Route path="/kategorie/:id" element={<CategoryScreen />} />
           <Route path="/alba/:id" element={<AlbumScreen />} />
           <Route path="/alba/:id/foto/:photoId" element={<PhotoDetailScreen />} />
+          <Route path="/uvodni-stranka" element={<HomePageScreen />} />
           <Route path="/zverejnit" element={<PublishScreen />} />
           <Route path="/ulozeni" element={<StorageScreen />} />
           <Route path="/nahravani" element={<UploadScreen />} />

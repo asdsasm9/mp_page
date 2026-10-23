@@ -65,6 +65,11 @@ export function ShellLayout() {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/uvodni-stranka" className={linkClass}>
+                {cs.nav.homePage}
+              </NavLink>
+            </li>
+            <li>
               <PublishLink label={cs.nav.publishSite} className={linkClass} />
             </li>
           </ul>
@@ -91,6 +96,11 @@ export function ShellLayout() {
           <li>
             <NavLink to="/nahravani" className={linkClass}>
               {cs.nav.upload}
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/uvodni-stranka" className={linkClass}>
+              {cs.nav.homePageShort}
             </NavLink>
           </li>
           <li>

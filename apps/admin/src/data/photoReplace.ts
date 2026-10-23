@@ -6,7 +6,7 @@
  *   1. add     the new photo goes into the same album (the normal upload queue, done by the caller)
  *   2. copy    sort, alt and caption of the old photo are written to the new one (updatePhoto)
  *   3. cover   when the old photo is the album cover, the new photo becomes the cover (updateAlbum); the same for
- *              the main photo of the category (updateCategory)
+ *              the main photo of the category (updateCategory) and for the home hero photo (updateSiteSettings)
  *   4. delete  the old photo is deleted through the Worker (only after both photos are verified in the same album)
  *
  * Any failure after step 1 leaves both photos in place: the old photo is deleted only as the very last step and
@@ -94,6 +94,11 @@ export function usePhotoReplace() {
         catalog.updateCategory(category.id, { cover_photo_id: target.newId }, expectUpdatedAt(category)),
       );
     }
+    // The home hero photo moves along too (deleting the old photo would clear it: on delete set null).
+    const settings = await runAuthed(() => catalog.getSiteSettings());
+    if (settings.hero_photo_id === target.oldId) {
+      await runAuthed(() => catalog.updateSiteSettings({ hero_photo_id: target.newId }));
+    }
   }
 
   async function removeOld(target: ReplaceTarget): Promise<void> {
@@ -106,6 +111,8 @@ export function usePhotoReplace() {
     // Same for the category cover: it must already be off the old photo, or the delete would silently clear it.
     const category = await runAuthed(() => catalog.getCategory(album.category_id));
     if (category && category.cover_photo_id === target.oldId) throw new ApiError('CONFLICT');
+    const settings = await runAuthed(() => catalog.getSiteSettings());
+    if (settings.hero_photo_id === target.oldId) throw new ApiError('CONFLICT');
     const result = await deleteRows([old]);
     if (result.error !== null) throw result.error;
     if (result.failedIds.length > 0) throw new ApiError('INTERNAL');

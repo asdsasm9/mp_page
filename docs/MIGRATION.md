@@ -135,6 +135,12 @@ commit (no row yet) needs no repair: just re-run.
 
 ## What the script does to the images
 
+This script keeps its own sharp settings on purpose (the legacy sources are already lossy web JPEGs, so a higher
+quality would only enlarge files). They differ from photos uploaded through the admin, which follow the WP-10 quality
+table (master q0.90 with a 5 MB cap, per-tier caps; see [ADMIN.md](ADMIN.md) "Photo quality (WP-10)"). Weak legacy photos
+are re-uploaded from originals (see "Source quality" above and [REPLACE-PHOTO-OPTIONS.md](REPLACE-PHOTO-OPTIONS.md)
+for how a photo is replaced).
+
 Sharp re-encodes everything: orientation applied, sRGB, no metadata (EXIF/GPS/ICC dropped). The master is the original
 fitted within 3000 px (never upscaled), always re-encoded as JPEG q85, so the stored master is a second lossy
 generation of the legacy file (accepted). Tiers come from the shared `variantPlan` (WebP q80 including 720 when the
@@ -150,7 +156,7 @@ Unless the owner objects, these are used. The owner is who can change the defaul
 |---|---------|-------|
 | 1 | The live run is a human step: `--live --confirm-project <ref>`, first `--album lucka_filip`, then complete; about 154 MB (planned) to R2, 141 rows, 0 EUR, with a second admin account | Adam (H-10) |
 | 2 | Photo alt is stored as null; the text is generated at render time (`--alt default` stores it) | Adam |
-| 3 | Masters are re-encoded at q85, which also strips EXIF and GPS | Adam |
+| 3 | Masters are re-encoded at q85 by this script (not the q0.90 of admin uploads), which also strips EXIF and GPS | Adam |
 | 4 | `sort` is stored as 10, 20, 30 (gaps for later reordering) | Adam |
 | 5 | Album slugs keep their underscores (`pavla_rafael`, `helis_tom`, `lucka_filip`) unless hyphens are asked for before the live run | Adam |
 | 6 | The live run writes the 141 legacy image redirects to `url_history` (D-13); they reach visitors only after a publish following H-5 | Adam (H-5) |

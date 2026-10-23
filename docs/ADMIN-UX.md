@@ -70,6 +70,8 @@ Photo area:
 - Upload drop zone at the top: "Přetáhněte sem fotky nebo klikněte pro výběr" with button "Vybrat fotky" (phone: opens camera roll). Accepts JPEG, PNG, HEIC, WebP; rejects other types with a per-file message.
 - Photo grid: square thumbnails (variant 480 px, never the original), cover marked with a "Titulní" badge, hidden-state not applicable to single photos (hiding exists at album level only; see 8), alt-text warning dot on photos without alt text. Drag handle on each tile. Selection mode: checkbox on each tile, a sticky action bar "Vybráno 5: Přesunout do alba, Smazat, Zrušit výběr".
 - Tile menu / photo detail: "Nastavit jako titulní", "Upravit popisek", "Přesunout do jiného alba", "Smazat fotku".
+- Quality verdict (WP-10): every photo carries a badge "Nízké rozlišení" (master long edge under 2000 px), "Chybí varianta" or "Dobré", also in the photo detail, the album summary ("{low} z {total} … je v nízkém rozlišení") and the filter "Jen nízké rozlišení".
+- Replace with a better file (WP-10, option A): detail action "Nahradit lepší verzí" with a before/after confirmation. The new photo is added to the same album (new id, new image URLs, same album URL), takes over sort, alt, caption and cover, then the old photo is deleted. Recovery state if interrupted: "Nahrazení nedokončeno" (Dokončit / Zrušit). Atomic variant only proposed: [REPLACE-PHOTO-OPTIONS.md](REPLACE-PHOTO-OPTIONS.md).
 - Photo detail (side panel on desktop, full screen on phone): large preview (1600 px variant), Alternativní text (alt, with hint "Popište, co je na fotce, pro nevidomé a vyhledávače"), Popisek (caption), buttons "Uložit", "Předchozí", "Další".
 - Empty state: "V albu zatím nejsou žádné fotky." with the drop zone enlarged.
 - Desktop: grid 5 to 6 columns, detail in a right panel. Phone: 2 columns, detail full screen, drag by long press, selection mode as the primary way to bulk-act.
@@ -83,10 +85,12 @@ One queue for the whole session, visible from every screen (top-bar indicator op
   - It computes the dominant colour of every photo (`#rrggbb`, for example from a canvas downscale) and sends it as `dominant_color`; it is the placeholder block shown before the image loads.
   - The one-off legacy migration does the same with sharp stats on a small downscale (`dominantColorOf` in `scripts/dev-images.ts`), so no photo keeps a null `dominant_color`.
   - The master is always re-encoded (never uploaded as the original file) so EXIF and GPS metadata are stripped; the master is publicly linked for zoom.
+  - Quality (WP-10): one maximum-quality JPEG in; the overview set (WebP 480/720/960) is small and sharp, the detail set (WebP 1600/2400, JPEG 1600, master at JPEG q0.90 with a 5 MB cap) is the best quality. Per-tier qualities and caps: [ADMIN.md](ADMIN.md) "Photo quality (WP-10)", source of truth `packages/shared/src/photo-quality.ts`.
+  - The step label "Zpracovávám" is shown as two phases, "Připravuji náhledy" and "Nahrávám detail". A source with a long edge under 2000 px is accepted with the warning "Původní fotka je malá, bude jen do {n} px".
 - Concurrency: 3 files at once; the queue survives navigation inside the SPA; closing the tab during uploads triggers the browser "leave page?" warning while the queue is not empty.
 - Failure states (each file, independent; one failure never stops the rest):
   - Unsupported file: "Nepodporovaný formát (JPEG, PNG, HEIC, WebP)."
-  - File too large (config, e.g. over 40 MB): "Soubor je příliš velký."
+  - Input limits (WP-10, checked from the file header before decoding; nothing is uploaded): file over 50 MiB: "Soubor je příliš velký (nad 50 MB). Zmenšete ho a zkuste to znovu."; over 64 MP (40 MP on a touch device): "Fotka má příliš mnoho pixelů (nad 64 MP; na telefonu nad 40 MP)."; unreadable header: "Tuto fotku se nepodařilo načíst." The per-part server cap (`max_upload_bytes`, 40 MiB) is a separate, later check. The old "100 MP" limit no longer exists.
   - Cannot process (corrupt): "Fotku se nepodařilo zpracovat."
   - Network lost: file pauses with "Čekám na připojení…", resumes automatically when online, up to 3 automatic retries with backoff, then "Nahrávání selhalo. Zkusit znovu".
   - Upload URL expired: silently asks for a new URL once, then as a network failure.
@@ -109,6 +113,7 @@ One queue for the whole session, visible from every screen (top-bar indicator op
 - Mini-bar in the top bar: "Úložiště 3,2 z 9,5 GB". Same bar, larger, on the categories list and on `/ulozeni`.
 - Colour states (also text, never colour alone): normal; warning from 8 GB "Úložiště se plní (8,2 z 9,5 GB). Zvažte smazání nepotřebných fotek." (amber, `role="status"`); full "Úložiště je plné. Nahrávání je zastaveno." (red, `role="alert"`) and the drop zones show disabled with the same message.
 - `/ulozeni` detail: used / limit, percentage, breakdown per album (name, photos, size, link), sorted by size; button "Zkontrolovat úložiště" = reconcile (compares the database total with the real bucket size; result "Součet souhlasí." or "Opraveno: databáze ukazovala 3,4 GB, skutečně 3,2 GB." with a "Použít skutečnou hodnotu" confirmation before it writes).
+- Per-photo list (WP-10): "Fotky podle velikosti", heaviest first, paged (a page of rows, not all photos in the DOM), album filter, the per-variant breakdown ("Rozpis souborů"), the share of the limit and the quality verdict badge. About 3.3 MB per photo at the new quality, so roughly 2,880 photos fit under the 9.5 GB hard limit.
 - Limits (hard limit, warning threshold) come from server config; the bar renders whatever the server returns.
 - Deleting photos or albums lowers the total; the bar updates right after the delete completes.
 

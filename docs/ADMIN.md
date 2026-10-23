@@ -12,7 +12,8 @@ facts and human steps: [VERIFY.md](VERIFY.md). Page texts (Home, About, Contact)
   upload slots, commit, delete, publish, storage and reconcile) and R2 (direct `PUT` of the encoded files to the
   presigned URLs the Worker hands out). It also reads `<site>/_publish.json` to follow a publish.
 - The browser resizes and converts photos before upload (`src/encode`): master up to 3000 px, WebP tiers 480 to 2400,
-  a 1200x630 OG image, EXIF and GPS removed, dominant colour computed. See "Browser encode check" below.
+  a 1200x630 OG image, EXIF and GPS removed, dominant colour computed. Quality per tier, byte caps, input limits and
+  the quality verdict are in "Photo quality (WP-10)" below; the check is in "Browser encode check".
 - Every adapter (auth, data, upload, publish, storage) has a real and a fake implementation behind one interface in
   `src/adapters`. `VITE_BACKEND=fake` swaps in an in-memory world; the fake build carries the marker
   `MP_ADMIN_FAKE_WORLD_7f3a9c`, which a gate keeps out of any production build.
@@ -368,6 +369,62 @@ Findings of the audit and what was done:
   `<dialog>` with Escape, live regions for saving, reordering and uploads, the keyboard sensor on every drag
   handle (the move buttons were removed in T-243, see deviation 2 for WCAG 2.5.7). Target size
   (`--target-min`, 44 px) is a CSS token; its measured result belongs to `admin-check`.
+
+## Photo quality (WP-10)
+
+The photographer uploads one maximum-quality JPEG; the browser makes both sets from it. Plan:
+`plans/WP-10-photo-quality.md` (autopilot state folder); measurements: [PHOTO-QUALITY-MEASUREMENTS.md](PHOTO-QUALITY-MEASUREMENTS.md)
+(provisional until originals are measured, VERIFY rows 49 to 53). All numbers below live in one place,
+`packages/shared/src/photo-quality.ts`; this page only describes them.
+
+**Sets.** Overview = WebP 480, 720, 960 (album grids, category cards, home). Detail = WebP 1600 and 2400, the 1600 JPEG
+(no-JS fallback) and the master. The OG image is unchanged.
+
+**Quality and byte caps** (`QUALITY_TABLE`). The encoder starts at `start`; when the file is over `capBytes` it lowers the
+quality by 0.04, at most 3 retries, never below `floor` (the last result is kept even if still over the cap; quality is
+never cut below the floor to hit a budget, D-8). A file under its cap is encoded once.
+
+| Variant | Start | Cap | Floor |
+|---|---|---|---|
+| WebP 480 | 0.74 | 40 KB | 0.60 |
+| WebP 720 | 0.68 | 80 KB | 0.60 |
+| WebP 960 | 0.66 | 150 KB | 0.60 |
+| WebP 1600 | 0.80 | 320 KB | 0.70 |
+| WebP 2400 | 0.80 | 700 KB | 0.70 |
+| JPEG 1600 | 0.82 | 500 KB | 0.75 |
+| OG 1200x630 | 0.82 | 160 KB | 0.70 |
+| Master (up to 3000 px) | 0.90 | 5 MB | 0.80 |
+
+Downscaled tiers get a small luma-only unsharp mask (`src/encode/sharpen.ts`, strongest on 480 to 960, none on the
+master and the JPEG). The old statement "master JPEG q0.85" no longer holds for new uploads; only the one-off
+`migrate-legacy` script keeps its own sharp settings (master JPEG q85, WebP q80, JPEG 1600 q85) because its sources are
+already lossy web files (see [MIGRATION.md](MIGRATION.md)). A photo is about 3.3 MB in total (3000x2000), so about
+2,880 photos fit under the 9.5 GB hard limit; `estimateBytes` is only the browser pre-check, the Worker decides.
+
+**Input limits, checked from the file header before any decode, nothing is uploaded for a refused file.** Types JPEG,
+PNG, WebP (HEIC only where the browser decodes it). File at most 50 MiB (`MAX_INPUT_FILE_BYTES`), at most 64 MP on a
+desktop and 40 MP on a touch device (`MAX_INPUT_MEGAPIXELS_DESKTOP`/`_TOUCH`; the old 100 MP limit is gone). Big sources
+are decoded with `createImageBitmap` resize options where the browser supports them, and bitmaps and canvases are
+released after use. Czech messages: "Soubor je příliš velký (nad 50 MB). Zmenšete ho a zkuste to znovu.", "Fotka má
+příliš mnoho pixelů (nad 64 MP; na telefonu nad 40 MP).", "Tuto fotku se nepodařilo načíst.". A source whose long edge
+is under 2000 px is accepted with the warning "Původní fotka je malá, bude jen do {n} px". The queue shows the phases
+"Připravuji náhledy" and "Nahrávám detail".
+
+**Quality verdict** (`photoVerdict`, shown as a badge in the photo grid, the photo detail, the album summary and the
+storage list, with the filter "Jen nízké rozlišení"): "Nízké rozlišení" (master long edge under
+`DETAIL_MIN_LONG_EDGE` = 2000 px), "Chybí varianta" (a planned tier, the JPEG or the OG is absent, for example rows
+stored before the 720 tier), "Dobré".
+
+**Replace with a better file (option A, client swap).** "Nahradit lepší verzí" in the photo detail adds the new file as a
+new photo in the same album, copies sort, alt and caption, moves the cover, then deletes the old photo. The new photo has
+a new id and new image URLs (files are cached for a year under id-derived keys, so a same-id overwrite is not done); the
+album page URL does not change. It is not atomic: if the browser closes in between, both photos exist and the album shows
+"Nahrazení nedokončeno" with Dokončit / Zrušit. Quota for both photos is needed at once. Old-site image redirects of a
+replaced legacy photo stop working. The atomic variant (Worker route plus SQL function) is only a proposal:
+[REPLACE-PHOTO-OPTIONS.md](REPLACE-PHOTO-OPTIONS.md), needs Adam's approval.
+
+**Storage list.** `/ulozeni` lists photos sorted by size (heaviest first, paged), with an album filter, the per-variant
+byte breakdown, the share of the storage limit and the quality verdict.
 
 ## Browser encode check
 

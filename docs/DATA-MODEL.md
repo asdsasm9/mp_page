@@ -76,6 +76,14 @@ them and the site renders their srcset without 720 (it falls back to 960). The 7
 regenerated: the seed and the snapshot fixture are regenerated from `scripts/gen-fixtures.ts`.
 `dominant_color` (`#rrggbb`) is the placeholder block shown before an image loads.
 
+Photo quality (WP-10) changed no table, column, grant, RPC or migration. New uploads are larger (about 3.3 MB for a
+3000x2000 photo, master up to a 5 MB cap) but `bytes_total` and the quota math are unchanged and server-side. Quality,
+caps, input limits and the verdict (`low` / `good` / `missing`, derived from `width`, `height` and `variants`, never
+stored) are defined only in `packages/shared/src/photo-quality.ts`; see [ADMIN.md](ADMIN.md) "Photo quality (WP-10)".
+A replaced photo is a new row with a new id (the admin copies sort, alt, caption and cover; `photos` has no version
+column and a same-id overwrite would hit the one-year immutable cache); the atomic variant needing a new RPC is only a
+proposal in [REPLACE-PHOTO-OPTIONS.md](REPLACE-PHOTO-OPTIONS.md).
+
 ## Grant matrix
 
 Generated from the catalog (`has_table_privilege`, `has_column_privilege`). `table` means the whole table,
@@ -199,7 +207,8 @@ creates no admin and leaves `pending_changes` at 0.
 `register_photo`, never by direct insert. Its photo ids are UUIDv5 of the `legacy_key` in a migration namespace
 different from the fixture namespace, so they are deterministic across runs. `photos.sort` is stored as 10, 20, 30
 (`register_photo` assigns max+10 in call order, and the script commits in file-number order). Masters are re-encoded
-JPEG q85 within 3000 px with metadata stripped, not the legacy bytes. `alt` is null by default (default text at render
+JPEG q85 within 3000 px with metadata stripped, not the legacy bytes (the migration script keeps its own q85; photos
+uploaded through the admin use the WP-10 quality table, master q0.90). `alt` is null by default (default text at render
 time).
 
 ## Snapshot `updatedAt` (WP3-3)

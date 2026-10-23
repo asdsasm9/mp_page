@@ -111,3 +111,49 @@ describe('planBatch', () => {
     expect(planBatch(base, []).results).toEqual([]);
   });
 });
+
+// WP-10: a photo at the new quality is about 3.3 MB, a master can reach its 5 MB cap. No code change needed.
+describe('planBatch with WP-10 photo sizes', () => {
+  const PHOTO = 3_300_000;
+  const MASTER_CAP = 5_000_000;
+
+  it('a 5 MB master is far below the per-file limit and accepted', () => {
+    expect(MASTER_CAP).toBeLessThan(DEFAULT_LIMITS.maxUploadBytes);
+    const r = planBatch(base, [{ photo_id: id(1), bytes: MASTER_CAP }]);
+    expect(r.results[0]).toEqual({ photo_id: id(1), ok: true });
+  });
+
+  it('a 5 MB master at exactly the hard limit is accepted, 1 byte over is STORAGE_FULL', () => {
+    expect(planBatch({ ...base, used: HARD - MASTER_CAP }, [{ photo_id: id(1), bytes: MASTER_CAP }]).results[0]?.ok).toBe(
+      true,
+    );
+    expect(
+      planBatch({ ...base, used: HARD - MASTER_CAP + 1 }, [{ photo_id: id(1), bytes: MASTER_CAP }]).results[0]?.code,
+    ).toBe('STORAGE_FULL');
+  });
+
+  it('fits 2878 photos of 3.3 MB under the 9.5 GB hard limit and refuses the 2879th', () => {
+    const fit = Math.floor(HARD / PHOTO);
+    expect(fit).toBe(2878);
+    const st = { ...base, used: (fit - 1) * PHOTO };
+    expect(planBatch(st, [{ photo_id: id(1), bytes: PHOTO }]).results[0]?.ok).toBe(true);
+    expect(planBatch({ ...base, used: fit * PHOTO }, [{ photo_id: id(1), bytes: PHOTO }]).results[0]?.code).toBe(
+      'STORAGE_FULL',
+    );
+  });
+
+  it('the 8 GB warning starts after about 2424 photos of 3.3 MB', () => {
+    const n = Math.ceil(WARN / PHOTO);
+    expect(n).toBe(2425);
+    expect(evaluateQuota({ ...base, used: (n - 1) * PHOTO }).level).toBe('ok');
+    expect(evaluateQuota({ ...base, used: n * PHOTO }).level).toBe('warn');
+  });
+
+  it('a 200-file batch of 3.3 MB photos (660 MB) is accepted on an empty store', () => {
+    const items = Array.from({ length: 200 }, (_, i) => ({ photo_id: id(i), bytes: PHOTO }));
+    const r = planBatch(base, items);
+    expect(r.results.every((x) => x.ok)).toBe(true);
+    expect(r.reserved_bytes).toBe(200 * PHOTO);
+    expect(r.level).toBe('ok');
+  });
+});

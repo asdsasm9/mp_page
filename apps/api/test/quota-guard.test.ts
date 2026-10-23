@@ -208,3 +208,43 @@ describe('T-6 quota guard acceptance', () => {
     expect((await usage()).reserved_bytes).toBe(PER);
   });
 });
+
+// WP-10 (T-270): the new quality makes a photo about 3.3 MB and a master up to its 5 MB cap.
+// The server quota math needs no change; these cases prove it.
+describe('WP-10 photo sizes against the server quota', () => {
+  const sizedItem = (n: number, masterBytes: number, otherBytes: number) => ({
+    photo_id: id(n),
+    width: W,
+    height: H,
+    files: planUploadFiles(id(n), W, H).map((f) => ({
+      kind: f.kind,
+      ...(f.tier ? { tier: f.tier } : {}),
+      bytes: f.kind === 'master' ? masterBytes : otherBytes,
+    })),
+  });
+  const fileCount = planUploadFiles(id(1), W, H).length;
+  const reserveSized = (n: number, masterBytes: number, otherBytes: number) =>
+    api('/uploads/reserve', { album_id: ALB, items: [sizedItem(n, masterBytes, otherBytes)] });
+
+  it('accepts a 3.3 MB photo and counts every byte', async () => {
+    const other = Math.round((3_300_000 - 2_000_000) / (fileCount - 1));
+    const total = 2_000_000 + other * (fileCount - 1);
+    const res = await reserveSized(1, 2_000_000, other);
+    expect(res.status).toBe(200);
+    expect(res.body.items[0].ok).toBe(true);
+    expect((await usage()).reserved_bytes).toBe(total);
+  });
+
+  it('accepts a 5 MB master (below the per-file limit) and refuses the photo one byte over the hard limit', async () => {
+    const other = 300_000;
+    const total = 5_000_000 + other * (fileCount - 1);
+    await setLimits(total, 10);
+    expect((await reserveSized(1, 5_000_000, other)).status).toBe(200);
+    await storage.delete(storage.keys());
+    await world.db.exec('delete from public.upload_reservations');
+    await setLimits(total - 1, 10);
+    const res = await reserveSized(2, 5_000_000, other);
+    expect(res.status).toBe(409);
+    expect(res.body.items[0].code).toBe('STORAGE_FULL');
+  });
+});

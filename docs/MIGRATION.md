@@ -82,6 +82,31 @@ stops with an error that names only `MIGRATE_ACCESS_TOKEN`, never its value.
    URLs, e-mail addresses or credentials).
 4. **Second run for evidence.** Run step 3 again: inserted 0, skipped 141, no duplicates.
 
+## Source quality: weak photos (T-264)
+
+The dry-run lists, per legacy photo, the source pixel size (after EXIF orientation), the source file size and a
+`WEAK`/`ok` flag. A photo is weak when its long edge is below `DETAIL_MIN_LONG_EDGE` (2000 px, `packages/shared/src/photo-quality.ts`):
+the legacy file is too small to fill the detail tier, so the migrated photo would be stored at low quality. The same list is in
+`migration-report/<timestamp>.json` (`albums[].photoQuality`) and `.md`.
+
+Weak photos: 47 of 141 (the console line `weak photos 47 of 141`). Re-upload these from the originals through the admin
+before cutover (README Cutover step "re-upload weak photos from originals"). Per album: frankovi 4, hradsti 2, sedlakovi 13, suranovi 2,
+lukas 4, mia 5, pati 5, pavla_rafael 5, helis_tom 3, lucka_filip 4; anez, lucka and pati2 have none.
+
+Weak list (legacy keys):
+
+- frankovi: `weddings/frankovi/1.jpg`, `weddings/frankovi/2.jpg`, `weddings/frankovi/3.jpg`, `weddings/frankovi/4.jpg`
+- hradsti: `weddings/hradsti/7.jpg`, `weddings/hradsti/8.jpg`
+- sedlakovi: `weddings/sedlakovi/5.jpg`, `weddings/sedlakovi/9.jpg`, `weddings/sedlakovi/10.jpg`, `weddings/sedlakovi/11.jpg`, `weddings/sedlakovi/14.jpg`, `weddings/sedlakovi/17.jpg`, `weddings/sedlakovi/21.jpg`, `weddings/sedlakovi/24.jpg`, `weddings/sedlakovi/25.jpg`, `weddings/sedlakovi/27.jpg`, `weddings/sedlakovi/32.jpg`, `weddings/sedlakovi/33.jpg`, `weddings/sedlakovi/34.jpg`
+- suranovi: `weddings/suranovi/1.jpg`, `weddings/suranovi/2.jpg`
+- lukas: `portraits/lukas/1.jpg`, `portraits/lukas/3.jpg`, `portraits/lukas/5.jpg`, `portraits/lukas/6.jpg`
+- mia: `portraits/mia/2.jpg`, `portraits/mia/5.jpg`, `portraits/mia/6.jpg`, `portraits/mia/8.jpg`, `portraits/mia/15.jpg`
+- pati: `portraits/pati/1.jpg`, `portraits/pati/3.jpg`, `portraits/pati/5.jpg`, `portraits/pati/7.jpg`, `portraits/pati/8.jpg`
+- pavla_rafael: `couples/pavla_rafael/4.jpg`, `couples/pavla_rafael/5.jpg`, `couples/pavla_rafael/6.jpg`, `couples/pavla_rafael/7.jpg`, `couples/pavla_rafael/9.jpg`
+- helis_tom: `couples/helis_tom/4.jpg`, `couples/helis_tom/5.jpg`, `couples/helis_tom/6.jpg`
+- lucka_filip: `couples/lucka_filip/1.jpg`, `couples/lucka_filip/2.jpg`, `couples/lucka_filip/3.jpg`, `couples/lucka_filip/4.jpg`
+
+A test (`scripts/migrate-legacy/docs.test.ts`) reads the real legacy files and fails when this count or list differs from the report.
 ## Verification checklist (after the full run)
 
 - [ ] Final line is `RESULT: OK`; the console shows `drift 0` in the catalog and covers lines; the report shows found 141, inserted 141 (first run), failed 0 and orders wrong 0 (order column) for every album.

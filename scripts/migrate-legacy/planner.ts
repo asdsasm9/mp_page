@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { LEGACY_CATEGORIES } from '../../packages/shared/src/legacy/albums';
+import { DETAIL_MIN_LONG_EDGE } from '../../packages/shared/src/photo-quality';
 import { processImage } from './image';
 import { discoverSources, type DiscoverOptions } from './sources';
 import type { MigrateOptions } from './types';
@@ -26,9 +27,25 @@ export interface AlbumPlan {
   coverId: string;
   orderOk: boolean;
   errors: string[];
+  /** Per photo source quality, in file-number order (failed photos have w = h = 0 and are not weak). */
+  photoQuality: PhotoSourceQuality[];
+  weak: number;
+}
+
+export interface PhotoSourceQuality {
+  legacyKey: string;
+  w: number;
+  h: number;
+  bytes: number;
+  /** Long edge below DETAIL_MIN_LONG_EDGE: re-upload from the original before cutover. */
+  weak: boolean;
 }
 
 export interface Plan {
+  /** DETAIL_MIN_LONG_EDGE used for the weak flag. */
+  weakBelow: number;
+  /** Photos flagged weak, over all albums. */
+  weak: number;
   categories: number;
   albums: AlbumPlan[];
   photos: number;
@@ -56,6 +73,9 @@ export class PlanError extends Error {
   }
 }
 
+/** A source whose long edge is below DETAIL_MIN_LONG_EDGE cannot fill the detail tier: re-upload from the original. */
+export const isWeakSource = (w: number, h: number): boolean => Math.max(w, h) < DETAIL_MIN_LONG_EDGE;
+
 export function redirectLine(legacyKey: string, photoId: string, base: string): string {
   return `/fotky_web/galleries/${legacyKey} ${base.replace(/\/+$/, '')}/photos/${photoId}/1600.jpg 301`;
 }
@@ -73,7 +93,7 @@ export async function planMigration(options: Pick<MigrateOptions, 'album' | 'lim
   const albums: AlbumPlan[] = [];
   const redirects: string[] = [];
   for (const sa of discovery.albums) {
-    const results: Array<{ bytes: number; src: number; error?: string }> = new Array(sa.photos.length);
+    const results: Array<{ bytes: number; src: number; w: number; h: number; error?: string }> = new Array(sa.photos.length);
     let next = 0;
     const worker = async () => {
       while (next < sa.photos.length) {
@@ -82,9 +102,9 @@ export async function planMigration(options: Pick<MigrateOptions, 'album' | 'lim
         try {
           const src = await read(p.path);
           const done = await processImage(src);
-          results[i] = { bytes: done.bytesTotal, src: src.length };
+          results[i] = { bytes: done.bytesTotal, src: src.length, w: done.source.w, h: done.source.h };
         } catch (e) {
-          results[i] = { bytes: 0, src: 0, error: `${p.legacyKey}: ${(e as Error).message}` };
+          results[i] = { bytes: 0, src: 0, w: 0, h: 0, error: `${p.legacyKey}: ${(e as Error).message}` };
         }
       }
     };
@@ -93,7 +113,13 @@ export async function planMigration(options: Pick<MigrateOptions, 'album' | 'lim
     for (const p of sa.photos) redirects.push(redirectLine(p.legacyKey, p.id, base));
     const failed = results.filter((r) => r.error).length;
     const cover = sa.photos[sa.album.mainImgNum - 1];
+    const photoQuality = sa.photos.map((p, i): PhotoSourceQuality => {
+      const r = results[i]!;
+      return { legacyKey: p.legacyKey, w: r.w, h: r.h, bytes: r.src, weak: !r.error && isWeakSource(r.w, r.h) };
+    });
     albums.push({
+      photoQuality,
+      weak: photoQuality.filter((q) => q.weak).length,
       id: sa.album.id,
       title: sa.album.title,
       category: sa.album.categorySlug,
@@ -114,6 +140,8 @@ export async function planMigration(options: Pick<MigrateOptions, 'album' | 'lim
   const failed = sum((a) => a.failed);
   const overLimit = options.limitBytes !== null && bytes > options.limitBytes;
   return {
+    weakBelow: DETAIL_MIN_LONG_EDGE,
+    weak: sum((a) => a.weak),
     categories: options.album ? new Set(albums.map((a) => a.category)).size : LEGACY_CATEGORIES.length,
     albums,
     photos: discovery.total,
@@ -138,6 +166,13 @@ export function formatReport(plan: Plan, options: Pick<MigrateOptions, 'limitByt
       `${a.id.padEnd(13)} found ${a.found} planned ${a.planned} failed ${a.failed} bytes ${a.bytes} cover #${a.coverN} (${a.coverId}) order ${a.orderOk ? 'OK' : 'BAD'}`,
     );
     for (const e of a.errors) lines.push(`  ERROR ${e}`);
+  }
+  lines.push(`source quality: long edge below ${plan.weakBelow} px is weak (re-upload from the original before cutover)`);
+  lines.push(`weak photos ${plan.weak} of ${plan.photos}`);
+  for (const a of plan.albums) {
+    for (const q of a.photoQuality) {
+      lines.push(`  ${q.legacyKey.padEnd(26)} ${q.w}x${q.h} ${q.bytes} bytes ${q.weak ? 'WEAK' : 'ok'}`);
+    }
   }
   lines.push(`planned ${plan.planned} of ${plan.photos}, failed ${plan.failed}`);
   lines.push(`source bytes ${plan.sourceBytes} (${mb(plan.sourceBytes)} MB), planned R2 bytes ${plan.bytes} (${mb(plan.bytes)} MB)`);

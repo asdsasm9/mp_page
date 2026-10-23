@@ -70,6 +70,7 @@ Go-live checklist for the old GitHub Pages site. Human steps only; H-numbers are
 6. H-11: the Cloudflare analytics token is created and set. See [docs/WEB.md](docs/WEB.md#analytics).
 7. Deploy Worker, admin and web to preview URLs (Deploy table above). Keep the old site primary.
 8. H-10: run the live legacy migration (first one album, then all). See [docs/MIGRATION.md](docs/MIGRATION.md#steps).
+8b. Re-upload weak photos from originals: the migration dry-run flags the legacy photos whose long edge is below 2000 px (47 of 141, list in [docs/MIGRATION.md](docs/MIGRATION.md#source-quality-weak-photos-t-264)). The photographer re-uploads those from the original files before the site goes public.
 9. Publish once from the admin as a preview (using the preview image URL or an `r2.dev` URL, since `img` does not exist yet), then check the preview site.
 10. Phase 3 preview review: the photographer checks the design and works through [docs/NAVOD.md](docs/NAVOD.md) on a test album. Fix findings before DNS.
 11. H-5, part 1: export or screenshot the old DNS zone first. Then move DNS to Cloudflare and compare record by record: A/AAAA, `www` CNAME, MX and TXT, so mail keeps working. Evidence: mail and the old site still work.

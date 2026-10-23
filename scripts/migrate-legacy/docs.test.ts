@@ -87,6 +87,28 @@ describe('docs/MIGRATION.md', () => {
     expect(doc).not.toContain('rows 33 to 36 below');
   });
 
+  it('weak photo count and list equal what the dry-run flags on the real legacy files', async () => {
+    const sharp = (await import('sharp')).default;
+    const { discoverSources } = await import('./sources');
+    const { isWeakSource } = await import('./planner');
+    const weak: string[] = [];
+    for (const a of discoverSources().albums) {
+      for (const p of a.photos) {
+        const m = await sharp(p.path).metadata();
+        const swap = (m.orientation ?? 1) >= 5;
+        const [w, h] = swap ? [m.height ?? 0, m.width ?? 0] : [m.width ?? 0, m.height ?? 0];
+        if (isWeakSource(w, h)) weak.push(p.legacyKey);
+      }
+    }
+    const section = doc.split('## Source quality: weak photos (T-264)')[1]!.split('\n## ')[0]!;
+    expect(section).toContain(`Weak photos: ${weak.length} of 141`);
+    expect(section).toContain(`weak photos ${weak.length} of 141`);
+    const listed = [...section.matchAll(/`((?:weddings|portraits|couples)\/[a-z0-9_]+\/\d+\.jpg)`/g)].map((m) => m[1]!);
+    expect(listed.sort()).toEqual([...weak].sort());
+    expect(read('README.md').toLowerCase()).toContain('re-upload weak photos from originals');
+    expect(read('README.md').toLowerCase()).toContain(`${weak.length} of 141`);
+  });
+
   it('README points to it', () => {
     expect(read('README.md')).toContain('docs/MIGRATION.md');
   });

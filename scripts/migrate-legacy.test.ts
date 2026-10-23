@@ -87,6 +87,31 @@ describe('migrate-legacy dry-run', () => {
     expect(f(dirB)).toBe(f(dirA));
   }, 30_000);
 
+  it('lists source size, file size and the weak flag per photo, and writes them to the json report', async () => {
+    const big = await sharp({ create: { width: 2400, height: 1600, channels: 3, background: { r: 10, g: 20, b: 30 } } }).jpeg().toBuffer();
+    const edge = await sharp({ create: { width: 1999, height: 1000, channels: 3, background: { r: 10, g: 20, b: 30 } } }).jpeg().toBuffer();
+    const bufs = [jpeg, big, edge, big, big];
+    let i = 0;
+    const dir = tempReportDir('mig-');
+    const lines: string[] = [];
+    // concurrency 1 keeps the read order equal to the file order
+    const code = await main(['--album', 'lucka_filip'], (l) => lines.push(l), () => {}, {
+      plan: { exists: () => true, read: async () => bufs[i++]!, concurrency: 1 },
+      reportDir: dir,
+      now: () => new Date('2026-01-01T00:00:00Z'),
+    });
+    expect(code).toBe(0);
+    const text = lines.join('\n');
+    expect(text).toContain('weak photos 2 of 5');
+    expect(text).toMatch(/couples\/lucka_filip\/1\.jpg\s+900x600 \d+ bytes WEAK/);
+    expect(text).toMatch(/couples\/lucka_filip\/2\.jpg\s+2400x1600 \d+ bytes ok/);
+    expect(text).toMatch(/couples\/lucka_filip\/3\.jpg\s+1999x1000 \d+ bytes WEAK/);
+    const json = JSON.parse(readFileSync(join(dir, '2026-01-01T00-00-00-000Z.json'), 'utf8'));
+    expect(json.weak).toBe(2);
+    expect(json.weakBelow).toBe(2000);
+    expect(json.albums[0].photoQuality[0]).toEqual({ legacyKey: 'couples/lucka_filip/1.jpg', w: 900, h: 600, bytes: jpeg.length, weak: true });
+  }, 30_000);
+
   it('--album limits the plan', async () => {
     const r = await run(['--album', 'lucka_filip'], tempReportDir('mig-'), '2026-01-01T00:00:00Z');
     expect(r.text).toContain('albums 1, photos 5');

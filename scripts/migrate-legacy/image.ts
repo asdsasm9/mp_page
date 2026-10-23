@@ -27,6 +27,8 @@ export interface EncodedFile {
 }
 
 export interface ProcessedPhoto {
+  /** Source pixel size after EXIF orientation (before any downscale). */
+  source: { w: number; h: number };
   master: EncodedFile;
   webp: Array<EncodedFile & { tier: number }>;
   jpeg: EncodedFile;
@@ -106,5 +108,5 @@ export async function processImage(source: Buffer): Promise<ProcessedPhoto> {
   };
   if (!variantsMatchPlan(variants, master.w, master.h)) throw new ImageError('variants do not match the variant plan');
 
-  return { master, webp, jpeg, og, dominantColor: await dominantColorOf(masterBuf), variants, bytesTotal: sumBytes(variants) };
+  return { source: { w: srcW, h: srcH }, master, webp, jpeg, og, dominantColor: await dominantColorOf(masterBuf), variants, bytesTotal: sumBytes(variants) };
 }

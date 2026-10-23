@@ -10,7 +10,9 @@ import type { CategoryCard as AlbumCardData } from '../lib/category';
 import { cropSizes } from '../lib/images';
 import AlbumCard from './AlbumCard.astro';
 import Breadcrumb from './Breadcrumb.astro';
+import { ctaLabel } from '../content/texts';
 import CategoryCard from './CategoryCard.astro';
+import CategoryGrid from './CategoryGrid.astro';
 import Icon from './Icon.astro';
 import Kicker from './Kicker.astro';
 import PageHead from './PageHead.astro';
@@ -295,6 +297,31 @@ describe('CategoryCard', () => {
     expect(src).toMatch(/@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*scale\(1\.03\)/);
     expect(src.slice(0, src.indexOf('@media'))).not.toMatch(/scale\(/);
     expect(src).not.toMatch(/border-radius|filter/);
+  });
+});
+
+describe('CategoryGrid (T-279)', () => {
+  it('is a list that renders the slot', async () => {
+    const html = await render(CategoryGrid, {}, '<li>a</li>');
+    expect(html).toMatch(/<ul class="cards[^"]*">\s*<li>a<\/li>\s*<\/ul>/);
+  });
+
+  it('collapses empty tracks (auto-fit), caps the track width at the widths the cover sizes assume and centres, from 48rem', () => {
+    const css = styleOf('./CategoryGrid.astro');
+    expect(css).toMatch(/repeat\(auto-fill, minmax\(min\(15rem, 100%\), 1fr\)\)/);
+    expect(css).toMatch(/@media \(min-width: 48rem\) \{[^@]*repeat\(auto-fit, minmax\(min\(15rem, 100%\), var\(--track-max\)\)\);[^@]*justify-content: center/s);
+    expect(css).toMatch(/--track-max: 21rem/);
+    expect(css).toMatch(/@media \(min-width: 80rem\) \{\s*\.cards \{\s*--track-max: 18rem/);
+    expect(css).toMatch(/@media \(min-width: 100rem\) \{\s*\.cards \{\s*--track-max: 16rem/);
+  });
+});
+
+describe('category call to action labels (T-279)', () => {
+  it('are keyed by slug and fall back for admin-created categories', () => {
+    expect(ctaLabel('svatby')).toBe('Poptat svatební focení');
+    expect(ctaLabel('portrety')).toBe('Poptat portrétní focení');
+    expect(ctaLabel('parove-foceni')).toBe('Poptat párové focení');
+    expect(ctaLabel('novorozenci')).toBe('Poptat focení');
   });
 });
 

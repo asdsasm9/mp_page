@@ -3,6 +3,7 @@
 // Anchors: uvod, o-mne, portfolio, reference, kontakt. Only the hero image is eager with fetchpriority="high".
 import { Image, getImage } from 'astro:assets';
 import CategoryCard from '../components/CategoryCard.astro';
+import CategoryGrid from '../components/CategoryGrid.astro';
 import Photo from '../components/Photo.astro';
 import Section from '../components/Section.astro';
 import About from '../components/sections/About.astro';
@@ -70,11 +71,11 @@ const ogImage = chosenHero
   {
     cards.length > 0 && (
       <Section id="portfolio" title="Portfolio" actionHref="/portfolio/" actionLabel="Celé portfolio">
-        <ul class="cards">
+        <CategoryGrid>
           {cards.map((card) => (
             <CategoryCard href={card.path} title={card.name} meta={card.countLabel} photo={card.photo} base={env.imgBaseUrl} />
           ))}
-        </ul>
+        </CategoryGrid>
       </Section>
     )
   }
@@ -83,15 +84,3 @@ const ogImage = chosenHero
 
   <Contact />
 </Base>
-
-<style>
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr)); /* the track maths of the category cover `sizes` (images.ts CROP_BASE) */
-    align-items: start;
-    gap: var(--space-6);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-</style>

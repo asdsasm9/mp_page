@@ -4,6 +4,7 @@
 // the first album cover, in practice landscape). Same guard as ../../[count]: fixture mode only, noindex, never in a
 // production or snapshot build (site-checks fails on any layout-check/ file there).
 import CategoryCard from '../../../../components/CategoryCard.astro';
+import CategoryGrid from '../../../../components/CategoryGrid.astro';
 import Section from '../../../../components/Section.astro';
 import Base from '../../../../layouts/Base.astro';
 import { getCatalog } from '../../../../lib/catalog';
@@ -43,7 +44,7 @@ const meta: PageMeta = {
 <Base meta={meta} path={`/layout-check/portfolio/${variant}/`}>
   <h1 class="visually-hidden">Rozložení kategorií, {variant}</h1>
   <Section id="portfolio" kicker="Moje práce" title="Portfolio" actionHref="/portfolio/" actionLabel="Celé portfolio">
-    <ul class="cards">
+    <CategoryGrid>
       {
         cards.map((card, i) => (
           <CategoryCard
@@ -57,18 +58,6 @@ const meta: PageMeta = {
           />
         ))
       }
-    </ul>
+    </CategoryGrid>
   </Section>
 </Base>
-
-<style>
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
-    align-items: start;
-    gap: var(--space-6);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-</style>

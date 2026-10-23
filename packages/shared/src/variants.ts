@@ -125,14 +125,28 @@ export const WEBP_BYTES_PER_PIXEL = 0.12;
 export const JPEG_1600_BYTES_PER_PIXEL = 0.22;
 export const OG_JPEG_BYTES_PER_PIXEL = 0.18;
 
+// WP-10 recalibration for the new quality table (photo-quality.ts): bytes per pixel per variant,
+// times a pessimistic margin. The constants above stay because gen-fixtures imports them.
+const ESTIMATE_MASTER_BPP = 0.33;
+const ESTIMATE_WEBP_BPP: Record<number, number> = {
+  480: 0.16,
+  720: 0.16,
+  960: 0.14,
+  1600: 0.2,
+  2400: 0.12,
+};
+const ESTIMATE_JPEG_BPP = 0.23;
+const ESTIMATE_OG_BPP = 0.13;
+const ESTIMATE_MARGIN = 1.15;
+
 /** Pessimistic pre-check for the browser. Not authoritative: the real sizes come from the encoder. */
 export function estimateBytes(masterW: number, masterH: number): number {
   const p = variantPlan(masterW, masterH);
   const px = (s: Size) => s.w * s.h;
   const total =
-    px(p.master) * MASTER_JPEG_BYTES_PER_PIXEL +
-    p.webp.reduce((a, e) => a + px(e) * WEBP_BYTES_PER_PIXEL, 0) +
-    px(p.jpeg) * JPEG_1600_BYTES_PER_PIXEL +
-    px(p.og) * OG_JPEG_BYTES_PER_PIXEL;
-  return Math.ceil(total);
+    px(p.master) * ESTIMATE_MASTER_BPP +
+    p.webp.reduce((a, e) => a + px(e) * (ESTIMATE_WEBP_BPP[e.tier] ?? WEBP_BYTES_PER_PIXEL), 0) +
+    px(p.jpeg) * ESTIMATE_JPEG_BPP +
+    px(p.og) * ESTIMATE_OG_BPP;
+  return Math.ceil(total * ESTIMATE_MARGIN);
 }

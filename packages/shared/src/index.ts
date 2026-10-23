@@ -8,6 +8,7 @@ export * from './slug';
 export * from './alt';
 export * from './keys';
 export * from './variants';
+export * from './photo-quality';
 export * from './quota';
 export * from './commit-rules';
 export * from './snapshot';

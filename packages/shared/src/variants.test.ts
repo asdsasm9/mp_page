@@ -196,15 +196,20 @@ describe('sumBytes', () => {
 });
 
 describe('estimateBytes', () => {
-  it('3000x2000 is between 2.0 MB and 3.0 MB (sanity bound incl. the 720 tier)', () => {
+  it('3000x2000 is between 2.8 MB and 4.2 MB (WP-10 recalibration)', () => {
     const e = estimateBytes(3000, 2000);
-    expect(e).toBeGreaterThan(2_000_000);
-    expect(e).toBeLessThan(3_000_000);
+    expect(e).toBeGreaterThan(2_800_000);
+    expect(e).toBeLessThan(4_200_000);
   });
   it('the 720 tier adds its term to the estimate', () => {
-    // 720x480 px at WEBP_BYTES_PER_PIXEL
+    // the old constant stays exported for gen-fixtures
     expect(WEBP_BYTES_PER_PIXEL * 720 * 480).toBeCloseTo(41_472, 0);
     expect(estimateBytes(720, 480)).toBeGreaterThan(estimateBytes(719, 479));
+  });
+  it('is monotonic over the master widths', () => {
+    const widths = [300, 479, 480, 719, 720, 1000, 1480, 1599, 1600, 2399, 2400, 3000];
+    const est = widths.map((w) => estimateBytes(w, Math.round((w * 2) / 3)));
+    for (let i = 1; i < est.length; i++) expect(est[i]!).toBeGreaterThan(est[i - 1]!);
   });
   it('is an integer and grows with size', () => {
     expect(Number.isInteger(estimateBytes(1000, 700))).toBe(true);

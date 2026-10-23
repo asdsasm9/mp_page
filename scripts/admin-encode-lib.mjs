@@ -165,6 +165,23 @@ export function judgePhoto(fx, res) {
     if (hasMetadata(f.buf)) fail(`webp-${f.tier} carries metadata`);
   }
 
+  // WP-10 T-261: the encoder reports its two phases in order.
+  if (res.phases && res.phases.join(',') !== 'previews,detail') fail(`phases ${res.phases.join(',')} != previews,detail`);
+
+  // Byte caps (shared QUALITY_TABLE, handed over by the browser entry) on the detailed fixture. The plan targets for
+  // the overview tiles are 720 <= 80 KB and 960 <= 110 KB (table cap 150 KB, see plan 3.1a); none may exceed the table cap.
+  if (fx.checkCaps && res.caps) {
+    for (const f of res.files) {
+      const key = f.kind === 'webp' ? `webp${f.tier}` : f.kind === 'jpeg' ? 'jpeg1600' : f.kind;
+      const cap = res.caps[key];
+      if (cap !== undefined && f.buf.length > cap) fail(`${key} is ${f.buf.length} bytes, above its cap ${cap}`);
+    }
+    const w720 = find('webp', 720);
+    if (w720 && w720.buf.length > 80_000) fail(`webp-720 is ${w720.buf.length} bytes, plan target 80000`);
+    const w960 = find('webp', 960);
+    if (w960 && w960.buf.length > 110_000) fail(`webp-960 is ${w960.buf.length} bytes, plan target 110000`);
+  }
+
   if (!/^#[0-9a-f]{6}$/.test(res.dominantColor ?? '')) fail(`dominant colour "${res.dominantColor}" is not #rrggbb`);
   return bad;
 }

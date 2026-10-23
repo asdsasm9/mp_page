@@ -29,9 +29,13 @@ export interface EncodedPhoto {
   files: EncodedFile[];
 }
 
+/** Which set the encoder is producing: the overview set ("Připravuji náhledy") or the detail set ("Nahrávám detail"). */
+export type EncodePhase = 'previews' | 'detail';
+
 /** Decode + resize + encode one picked file. Throws when the file cannot be processed; honours the signal. */
 export interface Encoder {
-  encode(file: FileLike, signal: AbortSignal): Promise<EncodedPhoto>;
+  /** `onPhase` (optional, additive) is called when the encoder starts each set; the queue UI uses it in T-268. */
+  encode(file: FileLike, signal: AbortSignal, onPhase?: (phase: EncodePhase) => void): Promise<EncodedPhoto>;
 }
 
 export type ItemStatus =

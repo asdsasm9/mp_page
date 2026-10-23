@@ -142,6 +142,12 @@ if (args.includes('--report')) {
   for (const r of reportFiles) console.log(`| ${r.name} | ${r.file} | ${r.w}x${r.h} | ${r.bytes} | ${r.chroma} |`);
 }
 
+// Bytes per produced file of the detailed fixture (WP-10 T-261 acceptance: overview tiles within the plan targets).
+for (const fx of fixtures.filter((f) => f.checkCaps)) {
+  const parts = reportFiles.filter((r) => r.name === fx.name).map((r) => `${r.file} ${r.bytes}`);
+  if (parts.length) console.log(`BYTES ${fx.name}: ${parts.join(', ')}`);
+}
+
 const cols = [
   ['fixture', 'name'], ['source', 'src'], ['master', 'master'], ['1600', 'jpeg'], ['og', 'og'], ['webp tiers', 'webp'],
   ['files', 'kinds'], ['magic', 'magic'], ['exif/gps', 'meta'], ['colour', 'colour'], ['ms', 'ms'], ['heap MB', 'heap'], ['result', 'result'],

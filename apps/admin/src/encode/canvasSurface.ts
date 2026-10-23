@@ -45,13 +45,18 @@ class CanvasSurface implements Drawable, Surface {
     return this.canvas as CanvasImageSource;
   }
 
-  drawFrom(src: Drawable, from: Rect): void {
-    this.ctx.drawImage(asCanvasImage(src), from.x, from.y, from.w, from.h, 0, 0, this.width, this.height);
+  drawFrom(src: Drawable, from: Rect, to?: Rect): void {
+    const d = to ?? { x: 0, y: 0, w: this.width, h: this.height };
+    this.ctx.drawImage(asCanvasImage(src), from.x, from.y, from.w, from.h, d.x, d.y, d.w, d.h);
   }
 
   getRgba(): Rgba {
     const img = this.ctx.getImageData(0, 0, this.width, this.height);
     return { data: img.data, width: img.width, height: img.height };
+  }
+
+  putRgba(data: Uint8ClampedArray): void {
+    this.ctx.putImageData(new ImageData(data as Uint8ClampedArray<ArrayBuffer>, this.width, this.height), 0, 0);
   }
 
   async toBlob(type: 'image/jpeg' | 'image/webp', quality: number): Promise<Blob> {

@@ -27,9 +27,11 @@ export interface Rect {
 }
 
 export interface Surface extends Drawable {
-  /** Draw the `from` rectangle of `src` scaled over the whole surface. */
-  drawFrom(src: Drawable, from: Rect): void;
+  /** Draw the `from` rectangle of `src` scaled over `to` (default: the whole surface). */
+  drawFrom(src: Drawable, from: Rect, to?: Rect): void;
   getRgba(): Rgba;
+  /** Replace the pixels (RGBA, width*height*4), e.g. after sharpening the bytes of getRgba(). */
+  putRgba(data: Uint8ClampedArray): void;
   toBlob(type: 'image/jpeg' | 'image/webp', quality: number): Promise<Blob>;
 }
 

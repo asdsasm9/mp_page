@@ -1,6 +1,6 @@
 // Browser entry of admin-encode-check: bundled by the script (vite lib build) and loaded by a page in Chrome.
 // Runs the real admin encoder on a fixture and hands the result back as plain data (files as base64).
-import { fitWithin, planUploadFiles, variantPlan } from '@mp/shared';
+import { QUALITY_TABLE, fitWithin, planUploadFiles, variantPlan } from '@mp/shared';
 import { createCanvasSurfaceFactory, createEncoder } from '../apps/admin/src/encode/index.ts';
 
 const encoder = createEncoder(createCanvasSurfaceFactory());
@@ -18,12 +18,15 @@ window.adminEncode = async function adminEncode(name, url, type) {
   const blob = await (await fetch(url)).blob();
   const file = new File([blob], name, { type });
   const t0 = performance.now();
-  const photo = await encoder.encode(file, new AbortController().signal);
+  const phases = [];
+  const photo = await encoder.encode(file, new AbortController().signal, (p) => phases.push(p));
   const ms = performance.now() - t0;
   const files = [];
   for (const f of photo.files) files.push({ kind: f.kind, tier: f.tier, type: f.body.type, bytes: f.bytes, base64: await toBase64(f.body) });
   return {
     ms,
+    phases,
+    caps: Object.fromEntries(Object.entries(QUALITY_TABLE).map(([k, v]) => [k, v.capBytes])),
     width: photo.width,
     height: photo.height,
     dominantColor: photo.dominantColor,

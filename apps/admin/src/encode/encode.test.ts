@@ -18,10 +18,14 @@ interface StubOptions {
   fill?: [number, number, number, number];
   decodeError?: boolean;
   onDraw?: () => void;
+  /** Blob size for a surface at a quality; default w*h/100 (independent of quality). */
+  sizeFor?: (w: number, h: number, quality: number, type: string) => number;
 }
 
 function stub(natW: number, natH: number, opts: StubOptions = {}) {
   const created: Array<{ w: number; h: number }> = [];
+  const encoded: Array<{ w: number; h: number; type: string; quality: number }> = [];
+  const puts: Array<{ w: number; h: number }> = [];
   let open = 0;
   const factory: SurfaceFactory = {
     async decode() {
@@ -46,9 +50,14 @@ function stub(natW: number, natH: number, opts: StubOptions = {}) {
           for (let i = 0; i < w * h; i++) data.set(f, i * 4);
           return { data, width: w, height: h };
         },
-        async toBlob(type) {
+        putRgba() {
+          puts.push({ w, h });
+        },
+        async toBlob(type, quality) {
+          encoded.push({ w, h, type, quality });
           const t = type === 'image/webp' && opts.noWebp ? 'image/png' : type;
-          return new Blob([new Uint8Array(Math.max(1, Math.round((w * h) / 100)))], { type: t });
+          const size = opts.sizeFor ? opts.sizeFor(w, h, quality, type) : (w * h) / 100;
+          return new Blob([new Uint8Array(Math.max(1, Math.round(size)))], { type: t });
         },
         close() {
           if (!closed) open--;
@@ -58,7 +67,7 @@ function stub(natW: number, natH: number, opts: StubOptions = {}) {
       return s;
     },
   };
-  return { factory, created, openCount: () => open };
+  return { factory, created, encoded, puts, openCount: () => open };
 }
 
 const file = (name = 'a.jpg', type = 'image/jpeg'): FileLike => ({ name, type, size: 1000, lastModified: 1 });
@@ -138,7 +147,11 @@ describe('decode and resize core', () => {
     const src: Drawable = { width: 9000, height: 6000, close() {} };
     const out = resizeTo(s.factory, src, { x: 0, y: 0, w: 9000, h: 6000 }, 3000, 2000);
     expect([out.width, out.height]).toEqual([3000, 2000]);
+    // more than 2x: the source is halved tile by tile, no surface above the cap, intermediates closed
     expect(s.created[0]).toEqual({ w: 3000, h: 2000 });
+    expect(s.created.length).toBeGreaterThan(1);
+    expect(s.created.every((c) => Math.max(c.w, c.h) <= MASTER_MAX_EDGE)).toBe(true);
+    expect(s.openCount()).toBe(1);
     const s2 = stub(1000, 1000);
     resizeTo(s2.factory, { width: 1000, height: 1000, close() {} }, { x: 0, y: 0, w: 1000, h: 1000 }, 100, 100);
     expect(s2.created.map((c) => c.w)).toEqual([500, 250, 125, 100]);
@@ -241,6 +254,81 @@ describe('encoders and variant assembly', () => {
     const s = stub(800, 600, { fill: [255, 0, 0, 255] });
     const out = await createEncoder(s.factory).encode(file(), new AbortController().signal);
     expect(out.dominantColor).toBe('#ff0000');
+  });
+});
+
+// ---------------------------------------------------------------- WP-10 T-261
+
+describe('quality table, adaptive step-down, sharpening, phases', () => {
+  const run = async (w: number, h: number, opts: StubOptions = {}, onPhase?: (p: 'previews' | 'detail') => void) => {
+    const s = stub(w, h, opts);
+    const out = await createEncoder(s.factory).encode(file(), new AbortController().signal, onPhase);
+    return { s, out };
+  };
+  const qualitiesOf = (s: ReturnType<typeof stub>, type: string, w: number) =>
+    s.encoded.filter((e) => e.type === type && e.w === w).map((e) => e.quality);
+
+  it('a variant under its cap is encoded exactly once, at the start quality', async () => {
+    const { s } = await run(4000, 3000); // 3000x2250 master, default size w*h/100 is far below every cap
+    expect(qualitiesOf(s, 'image/webp', 480)).toEqual([0.74]);
+    expect(qualitiesOf(s, 'image/webp', 720)).toEqual([0.68]);
+    expect(qualitiesOf(s, 'image/webp', 960)).toEqual([0.66]);
+    expect(qualitiesOf(s, 'image/webp', 1600)).toEqual([0.8]);
+    expect(qualitiesOf(s, 'image/webp', 2400)).toEqual([0.8]);
+    expect(qualitiesOf(s, 'image/jpeg', 1600)).toEqual([0.82]);
+    expect(qualitiesOf(s, 'image/jpeg', 1200)).toEqual([0.82]);
+    expect(qualitiesOf(s, 'image/jpeg', 3000)).toEqual([0.9]);
+    expect(s.encoded).toHaveLength(8);
+  });
+
+  it('steps down by 0.04 at most 3 times, never below the floor, and keeps the last result when still over the cap', async () => {
+    const { s, out } = await run(4000, 3000, { sizeFor: () => 10_000_000 });
+    expect(qualitiesOf(s, 'image/webp', 480)).toEqual([0.74, 0.7, 0.66, 0.62]); // 3 retries
+    expect(qualitiesOf(s, 'image/webp', 720)).toEqual([0.68, 0.64, 0.6]); // floor 0.60 stops the 4th
+    expect(qualitiesOf(s, 'image/webp', 960)).toEqual([0.66, 0.62]);
+    expect(qualitiesOf(s, 'image/webp', 1600)).toEqual([0.8, 0.76, 0.72]); // 0.68 is below the 0.70 floor
+    expect(qualitiesOf(s, 'image/webp', 2400)).toEqual([0.8, 0.76, 0.72]);
+    expect(qualitiesOf(s, 'image/jpeg', 1600)).toEqual([0.82, 0.78]); // 0.74 is below the 0.75 floor
+    expect(qualitiesOf(s, 'image/jpeg', 1200)).toEqual([0.82, 0.78, 0.74, 0.7]);
+    expect(qualitiesOf(s, 'image/jpeg', 3000)).toEqual([0.9, 0.86, 0.82]); // 0.78 is below the 0.80 floor
+    for (const e of s.encoded) expect(e.quality).toBeGreaterThanOrEqual(0.6);
+    expect(out.files.every((f) => f.bytes === 10_000_000)).toBe(true); // last result kept, nothing dropped
+  });
+
+  it('stops stepping as soon as the result fits the cap', async () => {
+    // 720 tier: 80 KB cap; size grows with quality, 0.68 -> 85 KB, 0.64 -> 80 KB (fits, not above the cap)
+    const { s } = await run(4000, 3000, { sizeFor: (_w, _h, q, type) => (type === 'image/webp' ? q * 125_000 : 1000) });
+    expect(qualitiesOf(s, 'image/webp', 720)).toEqual([0.68, 0.64]);
+  });
+
+  it('sharpens the overview tiers, 1600, 2400 and OG, but not the 1600 JPEG or the master', async () => {
+    const { s } = await run(4000, 3000);
+    expect(s.puts.map((p) => p.w)).toEqual([480, 720, 960, 1600, 2400, 1200]);
+  });
+
+  it('reports the two phases in order, the overview set before any detail variant', async () => {
+    const calls: string[] = [];
+    const s = stub(4000, 3000);
+    await createEncoder(s.factory).encode(file(), new AbortController().signal, (p) => calls.push(`${p}@${s.encoded.length}`));
+    expect(calls).toEqual(['previews@0', 'detail@3']);
+  });
+
+  it('works without a phase callback', async () => {
+    const { out } = await run(800, 600);
+    expect(out.width).toBe(800);
+  });
+
+  it('no output is wider than the master, also for a source more than 2x the master', async () => {
+    const { s, out } = await run(7000, 5000); // 35 MP, edge above 2x the master
+    expect(Math.max(out.width, out.height)).toBe(3000);
+    expect(s.created.every((c) => Math.max(c.w, c.h) <= MASTER_MAX_EDGE)).toBe(true);
+    expect(s.encoded.every((e) => e.w <= out.width)).toBe(true);
+    expect(s.openCount()).toBe(0);
+  });
+
+  it('a 1000 px master gets only tiers that fit and no variant above 1000 px', async () => {
+    const { s } = await run(1000, 750);
+    expect(s.encoded.every((e) => e.w <= 1000)).toBe(true);
   });
 });
 

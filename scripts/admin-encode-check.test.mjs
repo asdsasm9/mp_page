@@ -65,6 +65,18 @@ describe('judgePhoto', () => {
     expect(judgePhoto(fx, r).join()).toMatch(/jpeg carries exif/);
   });
 
+  it('checks phases and byte caps only when the browser entry reports them', () => {
+    const r = good();
+    r.phases = ['previews', 'detail'];
+    r.caps = { webp480: 40_000, master: 5_000_000 };
+    expect(judgePhoto({ ...fx, checkCaps: true }, r)).toEqual([]);
+    r.files[1].buf = Buffer.concat([webp('VP8 '), Buffer.alloc(41_000)]);
+    expect(judgePhoto({ ...fx, checkCaps: true }, r).join()).toMatch(/webp480 is \d+ bytes, above its cap 40000/);
+    expect(judgePhoto(fx, r)).toEqual([]); // caps only on flagged fixtures
+    r.phases = ['detail'];
+    expect(judgePhoto(fx, r).join()).toMatch(/phases detail/);
+  });
+
   it('fails on a wrong file set, wrong magic bytes, upscaling, lost orientation and a bad colour', () => {
     let r = good();
     r.files.pop();

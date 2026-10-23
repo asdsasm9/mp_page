@@ -24,17 +24,9 @@ async function synth(w: number, h: number, extra?: (p: ReturnType<typeof sharp>)
 }
 
 describe('quality constants', () => {
-  it('equal the browser encoder constants (0-1 scale there, 0-100 here)', () => {
-    const src = readFileSync(join(__dirname, '..', '..', 'apps', 'admin', 'src', 'encode', 'encodePhoto.ts'), 'utf8');
-    const read = (name: string) => {
-      const m = new RegExp(`export const ${name} = ([0-9.]+);`).exec(src);
-      expect(m, name).not.toBeNull();
-      return Math.round(Number(m![1]) * 100);
-    };
-    expect(MASTER_QUALITY).toBe(read('MASTER_QUALITY'));
-    expect(WEBP_QUALITY).toBe(read('WEBP_QUALITY'));
-    expect(JPEG_QUALITY).toBe(read('JPEG_QUALITY'));
-    expect(OG_QUALITY).toBe(read('OG_QUALITY'));
+  it('stay the legacy values (the browser encoder now uses the shared QUALITY_TABLE, WP-10 T-261)', () => {
+    // legacy sources are already lossy web JPEGs, so migrate-legacy keeps q85/q80 (plan section 6)
+    expect([MASTER_QUALITY, WEBP_QUALITY, JPEG_QUALITY, OG_QUALITY]).toEqual([85, 80, 85, 82]);
   });
 });
 

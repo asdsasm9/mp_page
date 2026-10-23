@@ -17,8 +17,10 @@ export const BUDGET = {
   html: 40 * KB,
   css: 30 * KB,
   js: 60 * KB,
-  fonts: 60 * KB,
-  fontFiles: 2,
+  // WP-12 / T-274: Cormorant Garamond 400 + Lora 400, latin + latin-ext = 4 files, measured 75,928 B
+  // (74.2 KB); budget = measured + about 10%, rounded up (hard cap of the plan: 120 KB).
+  fonts: 84 * KB,
+  fontFiles: 4,
   images: 250 * KB,
   total: 500 * KB,
 } as const;

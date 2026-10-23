@@ -64,7 +64,8 @@ Rule: a forum post alone is never VERIFIED; prefer vendor docs and note the date
 | Package | Pin | Dev or runtime | Used by |
 |---------|-----|----------------|---------|
 | sharp | 0.35.5 | apps/web devDependency (already installed transitively by astro) | WP3-6, WP3-21 |
-| @fontsource/martel | 5.3.0 | apps/web dependency (font files copied to dist, no runtime code) | WP3-5 |
+| @fontsource/cormorant-garamond | 5.3.0 | apps/web and apps/admin dependency (font files copied to dist, no runtime code; Martel removed in T-274) | WP-12 T-274 |
+| @fontsource/lora | 5.3.0 | apps/web and apps/admin dependency (font files copied to dist, no runtime code) | WP-12 T-274 |
 | lighthouse | 13.5.0 | root devDependency | WP3-24 |
 | puppeteer-core | 25.14.0 | root devDependency | WP3-24 |
 | axe-core | 4.14.0 | root devDependency | WP3-24 |

@@ -9,7 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const legacy = resolve(here, '..', '..', '..', 'legacy', 'public-root');
 const pub = resolve(here, '..', 'public');
 // Same value as --color-theme in tokens.css (the logo has a transparent background, icons need an opaque one).
-const BACKGROUND = '#fafafa';
+const BACKGROUND = '#f6f4f1';
 
 async function square(size: number): Promise<Buffer> {
   const inner = Math.round(size * 0.7);

@@ -203,7 +203,7 @@ Per page weight budget (transferred, first load, before scrolling; excludes lazy
 - HTML: at most 40 KB compressed (JSON-LD for 20 images stays inside this).
 - CSS: at most 30 KB compressed, inlined critical or a single file.
 - JavaScript: at most 60 KB compressed on public pages, no framework runtime unless the architect shows a need (static pages ship near zero JS; small islands for the menu and lightbox). The old CRA bundle is 64.78 KB gzip for the same content, so this is the ceiling, not the target.
-- Fonts: at most 2 files, WOFF2, self-hosted, 60 KB total.
+- Fonts: at most 4 files (Cormorant Garamond 400 and Lora 400, each latin and latin-ext), WOFF2, self-hosted, 84 KB total (measured 75,928 B plus about 10%; hard cap 120 KB, WP-12 / T-274).
 - Images above the fold: at most 250 KB total on mobile; one LCP image at most 150 KB on mobile.
 - Total first-load transfer: at most 500 KB on mobile (home).
 - Third-party requests before consent: none (no analytics, no fonts CDN, no embeds); this also keeps LCP clean.

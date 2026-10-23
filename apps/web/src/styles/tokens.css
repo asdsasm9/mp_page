@@ -2,7 +2,8 @@
  * Design tokens: the single source for colour, type, space, radius, motion, layout.
  * Components use only these (var(--...)); no raw hex or px outside this file.
  * Contrast is enforced by tokens.test.ts. Documentation: docs/DESIGN-TOKENS.md.
- * Light scheme only (D-6 / plan 4.3); the current look is kept until H-3.
+ * "Classical" look (WP-12 / T-274): warm paper, ink, a gold accent that is decoration only,
+ * Cormorant Garamond headings and Lora body. Light scheme only.
  */
 @layer reset, tokens, base, components, utilities;
 
@@ -10,47 +11,70 @@
   :root {
     color-scheme: light;
 
-    /* Colour: ink on paper, one warm accent */
-    --color-bg: #fafafa;
-    --color-surface: #f3f5f5;
+    /* Colour: ink on warm paper. --color-accent (gold) is DECORATION ONLY: hairlines and rules, never
+       text and never the only boundary of a control (3.06:1 on the page, 2.74:1 on the surface band).
+       Outlined buttons use --color-accent-strong, accent-coloured text uses --color-accent-text. */
+    --color-bg: #f6f4f1;
+    --color-surface: #ece7e0;
     --color-surface-raised: #ffffff;
-    --color-text: #464646;
-    --color-text-muted: #5f5f5f;
-    --color-accent: rgb(227, 204, 180);
-    --color-accent-hover: rgb(217, 190, 161);
-    --color-on-accent: #464646;
-    --color-border: #d9d9d9;
+    --color-text: #201f1d;
+    --color-text-muted: #605d5d;
+    --color-accent: #b68235;
+    --color-accent-strong: #a06f24;
+    --color-accent-text: #7d5411;
+    --color-accent-hover: #a06f24;
+    --color-on-accent: #201f1d;
+    --color-border: #d4d2cf; /* the text colour at 16% over the page: a hairline */
     --color-border-strong: #767676;
-    --color-focus: #1d4f91;
-    --color-focus-on-dark: #f2d8b8;
-    --color-overlay: rgb(20, 20, 20);
-    --color-on-overlay: #fafafa;
+    --color-focus: #7d5411;
+    --color-focus-on-dark: #e1ad66;
+    --color-overlay: #201f1d;
+    --color-on-overlay: #f6f4f1;
+    --scrim-hero-from: rgb(32 31 29 / 0);
+    --scrim-hero-to: rgb(32 31 29 / 0.7);
     --color-placeholder: #e6e6e6;
     --color-danger: #a4262c;
-    --color-theme: #fafafa;
+    --color-theme: #f6f4f1;
 
-    /* Type (T-252): the one global scale. Components never set font-size, weight, family or line-height
-       themselves; they use the element defaults in base.css or the .t-* classes defined there.
-       Sizes are fluid clamp() ranges between a 360 px phone and a 1280 px desktop, kept narrow.
-       Martel is self-hosted in weight 400 only, so every weight token is 400 (no faux bold). */
-    --font-body: 'Martel', 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
-    --font-heading: var(--font-body);
+    /* Dark band (Reference section): a token set, so another band colour later is a token edit */
+    --band-dark-bg: #201f1d;
+    --band-dark-text: #f6f4f1;
+    --band-dark-muted: #bab6b6;
+    --band-dark-accent: #e1ad66;
+
+    /* Type (T-252): the one global scale. Components never set font-size, weight, family, line-height or
+       letter-spacing themselves; they use the element defaults in base.css or the .t-* classes defined there.
+       Cormorant Garamond (headings) and Lora (body) are self-hosted in weight 400 only, so every weight token
+       is 400 and base.css sets font-synthesis: none (no faux bold). Cormorant is never set under 1.25rem. */
+    --font-body: 'Lora', 'Lora Fallback', Georgia, 'Times New Roman', serif;
+    --font-heading: 'Cormorant Garamond', 'Cormorant Fallback', 'Times New Roman', Georgia, serif;
     --weight-body: 400;
     --weight-heading: 400;
-    --text-display: clamp(1.875rem, 1.65rem + 1vw, 2.5rem); /* home hero h1 only */
-    --text-h1: clamp(1.5rem, 1.38rem + 0.5vw, 1.875rem); /* page title */
-    --text-h2: clamp(1.25rem, 1.18rem + 0.3vw, 1.5rem); /* section title */
-    --text-h3: clamp(1.125rem, 1.08rem + 0.2vw, 1.25rem); /* card title, h3 */
-    --text-lead: clamp(1.0625rem, 1.03rem + 0.15vw, 1.1875rem); /* intro paragraph, quote */
-    --text-body: clamp(0.9375rem, 0.91rem + 0.12vw, 1.0625rem); /* running text, nav, buttons */
+    --text-display: clamp(2.375rem, 6vw, 5.25rem); /* home hero h1 only, uppercase */
+    --text-title: clamp(2.125rem, 4.2vw, 3.5rem); /* statement titles (O mně, Kontakt) */
+    --text-h1: clamp(1.875rem, 3.6vw, 2.875rem); /* page and section heads, uppercase */
+    --text-h2: clamp(1.5rem, 1.2rem + 1vw, 2rem); /* sub-heads */
+    --text-h3: clamp(1.375rem, 1.2rem + 0.5vw, 1.625rem); /* card titles, uppercase */
+    --text-quote: clamp(1.5rem, 3.2vw, 2.5rem); /* reference quote */
+    --text-lead: clamp(1.0625rem, 1.03rem + 0.15vw, 1.1875rem); /* intro paragraph */
+    --text-body: clamp(0.9375rem, 0.91rem + 0.12vw, 1.0625rem); /* running text */
     --text-small: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem); /* footer, breadcrumb, secondary links */
     --text-caption: clamp(0.8125rem, 0.79rem + 0.08vw, 0.875rem); /* meta lines, captions, counters */
+    --text-kicker: clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem); /* uppercase label, never under 12 px */
+    --text-nav: clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem); /* nav and buttons, uppercase */
     --leading-body: 1.6;
+    --leading-prose: 1.8; /* running text */
     --leading-lead: 1.5;
     --leading-heading: 1.2;
+    --leading-caps: 1.12; /* uppercase headings: Czech carons and rings need room (WP-12 j6) */
+    --leading-quote: 1.35;
     --leading-ui: 1.5;
     --leading-none: 1;
-    --tracking-heading: 0.01em;
+    --tracking-heading: 0.03em;
+    --tracking-h1: 0.06em;
+    --tracking-card: 0.04em;
+    --tracking-label: 0.2em;
+    --tracking-wordmark: 0.14em;
     --measure: 70ch;
 
     /* Space: 4 px base (0.25rem steps) */
@@ -63,7 +87,9 @@
     --space-7: 3rem;
     --space-8: 4.5rem;
 
-    /* Radius, borders, shadow */
+    /* Radius, borders, shadow. Images, cards and buttons have no radius in this design (--radius-none);
+       --radius-md and --radius-full stay for the lightbox round buttons and the admin. */
+    --radius-none: 0;
     --radius-sm: 0.125rem;
     --radius-md: 0.5rem;
     --radius-full: 9999px;
@@ -73,26 +99,35 @@
     --bar-thickness: 2px;
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
     --shadow-md: 0 4px 12px rgb(0 0 0 / 0.12);
+    --opacity-disabled: 0.45;
 
     /* Motion */
     --motion-fast: 150ms;
     --motion-base: 250ms;
+    --motion-drawer: 400ms;
     --motion-ease: cubic-bezier(0.2, 0, 0, 1);
 
     /* Layout */
-    --layout-max: 80rem;
-    --layout-gutter: clamp(1rem, 4vw, 2.5rem);
-    --header-height: 4.5rem;
+    --layout-max: 110rem;
+    --layout-gutter: clamp(1.5rem, 4vw, 6rem);
+    --header-height: 5.3125rem; /* sticky header; html scroll-padding-block-start is the only anchor offset */
+    --section-pad: clamp(4rem, 9vw, 6.875rem);
+    --section-gap-lg: clamp(3rem, 6vw, 5rem);
+    --drawer-width: min(21.25rem, 86vw);
     --target-min: 2.75rem;
     --target-compact: 2rem; /* quiet links (breadcrumb, footer): above the 24 px WCAG 2.2 minimum */
-    --ratio-card: 3 / 2; /* album card covers are cropped to this, whatever the photo's own shape */
+    --ratio-category: 3 / 4; /* category card covers */
+    --ratio-album: 4 / 5; /* album card covers */
     --cover-position: center 30%; /* keeps heads of portrait people photos in the crop */
-    --ratio-portrait: 4 / 5; /* home collage tiles and review photos: one shape, so rows have no ragged gaps */
-    --size-avatar: 10rem; /* home review photos: one fixed, profile-like size */
+    /* Kept until the old pages are rewritten (T-277, T-279): the current album cards, home collage and review photos */
+    --ratio-card: 3 / 2;
+    --ratio-portrait: 4 / 5;
+    --size-avatar: 10rem;
     --section-gap: var(--space-6); /* between page sections */
     --heading-gap: var(--space-4); /* heading to its text */
     --z-header: 10;
     --z-dialog: 20;
+    --z-drawer: 21; /* inside the header stacking context */
     --z-skip: 30;
   }
 }

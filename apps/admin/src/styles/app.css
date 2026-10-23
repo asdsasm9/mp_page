@@ -395,7 +395,7 @@
   }
 
   .button-primary:hover {
-    background: var(--color-accent-hover);
+    background: var(--color-accent-fill-hover);
   }
 
   .button-link {

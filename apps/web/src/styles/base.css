@@ -190,6 +190,24 @@
     text-transform: uppercase;
   }
 
+  /* Header wordmark: one word, Cormorant, uppercase and tracked */
+  .t-wordmark {
+    font-family: var(--font-heading);
+    font-size: var(--text-wordmark);
+    line-height: var(--leading-caps);
+    letter-spacing: var(--tracking-wordmark);
+    text-transform: uppercase;
+  }
+
+  /* Navigation labels: small uppercase Lora, tracked */
+  .t-nav {
+    font-family: var(--font-body);
+    font-size: var(--text-nav);
+    line-height: var(--leading-ui);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
   /* Running text with the long reading leading */
   .t-prose {
     line-height: var(--leading-prose);

@@ -46,6 +46,16 @@ const section = (marker: string): string => {
   expect(start, marker).toBeGreaterThan(-1);
   return html.slice(start, html.indexOf('</section>', start));
 };
+/** The anchor tags of the desktop header nav of a built page. */
+const navLinks = (page: string): string[] => {
+  const nav = /<nav class="nav-desk" aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(page)?.[1] ?? '';
+  return [...nav.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+};
+const hrefOf = (tag: string): string => /href="([^"]+)"/.exec(tag)?.[1] ?? '';
+const currentLinks = (page: string): string[] => navLinks(page).filter((t) => /aria-current/.test(t)).map(hrefOf);
+/** The header element of a built page without Astro's scoped-style ids. */
+const headerOf = (page: string): string =>
+  (/<header class="site-header"[\s\S]*?<\/header>/.exec(page)?.[0] ?? '').replace(/\sdata-astro-cid-[a-z0-9]+(="")?/g, '');
 const jsonLdTypes = (): string[] =>
   [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(
     (m) => (JSON.parse(m[1]!) as { '@type': string })['@type'],
@@ -154,15 +164,18 @@ describe('Category pages (built, shared build)', () => {
     expect(page).toMatch(/\d+ fotografi(e|í)/);
   });
 
-  it('marks the category link in the header with aria-current=page', () => {
+  it('marks Portfolio in the header with aria-current=true (never page), and the header equals the home header', () => {
     for (const c of fixture.categories) {
-      const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(categoryHtml[c.slug]!)?.[1] ?? '';
-      const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((m) => m[1]);
-      expect(current).toEqual([`/${c.slug}/`]);
+      const page = categoryHtml[c.slug]!;
+      expect(currentLinks(page)).toEqual(['/#portfolio']);
+      expect(navLinks(page).filter((t) => /aria-current="true"/.test(t))).toHaveLength(1);
+      expect(page).not.toMatch(/<a [^>]*class="t-nav"[^>]*aria-current="page"/);
+      // Same header markup as on the home page; only data-over-hero and aria-current differ.
+      const norm = (h: string): string => h.replace(/ data-over-hero(="")?/g, '').replace(/ aria-current="[a-z]+"/g, '');
+      expect(norm(headerOf(page))).toBe(norm(headerOf(html)));
     }
-    // The home page has no current nav link (its logo is the current page).
-    const homeNav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    expect(homeNav).not.toContain('aria-current');
+    // The home page marks no nav link on the server (scrollspy does it in the browser).
+    expect(currentLinks(html)).toEqual([]);
   });
 
   it('keeps the first load of every category page under the budget', () => {
@@ -272,9 +285,7 @@ describe('Portfolio page (built, shared build)', () => {
 
   it('marks Portfolio as the current nav link', () => {
     const page = readFileSync(join(out, 'portfolio', 'index.html'), 'utf8');
-    const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(page)?.[1] ?? '';
-    const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((x) => x[1]);
-    expect(current).toEqual(['/portfolio/']);
+    expect(currentLinks(page)).toEqual(['/#portfolio']);
   });
 });
 
@@ -370,12 +381,8 @@ describe('About and Contact pages (built, shared build)', () => {
     }
   });
 
-  it('marks About and Contact as the current nav link', () => {
-    for (const { dir, path } of pages) {
-      const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(read(dir))?.[1] ?? '';
-      const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((x) => x[1]);
-      expect(current).toEqual([path]);
-    }
+  it('marks no nav link on About and Contact (their nav items are home anchors, not these pages)', () => {
+    for (const { dir } of pages) expect(currentLinks(read(dir))).toEqual([]);
   });
 });
 
@@ -507,16 +514,26 @@ describe('Base layout (built home page)', () => {
     expect(html).toContain('<main id="obsah"');
   });
 
-  it('has six header nav links and marks the current page', () => {
-    const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    const hrefs = [...nav.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(['/portfolio/', '/svatby/', '/portrety/', '/parove-foceni/', '/o-mne/', '/kontakt/']);
-    // On the home page the logo link is the current page.
-    expect(html).toMatch(/class="logo" href="\/"[^>]*aria-current="page"/);
+  it('has four header nav links (home anchors, Reference only with reviews) and marks the wordmark as the current page', () => {
+    expect(navLinks(html).map(hrefOf)).toEqual(['/#o-mne', '/#portfolio', '/#reference', '/#kontakt']);
+    expect(html).toMatch(/class="wordmark t-wordmark" href="\/"[^>]*aria-current="page"/);
+    // The drawer nav carries the same four links, and exactly one nav is exposed at any width.
+    const drawer = /<nav aria-label="Hlavní navigace v menu"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
+    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/#o-mne', '/#portfolio', '/#reference', '/#kontakt']);
   });
 
-  it('uses a native details disclosure for the menu', () => {
-    expect(html).toMatch(/<details class="menu" data-menu[^>]*><summary/);
+  it('overlays the hero only on the home page (data-over-hero) and uses a native details drawer', () => {
+    expect(html).toMatch(/<header class="site-header" data-over-hero/);
+    for (const page of Object.values(categoryHtml)) expect(page).not.toContain('data-over-hero');
+    expect(html).toMatch(/<details class="menu" data-menu[^>]*>\s*<summary/);
+    expect(html).toContain('Svatby · Portréty · Párové focení');
+  });
+
+  it('sets the anchor offset once, as scroll-padding on html, and no scroll-margin anywhere in the CSS', () => {
+    const cssFiles = readdirSync(join(out, '_astro')).filter((f) => f.endsWith('.css'));
+    const css = cssFiles.map((f) => readFileSync(join(out, '_astro', f), 'utf8')).join('\n');
+    expect(css).toMatch(/scroll-padding-block-start:\s*var\(--header-height\)/);
+    expect(css).not.toContain('scroll-margin');
   });
 
   it('carries canonical, robots, Open Graph and Twitter tags', () => {

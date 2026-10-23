@@ -31,7 +31,10 @@ export const NAV = {
   portraits: 'Portréty',
   couples: 'Párové focení',
   about: 'O mně',
+  reference: 'Reference',
   contact: 'Kontakt',
+  /** Header wordmark: the brand ("Mullny Photos") as one word, shown uppercase by `.t-wordmark`. */
+  wordmark: 'MullnyPhotos',
 } as const;
 
 export const FOOTER = {

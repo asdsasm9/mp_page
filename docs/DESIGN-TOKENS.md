@@ -114,7 +114,8 @@ One global scale in `tokens.css`. Headings are `--font-heading` (Cormorant Garam
 | `--text-small` | `.t-small` | 14 | 14.9 | `--leading-ui` 1.5 | footer, breadcrumb, secondary links |
 | `--text-caption` | `.t-caption` | 13 | 13.8 | 1.5 | meta lines, counters |
 | `--text-kicker` | `.t-kicker` | 12 | 12.8 | 1.5 | uppercase label, tracking `--tracking-label` 0.2em |
-| `--text-nav` | `.btn`, `.btn-ghost`, nav | 12 | 12.8 | 1.5 | nav and button labels, uppercase |
+| `--text-nav` | `.btn`, `.btn-ghost`, `.t-nav` | 12 | 12.8 | 1.5 | nav and button labels, uppercase |
+| `--text-wordmark` | `.t-wordmark` | 20 | 26 | `--leading-caps` 1.12 | header wordmark, uppercase, tracking `--tracking-wordmark` |
 
 Other type tokens: `--leading-prose` 1.8 (`.t-prose`), `--leading-none`, `--tracking-heading` 0.03em, `--tracking-h1` 0.06em, `--tracking-card` 0.04em, `--tracking-label` 0.2em, `--tracking-wordmark` 0.14em, `--measure` 70ch.
 

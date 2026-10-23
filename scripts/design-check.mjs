@@ -32,10 +32,11 @@ export function findChrome(env = process.env, exists = existsSync) {
 async function loadLazyImages(page) {
   await page.evaluate(async () => {
     for (let y = 0; y < document.body.scrollHeight; y += innerHeight / 2) {
-      scrollTo(0, y);
+      // 'instant': the site sets scroll-behavior: smooth (reduced-motion aware), which would animate and cancel these steps
+      scrollTo({ top: y, behavior: 'instant' });
       await new Promise((r) => setTimeout(r, 60));
     }
-    scrollTo(0, 0);
+    scrollTo({ top: 0, behavior: 'instant' });
     await Promise.all([...document.images].map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))));
   });
 }
@@ -64,7 +65,8 @@ async function measureGrid(page) {
 async function keyboardPass(page, width, max = 60) {
   const stops = [];
   const seen = new Set();
-  await page.evaluate(() => { document.activeElement?.blur?.(); window.scrollTo(0, 0); });
+  // Focus scrolling must be instant: with scroll-behavior: smooth the element is still moving when it is measured.
+  await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; document.activeElement?.blur?.(); window.scrollTo(0, 0); });
   for (let i = 0; i < max; i++) {
     await page.keyboard.press('Tab');
     await new Promise((r) => setTimeout(r, 250)); // let focus transitions (e.g. the skip link slide-in) finish

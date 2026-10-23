@@ -62,6 +62,7 @@
     --text-caption: clamp(0.8125rem, 0.79rem + 0.08vw, 0.875rem); /* meta lines, captions, counters */
     --text-kicker: clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem); /* uppercase label, never under 12 px */
     --text-nav: clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem); /* nav and buttons, uppercase */
+    --text-wordmark: clamp(1.25rem, 5vw, 1.625rem); /* header wordmark, uppercase Cormorant (20 to 26 px) */
     --leading-body: 1.6;
     --leading-prose: 1.8; /* running text */
     --leading-lead: 1.5;

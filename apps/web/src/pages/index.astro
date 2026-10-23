@@ -40,7 +40,7 @@ const collage = [
   { src: portraits, alt: 'Portrétní fotografie' },
 ];
 ---
-<Base meta={meta} path="/" ogImage={ogImage} jsonLd={[photographerFull(ogImage.url), website()]}>
+<Base meta={meta} path="/" ogImage={ogImage} heroHeader jsonLd={[photographerFull(ogImage.url), website()]}>
   <!-- Must be inline to run before first paint; T-67's CSP gets its sha256 from the postbuild. -->
   <script is:inline slot="head" set:html={HASH_REDIRECT_SCRIPT} />
   <section class="hero" aria-labelledby="nadpis">

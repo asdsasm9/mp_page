@@ -45,7 +45,7 @@ export const TYPE_SIZES = [
   '--text-display', '--text-title', '--text-h1', '--text-h2', '--text-h3', '--text-lead', '--text-body', '--text-small', '--text-caption',
 ];
 /** Headline levels set in Cormorant Garamond (never under 1.25rem = 20 px). */
-export const HEADING_SIZES = ['--text-display', '--text-title', '--text-h1', '--text-h2', '--text-h3', '--text-quote'];
+export const HEADING_SIZES = ['--text-display', '--text-title', '--text-h1', '--text-h2', '--text-h3', '--text-quote', '--text-wordmark'];
 /** Levels exempt from the "narrow range" rule: they scale with the viewport on purpose. */
 export const WIDE_RANGE = ['--text-display', '--text-title', '--text-h1', '--text-quote'];
 
@@ -252,7 +252,8 @@ describe('type literals live only in tokens.css (T-252)', () => {
     const base = readFileSync(join(here, 'base.css'), 'utf8');
     const defined = new Set([...base.matchAll(/\.(t-[a-z0-9]+)\s*\{/g)].map((m) => m[1]));
     expect([...defined].sort()).toEqual([
-      't-body', 't-caption', 't-display', 't-h1', 't-h3', 't-kicker', 't-lead', 't-prose', 't-quote', 't-small', 't-title',
+      't-body', 't-caption', 't-display', 't-h1', 't-h3', 't-kicker', 't-lead', 't-nav', 't-prose', 't-quote', 't-small', 't-title',
+      't-wordmark',
     ]);
     for (const f of styled) {
       const text = readFileSync(f, 'utf8');
@@ -274,7 +275,7 @@ describe('docs/DESIGN-TOKENS.md', () => {
 describe('the gold accent is decoration only (WP-12 b)', () => {
   // Fill uses of --color-accent that predate WP-12 and disappear when their component is rewritten
   // (Header T-275, Footer and kontakt T-281, skip link stays: dark text on gold is 4.9:1).
-  const LEGACY = ['/components/Header.astro', '/components/Footer.astro', '/pages/kontakt/index.astro', '/styles/base.css'];
+  const LEGACY = ['/components/Footer.astro', '/pages/kontakt/index.astro', '/styles/base.css'];
   const files = [
     ...walk(join(srcDir, 'components')),
     ...walk(join(srcDir, 'layouts')),

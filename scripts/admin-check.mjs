@@ -575,6 +575,19 @@ async function runProfile(browser, profile) {
       await waitText(page, /Využití podle alb/);
       urls.storage = '/ulozeni';
       await checkpoint(ctx, 'storage');
+      // T-263: the per-photo list (table wide, cards narrow), one page of rows, with one breakdown expanded.
+      await waitText(page, /Fotky podle velikosti/);
+      await find(page, 'table caption', /^Fotky v úložišti, od největší$/);
+      const listRows = await page.evaluate(() => document.querySelectorAll('.photo-list-table tbody tr').length);
+      if (listRows < 1 || listRows > 25) throw new Error(`storage photo list shows ${listRows} rows, expected 1 to 25`);
+      await page.evaluate(() => {
+        const summary = document.querySelector('.photo-list-table .photo-parts summary');
+        summary?.scrollIntoView({ block: 'center' });
+        summary?.click();
+      });
+      await sleep(300);
+      await checkpoint(ctx, 'storage photo list');
+      await page.evaluate(() => window.scrollTo(0, 0));
       await clickBy(ctx, 'button', /^Zkontrolovat úložiště$/);
       await waitText(page, /Součet souhlasí\.|Nalezené rozdíly|Rozdíl/, 30000);
       await checkpoint(ctx, 'storage reconcile');

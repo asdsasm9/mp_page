@@ -125,7 +125,7 @@ describe('focus is not lost', () => {
     const user = userEvent.setup();
     mount(world, '/ulozeni');
     await heading1(cs.routes.storage.title);
-    await screen.findByRole('table');
+    await screen.findByRole('table', { name: cs.storageScreen.breakdownCaption });
     const check = screen.getByRole('button', { name: glossary.checkStorage });
     await tabTo(user, check);
     expect(document.activeElement).toBe(check);
@@ -151,7 +151,7 @@ describe('focus is not lost', () => {
     const world = makeWorld();
     mount(world, '/ulozeni');
     await heading1(cs.routes.storage.title);
-    const link = within(await screen.findByRole('table')).getAllByRole('link')[0]!;
+    const link = within(await screen.findByRole('table', { name: cs.storageScreen.breakdownCaption })).getAllByRole('link')[0]!;
     link.focus();
     expect(document.activeElement).toBe(link);
     link.remove();

@@ -32,9 +32,11 @@ async function open(world: FakeWorld) {
     </AppProviders>,
   );
   await screen.findByRole('heading', { level: 1, name: cs.routes.storage.title });
-  await screen.findByRole('table');
+  await screen.findByRole('table', { name: t.breakdownCaption });
   return view;
 }
+
+const breakdownTable = () => screen.getByRole('table', { name: t.breakdownCaption });
 
 const checkButton = () => screen.getByRole('button', { name: cs.glossary.checkStorage });
 const applyCalls = (spy: { mock: { calls: unknown[][] } }) =>
@@ -49,7 +51,7 @@ describe('storage screen: breakdown', () => {
   it('lists albums biggest first and the rows add up to the storage total', async () => {
     const world = makeWorld();
     await open(world);
-    const rows = within(screen.getByRole('table')).getAllByRole('row').slice(1, -1);
+    const rows = within(breakdownTable()).getAllByRole('row').slice(1, -1);
     expect(rows.length).toBeGreaterThan(1);
 
     const snapshot = world.snapshot();
@@ -61,7 +63,7 @@ describe('storage screen: breakdown', () => {
     const used = (await world.ports.api.getStorage()).used_bytes;
     const total = [...bytesOf.values()].reduce((n, b) => n + b, 0);
     expect(total).toBe(used);
-    const footer = screen.getByRole('table').querySelector('tfoot')!;
+    const footer = breakdownTable().querySelector('tfoot')!;
     expect(footer.textContent).toContain(formatBytes(used));
   });
 
@@ -85,7 +87,7 @@ describe('storage screen: breakdown', () => {
     const storage = await world.ports.api.getStorage();
     expect(storage.reserved_bytes).toBe(6000);
     expect(screen.getByText(`Rozpracovaná nahrávání mají rezervováno ${formatBytes(6000)}. Do součtu se započítají, až se dokončí.`)).toBeTruthy();
-    expect(screen.getByRole('table').querySelector('tfoot')!.textContent).toContain(formatBytes(storage.used_bytes));
+    expect(breakdownTable().querySelector('tfoot')!.textContent).toContain(formatBytes(storage.used_bytes));
   });
 
   it('shows the large storage bar', async () => {

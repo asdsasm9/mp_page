@@ -175,7 +175,7 @@ describe('axe: every screen state and dialog has no serious or critical violatio
     const world = makeWorld();
     mount(world, '/ulozeni');
     await heading1(cs.routes.storage.title);
-    await screen.findByRole('table');
+    await screen.findByRole('table', { name: cs.storageScreen.breakdownCaption });
     world.expireSession();
     await userEvent.setup().click(await button(glossary.checkStorage));
     await screen.findByRole('dialog', { name: cs.login.expired.title });

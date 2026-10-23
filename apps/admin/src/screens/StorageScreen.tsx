@@ -8,6 +8,7 @@ import { Notice } from '../components/Notice';
 import { PageLoading } from '../components/PageLoading';
 import { useDocumentTitle } from '../components/Page';
 import { StorageBar } from '../components/StorageBar';
+import { StoragePhotoList } from '../components/StoragePhotoList';
 import { buildBreakdown, photoLocations } from '../data/breakdown';
 import { useAlbums, usePhotosByAlbum } from '../data/catalog';
 import { useCanMutate } from '../data/health';
@@ -292,6 +293,12 @@ export function StorageScreen() {
         ) : (
           <PageLoading>{cs.data.loading}</PageLoading>
         )}
+      </section>
+
+      <section aria-labelledby="storage-photos-title">
+        <h2 id="storage-photos-title">{t.photosTitle}</h2>
+        <p className="page-note">{t.photosIntro}</p>
+        {albums.isError ? null : albums.data ? <StoragePhotoList albums={albumRows} photos={photos} /> : <PageLoading>{cs.data.loading}</PageLoading>}
       </section>
 
       <section aria-labelledby="storage-check-title">

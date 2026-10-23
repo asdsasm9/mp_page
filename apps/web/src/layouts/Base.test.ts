@@ -72,6 +72,21 @@ describe('Home page (built, shared build)', () => {
     expect(high[0]).toMatch(/\balt="[^"]+"/);
   });
 
+  it('uses the hero photo chosen in the snapshot: every stored tier, 100vw, eager, high, its own og.jpg', () => {
+    const id = fixture.heroPhotoId!;
+    expect(id).toBeTruthy();
+    const photo = fixture.categories.flatMap((c) => c.albums).flatMap((a) => a.photos).find((p) => p.id === id)!;
+    const hero = section('class="hero"');
+    const tag = imgTags(hero)[0]!;
+    expect(tag).toContain('fetchpriority="high"');
+    expect(tag).toContain('loading="eager"');
+    expect(tag).toContain(`${id}/1600.jpg`);
+    for (const v of photo.variants.webp) expect(hero).toContain(`${id}/${v.tier}.webp ${v.w}w`);
+    expect(hero).toContain('sizes="100vw"');
+    expect(hero).not.toContain('/_astro/main.'); // the bundled fallback is not rendered
+    expect(html).toMatch(new RegExp(`<meta property="og:image" content="https://www\\.mullnyphotos\\.cz/[^"]*${id}/og\\.jpg">`));
+  });
+
   it('links the three fixture categories from #kategorie with their 480 cover', () => {
     const cats = section('id="kategorie"');
     const hrefs = [...cats.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);

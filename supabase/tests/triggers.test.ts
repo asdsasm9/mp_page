@@ -73,7 +73,7 @@ describe('migration D: bump_pending', () => {
     expect(await pending()).toBe(1);
   });
 
-  it('every bump comes from a row-level trigger on the four content tables', async () => {
+  it('every bump comes from a row-level trigger on the four content tables and the site settings', async () => {
     const r = await db.query<{ tbl: string; row_level: boolean }>(
       `select c.relname as tbl, (t.tgtype & 1) = 1 as row_level
          from pg_trigger t join pg_class c on c.oid = t.tgrelid
@@ -83,6 +83,7 @@ describe('migration D: bump_pending', () => {
       { tbl: 'albums', row_level: true },
       { tbl: 'categories', row_level: true },
       { tbl: 'photos', row_level: true },
+      { tbl: 'site_settings', row_level: true },
       { tbl: 'url_history', row_level: true },
     ]);
   });

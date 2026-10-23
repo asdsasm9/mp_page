@@ -102,7 +102,14 @@ export interface UploadReservationRow {
 }
 
 export type ChangeKind = 'added' | 'edited' | 'deleted' | 'reordered';
-export type ChangeTable = 'categories' | 'albums' | 'photos';
+/** The single settings row (T-285). */
+export interface SiteSettingsRow {
+  id: true;
+  /** Photo shown in the home hero, null = automatic (bundled image). */
+  hero_photo_id: string | null;
+}
+
+export type ChangeTable = 'categories' | 'albums' | 'photos' | 'site_settings';
 
 /** One catalog row that differs from the last published site (written by the log_change trigger). */
 export interface ChangeLogRow {
@@ -153,6 +160,7 @@ export const DB_COLUMNS = {
   ],
   upload_reservations: ['photo_id', 'requested_by', 'bytes', 'created_at', 'expires_at'],
   keepalive: ['id', 'last_ping', 'pings'],
+  site_settings: ['id', 'hero_photo_id'],
   change_log: [
     'id', 'at', 'table_name', 'row_id', 'kind', 'label',
     'category_id', 'category_name', 'album_id', 'album_title',

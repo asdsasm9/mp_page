@@ -36,7 +36,8 @@ All tables are in `public` with row level security on. Every migration starts ea
 | `publish_log` | One row per publish request (newest 100 kept). |
 | `upload_reservations` | `photo_id` (pk), `bytes`, `expires_at`. Reserved bytes count only while unexpired. |
 | `keepalive` | Single row touched by `keepalive()`; no API role can read it. |
-| `change_log` | The unpublished changes (migration `20261022160000_change_log.sql`, T-251, D-18 option A): one row per catalog row (`table_name` categories/albums/photos, `row_id`, unique together) that differs from the last published site. `kind` is added, edited, deleted or reordered; `label` is the name at change time (category name, album title, photo alt else caption else empty); `category_id/category_name/album_id/album_title` are the grouping context at change time (no foreign keys). Admins can select; nobody can write through the API. Written by the `log_change` trigger, cleared by `record_publish`. See "Change log" below. |
+| `site_settings` | Single row (boolean key `id`, always true; migration `20261023110000_hero_photo.sql`, T-285): `hero_photo_id` (nullable, on delete set null), the photo shown in the hero of the home page. Null means automatic: the public site shows the bundled `main.jpg`. The photo must exist (`check_hero_photo`, error `HERO_PHOTO_NOT_FOUND`); it may be in an unpublished album, the snapshot builder then leaves the choice out. RLS: admins select and update. Grants: anon none; authenticated select and update(`hero_photo_id`) only, no insert or delete. A column on `site_state` was rejected: that table has no authenticated write and holds publish bookkeeping. |
+| `change_log` | The unpublished changes (migration `20261022160000_change_log.sql`, T-251, D-18 option A): one row per catalog row (`table_name` categories/albums/photos/site_settings, `row_id`, unique together) that differs from the last published site. `kind` is added, edited, deleted or reordered; `label` is the name at change time (category name, album title, photo alt else caption else empty); `category_id/category_name/album_id/album_title` are the grouping context at change time (no foreign keys). Admins can select; nobody can write through the API. Written by the `log_change` trigger, cleared by `record_publish`. See "Change log" below. |
 
 ### Text field length limits (T-255)
 
@@ -110,6 +111,8 @@ Generated from the catalog (`has_table_privilege`, `has_column_privilege`). `tab
 | photos | authenticated | table | none | columns:album_id,alt,caption,sort | none |
 | publish_log | anon | none | none | none | none |
 | publish_log | authenticated | table | none | none | none |
+| site_settings | anon | none | none | none | none |
+| site_settings | authenticated | table | none | columns:hero_photo_id | none |
 | site_state | anon | none | none | none | none |
 | site_state | authenticated | table | none | none | none |
 | upload_reservations | anon | none | none | none | none |
@@ -130,6 +133,7 @@ All functions are `security definer` (except the immutable helper `variants_byte
 | categories_slug_history | no | no |
 | check_album_cover | no | no |
 | check_category_cover | no | no |
+| check_hero_photo | no | no |
 | clear_category_cover_on_album_move | no | no |
 | clear_category_cover_on_photo_change | no | no |
 | clear_cover_on_photo_change | no | no |
@@ -166,13 +170,16 @@ BYTES_MISMATCH, ALBUM_NOT_FOUND, KEY_MISMATCH, CONFLICT. KEY_MISMATCH is reserve
 derives the key and cannot mismatch). INVALID_ITEMS and INVALID_STATUS are input errors, and
 COVER_NOT_IN_ALBUM (SQLSTATE 23514) comes from the cover trigger. CATEGORY_COVER_NOT_IN_CATEGORY (SQLSTATE 23514)
 comes from `check_category_cover` when a category cover photo is not in one of its albums (also for a direct REST
-update); the admin maps it to a Czech text.
+update); the admin maps it to a Czech text. HERO_PHOTO_NOT_FOUND (SQLSTATE 23503) comes from `check_hero_photo` when
+the hero photo does not exist.
 
 ## Triggers
 
 - `set_updated_at` before update on categories, albums, photos.
 - `bump_pending` after insert, update or delete, per row, on categories, albums, photos, url_history.
-- `log_change` after insert, update or delete, per row, on categories, albums, photos (see "Change log").
+- `log_change` after insert, update or delete, per row, on categories, albums, photos and site_settings (see "Change log").
+- `check_hero_photo` (`site_settings_check_hero`, before insert or update of `hero_photo_id`) and `bump_pending`
+  (`site_settings_bump_pending`) on site_settings.
 - `check_album_cover`: a cover photo must belong to its album.
 - `clear_cover_on_photo_change`: moving or deleting a photo clears covers that point at it.
 - `check_category_cover` (trigger `categories_check_cover`, before insert or update of `cover_photo_id` on categories;
@@ -202,6 +209,11 @@ bookkeeping (`pending_seen`), but the UI no longer shows that raw counter.
 - Choosing, changing or clearing a category cover, and a category cover cleared by the triggers above, shows as an
   `edited` category (`log_change` compares whole rows, so the new column needs no code). `bump_pending` fires as for
   any categories update.
+- Choosing, changing or clearing the hero photo (and the hero cleared because its photo was deleted) shows as one
+  `edited` line with `table_name = 'site_settings'` and the label "Hlavní fotka úvodní stránky". The boolean key
+  cannot be a `row_id`, so the line uses the fixed uuid `00000000-0000-4000-8000-000000000001`. The migration
+  `20261023110000_hero_photo.sql` replaces the `change_log_table_name` check and `log_change` with
+  `create or replace` (the old migration is untouched).
 
 - Clearing: `record_publish(..., 'ok', ...)` deletes every line with `at <=` the request time of that publish
   (`publish_log.requested_at`). Lines written while the build runs stay listed, like the counter keeps them. A failed
@@ -216,6 +228,13 @@ snapshots still parse). `buildSnapshot` emits it only when the photo is in a pub
 a stale or foreign value becomes null and never fails the build. The web uses it for the category cards on the home
 page and the category page, else the cover of the first album. The Worker bundles `packages/shared`, so it needs a
 redeploy to publish the field; no Worker source changed.
+
+It also has a top-level `heroPhotoId` (string or null, default null; T-285): the home hero photo. The schema requires
+it to be a photo of the snapshot. `buildSnapshot` takes it from the optional `siteSettings` source row and emits it
+only when the photo is in a published album of a visible category; otherwise null, never an error. The web resolves
+it with `catalog.heroPhoto()` and falls back to the bundled `main.jpg`. OPEN: the Worker (`loadCatalogRows` in
+`apps/api/src/publish-service.ts`) reads each table by name, so it must also read `site_settings` and pass it as
+`siteSettings` before the field can be published; until then published snapshots keep `heroPhotoId: null`.
 
 ## Seed and fixtures
 

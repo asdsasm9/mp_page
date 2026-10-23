@@ -9,7 +9,7 @@ import Base from '../layouts/Base.astro';
 import { getCatalog } from '../lib/catalog';
 import { readRawEnv, resolveEnv } from '../lib/env';
 import { HASH_REDIRECT_SCRIPT } from '../lib/hash-redirect';
-import { homeCategoryCards, homeReviews } from '../lib/home';
+import { homeCategoryCards, homeHero, homeReviews } from '../lib/home';
 import { SITE_ORIGIN, person, photographerFull, website } from '../lib/jsonld';
 import { homeMeta } from '../lib/seo';
 import hero from '../assets/site/home/main.jpg';
@@ -28,8 +28,21 @@ const cards = homeCategoryCards(catalog);
 const reviews = homeReviews(catalog, REVIEWS);
 
 const heroAlt = 'Mullny Photos – párové a svatební focení v Brně';
-const og = await getImage({ src: hero, width: 1200, height: 630, format: 'jpg' });
-const ogImage = { url: `${SITE_ORIGIN}${og.src}`, width: 1200, height: 630, alt: heroAlt };
+// The photo chosen in the admin (T-285), else null and the bundled main.jpg below.
+const chosenHero = homeHero(catalog, heroAlt, env.imgBaseUrl);
+const ogImage = chosenHero
+  ? {
+      ...chosenHero.og,
+      // Fixture mode serves images from a relative /_dev-img; og:image must be absolute either way.
+      url: /^https?:\/\//.test(chosenHero.og.url) ? chosenHero.og.url : `${SITE_ORIGIN}${chosenHero.og.url}`,
+      alt: chosenHero.alt,
+    }
+  : await getImage({ src: hero, width: 1200, height: 630, format: 'jpg' }).then((og) => ({
+      url: `${SITE_ORIGIN}${og.src}`,
+      width: 1200,
+      height: 630,
+      alt: heroAlt,
+    }));
 
 const collage = [
   { src: trio1, alt: 'Portrét ze série fotografií, první snímek' },
@@ -44,16 +57,22 @@ const collage = [
   <!-- Must be inline to run before first paint; T-67's CSP gets its sha256 from the postbuild. -->
   <script is:inline slot="head" set:html={HASH_REDIRECT_SCRIPT} />
   <section class="hero" aria-labelledby="nadpis">
-    <Image
-      src={hero}
-      alt={heroAlt}
-      widths={[480, 960, 1600]}
-      sizes="100vw"
-      format="webp"
-      loading="eager"
-      decoding="async"
-      fetchpriority="high"
-    />
+    {
+      chosenHero ? (
+        <Photo photo={chosenHero.photo} base={env.imgBaseUrl} alt={chosenHero.alt} context="hero" priority class="hero-photo" />
+      ) : (
+        <Image
+          src={hero}
+          alt={heroAlt}
+          widths={[480, 960, 1600]}
+          sizes="100vw"
+          format="webp"
+          loading="eager"
+          decoding="async"
+          fetchpriority="high"
+        />
+      )
+    }
     <div class="hero-text">
       <h1 id="nadpis" class="t-display">Mullny Photos</h1>
       <p>{SITE.description}</p>
@@ -156,6 +175,13 @@ const collage = [
     inline-size: 100%;
     block-size: auto;
     background: var(--color-placeholder);
+  }
+
+  /* A chosen photo may be a portrait: it is cropped to one landscape shape, keeping heads in the crop. */
+  .hero :global(img.hero-photo) {
+    aspect-ratio: var(--ratio-card);
+    object-fit: cover;
+    object-position: var(--cover-position);
   }
 
   .hero-text {

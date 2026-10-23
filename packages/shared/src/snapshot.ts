@@ -3,7 +3,7 @@
  * No free-form fields, no admin data, no emails. Drafts never appear.
  */
 import { z } from 'zod';
-import type { AlbumRow, CategoryRow, PhotoRow, UrlHistoryRow } from './db';
+import type { AlbumRow, CategoryRow, PhotoRow, SiteSettingsRow, UrlHistoryRow } from './db';
 import { PhotoVariantsSchema } from './variants';
 
 const nullableText = z.string().nullable();
@@ -75,6 +75,8 @@ export const SnapshotSchema = z
         photos: z.number().int().nonnegative(),
       })
       .strict(),
+    /** Photo chosen for the home hero (any photo of the snapshot), null = automatic. Older snapshots lack it. */
+    heroPhotoId: z.string().nullable().default(null),
     categories: z.array(SnapshotCategorySchema),
     redirects: z.array(SnapshotRedirectSchema),
   })
@@ -113,6 +115,10 @@ export const SnapshotSchema = z
       });
     });
 
+    if (s.heroPhotoId !== null && !photoIds.has(s.heroPhotoId)) {
+      issue(`heroPhotoId "${s.heroPhotoId}" is not a photo of the snapshot`, ['heroPhotoId']);
+    }
+
     const actual = { categories: s.categories.length, albums, photos };
     for (const k of ['categories', 'albums', 'photos'] as const) {
       if (s.counts[k] !== actual[k]) issue(`counts.${k} is ${s.counts[k]} but the snapshot has ${actual[k]}`, ['counts', k]);
@@ -146,6 +152,8 @@ export interface SnapshotSource {
   albums: AlbumRow[];
   photos: PhotoRow[];
   urlHistory: UrlHistoryRow[];
+  /** The single site_settings row; absent or null means no hero chosen (older callers omit it). */
+  siteSettings?: SiteSettingsRow | null;
 }
 
 type Sortable = { sort: number; id: string };
@@ -234,10 +242,18 @@ export function buildSnapshot(src: SnapshotSource, now: Date): Snapshot {
     .sort((a, b) => (a.old_path < b.old_path ? -1 : a.old_path > b.old_path ? 1 : 0))
     .map((r) => ({ from: r.old_path, to: r.target, status: r.status }));
 
+  // Only a photo of a published album of a visible category is exposed; a stale value becomes null.
+  const chosenHero = src.siteSettings?.hero_photo_id ?? null;
+  const heroPhotoId =
+    chosenHero !== null && categories.some((c) => c.albums.some((a) => a.photos.some((p) => p.id === chosenHero)))
+      ? chosenHero
+      : null;
+
   return SnapshotSchema.parse({
     schemaVersion: 1,
     generatedAt: now.toISOString(),
     counts: { categories: categories.length, albums: albumCount, photos: photoCount },
+    heroPhotoId,
     categories,
     redirects,
   });

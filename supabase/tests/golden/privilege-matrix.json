@@ -37,6 +37,10 @@
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
       "authenticated": { "select": "table", "insert": "none", "update": "none", "delete": "none" }
     },
+    "site_settings": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "none", "update": "columns:hero_photo_id", "delete": "none" }
+    },
     "site_state": {
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
       "authenticated": { "select": "table", "insert": "none", "update": "none", "delete": "none" }
@@ -57,6 +61,7 @@
     "categories_slug_history": { "anon": false, "authenticated": false },
     "check_album_cover": { "anon": false, "authenticated": false },
     "check_category_cover": { "anon": false, "authenticated": false },
+    "check_hero_photo": { "anon": false, "authenticated": false },
     "clear_category_cover_on_album_move": { "anon": false, "authenticated": false },
     "clear_category_cover_on_photo_change": { "anon": false, "authenticated": false },
     "clear_cover_on_photo_change": { "anon": false, "authenticated": false },

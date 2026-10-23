@@ -243,7 +243,7 @@ export const cs = {
       noAlbum: 'Bez alba',
       unnamedPhoto: 'bez popisu',
       unnamed: 'bez názvu',
-      what: { categories: 'Kategorie', albums: 'Album', photos: 'Fotka' },
+      what: { categories: 'Kategorie', albums: 'Album', photos: 'Fotka', site_settings: 'Nastavení' },
       kind: { added: 'přidáno', edited: 'upraveno', deleted: 'smazáno', reordered: 'změněno pořadí' },
     },
   },

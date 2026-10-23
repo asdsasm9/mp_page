@@ -220,6 +220,9 @@ update public.albums set cover_photo_id = '27336a01-6d6a-5851-9266-40dafc22fbbb'
 -- Main photo of a category (the others stay automatic).
 update public.categories set cover_photo_id = '8b4cc91a-96b8-5f34-ac47-6a85b48db744' where id = 'fd33d313-4434-516b-b169-5ea20d8d292b';
 
+-- Home hero photo (the single site_settings row exists from the migration).
+update public.site_settings set hero_photo_id = '02ea322f-9f72-5174-93e4-476856d4fc99' where id;
+
 -- The seed is not a pending change.
 update public.site_state set pending_changes = 0;
 delete from public.change_log;

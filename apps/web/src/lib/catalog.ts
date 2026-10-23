@@ -146,6 +146,8 @@ export interface Catalog {
   coverOf(album: SnapshotAlbum): SnapshotPhoto | null;
   /** The category's chosen main photo, else the cover of its first album (null for a category without photos). */
   categoryCover(category: SnapshotCategory): SnapshotPhoto | null;
+  /** The photo chosen for the home hero, or null (nothing chosen, or the photo is not in this catalog): use the bundled image. */
+  heroPhoto(): SnapshotPhoto | null;
 }
 
 export function buildCatalog(snapshot: Snapshot): Catalog {
@@ -184,6 +186,9 @@ export function buildCatalog(snapshot: Snapshot): Catalog {
       }
       const first = category.albums[0];
       return first ? coverOf(first) : null;
+    },
+    heroPhoto() {
+      return snapshot.heroPhotoId === null ? null : (photoById.get(snapshot.heroPhotoId)?.photo ?? null);
     },
   };
 }

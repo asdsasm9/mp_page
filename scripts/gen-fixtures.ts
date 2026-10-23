@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { AlbumRow, CategoryRow, PhotoRow, UrlHistoryRow } from '../packages/shared/src/db';
+import type { AlbumRow, CategoryRow, PhotoRow, SiteSettingsRow, UrlHistoryRow } from '../packages/shared/src/db';
 import { masterKey } from '../packages/shared/src/keys';
 import { LEGACY_ALBUMS, LEGACY_CATEGORIES, legacyKey, legacyKeysOf } from '../packages/shared/src/legacy/albums';
 import { buildSnapshot, type Snapshot } from '../packages/shared/src/snapshot';
@@ -118,6 +118,7 @@ export interface SeedRows {
   albums: AlbumRow[];
   photos: PhotoRow[];
   urlHistory: UrlHistoryRow[];
+  siteSettings: SiteSettingsRow;
 }
 
 /** Muted, photo-like colours for the placeholder block of fixture photos (real colours come from the encoder). */
@@ -215,7 +216,12 @@ export function buildSeedRows(legacy: LegacyPhotoEntry[]): SeedRows {
   const firstAlbum = albums.find((a) => a.category_id === firstCategory.id)!;
   const chosen = photos.filter((p) => p.album_id === firstAlbum.id).sort((a, b) => a.sort - b.sort)[1];
   if (chosen) firstCategory.cover_photo_id = chosen.id;
-  return { categories, albums, photos, urlHistory: [] };
+  // The home hero is a chosen photo too (the first photo of the first album of the second category, so it
+  // differs from the category cover); the other path (none chosen) is exercised by the web tests.
+  const heroCategory = categories[1] ?? firstCategory;
+  const heroAlbum = albums.find((a) => a.category_id === heroCategory.id)!;
+  const hero = photos.filter((p) => p.album_id === heroAlbum.id).sort((a, b) => a.sort - b.sort)[0];
+  return { categories, albums, photos, urlHistory: [], siteSettings: { id: true, hero_photo_id: hero?.id ?? null } };
 }
 
 export function readLegacyPhotosJson(file: string = LEGACY_PHOTOS_JSON): LegacyPhotoEntry[] {
@@ -265,6 +271,11 @@ export function renderSeedSql(rows: SeedRows): string {
   out.push('-- Main photo of a category (the others stay automatic).');
   for (const c of rows.categories) {
     if (c.cover_photo_id !== null) out.push(`update public.categories set cover_photo_id = ${q(c.cover_photo_id)} where id = ${q(c.id)};`);
+  }
+  out.push('');
+  out.push('-- Home hero photo (the single site_settings row exists from the migration).');
+  if (rows.siteSettings.hero_photo_id !== null) {
+    out.push(`update public.site_settings set hero_photo_id = ${q(rows.siteSettings.hero_photo_id)} where id;`);
   }
   out.push('');
   out.push('-- The seed is not a pending change.');

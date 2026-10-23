@@ -46,6 +46,7 @@ describe('SnapshotSchema', () => {
     schemaVersion: 1,
     generatedAt: TS,
     counts: { categories: 1, albums: 1, photos: 1 },
+    heroPhotoId: null,
     categories: [
       {
         slug: 'svatby', name: 'Svatby', description: null, seoTitle: null, seoDescription: null, coverPhotoId: null, updatedAt: TS,
@@ -97,6 +98,23 @@ describe('SnapshotSchema', () => {
     const s = valid();
     s.categories[0]!.coverPhotoId = uuid(99);
     expect(messages(s).join('\n')).toContain('is not a photo of category');
+  });
+  it('an old snapshot without heroPhotoId parses to null', () => {
+    const s = valid() as Partial<Snapshot>;
+    delete s.heroPhotoId;
+    const r = SnapshotSchema.safeParse(s);
+    expect(r.success).toBe(true);
+    expect(r.success && r.data.heroPhotoId).toBeNull();
+  });
+  it('accepts a hero that is a photo of the snapshot', () => {
+    const s = valid();
+    s.heroPhotoId = uuid(1);
+    expect(SnapshotSchema.safeParse(s).success).toBe(true);
+  });
+  it('rejects a hero that is not a photo of the snapshot', () => {
+    const s = valid();
+    s.heroPhotoId = uuid(99);
+    expect(messages(s).join('\n')).toContain('is not a photo of the snapshot');
   });
   it('rejects a null cover on an album with photos', () => {
     const s = valid();
@@ -225,6 +243,32 @@ describe('buildSnapshot', () => {
     expect(build(uuid(999)).categories[0]!.coverPhotoId).toBeNull(); // stale or foreign: null, no throw
     const hidden = cat(1, { cover_photo_id: pPub.id, visible: false });
     expect(build(null, [hidden, cat(2)]).categories.map((c) => c.slug)).toEqual(['cat-2']); // hidden category gone
+    expect(JSON.stringify(build(pDraft.id))).not.toContain(pDraft.id);
+  });
+  it('exposes a chosen hero only when it is a photo of a published album of a visible category', () => {
+    const draft = album(2, c1.id, { published: false });
+    const hiddenCat = cat(2, { visible: false });
+    const inHidden = album(3, hiddenCat.id);
+    const pPub = photo(1, a1.id);
+    const pDraft = photo(2, draft.id);
+    const pHidden = photo(3, inHidden.id);
+    const build = (hero: string | null | undefined) =>
+      buildSnapshot(
+        {
+          categories: [c1, hiddenCat],
+          albums: [a1, draft, inHidden],
+          photos: [pPub, pDraft, pHidden],
+          urlHistory: [],
+          ...(hero === undefined ? {} : { siteSettings: { id: true, hero_photo_id: hero } }),
+        },
+        NOW,
+      );
+    expect(build(pPub.id).heroPhotoId).toBe(pPub.id); // valid
+    expect(build(null).heroPhotoId).toBeNull(); // none
+    expect(build(undefined).heroPhotoId).toBeNull(); // caller without settings
+    expect(build(pDraft.id).heroPhotoId).toBeNull(); // unpublished album: not exposed
+    expect(build(pHidden.id).heroPhotoId).toBeNull(); // hidden category: not exposed
+    expect(build(uuid(999)).heroPhotoId).toBeNull(); // stale: null, no throw
     expect(JSON.stringify(build(pDraft.id))).not.toContain(pDraft.id);
   });
   it('maps url_history to redirects and trims shot_on to a date', () => {

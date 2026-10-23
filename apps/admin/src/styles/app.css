@@ -1210,6 +1210,34 @@
     color: var(--color-text-muted);
   }
 
+  /* Replace a photo (T-262): the button block in the side column and the dialog stages. */
+  .replace-photo > * + * {
+    margin-block-start: var(--space-2);
+  }
+
+  .replace-stage {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .replace-stage:focus {
+    outline: none; /* a container that only receives focus programmatically; its content is the announcement */
+  }
+
+  .replace-compare {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .replace-facts h3 {
+    font-size: var(--font-size-ui);
+    margin-block-end: var(--space-2);
+  }
+
+  .replace-facts .quality-list dd {
+    overflow-wrap: anywhere;
+  }
+
   .quality-list dd {
     margin: 0;
     font-variant-numeric: tabular-nums;

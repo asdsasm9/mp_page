@@ -9,6 +9,7 @@ import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/Page';
 import { PageLoading } from '../components/PageLoading';
 import { PhotoQualityFacts } from '../components/PhotoQualityFacts';
+import { ReplacePhoto } from '../components/ReplacePhoto';
 import { StaleNotice } from '../components/StaleNotice';
 import { useToast } from '../components/Toast';
 import { captionProblem, checkAlt } from '../data/altText';
@@ -257,6 +258,7 @@ function PhotoBody({ album, photos, photo }: { album: AlbumRow; photos: readonly
         </div>
         <div className="photo-side">
           <PhotoQualityFacts photo={photo} />
+          <ReplacePhoto album={album} photo={photo} beforeStart={async () => (flushRef.current ? flushRef.current() : true)} />
           <TextForm key={photo.id} photo={photo} flushRef={flushRef} />
           <nav className="photo-nav" aria-label={cs.photos.detail.nav}>
             <button type="button" ref={prevRef} className="button" disabled={!previous} onClick={() => void go(previous, 'prev')}>

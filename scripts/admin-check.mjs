@@ -588,6 +588,7 @@ async function runProfile(browser, profile) {
     });
 
     // ---- photo quality verdicts (T-260): the seeded album with low, good, missing-720 and portrait examples
+    let qualityIds = null;
     await step('quality verdicts', async () => {
       const q = await world(
         page,
@@ -598,6 +599,7 @@ async function runProfile(browser, profile) {
           return { album: missing.album_id, count: photos.filter((p) => p.album_id === missing.album_id).length, missing: missing.id, good: good.id };
         }`,
       );
+      qualityIds = q;
       await spaGo(page, `/alba/${q.album}`);
       await waitTiles(page, q.count);
       await waitText(page, /z \d+ fotek je v nízkém rozlišení/);
@@ -616,6 +618,30 @@ async function runProfile(browser, profile) {
       await find(page, '.quality-facts .quality-badge', /^Chybí varianta$/);
       await waitText(page, /Chybí: webp720/);
       await checkpoint(ctx, 'quality detail missing');
+    });
+
+    // ---- replace a photo with a better version (T-262): confirmation with before/after, the recovery state, then done
+    await step('replace photo dialog and recovery', async () => {
+      const q = qualityIds;
+      await spaGo(page, `/alba/${q.album}/foto/${q.good}`);
+      await find(page, 'button', /^Nahradit lepší verzí$/);
+      await (await page.$('input[type=file]')).uploadFile(fixtureFiles[0]); // 1600 x 1067, below the 3000 px original
+      await find(page, 'button', /^Nahradit$/);
+      await waitText(page, /Nová fotka nemá vyšší rozlišení než dosavadní\./);
+      await checkpoint(ctx, 'replace dialog', { shot: true });
+      // The copy step fails once: both photos stay and the recovery state offers Dokončit / Zrušit.
+      await world(page, '(w) => w.failNext("catalog.updatePhoto", "network", 1)');
+      await clickBy(ctx, 'button', /^Nahradit$/);
+      await find(page, 'button', /^Dokončit$/, 30000);
+      await waitText(page, /Nahrazení nedokončeno/);
+      const both = await world(page, `(w) => w.snapshot().photos.filter((p) => p.album_id === "${q.album}").length`);
+      if (both !== q.count + 1) throw new Error(`expected both photos in the album (${q.count + 1}), found ${both}`);
+      await checkpoint(ctx, 'replace incomplete', { shot: true });
+      await clickBy(ctx, 'button', /^Dokončit$/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal') === null, { timeout: 20000 });
+      await waitText(page, /Fotka byla nahrazena\./);
+      const left = await world(page, `(w) => ({ n: w.snapshot().photos.filter((p) => p.album_id === "${q.album}").length, old: w.snapshot().photos.some((p) => p.id === "${q.good}") })`);
+      if (left.n !== q.count || left.old) throw new Error(`replace did not end with one photo swapped: ${JSON.stringify(left)}`);
     });
 
     // ---- sticky header (T-245): stays at the top while scrolling, no Úložiště link in the nav, focus is not obscured (WCAG 2.4.11)

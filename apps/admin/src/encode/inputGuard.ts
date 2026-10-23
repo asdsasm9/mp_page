@@ -119,12 +119,21 @@ async function readHeader(file: FileLike & Sliceable): Promise<Uint8Array> {
   }
 }
 
-/** Size and header checks; call before decode. Resolves silently when the file may proceed. */
-export async function guardInput(file: FileLike, touch: boolean = detectTouch()): Promise<void> {
+/**
+ * Size and header checks; call before decode. Resolves when the file may proceed, with the header dimensions when
+ * they could be read (the replace dialog shows them), otherwise `undefined`.
+ */
+export async function inspectInput(file: FileLike, touch: boolean = detectTouch()): Promise<Dimensions | undefined> {
   if (file.size > MAX_INPUT_FILE_BYTES) throw new EncodeError('TOO_LARGE', `${file.size} bytes`);
-  if (!canSlice(file)) return; // not a real Blob: the post-decode check is the only one
+  if (!canSlice(file)) return undefined; // not a real Blob: the post-decode check is the only one
   const size = sniffImageSize(await readHeader(file));
-  if (size === undefined) return;
+  if (size === undefined) return undefined;
   if (size === null) throw new EncodeError('CORRUPT', 'bad header');
   assertPixels(size.width, size.height, touch);
+  return size;
+}
+
+/** The same checks as `inspectInput`, resolving with nothing. */
+export async function guardInput(file: FileLike, touch: boolean = detectTouch()): Promise<void> {
+  await inspectInput(file, touch);
 }

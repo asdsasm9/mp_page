@@ -7,7 +7,7 @@
  * State is split in two contexts: the changing state (queue rows, notices) and stable actions, so screens that only
  * start uploads do not re-render on every progress tick.
  */
-import type { AppConfigRow } from '@mp/shared';
+import type { AppConfigRow, PhotoRow } from '@mp/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
@@ -26,7 +26,7 @@ import { catalogKeys } from '../data/catalog';
 import { isOnline } from '../data/health';
 import { usePhotoActions } from '../data/photoActions';
 import { storageKeys, useCommitUpload } from '../data/storage';
-import { createCanvasSurfaceFactory, createEncoder } from '../encode';
+import { createCanvasSurfaceFactory, createEncoder, inspectInput, type Dimensions } from '../encode';
 import { messageForCode } from '../i18n/messages';
 import { usePorts } from '../ports-context';
 import { fingerprint, intakeFiles } from './intake';
@@ -34,7 +34,7 @@ import { createUploadQueue, encodeConcurrencyFor, type QueueConfig, type UploadQ
 import { initialQueueState, summarize } from './reducer';
 import { finishedToast, storageVerdict } from './summary';
 import { cs } from '../i18n/cs';
-import type { Encoder, QueueState } from './types';
+import type { Encoder, ItemFailure, QueueState } from './types';
 
 /** app_config is re-read at most this often when files are picked. */
 const CONFIG_STALE_MS = 60_000;
@@ -49,6 +49,15 @@ export interface Rejection {
 export interface DuplicatePrompt {
   albumId: string;
   files: File[];
+}
+
+/** Result of the replace-photo pre-check: the same intake and input guard as a normal upload, nothing is sent. */
+export type ReplacementCheck = { ok: true; dimensions: Dimensions | undefined } | { ok: false; message: string };
+
+/** A replacement upload running through the shared queue. `done` rejects with the row's ItemFailure. */
+export interface ReplacementUpload {
+  id: string;
+  done: Promise<PhotoRow>;
 }
 
 export interface UploadStateValue {
@@ -78,6 +87,13 @@ export interface UploadActions {
   /** Local object URL of a picked file, until the public image has loaded. */
   previewFor(photoId: string): string | undefined;
   releasePreview(photoId: string): void;
+  /** Replace-photo step 1: type, size and header checks of one file. Never queues or sends anything. */
+  checkReplacement(file: File): Promise<ReplacementCheck>;
+  /**
+   * Replace-photo step 2: encodes and uploads the file into `albumId` through the normal queue (new photo id).
+   * The row is kept out of the batch toast; `done` resolves with the committed photo.
+   */
+  startReplacement(albumId: string, file: File): ReplacementUpload | null;
 }
 
 const StateContext = createContext<UploadStateValue | null>(null);
@@ -121,6 +137,9 @@ export function UploadProvider({ encoder, children }: Props) {
   const coverTried = useRef(new Set<string>());
   const wasRunning = useRef(false);
   const counter = useRef(0);
+  /** Queue rows that belong to a photo replacement: resolved on commit, never announced as a batch. */
+  const replacements = useRef(new Map<string, (photo: PhotoRow) => void>());
+  const silent = useRef(new Set<string>());
 
   const [rejections, setRejections] = useState<Rejection[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -160,7 +179,16 @@ export function UploadProvider({ encoder, children }: Props) {
       encoder: encoder ?? createEncoder(createCanvasSurfaceFactory()),
       config,
       runAuthed: (call) => latest.current.session.runAuthed(call),
-      onCommitted: ({ item }) => coverAfterCommit(item.albumId),
+      onCommitted: ({ item, photo }) => {
+        const resolveReplacement = replacements.current.get(item.id);
+        if (resolveReplacement) {
+          // The cover of a replacement is handled by the replace sequence, not by the auto cover.
+          replacements.current.delete(item.id);
+          resolveReplacement(photo);
+          return;
+        }
+        coverAfterCommit(item.albumId);
+      },
     });
     queueRef.current = q;
     setQueue(q);
@@ -219,7 +247,8 @@ export function UploadProvider({ encoder, children }: Props) {
     if (!wasRunning.current) return;
     wasRunning.current = false;
     coverTried.current.clear();
-    const text = finishedToast(stateRef.current);
+    const own = stateRef.current;
+    const text = finishedToast({ ...own, items: own.items.filter((i) => !silent.current.has(i.id)) });
     if (text) latest.current.toast.show(text);
     setStartedAt(null);
   }, [running]);
@@ -281,24 +310,75 @@ export function UploadProvider({ encoder, children }: Props) {
       setDrawerOpen(true);
     };
 
+    /** app_config (cached for a minute); null when it cannot be read. The batch limit is remembered for the queue. */
+    const loadConfig = async (): Promise<AppConfigRow | null> => {
+      const { session: s } = latest.current;
+      try {
+        const config = await queryClient.fetchQuery({
+          queryKey: catalogKeys.appConfig(),
+          queryFn: () => s.runAuthed(() => ports.catalog.getAppConfig()),
+          staleTime: CONFIG_STALE_MS,
+          networkMode: 'always', // offline: fail at once instead of waiting for the connection
+        });
+        limits.current = { max_files_per_batch: config.max_files_per_batch };
+        return config;
+      } catch {
+        return null;
+      }
+    };
+
     return {
+      async checkReplacement(file) {
+        const config = await loadConfig();
+        if (!config) return { ok: false, message: cs.upload.limitsFailed };
+        const intake = intakeFiles([file], { albumId: '', limits: { maxUploadBytes: config.max_upload_bytes } });
+        const refused = intake.rejected[0];
+        if (refused) return { ok: false, message: refused.message };
+        try {
+          return { ok: true, dimensions: await inspectInput(file) };
+        } catch (error) {
+          const text = (error as { userMessage?: unknown } | null)?.userMessage;
+          return { ok: false, message: typeof text === 'string' ? text : cs.upload.corrupt };
+        }
+      },
+      startReplacement(albumId, file) {
+        const q = queueRef.current;
+        if (!q) return null;
+        const [id] = q.add(albumId, [file]);
+        if (id === undefined) return null;
+        silent.current.add(id);
+        const done = new Promise<PhotoRow>((resolve, reject) => {
+          let unsubscribe: () => void = () => undefined;
+          const finish = () => {
+            unsubscribe();
+            replacements.current.delete(id);
+            queueMicrotask(() => q.remove(id)); // the row is not part of the batch list
+          };
+          replacements.current.set(id, (photo) => {
+            finish();
+            resolve(photo);
+          });
+          unsubscribe = q.subscribe(() => {
+            const item = q.getState().items.find((i) => i.id === id);
+            if (!item) return;
+            if (item.status === 'failed' || item.status === 'cancelled') {
+              finish();
+              const failure: ItemFailure = item.failure ?? { kind: 'corrupt', message: cs.upload.cancelled };
+              reject(failure);
+            }
+          });
+        });
+        return { id, done };
+      },
       async submit(albumId, picked) {
         if (!queueRef.current || picked.length === 0) return;
         setNotice(null);
         const { session: s } = latest.current;
-        let config: AppConfigRow;
-        try {
-          config = await queryClient.fetchQuery({
-            queryKey: catalogKeys.appConfig(),
-            queryFn: () => s.runAuthed(() => ports.catalog.getAppConfig()),
-            staleTime: CONFIG_STALE_MS,
-            networkMode: 'always', // offline: fail at once instead of waiting for the connection
-          });
-        } catch {
+        const config = await loadConfig();
+        if (!config) {
           setNotice(cs.upload.limitsFailed);
           return;
         }
-        limits.current = { max_files_per_batch: config.max_files_per_batch };
 
         const result = intakeFiles(picked, {
           albumId,

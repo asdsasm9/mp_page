@@ -1,12 +1,13 @@
 /** Failures of the browser encoder. `userMessage` is the Czech row text (the queue shows it), `code` goes to "Podrobnosti". */
 import { cs } from '../i18n/cs';
 
-export type EncodeErrorCode = 'NO_WEBP' | 'HEIC_UNSUPPORTED' | 'TOO_LARGE' | 'CORRUPT' | 'PLAN_MISMATCH';
+export type EncodeErrorCode = 'NO_WEBP' | 'HEIC_UNSUPPORTED' | 'TOO_LARGE' | 'TOO_MANY_PIXELS' | 'CORRUPT' | 'PLAN_MISMATCH';
 
 const TEXT: Record<EncodeErrorCode, string> = {
   NO_WEBP: cs.encode.noWebp,
   HEIC_UNSUPPORTED: cs.encode.heic,
   TOO_LARGE: cs.encode.tooLarge,
+  TOO_MANY_PIXELS: cs.encode.tooManyPixels,
   CORRUPT: cs.encode.corrupt,
   PLAN_MISMATCH: cs.encode.corrupt,
 };

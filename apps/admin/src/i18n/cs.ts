@@ -468,8 +468,9 @@ export const cs = {
   encode: {
     noWebp: 'Tento prohlížeč neumí vytvářet formát WebP. Použijte Chrome, Edge nebo Firefox.',
     heic: 'Tento formát fotka v tomto prohlížeči nejde zpracovat. Zkuste ji uložit jako JPEG.',
-    tooLarge: 'Soubor je příliš velký.',
-    corrupt: 'Fotku se nepodařilo zpracovat.',
+    tooLarge: 'Soubor je příliš velký (nad 50 MB). Zmenšete ho a zkuste to znovu.',
+    tooManyPixels: 'Fotka má příliš mnoho pixelů (nad 64 MP; na telefonu nad 40 MP).',
+    corrupt: 'Tuto fotku se nepodařilo načíst.',
   },
   placeholder: {
     body: 'Tato obrazovka se připravuje.',

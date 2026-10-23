@@ -103,11 +103,11 @@ describe('decode and resize core', () => {
     expect(out.variants.jpeg.w).toBe(300);
   });
 
-  it('refuses more than 100 megapixels with the Czech text and creates no surface', async () => {
+  it('refuses more than 64 megapixels (40 on touch) with the Czech text and creates no surface', async () => {
     const s = stub(12000, 9000);
     await expect(createEncoder(s.factory).encode(file(), new AbortController().signal)).rejects.toMatchObject({
-      code: 'TOO_LARGE',
-      userMessage: 'Soubor je příliš velký.',
+      code: 'TOO_MANY_PIXELS',
+      userMessage: 'Fotka má příliš mnoho pixelů (nad 64 MP; na telefonu nad 40 MP).',
     });
     expect(s.created).toHaveLength(0);
   });

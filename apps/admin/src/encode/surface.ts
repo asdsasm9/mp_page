@@ -5,8 +5,6 @@
 import { MASTER_MAX_EDGE } from '@mp/shared';
 
 export const MAX_SURFACE_EDGE = MASTER_MAX_EDGE;
-/** Decoded images above this many pixels are refused (memory). */
-export const MAX_PIXELS = 100_000_000;
 
 /** Anything that can be drawn: a decoded image or a surface. */
 export interface Drawable {

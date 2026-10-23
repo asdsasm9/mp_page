@@ -40,8 +40,6 @@ export const ROUTES = [
   { path: '/layout-check/portfolio/12/', name: 'portfolio-12', light: true },
   { path: '/layout-check/portfolio/3-auto/', name: 'portfolio-3-auto', light: true },
   { path: '/layout-check/portfolio/12-auto/', name: 'portfolio-12-auto', light: true },
-  { path: '/o-mne/', name: 'about' },
-  { path: '/kontakt/', name: 'contact' },
   // `short`: sticky footer cases (T-242), see STICKY_VIEWPORTS.
   { path: '/cookies/', name: 'cookies', light: true, short: true },
   { path: '/neexistuje/', name: '404', light: true, short: true },

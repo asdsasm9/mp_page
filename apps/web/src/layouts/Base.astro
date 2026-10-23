@@ -94,7 +94,7 @@ const categoryNames = catalog.categories.map((c) => c.name);
     <main id="obsah" tabindex="-1">
       <slot />
     </main>
-    <Footer />
+    <Footer categories={catalog.categories.map((c) => ({ name: c.name, slug: c.slug }))} />
   </body>
 </html>
 

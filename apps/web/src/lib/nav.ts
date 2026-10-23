@@ -33,7 +33,7 @@ export function buildNav(labels: NavLabels, hasReviews: boolean): NavItem[] {
 }
 
 /** Real pages that are not part of the Portfolio section. Everything else below the root is /portfolio/, a category or an album. */
-const NOT_PORTFOLIO = ['/', '/cookies/', '/404/', '/o-mne/', '/kontakt/'];
+const NOT_PORTFOLIO = ['/', '/cookies/', '/404/'];
 
 /** True on /portfolio/, category pages and album pages. */
 export const isPortfolioPage = (current: string): boolean => !NOT_PORTFOLIO.includes(current);

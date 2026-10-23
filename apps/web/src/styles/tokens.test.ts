@@ -274,8 +274,8 @@ describe('docs/DESIGN-TOKENS.md', () => {
 
 describe('the gold accent is decoration only (WP-12 b)', () => {
   // Fill uses of --color-accent that predate WP-12 and disappear when their component is rewritten
-  // (Header T-275, Footer and kontakt T-281, skip link stays: dark text on gold is 4.9:1).
-  const LEGACY = ['/components/Footer.astro', '/pages/kontakt/index.astro', '/styles/base.css'];
+  // (skip link in base.css stays: dark text on gold is 4.9:1).
+  const LEGACY = ['/styles/base.css'];
   const files = [
     ...walk(join(srcDir, 'components')),
     ...walk(join(srcDir, 'layouts')),

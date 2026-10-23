@@ -116,18 +116,20 @@ describe('parseArgs', () => {
     expect(parseArgs([])).toMatchObject({ routes: null, runs: 3, out: '.tmp/design-check', help: false });
   });
   it('parses flags', () => {
-    expect(parseArgs(['--routes', '/,/kontakt/', '--runs', '1', '--out', 'x'])).toMatchObject({ routes: ['/', '/kontakt/'], runs: 1, out: 'x' });
+    expect(parseArgs(['--routes', '/,/cookies/', '--runs', '1', '--out', 'x'])).toMatchObject({ routes: ['/', '/cookies/'], runs: 1, out: 'x' });
   });
   it('rejects bad input', () => {
     expect(() => parseArgs(['--nope'])).toThrow(/unknown/);
     expect(() => parseArgs(['--runs', '0'])).toThrow();
-    expect(() => parseArgs(['--routes', 'kontakt'])).toThrow();
+    expect(() => parseArgs(['--routes', 'cookies'])).toThrow();
     expect(() => parseArgs(['--out'])).toThrow(/missing/);
   });
   it('selects routes', () => {
-    expect(selectRoutes(null)).toHaveLength(20);
+    expect(selectRoutes(null)).toHaveLength(18);
+    expect(selectRoutes(null).map((r) => r.path)).not.toEqual(expect.arrayContaining(['/o-mne/']));
+    expect(selectRoutes(null).map((r) => r.path)).not.toEqual(expect.arrayContaining(['/kontakt/']));
     expect(selectRoutes(['/portfolio/'])[0].name).toBe('portfolio');
-    expect(selectRoutes(['/kontakt/'])[0].name).toBe('contact');
+    expect(selectRoutes(['/cookies/'])[0].name).toBe('cookies');
     expect(selectRoutes(['/x/y/'])[0].name).toBe('x-y');
   });
 });

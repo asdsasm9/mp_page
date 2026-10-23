@@ -1,7 +1,7 @@
 ---
 // Cookies and privacy (option C, decision D-3): text only. The site stores nothing; the analytics section appears only in a build with the beacon.
 import AnalyticsSection from '../../components/AnalyticsSection.astro';
-import Breadcrumb from '../../components/Breadcrumb.astro';
+import PageHead from '../../components/PageHead.astro';
 import { COOKIES, MAIL_ADDRESS, MAIL_URL } from '../../content/texts';
 import Base from '../../layouts/Base.astro';
 import { readRawEnv, resolveEnv } from '../../lib/env';
@@ -16,9 +16,9 @@ const hasBeacon = resolveEnv(readRawEnv()).analyticsToken !== null;
 ---
 <Base meta={meta} path={path} jsonLd={[breadcrumbList(crumbs)]}>
   <div class="page">
-    <Breadcrumb crumbs={crumbs} />
-    <h1>{COOKIES.title}</h1>
-    <p>{COOKIES.intro}</p>
+    <PageHead crumbs={crumbs} title={COOKIES.title}>
+      <p class="t-lead">{COOKIES.intro}</p>
+    </PageHead>
 
     <section aria-labelledby="spravce">
       <h2 id="spravce">{controller.title}</h2>
@@ -72,7 +72,7 @@ const hasBeacon = resolveEnv(readRawEnv()).analyticsToken !== null;
 <style>
   .page {
     display: grid;
-    gap: var(--space-4);
+    gap: var(--space-5);
     max-inline-size: var(--layout-max);
     margin-inline: auto;
     padding: var(--space-4) var(--layout-gutter) var(--space-7);

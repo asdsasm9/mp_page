@@ -161,12 +161,8 @@ export function checkHeavyImages(page) {
 export function jsonLdMatrix(page) {
   if (is404(page)) return { required: [], allowed: [] };
   const route = routeOf(page.path);
-  // T-288: About and Contact are home sections, so the home may also carry the Person entity.
+  // About and Contact are home sections (the /o-mne/ and /kontakt/ pages are gone), so the home also carries the Person entity.
   if (route === '/') return { required: ['Photographer', 'WebSite'], allowed: ['Photographer', 'WebSite', 'Person'] };
-  if (route === '/kontakt/') return { required: ['Photographer', 'BreadcrumbList'], allowed: ['Photographer', 'BreadcrumbList'] };
-  if (route === '/o-mne/') {
-    return { required: ['Person', 'BreadcrumbList'], allowed: ['Person', 'BreadcrumbList', 'Photographer'] };
-  }
   if (route === '/portfolio/' || route === '/cookies/') return { required: ['BreadcrumbList'], allowed: ['BreadcrumbList'] };
   return {
     required: ['ImageGallery', 'BreadcrumbList'],

@@ -1,5 +1,5 @@
 // design-check: Lighthouse (mobile, median of N), axe-core, 320 px reflow, console/CSP errors, screenshots.
-// Usage: CHROME_PATH=/path/to/chrome npm run design-check [-- --routes /,/kontakt/ --runs 1 --out dir --dist dir]
+// Usage: CHROME_PATH=/path/to/chrome npm run design-check [-- --routes /,/cookies/ --runs 1 --out dir --dist dir]
 // Needs a built apps/web/dist (npm run build -w apps/web). Exit 0 pass, 1 fail, 2 skipped (no Chrome).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';

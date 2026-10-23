@@ -48,6 +48,7 @@ export const ctaLabel = (slug: string): string => CTA_LABELS[slug] ?? CTA_FALLBA
 
 export const FOOTER = {
   brand: 'MULLNY',
+  copyright: '© Mullny Photos',
   region: 'Fotím v Jihomoravském kraji',
 } as const;
 

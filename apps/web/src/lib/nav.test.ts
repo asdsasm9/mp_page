@@ -44,7 +44,7 @@ describe('aria-current in the header nav', () => {
   });
 
   it('marks nothing on cookies, 404 and the removed pages', () => {
-    for (const path of ['/cookies/', '/404/', '/o-mne/', '/kontakt/']) expect(marked(path), path).toEqual([]);
+    for (const path of ['/cookies/', '/404/']) expect(marked(path), path).toEqual([]);
     expect(isPortfolioPage('/cookies/')).toBe(false);
   });
 

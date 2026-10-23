@@ -3,7 +3,9 @@
 // Each thumbnail is a link to the 1600 JPEG, so the grid works without JavaScript; lightbox.ts upgrades it
 // to a native <dialog>. The data-lb-* attributes (fit srcset, master URL and size) are read only by the zoom script.
 import AlbumGrid from '../../../components/AlbumGrid.astro';
-import Breadcrumb from '../../../components/Breadcrumb.astro';
+import Icon from '../../../components/Icon.astro';
+import PageHead from '../../../components/PageHead.astro';
+import { ctaLabel } from '../../../content/texts';
 import Base from '../../../layouts/Base.astro';
 import { albumThumbs, formatShotOn } from '../../../lib/album';
 import { getCatalog } from '../../../lib/catalog';
@@ -35,6 +37,7 @@ const crumbs = [
   { name: album.title, path },
 ];
 const date = formatShotOn(album.shotOn);
+const kicker = [album.place, date].filter(Boolean).join(' · ');
 const description = album.description?.trim() || null;
 const { prev, next } = catalog.neighbours(album.slug);
 ---
@@ -45,26 +48,38 @@ const { prev, next } = catalog.neighbours(album.slug);
   jsonLd={[albumGallery(category, album, meta.description ?? '', env.imgBaseUrl), breadcrumbList(crumbs)]}
 >
   <div class="page">
-    <Breadcrumb crumbs={crumbs} />
-    <header class="album-head">
-      <h1>{album.title}</h1>
-      {
-        (album.place || date) && (
-          <p class="meta t-small">
-            {album.place && <span>{album.place}</span>}
-            {date && <time datetime={album.shotOn!}>{date}</time>}
-          </p>
-        )
-      }
-      {description && <p class="description">{description}</p>}
-    </header>
+    <PageHead crumbs={crumbs} title={album.title} kicker={kicker || undefined} backHref={`/${category.slug}/`} backLabel={category.name}>
+      {description && <p class="t-body description">{description}</p>}
+    </PageHead>
 
     <AlbumGrid thumbs={thumbs} base={env.imgBaseUrl} />
 
     <nav class="album-nav t-small" aria-label="Další alba">
-      {prev ? <a rel="prev" href={albumPath(category, prev)}>&larr; {prev.title}</a> : <span></span>}
-      {next ? <a rel="next" href={albumPath(category, next)}>{next.title} &rarr;</a> : <span></span>}
+      {
+        prev ? (
+          <a class="prev" rel="prev" href={albumPath(category, prev)}>
+            <Icon name="arrow-left" />
+            {prev.title}
+          </a>
+        ) : (
+          <span></span>
+        )
+      }
+      {
+        next ? (
+          <a class="next" rel="next" href={albumPath(category, next)}>
+            {next.title}
+            <Icon name="arrow-right" />
+          </a>
+        ) : (
+          <span></span>
+        )
+      }
     </nav>
+
+    <p class="cta">
+      <a class="btn" href="/#kontakt">{ctaLabel(category.slug)}</a>
+    </p>
   </div>
 
   <dialog class="lightbox" data-lightbox aria-label="Prohlížeč fotografií">
@@ -99,34 +114,40 @@ const { prev, next } = catalog.neighbours(album.slug);
     padding: var(--space-4) var(--layout-gutter) var(--space-7);
   }
 
-  .album-head {
-    display: grid;
-    gap: var(--space-2);
-  }
-
-  .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-4);
-    margin: 0;
-    color: var(--color-text-muted);
-  }
-
   .description {
-    max-inline-size: var(--measure);
     margin: 0;
   }
 
+  /* Quiet previous/next row between two hairlines' worth of space: one top hairline, links in muted text. */
   .album-nav {
     display: flex;
     justify-content: space-between;
     gap: var(--space-4);
+    padding-block-start: var(--space-4);
+    border-block-start: var(--border-width) solid var(--color-border);
   }
 
   .album-nav a {
     display: inline-flex;
     align-items: center;
-    min-block-size: var(--target-compact);
+    gap: var(--space-2);
+    min-block-size: var(--target-min);
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .album-nav a:hover {
+    color: var(--color-accent-text);
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-width);
+    text-underline-offset: var(--space-1);
+  }
+
+  .cta {
+    display: flex;
+    justify-content: center;
+    max-inline-size: none; /* base.css limits paragraphs to the text measure; the CTA is centred on the full width */
+    margin: var(--space-4) 0 0;
   }
 
   /* Lightbox: full-viewport modal dialog on the overlay colour. */

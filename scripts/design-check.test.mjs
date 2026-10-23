@@ -125,7 +125,8 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['--out'])).toThrow(/missing/);
   });
   it('selects routes', () => {
-    expect(selectRoutes(null)).toHaveLength(19);
+    expect(selectRoutes(null)).toHaveLength(20);
+    expect(selectRoutes(['/portfolio/'])[0].name).toBe('portfolio');
     expect(selectRoutes(['/kontakt/'])[0].name).toBe('contact');
     expect(selectRoutes(['/x/y/'])[0].name).toBe('x-y');
   });

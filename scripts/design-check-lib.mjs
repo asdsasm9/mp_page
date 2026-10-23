@@ -20,6 +20,7 @@ export const RUNS = 3;
 export const ROUTES = [
   { path: '/', name: 'home' },
   { path: '/svatby/', name: 'category' },
+  { path: '/portfolio/', name: 'portfolio' },
   { path: '/svatby/sedlakovi/', name: 'album' },
   // Album layout fixtures (T-216): 5, 9, 60 and 120 distinct photos; built in fixture mode only (pages/layout-check).
   { path: '/layout-check/5/', name: 'album-5' },

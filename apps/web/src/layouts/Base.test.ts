@@ -6,6 +6,8 @@ import { gzipSync } from 'node:zlib';
 import { SnapshotSchema } from '@mp/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
+import { REVIEWS } from '../content/reviews';
+import { ABOUT, HOME } from '../content/texts';
 import { HASH_REDIRECT_SCRIPT } from '../lib/hash-redirect';
 import { aboutMeta, contactMeta, portfolioMeta } from '../lib/seo';
 import { checkWeight, measureFirstLoad, snapshotImageBytes } from '../lib/weight';
@@ -87,8 +89,8 @@ describe('Home page (built, shared build)', () => {
     expect(html).toMatch(new RegExp(`<meta property="og:image" content="https://www\\.mullnyphotos\\.cz/[^"]*${id}/og\\.jpg">`));
   });
 
-  it('links the three fixture categories from #kategorie with their 480 cover', () => {
-    const cats = section('id="kategorie"');
+  it('links the three fixture categories from #portfolio with their 480 cover', () => {
+    const cats = section('id="portfolio"');
     const hrefs = [...cats.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
     expect(hrefs).toEqual(fixture.categories.map((c) => `/${c.slug}/`));
     for (const c of fixture.categories) {
@@ -104,23 +106,61 @@ describe('Home page (built, shared build)', () => {
     for (const tag of imgs) expect(tag).toMatch(EMPTY_ALT);
   });
 
-  it('shows the pati and anez review images and no other eager image', () => {
-    const reviews = section('<section class="reviews');
-    const cover = (slug: string): string => {
-      const album = fixture.categories.flatMap((c) => c.albums).find((a) => a.slug === slug)!;
-      return album.coverPhotoId!;
-    };
-    expect(reviews).toContain(`${cover('pati')}/480.webp`);
-    expect(reviews).toContain(`${cover('anez')}/480.webp`);
-    expect(reviews).not.toContain('loading="eager"');
+  it('shows the short review text, the full text in a details "Celá recenze", no photos, in the dark band', () => {
+    const reviews = section('id="reference"').replace(/\sdata-astro-cid-[a-z0-9]+(="")?/g, '');
+    expect(reviews).toContain('data-band="dark"');
+    expect(reviews).toContain('Reference');
+    for (const r of REVIEWS) {
+      expect(reviews).toContain(`<p>${r.short}</p>`);
+      expect(reviews).toContain(r.text);
+      expect(reviews).toContain(`${r.name} · `);
+    }
+    expect([...reviews.matchAll(/<details\b/g)]).toHaveLength(REVIEWS.length);
+    expect(reviews).toContain('Celá recenze');
+    expect(imgTags(reviews)).toHaveLength(0);
   });
 
-  it('orders the sections hero, hello, categories, quote, reviews, collage and has no hero button', () => {
-    const marks = ['class="hero"', 'class="hello"', 'id="kategorie"', '<section class="quote', '<section class="reviews', '<section class="collage'];
+  it('orders the sections uvod, o-mne, portfolio, reference, kontakt, with no quote section and no collage', () => {
+    const marks = ['id="uvod"', 'id="o-mne"', 'id="portfolio"', 'id="reference"', 'id="kontakt"'];
     const at = marks.map((m) => html.indexOf(m));
     for (const [i, p] of at.entries()) expect(p, marks[i]).toBeGreaterThan(-1);
     expect(at).toEqual([...at].sort((a, b) => a - b));
+    for (const m of marks) expect(count(new RegExp(m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')), m).toBe(1);
+    expect(html).not.toContain('class="collage"');
+    expect(html).not.toContain('id="kategorie"');
     expect(html).not.toMatch(/class="button"/);
+  });
+
+  it('has the hero kicker with the category names, the h1 text and a button to #kontakt', () => {
+    const hero = section('id="uvod"');
+    expect(hero).toContain('Svatby · Portréty · Párové focení');
+    expect(hero).toMatch(/<h1[^>]*>Focení svateb, portrétů a párových fotek<\/h1>/);
+    expect(hero).toMatch(/<a class="btn"[^>]*href="#kontakt"[^>]*>Poptat termín<\/a>/);
+  });
+
+  it('O mně has the corrected alt texts, lazy images, the details with the long text and the quote, and a link to #kontakt', () => {
+    const about = section('id="o-mne"');
+    expect(about).toContain('alt="Ruce novomanželů s prsteny v pšeničném poli"');
+    expect(about).not.toContain('Fotografka Terezie Müllnerová');
+    const imgs = imgTags(about);
+    expect(imgs).toHaveLength(2);
+    for (const t of imgs) expect(t).toContain('loading="lazy"');
+    expect(about).toContain(HOME.hello.paragraphs[0]!);
+    expect(about).toMatch(/<details[^>]*class="more[^"]*"/);
+    expect(about).toContain(ABOUT.experience.body);
+    expect(about).toContain(HOME.quote);
+    expect(about).toContain('href="#kontakt"');
+  });
+
+  it('Kontakt has the mailto button, Instagram and MyWed with rel and the new-window hint, and no form or tel link', () => {
+    const contact = section('id="kontakt"');
+    expect(contact).toContain('href="mailto:mullnyphotos@gmail.com"');
+    for (const host of ['www.instagram.com', 'mywed.com']) {
+      const tag = new RegExp(`<a\\b[^>]*href="https://${host.replace('.', '\\.')}[^"]*"[^>]*>`).exec(contact)?.[0];
+      expect(tag, host).toContain('rel="noopener noreferrer"');
+    }
+    expect(contact).toContain('(otevře se v novém okně)');
+    expect(contact).not.toMatch(/<form[\s>]|href="tel:/);
   });
 
   it('passes an absolute og:image', () => {

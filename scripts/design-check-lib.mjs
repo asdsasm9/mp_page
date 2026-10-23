@@ -12,7 +12,7 @@ export const THRESHOLDS = {
   cls: 0.1,
 };
 
-export const WIDTHS = [360, 768, 1280];
+export const WIDTHS = [360, 768, 1280, 1920]; // index 1 and 2 are special-cased in design-check.mjs: keep them
 export const REFLOW_WIDTH = 320;
 export const RUNS = 3;
 

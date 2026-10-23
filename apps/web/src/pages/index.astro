@@ -1,9 +1,13 @@
 ---
-// Home: hero (the LCP image), hello text, category cards, quote, reviews (if any), collage.
-// Only the hero image is eager with fetchpriority="high"; every other image is lazy.
+// Home one-pager (WP-12 e): hero (the LCP image), O mně, Portfolio, Reference (if any reviews), Kontakt.
+// Anchors: uvod, o-mne, portfolio, reference, kontakt. Only the hero image is eager with fetchpriority="high".
 import { Image, getImage } from 'astro:assets';
+import CategoryCard from '../components/CategoryCard.astro';
 import Photo from '../components/Photo.astro';
-import { HOME, SITE } from '../content/texts';
+import Section from '../components/Section.astro';
+import About from '../components/sections/About.astro';
+import Contact from '../components/sections/Contact.astro';
+import Hero from '../components/sections/Hero.astro';
 import { REVIEWS } from '../content/reviews';
 import Base from '../layouts/Base.astro';
 import { getCatalog } from '../lib/catalog';
@@ -13,13 +17,6 @@ import { homeCategoryCards, homeHero, homeReviews } from '../lib/home';
 import { SITE_ORIGIN, person, photographerFull, website } from '../lib/jsonld';
 import { homeMeta } from '../lib/seo';
 import hero from '../assets/site/home/main.jpg';
-import hello from '../assets/site/home/hello.jpg';
-import trio1 from '../assets/site/home/trio1.jpg';
-import trio2 from '../assets/site/home/trio2.jpg';
-import trio3 from '../assets/site/home/trio3.jpg';
-import couples from '../assets/site/home/couples.jpg';
-import portraits from '../assets/site/home/portraits.jpg';
-import weddings from '../assets/site/home/weddings.jpg';
 
 const env = resolveEnv(readRawEnv());
 const catalog = await getCatalog(env);
@@ -43,25 +40,17 @@ const ogImage = chosenHero
       height: 630,
       alt: heroAlt,
     }));
-
-const collage = [
-  { src: trio1, alt: 'Portrét ze série fotografií, první snímek' },
-  { src: trio2, alt: 'Portrét ze série fotografií, druhý snímek' },
-  { src: trio3, alt: 'Portrét ze série fotografií, třetí snímek' },
-  { src: weddings, alt: 'Svatební fotografie' },
-  { src: couples, alt: 'Fotografie páru' },
-  { src: portraits, alt: 'Portrétní fotografie' },
-];
 ---
 <Base meta={meta} path="/" ogImage={ogImage} heroHeader jsonLd={[photographerFull(ogImage.url), website(), person(ogImage.url)]}>
   <!-- Must be inline to run before first paint; T-67's CSP gets its sha256 from the postbuild. -->
   <script is:inline slot="head" set:html={HASH_REDIRECT_SCRIPT} />
-  <section class="hero" aria-labelledby="nadpis">
+  <Hero categoryNames={catalog.categories.map((c) => c.name)}>
     {
       chosenHero ? (
-        <Photo photo={chosenHero.photo} base={env.imgBaseUrl} alt={chosenHero.alt} context="hero" priority class="hero-photo" />
+        <Photo slot="image" photo={chosenHero.photo} base={env.imgBaseUrl} alt={chosenHero.alt} context="hero" priority />
       ) : (
         <Image
+          slot="image"
           src={hero}
           alt={heroAlt}
           widths={[480, 960, 1600]}
@@ -73,247 +62,94 @@ const collage = [
         />
       )
     }
-    <div class="hero-text">
-      <h1 id="nadpis" class="t-display">Mullny Photos</h1>
-      <p>{SITE.description}</p>
-    </div>
-  </section>
+  </Hero>
 
-  <section class="hello" aria-labelledby="vitejte">
-    <div class="hello-text">
-      <h2 id="vitejte">{HOME.hello.title}</h2>
-      {HOME.hello.paragraphs.map((p) => <p>{p}</p>)}
-    </div>
-    <Image
-      src={hello}
-      alt="Fotografka Terezie Müllnerová"
-      widths={[480, 960]}
-      sizes="(min-width: 48rem) 40vw, 100vw"
-      format="webp"
-      loading="lazy"
-      decoding="async"
-    />
-  </section>
+  <About />
 
-  <section id="kategorie" class="categories" aria-labelledby="kategorie-nadpis">
-    <h2 id="kategorie-nadpis">{HOME.categoriesTitle}</h2>
-    <ul>
-      {
-        cards.map((card) => (
-          <li>
-            <a href={card.path}>
-              <Photo photo={card.photo} base={env.imgBaseUrl} alt="" context="card" />
-              <span class="card-name t-h3">{card.name}</span>
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </section>
-
-  <section class="quote" aria-label="Citát">
-    <blockquote><p class="t-lead">{HOME.quote}</p></blockquote>
-  </section>
+  {
+    cards.length > 0 && (
+      <Section id="portfolio" title="Portfolio" actionHref="/portfolio/" actionLabel="Celé portfolio">
+        <ul class="cards">
+          {cards.map((card) => (
+            <CategoryCard href={card.path} title={card.name} meta={card.countLabel} photo={card.photo} base={env.imgBaseUrl} />
+          ))}
+        </ul>
+      </Section>
+    )
+  }
 
   {
     reviews.length > 0 && (
-      <section class="reviews" aria-labelledby="recenze">
-        <h2 id="recenze">{HOME.reviewsTitle}</h2>
-        <ul>
-          {reviews.map(({ review, photo, alt }) => (
+      <Section id="reference" title="Reference" band="dark">
+        <ul class="reviews">
+          {reviews.map(({ review, categoryName }) => (
             <li>
               <figure>
-                <Photo photo={photo} base={env.imgBaseUrl} alt={alt} context="review" />
-                <blockquote><p>{review.text}</p></blockquote>
-                <figcaption class="t-caption">{review.name}</figcaption>
+                <blockquote class="t-quote">
+                  <p>{review.short}</p>
+                </blockquote>
+                <figcaption class="t-kicker">
+                  {review.name} · {categoryName}
+                </figcaption>
+                <details class="full">
+                  <summary class="btn-ghost">Celá recenze</summary>
+                  <p class="t-prose">{review.text}</p>
+                </details>
               </figure>
             </li>
           ))}
         </ul>
-      </section>
+      </Section>
     )
   }
 
-  <section class="collage" aria-label="Ukázky fotografií">
-    {
-      collage.map((item) => (
-        <Image
-          src={item.src}
-          alt={item.alt}
-          widths={[480, 960]}
-          sizes="(min-width: 48rem) 33vw, 50vw"
-          format="webp"
-          loading="lazy"
-          decoding="async"
-        />
-      ))
-    }
-  </section>
+  <Contact />
 </Base>
 
 <style>
-  section {
-    max-inline-size: var(--layout-max);
-    margin-inline: auto;
-    padding-inline: var(--layout-gutter);
-    margin-block-start: var(--space-7);
-  }
-
-  ul {
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr)); /* the track maths of the category cover `sizes` (images.ts CROP_BASE) */
+    align-items: start;
+    gap: var(--space-6);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .hero {
+  .reviews {
+    display: grid;
+    gap: var(--space-7);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .reviews li {
     max-inline-size: none;
-    padding-inline: 0;
-    margin-block-start: 0;
-  }
-
-  .hero :global(img) {
-    inline-size: 100%;
-    block-size: auto;
-    background: var(--color-placeholder);
-  }
-
-  /* A chosen photo may be a portrait: it is cropped to one landscape shape, keeping heads in the crop. */
-  .hero :global(img.hero-photo) {
-    aspect-ratio: var(--ratio-card);
-    object-fit: cover;
-    object-position: var(--cover-position);
-  }
-
-  .hero-text {
-    display: grid;
-    justify-items: start;
-    gap: var(--space-3);
-    max-inline-size: var(--layout-max);
-    margin-inline: auto;
-    padding: var(--space-6) var(--layout-gutter) 0;
-  }
-
-  .hello {
-    display: grid;
-    gap: var(--space-5);
-    align-items: center;
-  }
-
-  .hello-text {
-    display: grid;
-    gap: var(--space-3);
-  }
-
-  .hello :global(img),
-  .collage :global(img) {
-    inline-size: 100%;
-    block-size: auto;
-    border-radius: var(--radius-md);
-    background: var(--color-placeholder);
-  }
-
-  .categories h2,
-  .reviews h2 {
-    margin-block-end: var(--space-5);
-  }
-
-  .categories ul {
-    display: grid;
-    gap: var(--space-5);
-  }
-
-  .categories a {
-    display: grid;
-    gap: var(--space-3);
-    text-decoration: none;
-  }
-
-  /* Same pattern as AlbumCard: one cover shape, cropped, so Portréty is not taller than its neighbours. */
-  .categories a :global(img) {
-    aspect-ratio: var(--ratio-card);
-    block-size: auto;
-    object-fit: cover;
-    object-position: var(--cover-position);
-  }
-
-  .collage :global(img) {
-    aspect-ratio: var(--ratio-portrait);
-    object-fit: cover;
-    object-position: var(--cover-position);
-  }
-
-  /* Profile-like: one fixed square size for every review, cropped round, centred above the text. */
-  .reviews :global(img) {
-    inline-size: var(--size-avatar);
-    block-size: var(--size-avatar);
-    aspect-ratio: 1;
-    object-fit: cover;
-    object-position: var(--cover-position);
-    border-radius: var(--radius-full);
-    background: var(--color-placeholder);
-  }
-
-  .card-name {
-    text-decoration: underline;
-    text-decoration-thickness: var(--border-width);
-    text-underline-offset: var(--space-1);
-  }
-
-  .categories a:hover .card-name {
-    text-decoration-thickness: var(--bar-thickness);
-  }
-
-  .collage {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-3);
-  }
-
-  /* Divider after the categories: more space above than between other sections, plus a thin rule. */
-  .quote {
-    margin-block-start: var(--space-8);
-    padding-block-start: var(--space-7);
-    border-block-start: var(--border-width) solid var(--color-border);
-  }
-
-  .quote blockquote p {
-    margin-inline: auto;
-    text-align: center;
-  }
-
-  .reviews ul {
-    display: grid;
-    gap: var(--space-6);
   }
 
   .reviews figure {
     display: grid;
-    justify-items: center;
+    justify-items: start;
     gap: var(--space-4);
     margin: 0;
-    text-align: center;
+  }
+
+  .reviews blockquote {
+    margin: 0;
   }
 
   .reviews figcaption {
-    color: var(--color-text-muted);
+    color: var(--band-dark-muted);
   }
 
-  @media (min-width: 48rem) {
-    .hello {
-      grid-template-columns: 3fr 2fr;
-      gap: var(--space-6);
-    }
+  .full p {
+    padding-block-start: var(--space-3);
+  }
 
-    .categories ul {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .collage {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .reviews ul {
-      grid-template-columns: repeat(2, 1fr);
-    }
+  .full summary:hover {
+    color: var(--band-dark-accent);
+    text-decoration-color: var(--band-dark-accent);
   }
 </style>

@@ -97,6 +97,7 @@ describe('home data', () => {
     expect(out.map((r) => r.review.albumId)).toEqual(['pati', 'anez']);
     for (const r of out) {
       expect(r.photo.id).toBe(catalog.coverOf(catalog.albumBySlug.get(r.review.albumId)!.album)!.id);
+      expect(r.categoryName).toBe(catalog.albumBySlug.get(r.review.albumId)!.category.name);
     }
   });
 

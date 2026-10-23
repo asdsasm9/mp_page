@@ -24,6 +24,8 @@ export interface HomeReview {
   review: Review;
   photo: SnapshotPhoto;
   alt: string;
+  /** Name of the category the review's album belongs to (the name line reads `Name · Category`). */
+  categoryName: string;
 }
 
 export interface HomeHero {
@@ -69,6 +71,7 @@ export function homeReviews(catalog: Catalog, reviews: readonly Review[]): HomeR
     out.push({
       review,
       photo,
+      categoryName: entry.category.name,
       alt: effectiveAlt(photo, {
         albumTitle: entry.album.title,
         categoryKey: entry.category.slug,

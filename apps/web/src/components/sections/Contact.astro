@@ -1,0 +1,71 @@
+---
+// Kontakt (WP-12 e): the existing contact text, an e-mail button and links to Instagram and MyWed.
+// No form, no phone number (form-action 'none' stays in the CSP).
+import { CONTACT, INSTAGRAM_HANDLE, INSTAGRAM_URL, MAIL_ADDRESS, MAIL_URL, MYWED_URL } from '../../content/texts';
+import Kicker from '../Kicker.astro';
+
+const links = [
+  { href: INSTAGRAM_URL, label: `Instagram ${INSTAGRAM_HANDLE}`, external: true },
+  { href: MYWED_URL, label: 'MyWed', external: true },
+];
+---
+<section id="kontakt" class="contact" aria-labelledby="kontakt-nadpis">
+  <div class="inner">
+    <div class="text">
+      <Kicker>{CONTACT.contact.title}</Kicker>
+      <h2 id="kontakt-nadpis" class="t-title">Napište mi</h2>
+      <p class="t-prose">{CONTACT.contact.body}</p>
+    </div>
+    <div class="actions">
+      <a class="btn" href={MAIL_URL}>Napsat e-mail <span class="visually-hidden">({MAIL_ADDRESS})</span></a>
+      <ul>
+        {
+          links.map((l) => (
+            <li>
+              <a class="btn-ghost" href={l.href} target="_blank" rel="noopener noreferrer">
+                {l.label}<span class="visually-hidden"> (otevře se v novém okně)</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="t-small">{CONTACT.instagram.body}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .contact {
+    padding-block: var(--section-pad);
+    background: var(--color-surface);
+  }
+
+  .inner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18.75rem, 100%), 1fr));
+    gap: var(--section-gap-lg);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding-inline: var(--layout-gutter);
+  }
+
+  .text,
+  .actions {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: var(--space-4);
+  }
+
+  .actions ul {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .actions p {
+    color: var(--color-text-muted);
+  }
+</style>

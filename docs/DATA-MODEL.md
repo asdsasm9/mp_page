@@ -232,9 +232,10 @@ redeploy to publish the field; no Worker source changed.
 It also has a top-level `heroPhotoId` (string or null, default null; T-285): the home hero photo. The schema requires
 it to be a photo of the snapshot. `buildSnapshot` takes it from the optional `siteSettings` source row and emits it
 only when the photo is in a published album of a visible category; otherwise null, never an error. The web resolves
-it with `catalog.heroPhoto()` and falls back to the bundled `main.jpg`. OPEN: the Worker (`loadCatalogRows` in
-`apps/api/src/publish-service.ts`) reads each table by name, so it must also read `site_settings` and pass it as
-`siteSettings` before the field can be published; until then published snapshots keep `heroPhotoId: null`.
+it with `catalog.heroPhoto()` and falls back to the bundled `main.jpg`. The Worker (`loadCatalogRows` in `apps/api/src/publish-service.ts`, T-289) also
+reads `site_settings` and passes it as `siteSettings`; a missing table, failed read or missing row counts as null, so
+publishing never breaks. It needs a Worker redeploy and migration 20261023110000 applied live; until then published
+snapshots keep `heroPhotoId: null`.
 
 ## Seed and fixtures
 

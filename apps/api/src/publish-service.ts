@@ -16,6 +16,7 @@ import {
   type AlbumRow,
   type CategoryRow,
   type PhotoRow,
+  type SiteSettingsRow,
   type Snapshot,
   type StorageAdapter,
   type UrlHistoryRow,
@@ -37,6 +38,7 @@ export interface CatalogRows {
   albums: AlbumRow[];
   photos: PhotoRow[];
   urlHistory: UrlHistoryRow[];
+  siteSettings?: SiteSettingsRow | null;
 }
 
 export interface PublishServiceDeps {
@@ -59,12 +61,14 @@ export async function loadCatalogRows(supabase: SupabaseClient, jwt: string): Pr
     if (!res.ok) throw new PublishServiceError(res.code);
     return res.data;
   };
-  return {
-    categories: await read<CategoryRow>('categories'),
-    albums: await read<AlbumRow>('albums'),
-    photos: await read<PhotoRow>('photos'),
-    urlHistory: await read<UrlHistoryRow>('url_history'),
-  };
+  const categories = await read<CategoryRow>('categories');
+  const albums = await read<AlbumRow>('albums');
+  const photos = await read<PhotoRow>('photos');
+  const urlHistory = await read<UrlHistoryRow>('url_history');
+  // Optional: a missing table (migration not applied yet), a failed read or no row all mean "no hero chosen".
+  const settings = await supabase.select<SiteSettingsRow>('site_settings', { select: '*', order: 'id.asc' }, jwt);
+  const siteSettings = settings.ok ? (settings.data[0] ?? null) : null;
+  return { categories, albums, photos, urlHistory, siteSettings };
 }
 
 const encode = (value: unknown): Uint8Array => new TextEncoder().encode(JSON.stringify(value));

@@ -166,6 +166,11 @@ describe('json-ld', () => {
     expect(checkJsonLd(p('404.html', ld(crumbs)))).toEqual(['JSON-LD type BreadcrumbList not expected on this page']);
     expect(checkJsonLd(p('cookies/index.html', ld({ '@type': 'ImageGallery' }), ld(crumbs))).join()).toMatch(/ImageGallery not expected/);
   });
+  it('home may carry Person but still rejects other types', () => {
+    const base = [ld({ '@type': 'Photographer' }), ld({ '@type': 'WebSite' })];
+    expect(checkJsonLd(p('index.html', ...base, ld({ '@type': 'Person' })))).toEqual([]);
+    expect(checkJsonLd(p('index.html', ...base, ld({ '@type': 'ImageGallery' }))).join()).toMatch(/ImageGallery not expected/);
+  });
   it('about allows a Photographer entity', () =>
     expect(checkJsonLd(p('o-mne/index.html', ld({ '@type': 'Person' }), ld(crumbs), ld({ '@type': 'Photographer' })))).toEqual([]));
 });
@@ -207,6 +212,13 @@ describe('site wide', () => {
     expect(checkSitemapCanonical(s.pages, s.sitemapXml.replace('<url><loc>' + O + '/svatby/x/</loc></url>', '')).join()).toMatch(/not in the sitemap/);
     expect(checkSitemapCanonical(s.pages, s.sitemapXml.replace('</urlset>', `<url><loc>${O}/ghost/</loc></url></urlset>`)).join()).toMatch(/ghost/);
     expect(checkSitemapCanonical(s.pages, null)).toEqual(['sitemap.xml is missing']);
+    // Redirect-only pages (exact _redirects source) are exempt; other pages are not.
+    const red = { path: 'o-mne/index.html', html: `<html><head><link rel="canonical" href="${O}/o-mne/"></head></html>` };
+    expect(checkSitemapCanonical([...s.pages, red], s.sitemapXml).join()).toMatch(/o-mne\/ is not in the sitemap/);
+    expect(checkSitemapCanonical([...s.pages, red], s.sitemapXml, '/o-mne/ /#o-mne 301\n')).toEqual([]);
+    expect(
+      checkSitemapCanonical([...s.pages, red], s.sitemapXml.replace('<url><loc>' + O + '/svatby/x/</loc></url>', ''), '/o-mne/ /#o-mne 301\n').join(),
+    ).toMatch(/svatby\/x\/ is not in the sitemap/);
   });
 });
 

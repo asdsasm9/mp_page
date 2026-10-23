@@ -7,6 +7,7 @@ import type { AlbumRow, CategoryRow, PhotoRow } from '@mp/shared';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Modal } from '../components/Modal';
+import { Notice } from '../components/Notice';
 import { PhotoGrid } from '../components/PhotoGrid';
 import { StaleNotice } from '../components/StaleNotice';
 import { useToast } from '../components/Toast';
@@ -162,12 +163,12 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
 
   const deleteFailure =
     deleteFailedIds.length > 0 ? (
-      <div className="notice notice-error" role="alert">
+      <Notice as="div">
         <p>{cs.delete.failed}</p>
         <button type="button" className="button" disabled={!canMutate || retrying} onClick={() => void retryDelete()}>
           {retrying ? cs.delete.progress : glossary.retry}
         </button>
-      </div>
+      </Notice>
     ) : null;
 
   if (photos.length === 0)
@@ -217,7 +218,7 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
         isStale(reorder.failure.error) ? (
           <StaleNotice entity="photo" onReload={reorder.dismissFailure} />
         ) : (
-          <div className="notice notice-error" role="alert">
+          <Notice as="div">
             <p>{cs.reorder.failed}</p>
             <button
               type="button"
@@ -227,16 +228,14 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
             >
               {glossary.retry}
             </button>
-          </div>
+          </Notice>
         )
       ) : null}
       {deleteFailure}
       {actionError === null ? null : isStale(actionError) ? (
         <StaleNotice entity="album" onReload={() => setActionError(null)} />
       ) : (
-        <p className="notice notice-error" role="alert">
-          {errorMessage(actionError)}
-        </p>
+        <Notice>{errorMessage(actionError)}</Notice>
       )}
       {selecting ? (
         <div className="selection-bar" role="region" aria-label={cs.photos.selectionBar}>

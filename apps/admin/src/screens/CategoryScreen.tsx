@@ -7,7 +7,9 @@ import { Breadcrumb } from '../components/Breadcrumb';
 import { CoverThumb } from '../components/CoverThumb';
 import { IconButton } from '../components/IconButton';
 import { LoadFailure } from '../components/LoadFailure';
+import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/Page';
+import { PageLoading } from '../components/PageLoading';
 import { SortableList } from '../components/SortableList';
 import { StaleNotice } from '../components/StaleNotice';
 import { albumActionMessage, useAlbumActions } from '../data/albumActions';
@@ -101,9 +103,7 @@ function CategoryBody({ category }: { category: CategoryRow }) {
     );
   } else if (!albums.data) {
     list = (
-      <p role="status" aria-busy="true" className="page-note">
-        {cs.data.loading}
-      </p>
+      <PageLoading>{cs.data.loading}</PageLoading>
     );
   } else if (own.length === 0) {
     list = (
@@ -211,9 +211,7 @@ function CategoryBody({ category }: { category: CategoryRow }) {
       {actionError === null ? null : isStale(actionError) ? (
         <StaleNotice entity="album" onReload={() => setActionError(null)} />
       ) : (
-        <p className="notice notice-error" role="alert">
-          {albumActionMessage(actionError)}
-        </p>
+        <Notice>{albumActionMessage(actionError)}</Notice>
       )}
       {list}
       {dialog?.kind === 'new' ? (
@@ -277,9 +275,7 @@ export function CategoryScreen() {
             </p>
           </>
         ) : (
-          <p role="status" aria-busy="true" className="page-note">
-            {cs.data.loading}
-          </p>
+          <PageLoading>{cs.data.loading}</PageLoading>
         )}
       </div>
     );

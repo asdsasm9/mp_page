@@ -3,6 +3,7 @@ import type { AlbumRow } from '@mp/shared';
 import { useId } from 'react';
 import { Field } from '../components/Field';
 import { Modal } from '../components/Modal';
+import { Notice } from '../components/Notice';
 import { StaleNotice } from '../components/StaleNotice';
 import { ALBUM_LIMITS } from '../data/albumFields';
 import { useCanMutate } from '../data/health';
@@ -20,12 +21,12 @@ export function SaveStatus({ autosave }: { autosave: Autosave }) {
         {autosave.status === 'saving' ? cs.album.saving : autosave.status === 'saved' ? cs.album.saved : ''}
       </p>
       {autosave.failures.length > 0 ? (
-        <div className="notice notice-error" role="alert">
+        <Notice as="div">
           <p>{cs.data.saveFailed}</p>
           <button type="button" className="button" disabled={!canMutate} onClick={autosave.retry}>
             {glossary.retry}
           </button>
-        </div>
+        </Notice>
       ) : null}
       {autosave.stale ? <StaleNotice entity="album" onReload={autosave.reload} /> : null}
     </div>

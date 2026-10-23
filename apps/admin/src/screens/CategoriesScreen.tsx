@@ -5,7 +5,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IconButton } from '../components/IconButton';
 import { LoadFailure } from '../components/LoadFailure';
+import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/Page';
+import { PageLoading } from '../components/PageLoading';
 import { SortableList } from '../components/SortableList';
 import { StaleNotice } from '../components/StaleNotice';
 import { StorageBar } from '../components/StorageBar';
@@ -110,9 +112,7 @@ export function CategoriesScreen() {
     );
   } else if (!categories.data) {
     body = (
-      <p role="status" aria-busy="true" className="page-note">
-        {cs.data.loading}
-      </p>
+      <PageLoading>{cs.data.loading}</PageLoading>
     );
   } else if (rows.length === 0) {
     body = (
@@ -198,9 +198,7 @@ export function CategoriesScreen() {
       {actionError === null ? null : isStale(actionError) ? (
         <StaleNotice entity="category" onReload={() => setActionError(null)} />
       ) : (
-        <p className="notice notice-error" role="alert">
-          {errorMessage(actionError)}
-        </p>
+        <Notice>{errorMessage(actionError)}</Notice>
       )}
       {body}
       {dialog?.kind === 'create' ? (

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { LoadFailure } from '../components/LoadFailure';
 import { Modal } from '../components/Modal';
+import { Notice } from '../components/Notice';
+import { PageLoading } from '../components/PageLoading';
 import { useDocumentTitle } from '../components/Page';
 import { StorageBar } from '../components/StorageBar';
 import { buildBreakdown, photoLocations } from '../data/breakdown';
@@ -35,9 +37,7 @@ function Breakdown({ albums }: { albums: AlbumRow[] }) {
 
   if (!view.complete) {
     return (
-      <p className="page-note" role="status" aria-busy="true">
-        {cs.data.loading}
-      </p>
+      <PageLoading>{cs.data.loading}</PageLoading>
     );
   }
   if (view.rows.length === 0) return <p className="page-note">{t.breakdownEmpty}</p>;
@@ -119,7 +119,7 @@ function Report({
 
   if (isClean(report)) {
     return (
-      <div className="notice" role="status">
+      <Notice variant="info" as="div">
         <p>
           <strong>{t.matches}</strong>
         </p>
@@ -129,7 +129,7 @@ function Report({
             size: formatBytes(report.db.bytes),
           })}
         </p>
-      </div>
+      </Notice>
     );
   }
 
@@ -290,9 +290,7 @@ export function StorageScreen() {
         ) : albums.data ? (
           <Breakdown albums={albumRows} />
         ) : (
-          <p className="page-note" role="status" aria-busy="true">
-            {cs.data.loading}
-          </p>
+          <PageLoading>{cs.data.loading}</PageLoading>
         )}
       </section>
 
@@ -325,18 +323,18 @@ export function StorageScreen() {
             : null}
         </div>
         {check.kind === 'failed' ? (
-          <div className="notice notice-error" role="alert">
+          <Notice as="div">
             <p>{t.checkFailed}</p>
             <p className="page-note">{errorMessage(check.error)}</p>
             <button type="button" className="button" onClick={() => void runCheck()}>
               {glossary.retry}
             </button>
-          </div>
+          </Notice>
         ) : null}
         {cleanup.kind === 'failed' ? (
-          <p className="notice notice-error" role="alert">
+          <Notice>
             {t.cleanupFailed} {errorMessage(cleanup.error)}
-          </p>
+          </Notice>
         ) : null}
         {report ? (
           <Report

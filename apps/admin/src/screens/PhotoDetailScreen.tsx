@@ -5,7 +5,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { Field } from '../components/Field';
 import { LoadFailure } from '../components/LoadFailure';
+import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/Page';
+import { PageLoading } from '../components/PageLoading';
 import { StaleNotice } from '../components/StaleNotice';
 import { useToast } from '../components/Toast';
 import { captionProblem, checkAlt } from '../data/altText';
@@ -140,16 +142,14 @@ function TextForm({ photo, flushRef }: { photo: PhotoRow; flushRef: Flush }) {
         }}
       />
       {blocked ? (
-        <p className="notice notice-error" role="alert">
-          {cs.photos.detail.unsavedBlocked}
-        </p>
+        <Notice>{cs.photos.detail.unsavedBlocked}</Notice>
       ) : null}
       {failure === null ? null : isStale(failure) ? (
         <StaleNotice entity="photo" onReload={() => setFailure(null)} />
       ) : (
-        <div className="notice notice-error" role="alert">
+        <Notice as="div">
           <p>{errorMessage(failure)}</p>
-        </div>
+        </Notice>
       )}
       <div className="dialog-actions">
         <button
@@ -240,9 +240,7 @@ function PhotoBody({ album, photos, photo }: { album: AlbumRow; photos: readonly
       {coverError === null ? null : isStale(coverError) ? (
         <StaleNotice entity="album" onReload={() => setCoverError(null)} />
       ) : (
-        <p className="notice notice-error" role="alert">
-          {errorMessage(coverError)}
-        </p>
+        <Notice>{errorMessage(coverError)}</Notice>
       )}
       <div className="photo-detail">
         <div className="photo-preview" style={photo.dominant_color ? { backgroundColor: photo.dominant_color } : undefined}>
@@ -315,9 +313,7 @@ export function PhotoDetailScreen() {
             </p>
           </>
         ) : (
-          <p role="status" aria-busy="true" className="page-note">
-            {cs.data.loading}
-          </p>
+          <PageLoading>{cs.data.loading}</PageLoading>
         )}
       </Frame>
     );

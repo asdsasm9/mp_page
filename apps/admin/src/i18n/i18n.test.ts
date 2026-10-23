@@ -3,7 +3,7 @@ import { WORKER_ERROR_CODES } from '@mp/shared';
 import { describe, expect, it } from 'vitest';
 import { ApiError, AuthError, CatalogError, NetworkError, UploadHttpError } from '../ports/errors';
 import { cs } from './cs';
-import { formatBytes, formatCount, formatDateTime, plural } from './format';
+import { formatBytes, formatCount, formatPragueDateTime, plural } from './format';
 import { MESSAGE_CODES, errorCode, errorMessage, messageForCode } from './messages';
 
 const CODE_LIKE = /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b|\b[A-Z]{4,}\b/;
@@ -118,9 +118,9 @@ describe('plural and dates', () => {
   });
 
   it('formats dates like the spec', () => {
-    expect(formatDateTime(new Date(2026, 9, 19, 14, 32))).toBe('19. 10. 2026 14:32');
-    expect(formatDateTime(new Date(2026, 0, 5, 7, 5))).toBe('5. 1. 2026 07:05');
-    expect(formatDateTime('not a date')).toBe('');
+    expect(formatPragueDateTime(new Date(Date.UTC(2026, 9, 19, 12, 32)))).toBe('19. 10. 2026 14:32');
+    expect(formatPragueDateTime(new Date(Date.UTC(2026, 0, 5, 6, 5)))).toBe('5. 1. 2026 07:05');
+    expect(formatPragueDateTime('not a date')).toBe('');
   });
 });
 

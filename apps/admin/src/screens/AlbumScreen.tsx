@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { LoadFailure } from '../components/LoadFailure';
+import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/Page';
+import { PageLoading } from '../components/PageLoading';
 import { StaleNotice } from '../components/StaleNotice';
 import { UploadDropZone } from '../components/UploadDropZone';
 import { albumActionMessage, useAlbumActions } from '../data/albumActions';
@@ -165,9 +167,7 @@ function AlbumBody({
       {actionError === null ? null : isStale(actionError) ? (
         <StaleNotice entity="album" onReload={() => setActionError(null)} />
       ) : (
-        <p className="notice notice-error" role="alert">
-          {albumActionMessage(actionError)}
-        </p>
+        <Notice>{albumActionMessage(actionError)}</Notice>
       )}
       {album.published ? null : <p className="page-note">{cs.album.draftHint}</p>}
       <SaveStatus autosave={autosave} />
@@ -223,9 +223,7 @@ export function AlbumScreen() {
             </p>
           </>
         ) : (
-          <p role="status" aria-busy="true" className="page-note">
-            {cs.data.loading}
-          </p>
+          <PageLoading>{cs.data.loading}</PageLoading>
         )}
       </div>
     );

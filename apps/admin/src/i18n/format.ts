@@ -39,13 +39,6 @@ export function fill(template: string, values: Record<string, string | number>):
 
 const two =(n: number) => String(n).padStart(2, '0');
 
-/** "19. 10. 2026 14:32" in the browser's local time; empty text for an invalid date. */
-export function formatDateTime(value: Date | string | number): string {
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} ${two(d.getHours())}:${two(d.getMinutes())}`;
-}
-
 /** Last Sunday of a month (UTC date of month `m`, 0-based) at 01:00 UTC: the EU summer-time switch instant. */
 function euSwitch(year: number, month: number): number {
   const lastDay = new Date(Date.UTC(year, month + 1, 0));
@@ -67,11 +60,4 @@ export function formatPragueDateTime(value: Date | string | number): string {
 export function formatShotOn(value: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   return m ? `${Number(m[3])}. ${Number(m[2])}. ${m[1]}` : value;
-}
-
-/** "19. 10. 2026". */
-export function formatDate(value: Date | string | number): string {
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
 }

@@ -3,6 +3,7 @@ import type { AlbumRow, PhotoRow } from '@mp/shared';
 import { useId, useState } from 'react';
 import { DialogActions, DialogButton } from '../components/DialogActions';
 import { Modal } from '../components/Modal';
+import { Notice } from '../components/Notice';
 import { useToast } from '../components/Toast';
 import { useAlbumActions } from '../data/albumActions';
 import { useAlbumDeleter, usePhotoDeleter, type DeleteOutcome } from '../data/deleteActions';
@@ -139,10 +140,10 @@ export function DeleteAlbumDialog({ album, photoCount: openedWith, onClose, onDe
         />
       </div>
       {failure ? (
-        <p className="notice notice-error" role="alert">
+        <Notice>
           {cs.delete.failed}
           {error !== null ? ` ${errorMessage(error)}` : ''}
-        </p>
+        </Notice>
       ) : null}
       <DialogActions busy={deleting} onClose={onClose}>
         <DialogButton

@@ -3,6 +3,7 @@ import type { AlbumRow, CategoryRow } from '@mp/shared';
 import { useId, useState } from 'react';
 import { DialogActions, DialogButton } from '../components/DialogActions';
 import { Modal } from '../components/Modal';
+import { Notice } from '../components/Notice';
 import { useConfirmAction } from '../components/useConfirmAction';
 import { useToast } from '../components/Toast';
 import { groupAlbums } from '../data/albumSearch';
@@ -89,9 +90,7 @@ export function MovePhotosDialog({ album, photoIds, categories, albums, onClose,
           {failure === null ? null : isStale(failure) ? (
             <StaleNotice entity="photo" onReload={onClose} />
           ) : (
-            <p className="notice notice-error" role="alert">
-              {errorMessage(failure)}
-            </p>
+            <Notice>{errorMessage(failure)}</Notice>
           )}
           <DialogActions busy={saving} onClose={onClose}>
             <DialogButton

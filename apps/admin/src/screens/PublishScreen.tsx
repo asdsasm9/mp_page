@@ -7,6 +7,7 @@ import { ChangesDialog } from './ChangesDialog';
 import { isPublishFailure, usePublishFlow, type PublishPhase } from '../data/publish';
 import { useDocumentTitle } from '../components/Page';
 import { LoadFailure } from '../components/LoadFailure';
+import { Notice } from '../components/Notice';
 import { cs } from '../i18n/cs';
 import { fill, formatCount, formatPragueDateTime, plural } from '../i18n/format';
 import { errorMessage } from '../i18n/messages';
@@ -136,9 +137,7 @@ export function PublishScreen() {
             </p>
           ) : null}
           {failure ? (
-            <div className="notice notice-error" role="alert">
-              {failure}
-            </div>
+            <Notice as="div">{failure}</Notice>
           ) : null}
         </section>
       )}

@@ -5,5 +5,5 @@
     "types": ["node"],
     "noUncheckedIndexedAccess": true
   },
-  "include": ["migrate-legacy.ts", "migrate-legacy/**/*.ts"]
+  "include": ["migrate-legacy.ts", "migrate-legacy/**/*.ts", "photo-quality-measure.ts", "photo-quality/**/*.ts"]
 }

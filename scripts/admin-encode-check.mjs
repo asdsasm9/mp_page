@@ -1,7 +1,8 @@
 // admin-encode-check (WP5-20): runs the real admin encoder (apps/admin/src/encode, canvasSurface.ts) in Chrome on sharp
 // fixtures and checks what it produced: file set == planUploadFiles, magic bytes, sizes within 1 px of variantPlan,
 // master <= 3000 px and never upscaled, EXIF orientation applied, no Exif/GPS in master / 1600 JPEG / OG, dominant colour.
-// Usage: CHROME_PATH=/path/to/chrome npm run admin-encode-check [-- --break-exif] [--out dir]
+// Usage: npm run admin-encode-check [-- --break-exif] [--out dir] [--report]   (Chrome is found automatically)
+//   --report      also prints a table of the byte size, dimensions and JPEG chroma subsampling of every produced file
 //   --break-exif  injects an Exif+GPS segment into every produced 1600 JPEG before checking; the run must then FAIL (exit 1)
 //   --out dir     also writes every produced file there for a look
 // Exit 0 pass, 1 fail, 2 skipped (no Chrome). Fixtures and the bundle live in .tmp/admin-encode/ (gitignored).
@@ -52,6 +53,7 @@ const fixtures = await generateFixtures(join(site, 'fixtures'));
 
 const failures = [];
 const rows = [];
+const reportFiles = [];
 const { server, origin } = await listen(createDistServer(site));
 const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox'] });
 try {
@@ -83,6 +85,9 @@ try {
       mkdirSync(dir, { recursive: true });
       for (const f of res.files) writeFileSync(join(dir, f.kind + (f.tier ? `-${f.tier}` : '') + (f.kind === 'webp' ? '.webp' : '.jpg')), f.buf);
     }
+    for (const f of res.files) {
+      reportFiles.push({ name: fx.name, file: f.kind + (f.tier ? `-${f.tier}` : ''), w: f.w, h: f.h, bytes: f.buf.length, chroma: f.kind === 'webp' ? '-' : jpegChroma(f.buf) });
+    }
     const bad = judgePhoto(fx, res);
     failures.push(...bad);
     const get = (k) => res.files.find((f) => f.kind === k);
@@ -111,6 +116,30 @@ try {
 } finally {
   await browser.close();
   server.close();
+}
+
+// JPEG chroma subsampling from the first SOF segment: luma sampling factors 2x2 with chroma 1x1 is 4:2:0.
+function jpegChroma(buf) {
+  for (let i = 2; i + 9 < buf.length; ) {
+    if (buf[i] !== 0xff) return '?';
+    const marker = buf[i + 1];
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      if (buf[i + 9] !== 3) return `${buf[i + 9]} comp`;
+      const luma = buf[i + 11];
+      const chroma = buf[i + 14];
+      return luma === 0x22 && chroma === 0x11 ? '4:2:0' : luma === 0x11 && chroma === 0x11 ? '4:4:4' : `0x${luma.toString(16)}/0x${chroma.toString(16)}`;
+    }
+    i += 2 + buf.readUInt16BE(i + 2);
+  }
+  return '?';
+}
+
+if (args.includes('--report')) {
+  // Bytes per produced file in the real browser encoder (WP-10 / T-265); compare with docs/PHOTO-QUALITY-MEASUREMENTS.md.
+  console.log('\nBROWSER REPORT (bytes of every produced file, Chrome canvas encoder)');
+  console.log('| fixture | file | size | bytes | chroma |');
+  console.log('|---|---|---|---|---|');
+  for (const r of reportFiles) console.log(`| ${r.name} | ${r.file} | ${r.w}x${r.h} | ${r.bytes} | ${r.chroma} |`);
 }
 
 const cols = [

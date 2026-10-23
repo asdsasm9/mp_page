@@ -59,5 +59,9 @@ supabase/.temp/
 migration-report/
 legacy-image-redirects.txt
 
+# Photo-quality measurement (npm run photo-quality): the photographer's originals (privacy: never committed) and the contact sheets
+samples/originals/
+samples/contact-sheets/
+
 # Kept so an old local backup folder (the removed masters backup tool wrote here) is never committed
 backup-out/

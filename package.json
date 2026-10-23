@@ -29,6 +29,7 @@
     "fixtures": "tsx scripts/gen-fixtures.ts",
     "site-images:import": "node scripts/site-images-import.mjs",
     "dev-images": "tsx scripts/dev-images.ts",
+    "photo-quality": "tsx scripts/photo-quality-measure.ts",
     "migrate-legacy": "tsx scripts/migrate-legacy.ts"
   },
   "devDependencies": {

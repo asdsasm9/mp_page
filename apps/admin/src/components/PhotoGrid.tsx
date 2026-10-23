@@ -23,6 +23,8 @@ import { useRef, useState, type PointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { hasNoAlt } from '../data/altText';
 import { photoWebpUrl } from '../data/images';
+import { photoQuality } from '../data/photoQuality';
+import { QualityBadges } from './QualityBadge';
 import { useCanMutate } from '../data/health';
 import { cs } from '../i18n/cs';
 import { fill } from '../i18n/format';
@@ -185,6 +187,7 @@ function Tile(props: TileProps) {
       <div className="photo-badges">
         {isCover ? <span className="photo-badge">{cs.photos.cover}</span> : null}
         {props.deleteFailed ? <span className="photo-badge photo-badge-danger">{cs.delete.tileFailed}</span> : null}
+        <QualityBadges quality={photoQuality(photo)} hideGood className="quality-badge-tile" />
         {hasNoAlt(photo) ? (
           <span className="photo-dot" role="img" aria-label={cs.photos.altMissingDot} title={cs.photos.altMissingDot} />
         ) : null}

@@ -569,6 +569,37 @@ async function runProfile(browser, profile) {
       await checkpoint(ctx, 'upload page', { shot: false });
     });
 
+    // ---- photo quality verdicts (T-260): the seeded album with low, good, missing-720 and portrait examples
+    await step('quality verdicts', async () => {
+      const q = await world(
+        page,
+        `(w) => {
+          const photos = w.snapshot().photos;
+          const missing = photos.find((p) => p.width === 3000 && !p.variants.webp.some((e) => e.tier === 720));
+          const good = photos.find((p) => p.album_id === missing.album_id && p.width === 3000 && p.variants.webp.some((e) => e.tier === 720));
+          return { album: missing.album_id, count: photos.filter((p) => p.album_id === missing.album_id).length, missing: missing.id, good: good.id };
+        }`,
+      );
+      await spaGo(page, `/alba/${q.album}`);
+      await waitTiles(page, q.count);
+      await waitText(page, /z \d+ fotek je v nízkém rozlišení/);
+      for (const label of ['Nízké rozlišení', 'Chybí varianta']) await find(page, '.photo-tile .quality-badge', new RegExp(`^${label}$`));
+      await sleep(300);
+      await checkpoint(ctx, 'quality grid mixed');
+      await clickBy(ctx, 'button', /^Jen nízké rozlišení$/);
+      await page.waitForFunction(() => [...document.querySelectorAll('button')].some((b) => b.textContent === 'Jen nízké rozlišení' && b.getAttribute('aria-pressed') === 'true'), { timeout: 10000 });
+      await sleep(300);
+      await checkpoint(ctx, 'quality grid filtered');
+      await clickBy(ctx, 'button', /^Jen nízké rozlišení$/);
+      await spaGo(page, `/alba/${q.album}/foto/${q.good}`);
+      await find(page, '.quality-facts .quality-badge', /^Dobré$/);
+      await checkpoint(ctx, 'quality detail good');
+      await spaGo(page, `/alba/${q.album}/foto/${q.missing}`);
+      await find(page, '.quality-facts .quality-badge', /^Chybí varianta$/);
+      await waitText(page, /Chybí: webp720/);
+      await checkpoint(ctx, 'quality detail missing');
+    });
+
     // ---- sticky header (T-245): stays at the top while scrolling, no Úložiště link in the nav, focus is not obscured (WCAG 2.4.11)
     await step('sticky header', async () => {
       await spaGo(page, urls.album);

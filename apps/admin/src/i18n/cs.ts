@@ -330,6 +330,23 @@ export const cs = {
     dropZone: 'Přetáhněte sem fotky nebo klikněte pro výběr',
     photosEmpty: 'V albu zatím nejsou žádné fotky.',
   },
+  /** Photo quality verdict and facts (WP-10, T-260; the badge is shared with the storage screen, T-263). */
+  quality: {
+    verdict: { low: 'Nízké rozlišení', good: 'Dobré', missing: 'Chybí varianta' },
+    heading: 'Kvalita fotky',
+    masterSize: 'Rozměr hlavního souboru',
+    pixels: '{w} × {h} px',
+    masterBytes: 'Velikost hlavního souboru',
+    overviewBytes: 'Velikost náhledu',
+    tiers: 'Existující velikosti',
+    tiersUnit: 'px',
+    missingList: 'Chybí: {list}',
+    lowHint: 'Delší strana originálu má méně než {min} px, na velkém displeji bude fotka měkká.',
+    summary: '{low} z {total} {unit} je v nízkém rozlišení',
+    summaryUnit: ['fotky', 'fotek', 'fotek'],
+    summaryNone: 'Žádná fotka v albu není v nízkém rozlišení.',
+    filter: 'Jen nízké rozlišení',
+  },
   /** Photo grid, tile menu, selection and photo detail (ADMIN-UX 3.4, F2, F3, F7). {n}, {total}, {count}, {max} are filled in. */
   photos: {
     gridLabel: 'Fotky v albu',

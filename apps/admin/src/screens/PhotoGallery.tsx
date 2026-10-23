@@ -14,6 +14,7 @@ import { useToast } from '../components/Toast';
 import { usePhotoReorder } from '../components/usePhotoReorder';
 import { hasNoAlt } from '../data/altText';
 import { isStale } from '../data/concurrency';
+import { isLowResolution } from '../data/photoQuality';
 import { useCanMutate } from '../data/health';
 import type { SortUpdate } from '../data/order';
 import { usePhotoActions } from '../data/photoActions';
@@ -85,6 +86,7 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
   const actions = usePhotoActions();
   const reorder = usePhotoReorder(photos);
   const [filterOn, setFilterOn] = useState(false);
+  const [lowOn, setLowOn] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -98,8 +100,17 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
 
   const displayed = reorder.displayed;
   const missing = photos.filter(hasNoAlt);
-  const filtering = filterOn && missing.length > 0;
-  const visibleIds = filtering ? new Set(missing.map((p) => p.id)) : null;
+  const lowRes = photos.filter(isLowResolution);
+  const altFiltering = filterOn && missing.length > 0;
+  const lowFiltering = lowOn && lowRes.length > 0;
+  const filtering = altFiltering || lowFiltering;
+  const visibleIds = filtering
+    ? new Set(
+        photos
+          .filter((p) => (!altFiltering || hasNoAlt(p)) && (!lowFiltering || isLowResolution(p)))
+          .map((p) => p.id),
+      )
+    : null;
   const positionIn = (rows: readonly PhotoRow[], id: string) => rows.findIndex((p) => p.id === id) + 1;
   const announce = (id: string) => (rows: PhotoRow[]) =>
     fill(cs.reorder.dropped, {
@@ -188,12 +199,26 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
             {fill(plural(missing.length, cs.photos.missingAlt), { count: missing.length })}
           </button>
         ) : null}
+        {lowRes.length > 0 ? (
+          <button type="button" className="button" aria-pressed={lowFiltering} onClick={() => setLowOn(!lowOn)}>
+            {cs.quality.filter}
+          </button>
+        ) : null}
         {selecting ? null : (
           <button type="button" className="button" disabled={!canMutate} onClick={() => startSelecting()}>
             {cs.photos.select}
           </button>
         )}
       </div>
+      <p className="page-note quality-summary">
+        {lowRes.length === 0
+          ? cs.quality.summaryNone
+          : fill(cs.quality.summary, {
+              low: lowRes.length,
+              total: photos.length,
+              unit: plural(photos.length, cs.quality.summaryUnit),
+            })}
+      </p>
       {selecting ? null : <p className="field-hint">{cs.photos.longPressHint}</p>}
       <PhotoGrid
         photos={displayed}

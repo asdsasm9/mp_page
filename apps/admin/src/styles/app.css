@@ -1542,6 +1542,22 @@
     color: var(--color-danger);
   }
 
+  /* Warning, not a block: text plus a bar, never colour alone. */
+  .upload-warning {
+    padding-inline-start: var(--space-2);
+    border-inline-start: calc(var(--border-width) * 3) solid var(--color-text);
+    color: var(--color-text);
+    font-size: var(--font-size-small);
+  }
+
+  .upload-flag {
+    font-weight: 700;
+  }
+
+  .upload-row[data-refused] {
+    border-color: var(--color-danger);
+  }
+
   .upload-row .row-actions {
     grid-column: 1 / -1;
     justify-content: start;

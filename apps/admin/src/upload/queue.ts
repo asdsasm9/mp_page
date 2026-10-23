@@ -14,6 +14,7 @@
  *  - cancel aborts the XHRs; the objects already written are left to reconcile.
  */
 import {
+  DETAIL_MIN_LONG_EDGE,
   sumBytes,
   type CommitRequest,
   type PhotoRow,
@@ -264,8 +265,13 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
     const signal = run.controller.signal;
     dispatch({ type: 'status', id, status: 'encoding' });
     try {
-      const encoded = await deps.encoder.encode(run.file, signal);
+      const encoded = await deps.encoder.encode(run.file, signal, (phase) => {
+        if (!signal.aborted) dispatch({ type: 'phase', id, phase });
+      });
       if (signal.aborted || itemOf(id)?.status !== 'encoding') return;
+      // The master is never upscaled, so below the detail minimum its long edge is the source's long edge.
+      const longEdge = Math.max(encoded.width, encoded.height);
+      if (longEdge < DETAIL_MIN_LONG_EDGE) dispatch({ type: 'small', id, longEdge });
       run.encoded = encoded;
       dispatch({ type: 'status', id, status: 'encoded' });
       restartIdleTimer();
@@ -274,8 +280,9 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
         // The browser encoder throws errors that carry their own Czech text (src/encode/errors.ts).
         const text = (error as { userMessage?: unknown } | null)?.userMessage;
         const code = (error as { code?: unknown } | null)?.code;
+        const refused = code === 'TOO_LARGE' || code === 'TOO_MANY_PIXELS';
         const failure: ItemFailure = {
-          kind: 'corrupt',
+          kind: refused ? 'refused' : 'corrupt',
           message: typeof text === 'string' ? text : cs.upload.corrupt,
           ...(typeof code === 'string' ? { code } : {}),
         };
@@ -624,7 +631,8 @@ export function createUploadQueue(deps: QueueDeps): UploadQueue {
       pump();
     },
     retryFailed() {
-      for (const item of state.items.filter((i) => i.status === 'failed')) api.retry(item.id);
+      // A refused file (too big, too many pixels) would be refused again: it is not retried in bulk.
+      for (const item of state.items.filter((i) => i.status === 'failed' && i.failure?.kind !== 'refused')) api.retry(item.id);
     },
     remove(id) {
       dispatch({ type: 'remove', id });

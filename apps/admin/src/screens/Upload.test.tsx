@@ -9,7 +9,7 @@ import { App } from '../App';
 import { AppProviders } from '../AppProviders';
 import { cs } from '../i18n/cs';
 import { ApiError, systemClock } from '../ports';
-import { pickedFile, stubEncoder, type StubEncoder } from '../upload/testing';
+import { encodedPhoto, pickedFile, stubEncoder, type StubEncoder } from '../upload/testing';
 import { useUploadState } from '../upload/UploadProvider';
 
 configure({ getElementError: (message) => new Error(message ?? '') }); // no DOM dump in failures
@@ -350,6 +350,59 @@ describe('queue lifetime and the browser', () => {
     await waitFor(() => expect(tile.querySelector('img.photo-local')).toBeNull());
     expect(revoked).toContain(created[0]);
     vi.unstubAllGlobals();
+  }, 40_000);
+});
+
+describe('T-268 phases, small-photo warning, refusal rows', () => {
+  it('shows "Připravuji náhledy" then "Nahrávám detail", then the small-photo warning with the size, and the photo still uploads', async () => {
+    const { world, album } = await makeWorld();
+    let toDetail!: () => void;
+    let toEnd!: () => void;
+    const encoder: StubEncoder = {
+      calls: [],
+      async encode(file, _signal, onPhase) {
+        onPhase?.('previews');
+        await new Promise<void>((r) => (toDetail = r));
+        onPhase?.('detail');
+        await new Promise<void>((r) => (toEnd = r));
+        return encodedPhoto(1600, 1200);
+      },
+    };
+    await open(world, album, encoder);
+    pick(pickedFile('IMG_1.jpg'));
+    await waitFor(() => expect(stepOfFirstRow()).toBe('Připravuji náhledy'), SLOW);
+    expect(rows()[0]!.querySelector('.upload-warning')).toBeNull();
+    expect(rows()[0]!.querySelector('.upload-step')!.getAttribute('aria-live')).toBe('polite');
+    toDetail();
+    await waitFor(() => expect(stepOfFirstRow()).toBe('Nahrávám detail'), SLOW);
+    toEnd();
+    const warning = await waitFor(() => {
+      const w = rows()[0]!.querySelector('.upload-warning');
+      expect(w).not.toBeNull();
+      return w!;
+    }, SLOW);
+    expect(warning.textContent).toBe('Pozor: Původní fotka je malá, bude jen do 1600 px');
+    expect(warning.getAttribute('aria-live')).toBe('polite');
+    expect(await screen.findByText('Nahráno 1 fotka.', {}, SLOW)).toBeTruthy();
+    expect(rows()[0]!.querySelector('.upload-warning')).not.toBeNull(); // stays visible on the finished row
+    expect(photosOf(world)).toHaveLength(1);
+  }, 40_000);
+
+  it('a too-big file gets a refusal row: text, no retry, no bulk retry, only "Odebrat z fronty"; the rest uploads', async () => {
+    const { world, album } = await makeWorld();
+    const refuse = Object.assign(new Error('TOO_MANY_PIXELS'), { code: 'TOO_MANY_PIXELS', userMessage: cs.encode.tooManyPixels });
+    await open(world, album, stubEncoder((name) => (name === 'IMG_2.jpg' ? refuse : undefined)));
+    pick(pickedFile('IMG_1.jpg'), pickedFile('IMG_2.jpg'));
+    await screen.findByText('Nahráno 1 z 2, 1 se nepodařilo.', {}, SLOW);
+    const row = rows()[1]!;
+    expect(row.dataset.refused).toBe('true');
+    expect(row.querySelector('.upload-step')!.textContent).toBe(`Nelze nahrát: ${cs.encode.tooManyPixels}`);
+    expect(screen.queryByRole('button', { name: 'Zkusit znovu IMG_2.jpg' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Zkusit znovu neúspěšné/ })).toBeNull();
+    expect(row.querySelector('progress')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Odebrat z fronty IMG_2.jpg' }));
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    expect(photosOf(world)).toHaveLength(1);
   }, 40_000);
 });
 

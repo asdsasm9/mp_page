@@ -2,13 +2,17 @@
  * Queue state as a pure reducer. Terminal items (done, failed, cancelled) never change except through
  * `retry` or `remove`, so a late async result after a cancel cannot resurrect an item.
  */
-import { isTerminal, type ItemFailure, type ItemStatus, type QueueItem, type QueueState } from './types';
+import { isTerminal, type EncodePhase, type ItemFailure, type ItemStatus, type QueueItem, type QueueState } from './types';
 
 export type QueueAction =
   | { type: 'add'; items: ReadonlyArray<Pick<QueueItem, 'id' | 'albumId' | 'name' | 'size'>> }
   | { type: 'status'; id: string; status: Exclude<ItemStatus, 'queued' | 'failed' | 'cancelled'> }
   | { type: 'progress'; id: string; progress: number }
   | { type: 'paused'; id: string; paused: boolean }
+  /** The encoder started a set (only while the item is 'encoding'). */
+  | { type: 'phase'; id: string; phase: EncodePhase }
+  /** Source long edge below the detail minimum (px); a warning on the row. */
+  | { type: 'small'; id: string; longEdge: number }
   | { type: 'fail'; id: string; failure: ItemFailure }
   | { type: 'cancel'; id: string }
   /** failed or cancelled -> queued (full redo) or uploaded (only the commit is repeated). */
@@ -46,6 +50,8 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
           progress: 0,
           paused: false,
           failure: null,
+          phase: null,
+          smallEdge: null,
         }));
       return added.length === 0 ? state : { ...state, items: [...state.items, ...added], nextOrder: order };
     }
@@ -56,6 +62,7 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
           : {
               ...item,
               status: action.status,
+              phase: null,
               progress: action.status === 'uploading' ? 0 : action.status === 'uploaded' ? 1 : item.progress,
               paused: !state.online && NETWORK_STATUSES.includes(action.status),
             },
@@ -68,18 +75,34 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
       return patch(state, action.id, (item) =>
         isTerminal(item.status) || item.paused === action.paused ? item : { ...item, paused: action.paused },
       );
+    case 'phase':
+      return patch(state, action.id, (item) =>
+        item.status === 'encoding' && item.phase !== action.phase ? { ...item, phase: action.phase } : item,
+      );
+    case 'small':
+      return patch(state, action.id, (item) =>
+        isTerminal(item.status) || item.smallEdge === action.longEdge ? item : { ...item, smallEdge: action.longEdge },
+      );
     case 'fail':
       return patch(state, action.id, (item) =>
-        isTerminal(item.status) ? item : { ...item, status: 'failed', paused: false, failure: action.failure },
+        isTerminal(item.status) ? item : { ...item, status: 'failed', paused: false, failure: action.failure, phase: null },
       );
     case 'cancel':
       return patch(state, action.id, (item) =>
-        isTerminal(item.status) ? item : { ...item, status: 'cancelled', paused: false, failure: null },
+        isTerminal(item.status) ? item : { ...item, status: 'cancelled', paused: false, failure: null, phase: null },
       );
     case 'retry':
       return patch(state, action.id, (item) =>
         item.status === 'failed' || item.status === 'cancelled'
-          ? { ...item, status: action.to, progress: action.to === 'uploaded' ? 1 : 0, paused: false, failure: null }
+          ? {
+              ...item,
+              status: action.to,
+              progress: action.to === 'uploaded' ? 1 : 0,
+              paused: false,
+              failure: null,
+              phase: null,
+              smallEdge: action.to === 'queued' ? null : item.smallEdge,
+            }
           : item,
       );
     case 'remove': {

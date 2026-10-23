@@ -14,6 +14,7 @@ import {
   type QualityKey,
   type WebpTier,
 } from '@mp/shared';
+import { cs } from '../i18n/cs';
 import type { EncodePhase, Encoder, FileLike } from '../upload/types';
 import { assembleEncodedPhoto, type EncodedPart, type EncodedParts } from './assemble';
 import { decodeImage } from './decode';
@@ -25,8 +26,8 @@ import type { Drawable, Surface, SurfaceFactory } from './surface';
 
 export type { EncodePhase };
 export const ENCODE_PHASE_LABEL: Record<EncodePhase, string> = {
-  previews: 'Připravuji náhledy',
-  detail: 'Nahrávám detail',
+  previews: cs.upload.phasePreviews,
+  detail: cs.upload.phaseDetail,
 };
 export type EncodePhaseCallback = (phase: EncodePhase) => void;
 

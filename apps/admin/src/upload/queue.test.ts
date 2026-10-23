@@ -48,6 +48,8 @@ interface Harness {
     /** Throw to fail the nth PUT (1-based, per photo and file) attempt. */
     put?: (photo: string, file: string, attempt: number) => Error | undefined;
     encode?: (name: string) => Error | undefined;
+    /** Decoded size the stub encoder reports (default 3000 x 2000). */
+    size?: (name: string) => [number, number];
     reserve?: (photoId: string, call: number) => 'STORAGE_FULL' | 'FILE_TOO_LARGE' | undefined;
     reserveAll409?: boolean;
     commit?: (photo: string, attempt: number) => Error | undefined;
@@ -119,15 +121,18 @@ function setup(over: { encodeConcurrency?: number; maxFilesPerBatch?: number; en
     ids,
     config: { maxFilesPerBatch: over.maxFilesPerBatch ?? 200, encodeConcurrency: over.encodeConcurrency ?? 2 },
     encoder: {
-      async encode(file, signal) {
+      async encode(file, signal, onPhase) {
         log.encodeStarted.push(file.name);
         encoding += 1;
         log.encodePeak = Math.max(log.encodePeak, encoding);
         try {
+          onPhase?.('previews');
           await clock.sleep(encodeMs, signal);
+          onPhase?.('detail');
           const error = hooks.encode?.(file.name);
           if (error) throw error;
-          return encodedFor(3000, 2000);
+          const [w, h] = hooks.size?.(file.name) ?? [3000, 2000];
+          return encodedFor(w, h);
         } finally {
           encoding -= 1;
         }
@@ -656,5 +661,45 @@ describe('browser without WebP', () => {
     h.queue.retryFailed();
     await h.tick(20_000);
     expect(statusCount(h, 'done')).toBe(3);
+  });
+});
+
+describe('T-268 phases, small photos, refusals', () => {
+  it('an encoding row goes previews -> detail, and the phase is cleared once it is encoded', async () => {
+    const h = started(setup({ encodeMs: 100 }));
+    h.queue.add('bbbbbbbb-0000-4000-8000-000000000001', files(1));
+    await h.tick(10, 10);
+    expect(h.byName('IMG_1.jpg')).toMatchObject({ status: 'encoding', phase: 'previews' });
+    await h.tick(150, 10);
+    expect(h.byName('IMG_1.jpg').phase).not.toBe('previews');
+    await h.tick(20_000);
+    expect(h.byName('IMG_1.jpg')).toMatchObject({ status: 'done', phase: null });
+  });
+
+  it('a source under 2000 px long edge is warned about, not blocked, and still uploads', async () => {
+    const h = started(setup());
+    h.hooks.size = (name) => (name === 'IMG_1.jpg' ? [1600, 1200] : name === 'IMG_2.jpg' ? [2000, 1500] : [1200, 1600]);
+    h.queue.add('bbbbbbbb-0000-4000-8000-000000000001', files(3));
+    await h.tick(20_000);
+    expect(h.byName('IMG_1.jpg').smallEdge).toBe(1600);
+    expect(h.byName('IMG_2.jpg').smallEdge).toBeNull(); // exactly the minimum is fine
+    expect(h.byName('IMG_3.jpg').smallEdge).toBe(1600); // portrait: the long edge counts
+    expect(statusCount(h, 'done')).toBe(3);
+  });
+
+  it('refusals (too big, too many pixels) fail as "refused", are not retried in bulk and keep the other files going', async () => {
+    const h = started(setup());
+    const refuse = (code: string) => Object.assign(new Error(code), { code, userMessage: cs.encode[code === 'TOO_LARGE' ? 'tooLarge' : 'tooManyPixels'] });
+    h.hooks.encode = (name) => (name === 'IMG_1.jpg' ? refuse('TOO_LARGE') : name === 'IMG_2.jpg' ? refuse('TOO_MANY_PIXELS') : undefined);
+    h.queue.add('bbbbbbbb-0000-4000-8000-000000000001', files(3));
+    await h.tick(20_000);
+    expect(h.byName('IMG_1.jpg').failure).toEqual({ kind: 'refused', message: cs.encode.tooLarge, code: 'TOO_LARGE' });
+    expect(h.byName('IMG_2.jpg').failure).toEqual({ kind: 'refused', message: cs.encode.tooManyPixels, code: 'TOO_MANY_PIXELS' });
+    expect(h.byName('IMG_3.jpg').status).toBe('done');
+    expect(h.log.reserves.flatMap((r) => r.items)).toHaveLength(1); // nothing reached the network for the refused files
+    h.hooks.encode = undefined;
+    h.queue.retryFailed();
+    await h.tick(5_000);
+    expect(statusCount(h, 'failed')).toBe(2);
   });
 });

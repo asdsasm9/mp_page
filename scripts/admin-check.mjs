@@ -441,8 +441,26 @@ async function runProfile(browser, profile) {
       await world(page, '(w) => w.slowPut(0)');
       await waitText(page, /Nahráno 5 fotek\./, 60000);
       await waitTiles(page, 5);
-      await checkpoint(ctx, 'upload done', { shot: false });
-      await clickBy(ctx, 'button', /^Sbalit frontu$/); // the panel stays open until the photographer collapses it
+      await checkpoint(ctx, 'upload done', { shot: true });
+
+      // T-268: the five fixtures are under 2000 px, so every finished row keeps the small-photo warning.
+      const warnings = await page.evaluate(() => [...document.querySelectorAll('.upload-row .upload-warning')].map((e) => e.textContent.trim()));
+      if (warnings.length !== 5 || !warnings.every((t) => /^Pozor:\s*Původní fotka je malá, bude jen do \d+ px$/.test(t))) {
+        throw new Error(`expected 5 small-photo warnings, got ${JSON.stringify(warnings)}`);
+      }
+      // T-268: a file whose header says 12000 x 12000 px (144 MP) is refused before anything is decoded or sent.
+      const huge = join(work, 'fixtures', 'obri.jpg');
+      writeFileSync(huge, Buffer.from('ffd8ffc0001108' + '2ee0' + '2ee0' + '03011100021101031101ffd9', 'hex'));
+      await (await page.$('input[type=file]')).uploadFile(huge);
+      await waitText(page, /Nelze nahrát:\s*Fotka má příliš mnoho pixelů/, 15000);
+      const refusal = await page.evaluate(() => {
+        const row = [...document.querySelectorAll('.upload-row')].find((r) => r.dataset.refused);
+        return { retry: [...row.querySelectorAll('button')].map((b) => b.textContent.trim()), progress: !!row.querySelector('progress') };
+      });
+      if (refusal.retry.some((t) => /Zkusit znovu/.test(t)) || refusal.progress) throw new Error(`refusal row offers a retry or a bar: ${JSON.stringify(refusal)}`);
+      await checkpoint(ctx, 'upload refusal row', { shot: true });
+      await clickBy(ctx, 'button', /^Odebrat z fronty obri\.jpg$/); // the queue is empty again, so the panel closes itself
+      await page.waitForFunction(() => !/Fronta nahrávání/.test(document.body.innerText), { timeout: 10000 });
       if (await page.$('.upload-pill')) throw new Error('the indicator is still shown after the uploads finished');
     });
     await step('album grid', async () => {

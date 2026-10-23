@@ -9,7 +9,7 @@ import { summarize } from './reducer';
 import type { QueueItem, QueueState } from './types';
 
 /** Label of the step a row is in, in the order Ve frontě, Zpracovávám, Nahrávám, Ukládám, Hotovo. */
-export function stepLabel(item: Pick<QueueItem, 'status' | 'paused' | 'failure'>): string {
+export function stepLabel(item: Pick<QueueItem, 'status' | 'paused' | 'failure'> & { phase?: QueueItem['phase'] }): string {
   if (item.status === 'failed') return item.failure?.message ?? cs.upload.corrupt;
   if (item.status === 'cancelled') return cs.upload.cancelled;
   if (item.paused) return cs.upload.waiting;
@@ -17,6 +17,9 @@ export function stepLabel(item: Pick<QueueItem, 'status' | 'paused' | 'failure'>
     case 'queued':
       return glossary.queued;
     case 'encoding':
+      if (item.phase === 'previews') return cs.upload.phasePreviews;
+      if (item.phase === 'detail') return cs.upload.phaseDetail;
+      return glossary.processing;
     case 'encoded':
     case 'reserving':
       return glossary.processing;

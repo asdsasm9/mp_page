@@ -430,6 +430,14 @@ export const cs = {
     waiting: 'Čekám na připojení…',
     cancelled: 'Zrušeno.',
     saving: 'Ukládám',
+    /** Encoder phases shown as the row step (T-268). */
+    phasePreviews: 'Připravuji náhledy',
+    phaseDetail: 'Nahrávám detail',
+    /** Warning on a row whose source is below the detail minimum; {n} is its long edge in px. */
+    smallPhoto: 'Původní fotka je malá, bude jen do {n} px',
+    warningPrefix: 'Pozor:',
+    /** Prefix of a refusal row (too big, too many pixels): the file cannot be uploaded, only removed. */
+    refusedPrefix: 'Nelze nahrát:',
     queueLabel: 'Fronta nahrávání',
     filesLabel: 'Soubory ve frontě',
     indicatorFailed: 'selhalo {failed}',

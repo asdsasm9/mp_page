@@ -34,7 +34,7 @@ export type EncodePhase = 'previews' | 'detail';
 
 /** Decode + resize + encode one picked file. Throws when the file cannot be processed; honours the signal. */
 export interface Encoder {
-  /** `onPhase` (optional, additive) is called when the encoder starts each set; the queue UI uses it in T-268. */
+  /** `onPhase` (optional, additive) is called when the encoder starts each set; the queue shows it as the row step (T-268). */
   encode(file: FileLike, signal: AbortSignal, onPhase?: (phase: EncodePhase) => void): Promise<EncodedPhoto>;
 }
 
@@ -51,7 +51,8 @@ export type ItemStatus =
   | 'failed'
   | 'cancelled';
 
-export type FailureKind = 'corrupt' | 'storage-full' | 'too-large' | 'upload' | 'commit' | 'server';
+/** 'refused': the input guard said no (too big, too many pixels); trying again with the same file cannot work. */
+export type FailureKind = 'corrupt' | 'refused' | 'storage-full' | 'too-large' | 'upload' | 'commit' | 'server';
 
 export interface ItemFailure {
   kind: FailureKind;
@@ -75,6 +76,10 @@ export interface QueueItem {
   /** Waiting for the network ("Čekám na připojení…"). */
   paused: boolean;
   failure: ItemFailure | null;
+  /** Which set the encoder is on while `status` is 'encoding'; null otherwise. */
+  phase: EncodePhase | null;
+  /** Long edge in px of a source below DETAIL_MIN_LONG_EDGE (a warning, never a block); null when big enough or unknown. */
+  smallEdge: number | null;
 }
 
 export interface QueueState {

@@ -38,8 +38,9 @@ function FileRow({ item, albumTitle }: { item: QueueItem; albumTitle: string | u
   const step = stepLabel(item);
   const failed = item.status === 'failed';
   const finished = isTerminal(item.status);
+  const refused = failed && item.failure?.kind === 'refused';
   return (
-    <li className="upload-row" data-status={item.status}>
+    <li className="upload-row" data-status={item.status} data-refused={refused || undefined}>
       <Thumb id={item.id} />
       <div className="upload-info">
         <p className="upload-name">{item.name}</p>
@@ -47,9 +48,20 @@ function FileRow({ item, albumTitle }: { item: QueueItem; albumTitle: string | u
           {albumTitle ? `${fill(cs.upload.album, { title: albumTitle })}${cs.upload.separator}` : ''}
           {formatBytes(item.size)}
         </p>
-        <p className={failed ? 'upload-step field-error' : 'upload-step'} data-paused={item.paused || undefined}>
+        <p
+          className={failed ? 'upload-step field-error' : 'upload-step'}
+          data-paused={item.paused || undefined}
+          aria-live={failed ? undefined : 'polite'}
+        >
+          {refused ? <strong className="upload-flag">{cs.upload.refusedPrefix} </strong> : null}
           {step}
         </p>
+        {item.smallEdge !== null && !failed && item.status !== 'cancelled' ? (
+          <p className="upload-warning" aria-live="polite">
+            <strong className="upload-flag">{cs.upload.warningPrefix} </strong>
+            {fill(cs.upload.smallPhoto, { n: item.smallEdge })}
+          </p>
+        ) : null}
         {failed && item.failure?.code ? (
           <details className="details">
             <summary>{glossary.details}</summary>
@@ -71,7 +83,7 @@ function FileRow({ item, albumTitle }: { item: QueueItem; albumTitle: string | u
             {cs.upload.cancel}
           </button>
         )}
-        {failed || item.status === 'cancelled' ? (
+        {(failed && !refused) || item.status === 'cancelled' ? (
           <button type="button" className="button" aria-label={fill(cs.upload.retryFile, { name: item.name })} onClick={() => actions.retry(item.id)}>
             {glossary.retry}
           </button>
@@ -92,6 +104,7 @@ export function UploadSummary() {
   const { queue, startedAt } = useUploadState();
   const { clock } = usePorts();
   const s = summarize(queue);
+  const retryable = queue.items.filter((i) => i.status === 'failed' && i.failure?.kind !== 'refused').length;
   const lastDone = [...queue.items].reverse().find((i) => i.status === 'done');
   return (
     <div className="upload-summary">
@@ -105,9 +118,9 @@ export function UploadSummary() {
             {cs.upload.cancelAll}
           </button>
         ) : null}
-        {s.failed > 0 ? (
+        {retryable > 0 ? (
           <button type="button" className="button button-primary" onClick={actions.retryFailed}>
-            {fill(cs.upload.retryFailed, { count: s.failed })}
+            {fill(cs.upload.retryFailed, { count: retryable })}
           </button>
         ) : null}
         {s.active === 0 && lastDone ? (

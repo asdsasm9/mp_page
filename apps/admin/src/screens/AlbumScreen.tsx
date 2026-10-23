@@ -1,5 +1,5 @@
 /** Album detail (`/alba/:id`, ADMIN-UX 3.4): inline title, status and actions, data panel, drop zone placeholder. */
-import type { AlbumRow, CategoryRow } from '@mp/shared';
+import { ALBUM_TITLE_MAX, type AlbumRow, type CategoryRow } from '@mp/shared';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Breadcrumb } from '../components/Breadcrumb';
@@ -64,7 +64,7 @@ function InlineTitle({ album, autosave }: { album: AlbumRow; autosave: Autosave 
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? 'album-title-error' : undefined}
         value={autosave.values.title}
-        maxLength={120}
+        maxLength={ALBUM_TITLE_MAX}
         autoFocus
         onChange={(event) => autosave.setValue('title', event.target.value)}
         onBlur={() => finish()}

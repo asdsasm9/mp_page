@@ -38,6 +38,27 @@ All tables are in `public` with row level security on. Every migration starts ea
 | `keepalive` | Single row touched by `keepalive()`; no API role can read it. |
 | `change_log` | The unpublished changes (migration `20261022160000_change_log.sql`, T-251, D-18 option A): one row per catalog row (`table_name` categories/albums/photos, `row_id`, unique together) that differs from the last published site. `kind` is added, edited, deleted or reordered; `label` is the name at change time (category name, album title, photo alt else caption else empty); `category_id/category_name/album_id/album_title` are the grouping context at change time (no foreign keys). Admins can select; nobody can write through the API. Written by the `log_change` trigger, cleared by `record_publish`. See "Change log" below. |
 
+### Text field length limits (T-255)
+
+The limits live once in `packages/shared/src/limits.ts` (and `ALT_MAX` in `alt.ts`); the admin form fields, the admin
+fake and the checks below use those constants, and `apps/api/test/field-limits-parity.test.ts` fails if a constant
+differs from its SQL check constraint in `20261019100100_catalog.sql`.
+
+| Field | Limit (characters) | SQL constraint |
+|---|---|---|
+| category `name` | 1..80 | `categories_name_length` |
+| category `seo_title` / `seo_description` | 120 / 300 | `categories_seo_title_length`, `categories_seo_description_length` |
+| album `title` | 1..120 | `albums_title_length` |
+| album `seo_title` / `seo_description` | 120 / 300 in the database, 65 / 160 in the admin | `albums_seo_title_length`, `albums_seo_description_length` |
+| photo `alt` / `caption` | 300 / 500 | `photos_alt_length`, `photos_caption_length` |
+
+Album SEO 65/160 against category SEO 120/300 is intended as far as the code shows, but only half documented: docs/SEO.md
+sets the hard ceilings title 65 and description 160 for every page title and description, and the album editor (a
+page whose search snippet is built from these fields) enforces them as a stricter rule than the database. The
+category editor only enforces the database ceilings 120/300, so a category can currently hold an SEO text longer than
+the SEO.md ceiling that the build check would then reject. Whether categories should also use 65/160 is an open
+product question (not changed here; user-visible limits are unchanged).
+
 Reserved category slugs: portfolio, o-mne, kontakt, 404, admin, api, img, assets, _astro, fotky_web,
 sitemap, robots, cookies, ochrana-udaju (the same list as `RESERVED_CATEGORY_SLUGS`).
 

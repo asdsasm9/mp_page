@@ -1,9 +1,7 @@
 /** Alt text and caption checks of the photo detail: validateAlt (shared) with Czech messages. */
-import { ALT_MAX, ALT_WARN, validateAlt, type AltProblem } from '@mp/shared';
+import { ALT_MAX, ALT_WARN, CAPTION_MAX, validateAlt, type AltProblem } from '@mp/shared';
 import { cs } from '../i18n/cs';
 import { fill } from '../i18n/format';
-
-export const CAPTION_MAX = 500;
 
 const d = cs.photos.detail;
 

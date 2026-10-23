@@ -1,5 +1,15 @@
 /** Dialogs of the categories screen: create / edit (ADMIN-UX 3.2), hide (F4) and delete (F5). */
-import { isReservedCategorySlug, isValidSlug, slugify, uniqueSlug, type CategoryRow } from '@mp/shared';
+import {
+  CATEGORY_NAME_MAX,
+  CATEGORY_SEO_DESCRIPTION_MAX,
+  CATEGORY_SEO_TITLE_MAX,
+  isReservedCategorySlug,
+  isValidSlug,
+  SLUG_MAX,
+  slugify,
+  uniqueSlug,
+  type CategoryRow,
+} from '@mp/shared';
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { DialogActions, DialogButton } from '../components/DialogActions';
 import { ErrorLine } from '../components/ErrorLine';
@@ -126,7 +136,7 @@ export function CategoryFormDialog({ category, categories, onClose }: FormProps)
           value={name}
           onChange={changeName}
           error={nameError}
-          maxLength={80}
+          maxLength={CATEGORY_NAME_MAX}
           inputRef={nameRef}
           autofocus
         />
@@ -136,7 +146,7 @@ export function CategoryFormDialog({ category, categories, onClose }: FormProps)
           value={slug}
           onChange={changeSlug}
           error={slugError}
-          maxLength={60}
+          maxLength={SLUG_MAX}
           inputRef={slugRef}
           autoCapitalize="none"
           hintId={suggestionId}
@@ -161,12 +171,12 @@ export function CategoryFormDialog({ category, categories, onClose }: FormProps)
         <details className="details">
           <summary>{glossary.forSearchEngines}</summary>
           <div className="form">
-            <Field label={glossary.seoTitle} value={seoTitle} onChange={setSeoTitle} maxLength={120} />
+            <Field label={glossary.seoTitle} value={seoTitle} onChange={setSeoTitle} maxLength={CATEGORY_SEO_TITLE_MAX} />
             <Field
               label={glossary.seoDescription}
               value={seoDescription}
               onChange={setSeoDescription}
-              maxLength={300}
+              maxLength={CATEGORY_SEO_DESCRIPTION_MAX}
               multiline
             />
           </div>

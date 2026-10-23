@@ -4,17 +4,24 @@
  * constraints for the rest (title 1 to 120, address 2 to 60).
  */
 import type { AlbumRow } from '@mp/shared';
-import { SLUG_MAX, isValidSlug } from '@mp/shared';
+import {
+  ALBUM_PLACE_MAX,
+  ALBUM_SEO_DESCRIPTION_MAX,
+  ALBUM_SEO_TITLE_MAX,
+  ALBUM_TITLE_MAX,
+  SLUG_MAX,
+  isValidSlug,
+} from '@mp/shared';
 
 export const ALBUM_FIELDS = ['title', 'place', 'shot_on', 'description', 'slug', 'seo_title', 'seo_description'] as const;
 export type AlbumField = (typeof ALBUM_FIELDS)[number];
 
 export const ALBUM_LIMITS = {
-  title: 120,
-  place: 120,
+  title: ALBUM_TITLE_MAX,
+  place: ALBUM_PLACE_MAX,
   slug: SLUG_MAX,
-  seoTitle: 65,
-  seoDescription: 160,
+  seoTitle: ALBUM_SEO_TITLE_MAX,
+  seoDescription: ALBUM_SEO_DESCRIPTION_MAX,
 } as const;
 
 export type FieldProblem =

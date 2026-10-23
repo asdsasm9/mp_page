@@ -1,5 +1,19 @@
 /** Fake PostgREST: the table constraints, grants, triggers and RLS-free paths of supabase/migrations, in memory. */
-import { isReservedCategorySlug, isValidSlug, type AlbumRow, type CategoryRow, type PhotoRow } from '@mp/shared';
+import {
+  ALBUM_SEO_DESCRIPTION_DB_MAX,
+  ALBUM_SEO_TITLE_DB_MAX,
+  ALBUM_TITLE_MAX,
+  CAPTION_MAX,
+  CATEGORY_NAME_MAX,
+  CATEGORY_SEO_DESCRIPTION_MAX,
+  CATEGORY_SEO_TITLE_MAX,
+  ALT_MAX,
+  isReservedCategorySlug,
+  isValidSlug,
+  type AlbumRow,
+  type CategoryRow,
+  type PhotoRow,
+} from '@mp/shared';
 import { CatalogError, type CatalogPort } from '../../ports';
 import { logChange, sortedChangeLog } from './changes';
 import { bySortThenId, copy, type Core } from './core';
@@ -16,7 +30,11 @@ export function createFakeCatalog(core: Core): CatalogPort {
 
   function checkCategory(row: Pick<CategoryRow, 'slug' | 'name' | 'seo_title' | 'seo_description'>, selfId?: string) {
     if (!isValidSlug(row.slug) || isReservedCategorySlug(row.slug)) throw new CatalogError('INVALID');
-    if (badLength(row.name, 1, 80) || tooLong(row.seo_title, 120) || tooLong(row.seo_description, 300)) {
+    if (
+      badLength(row.name, 1, CATEGORY_NAME_MAX) ||
+      tooLong(row.seo_title, CATEGORY_SEO_TITLE_MAX) ||
+      tooLong(row.seo_description, CATEGORY_SEO_DESCRIPTION_MAX)
+    ) {
       throw new CatalogError('INVALID');
     }
     for (const c of state.categories.values()) {
@@ -26,7 +44,11 @@ export function createFakeCatalog(core: Core): CatalogPort {
 
   function checkAlbum(row: AlbumRow) {
     if (!isValidSlug(row.slug, { legacy: true })) throw new CatalogError('INVALID');
-    if (badLength(row.title, 1, 120) || tooLong(row.seo_title, 120) || tooLong(row.seo_description, 300)) {
+    if (
+      badLength(row.title, 1, ALBUM_TITLE_MAX) ||
+      tooLong(row.seo_title, ALBUM_SEO_TITLE_DB_MAX) ||
+      tooLong(row.seo_description, ALBUM_SEO_DESCRIPTION_DB_MAX)
+    ) {
       throw new CatalogError('INVALID');
     }
     if (row.shot_on !== null && !/^\d{4}-\d{2}-\d{2}$/.test(row.shot_on)) throw new CatalogError('INVALID');
@@ -180,7 +202,7 @@ export function createFakeCatalog(core: Core): CatalogPort {
       if (!row) throw new CatalogError('NOT_FOUND');
       stale(row, options.expectedUpdatedAt);
       const next: PhotoRow = { ...row, ...patch };
-      if (tooLong(next.alt, 300) || tooLong(next.caption, 500)) throw new CatalogError('INVALID');
+      if (tooLong(next.alt, ALT_MAX) || tooLong(next.caption, CAPTION_MAX)) throw new CatalogError('INVALID');
       if (!state.albums.has(next.album_id)) throw new CatalogError('NOT_FOUND');
       if (next.album_id !== row.album_id) clearCoversOfPhoto(core, id);
       next.updated_at = core.stamp(row.updated_at);

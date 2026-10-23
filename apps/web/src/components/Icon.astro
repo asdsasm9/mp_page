@@ -1,0 +1,42 @@
+---
+// Inline SVG icons (Lucide-style strokes). The web fonts have no arrow glyphs (U+2190 and friends), so arrows
+// are drawn, not typed. Decorative: the link or button around the icon carries the accessible name.
+export type IconName = 'arrow-left' | 'arrow-right' | 'chevron-left' | 'chevron-right';
+
+interface Props {
+  name: IconName;
+  class?: string;
+}
+
+const { name, class: className } = Astro.props;
+
+const PATHS: Record<IconName, string> = {
+  'arrow-left': 'M19 12H5M12 19l-7-7 7-7',
+  'arrow-right': 'M5 12h14M12 5l7 7-7 7',
+  'chevron-left': 'M15 18l-6-6 6-6',
+  'chevron-right': 'M9 18l6-6-6-6',
+};
+---
+<svg
+  class:list={['icon', className]}
+  viewBox="0 0 24 24"
+  width="24"
+  height="24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+>
+  <path d={PATHS[name]}></path>
+</svg>
+
+<style>
+  .icon {
+    flex: none;
+    inline-size: 1.25em;
+    block-size: 1.25em;
+  }
+</style>

@@ -160,7 +160,8 @@ describe('Category pages (built, shared build)', () => {
     }
     expect(page).toContain('480.webp 480w');
     expect(page).toContain('960.webp 960w');
-    expect(page).toContain('(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)');
+    // Album covers are cropped into the 4/5 box: sizes is the box width times the crop factor (T-276, F10).
+    expect(page).toMatch(/sizes="\(min-width: 48rem\) calc\(26rem \* [\d.]+\), calc\(\(100vw - 3rem\) \* [\d.]+\)"/);
     expect(page).toMatch(/\d+ fotografi(e|í)/);
   });
 

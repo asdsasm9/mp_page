@@ -6,12 +6,17 @@
 import { effectiveAlt, type SnapshotPhoto } from '@mp/shared';
 import type { Review } from '../content/reviews';
 import type { Catalog } from './catalog';
+import { plural, type PluralForms } from './plural';
+
+const ALBUMS: PluralForms = { one: 'album', few: 'alba', many: 'alb' };
 
 export interface HomeCategoryCard {
   slug: string;
   name: string;
   path: string;
   photo: SnapshotPhoto;
+  /** `3 alba`: the meta kicker of the category card (albums that have a published page). */
+  countLabel: string;
 }
 
 export interface HomeReview {
@@ -26,7 +31,13 @@ export function homeCategoryCards(catalog: Catalog): HomeCategoryCard[] {
     const photo = catalog.categoryCover(category);
     if (!photo) continue;
     // The card image is decorative (alt=""): the link text is the category name.
-    cards.push({ slug: category.slug, name: category.name, path: `/${category.slug}/`, photo });
+    cards.push({
+      slug: category.slug,
+      name: category.name,
+      path: `/${category.slug}/`,
+      photo,
+      countLabel: plural(category.albums.length, ALBUMS),
+    });
   }
   return cards;
 }

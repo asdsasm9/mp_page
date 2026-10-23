@@ -50,18 +50,14 @@ const crumbs = [{ name: category.name, path }];
     padding: var(--space-4) var(--layout-gutter) var(--space-7);
   }
 
+  /* Auto-fill tracks of the 4/5 album cards; the crop-aware `sizes` of Photo crop="album" assume this grid (T-276) */
   .albums {
     display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(18.75rem, 100%), 1fr));
     align-items: start;
-    gap: var(--space-6) var(--space-5);
+    gap: var(--space-6);
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  @media (min-width: 48rem) {
-    .albums {
-      grid-template-columns: repeat(3, 1fr);
-    }
   }
 </style>

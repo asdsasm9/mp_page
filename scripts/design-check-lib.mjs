@@ -32,6 +32,13 @@ export const ROUTES = [
   { path: '/layout-check/categories/3/', name: 'category-3', light: true },
   { path: '/layout-check/categories/4/', name: 'category-4', light: true },
   { path: '/layout-check/categories/7/', name: 'category-7', light: true },
+  // Category-card layout fixtures (T-276): the Portfolio section with 1, 3 and 12 cards, with chosen covers
+  // (alternating landscape/portrait) and automatic ones (landscape). Light for the same reason as above.
+  { path: '/layout-check/portfolio/1/', name: 'portfolio-1', light: true },
+  { path: '/layout-check/portfolio/3/', name: 'portfolio-3', light: true },
+  { path: '/layout-check/portfolio/12/', name: 'portfolio-12', light: true },
+  { path: '/layout-check/portfolio/3-auto/', name: 'portfolio-3-auto', light: true },
+  { path: '/layout-check/portfolio/12-auto/', name: 'portfolio-12-auto', light: true },
   { path: '/o-mne/', name: 'about' },
   { path: '/kontakt/', name: 'contact' },
   // `short`: sticky footer cases (T-242), see STICKY_VIEWPORTS.

@@ -67,12 +67,13 @@ export type SizesContext = 'grid' | 'card' | 'review' | 'lightbox' | 'hero';
 const SIZES: Record<SizesContext, string> = {
   // Album grid: three columns from 64rem, two from 40rem, one below; page gutter is 1rem minimum per side.
   // 24.5rem cap = (--layout-max 80rem - 2 x 2.5rem gutter - 2 x --space-3 gap) / 3, the real column maximum.
-  grid: '(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 2rem)',
+  grid: '(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 3rem)',
   // Category and album card: three columns from 48rem. The real maximum is 24rem (gap --space-5);
   // 24.5rem is the shared, marginally conservative cap.
   // Below the cap the column is (100vw - 7rem) / 3: measured 219.5 px at 768 px (33vw said 253 and made the
   // browser take 720 instead of 480 at DPR 2).
-  card: '(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)',
+  // 33rem = the real three-column track at the 110rem layout width (519 px at 1920); the phone gutter is 1.5rem a side (T-274).
+  card: '(min-width: 48rem) min((100vw - 7rem) / 3, 33rem), calc(100vw - 3rem)',
   // Home page review photo: a fixed profile-like box, --size-avatar (10rem) at every width.
   review: '10rem',
   // Lightbox and full-width hero use the whole viewport.
@@ -82,6 +83,92 @@ const SIZES: Record<SizesContext, string> = {
 
 export function sizesFor(context: SizesContext): string {
   return SIZES[context];
+}
+
+/**
+ * Cropped covers (WP-12 F10). A card cover is `object-fit: cover` in a fixed box (category 3/4, album 4/5), so a
+ * 3:2 landscape photo must be about twice the box width to fill the box height sharply. The box-width `sizes`
+ * strings above would deliver half the sharpness, so every length is multiplied by the crop factor.
+ */
+export type CropContext = 'category' | 'album';
+
+/** Box-width `sizes` of the card grids (auto-fill tracks: 15rem and 18.75rem minimum, 2rem gap, 1.5rem gutter on phones). */
+const CROP_BASE: Record<CropContext, string> = {
+  // Tracks measured with image-fit: 337 px at 768, 293 at 1024, 270 at 1280, 241 at 1920 (so the steps at 80rem and 100rem)
+  category: '(min-width: 100rem) 16rem, (min-width: 80rem) 18rem, (min-width: 48rem) 21rem, calc(100vw - 3rem)',
+  album: '(min-width: 48rem) 26rem, calc(100vw - 3rem)',
+};
+
+/** Box height over box width of the cover boxes (`--ratio-category` 3 / 4, `--ratio-album` 4 / 5). */
+const CROP_BOX_H_OVER_W: Record<CropContext, number> = { category: 4 / 3, album: 5 / 4 };
+
+/** Splits a `sizes` list at top-level commas (commas inside `min(...)` and `calc(...)` do not count). */
+function splitTopLevel(list: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < list.length; i++) {
+    const ch = list[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    else if (ch === ',' && depth === 0) {
+      parts.push(list.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  parts.push(list.slice(start).trim());
+  return parts.filter((p) => p.length > 0);
+}
+
+/** Crop factor: how many times wider than the box the source must be so the cover fills the box height. */
+export function cropFactor(photoAspect: number, boxHeightOverWidth: number): number {
+  if (!Number.isFinite(photoAspect) || photoAspect <= 0) return 1;
+  return Math.max(1, Math.round(photoAspect * boxHeightOverWidth * 100) / 100);
+}
+
+/**
+ * Multiplies every length of a `sizes` string by the crop factor `k = max(1, photoAspect x boxH/boxW)`, written as
+ * `calc(<length> * k)`. Media conditions are left alone. `photoAspect` is width over height; `boxHeightOverWidth` is
+ * the box height over its width (4 / 3 for a 3 / 4 box). With k = 1 the string is returned unchanged.
+ */
+export function coverSizes(base: string, photoAspect: number, boxHeightOverWidth: number): string {
+  const k = cropFactor(photoAspect, boxHeightOverWidth);
+  if (k === 1) return base;
+  return splitTopLevel(base)
+    .map((entry) => {
+      let media = '';
+      let length = entry;
+      if (entry.startsWith('(')) {
+        let depth = 0;
+        let end = 0;
+        for (let i = 0; i < entry.length; i++) {
+          if (entry[i] === '(') depth++;
+          else if (entry[i] === ')' && --depth === 0) {
+            end = i + 1;
+            break;
+          }
+        }
+        // A bare parenthesised length such as `(100vw - 2rem) / 3` has no media condition; a media condition is
+        // followed by a length that does not start with an operator.
+        const rest = entry.slice(end).trim();
+        if (rest.length > 0 && !/^[/*+-]/.test(rest)) {
+          media = `${entry.slice(0, end)} `;
+          length = rest;
+        }
+      }
+      const inner = /^calc\((.*)\)$/s.exec(length);
+      return `${media}calc(${inner ? `(${inner[1]})` : length} * ${k})`;
+    })
+    .join(', ');
+}
+
+/**
+ * `sizes` for a cover that is cropped into the category or album box. The LCP card (`lcp`) gets the plain box-width
+ * string (WP-12 decision 13: the sharper crop-aware request is not allowed to cost LCP time on the first image).
+ */
+export function cropSizes(crop: CropContext, photoWidth: number, photoHeight: number, lcp = false): string {
+  if (lcp) return CROP_BASE[crop];
+  return coverSizes(CROP_BASE[crop], photoWidth / photoHeight, CROP_BOX_H_OVER_W[crop]);
 }
 
 export interface OgImage {

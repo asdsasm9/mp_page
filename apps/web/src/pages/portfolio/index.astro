@@ -61,7 +61,7 @@ const crumbs = [{ name: 'Portfolio', path }];
       albums.length > 0 && (
         <section aria-labelledby="alba">
           <h2 id="alba">Výběr z alb</h2>
-          <ul class="grid">
+          <ul class="grid albums">
             {albums.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
           </ul>
         </section>
@@ -113,5 +113,10 @@ const crumbs = [{ name: 'Portfolio', path }];
     .grid {
       grid-template-columns: repeat(3, 1fr);
     }
+  }
+
+  /* Album cards (T-276): auto-fill tracks, the grid the crop-aware `sizes` of the 4/5 cover assume */
+  .grid.albums {
+    grid-template-columns: repeat(auto-fill, minmax(min(18.75rem, 100%), 1fr));
   }
 </style>

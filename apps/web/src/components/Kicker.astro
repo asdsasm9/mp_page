@@ -1,0 +1,48 @@
+---
+// Small uppercase label with a short accent rule in front ("O mně", "Reference", "Svatby · 12 alb").
+// The text is accent-coloured text (7:1 on the page), the rule is decoration (--color-accent).
+// On the dark band pass tone="dark".
+interface Props {
+  tone?: 'light' | 'dark';
+  /** `span` where the kicker sits inside a link or a heading. */
+  as?: 'p' | 'span' | 'div';
+  /** Hide the rule (meta lines on cards). */
+  plain?: boolean;
+  class?: string;
+}
+
+const { tone = 'light', as: Tag = 'p', plain = false, class: className } = Astro.props;
+---
+<Tag class:list={['kicker', 't-kicker', className]} data-tone={tone === 'dark' ? 'dark' : undefined} data-plain={plain ? '' : undefined}>
+  <slot />
+</Tag>
+
+<style>
+  .kicker {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: 0;
+    color: var(--color-accent-text);
+  }
+
+  .kicker::before {
+    content: '';
+    flex: none;
+    inline-size: var(--space-6);
+    block-size: 0;
+    border-block-start: var(--border-width) solid var(--color-accent);
+  }
+
+  .kicker[data-plain]::before {
+    display: none;
+  }
+
+  .kicker[data-tone='dark'] {
+    color: var(--band-dark-accent);
+  }
+
+  .kicker[data-tone='dark']::before {
+    border-block-start-color: var(--band-dark-accent);
+  }
+</style>

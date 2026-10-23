@@ -3,7 +3,7 @@
 // landscape and portrait. Same guard as ../[count]: fixture mode only, noindex, never in a production or snapshot build
 // (site-checks fails on any layout-check/ file there).
 import AlbumCard from '../../../../components/AlbumCard.astro';
-import Breadcrumb from '../../../../components/Breadcrumb.astro';
+import PageHead from '../../../../components/PageHead.astro';
 import Base from '../../../../layouts/Base.astro';
 import { layoutCheckPhotos } from '../../../../lib/album';
 import { getCatalog } from '../../../../lib/catalog';
@@ -40,8 +40,13 @@ const meta: PageMeta = {
 ---
 <Base meta={meta} path={`/layout-check/categories/${count}/`}>
   <div class="page">
-    <Breadcrumb crumbs={[{ name: 'Rozložení kategorie', path: `/layout-check/categories/${count}/` }]} />
-    <h1>Rozložení kategorie, {count} alb</h1>
+    <PageHead
+      crumbs={[{ name: 'Rozložení kategorie', path: `/layout-check/categories/${count}/` }]}
+      title={`Rozložení kategorie, ${count} alb`}
+      backHref="/portfolio/"
+      backLabel="Všechna portfolia"
+    />
+
     <ul class="albums">
       {cards.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
     </ul>
@@ -57,18 +62,14 @@ const meta: PageMeta = {
     padding: var(--space-4) var(--layout-gutter) var(--space-7);
   }
 
+  /* Album cards (T-276): 4/5 covers in auto-fill tracks, the grid T-279 puts on the category page */
   .albums {
     display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(18.75rem, 100%), 1fr));
     align-items: start;
-    gap: var(--space-6) var(--space-5);
+    gap: var(--space-6);
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  @media (min-width: 48rem) {
-    .albums {
-      grid-template-columns: repeat(3, 1fr);
-    }
   }
 </style>

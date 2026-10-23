@@ -1,59 +1,25 @@
 ---
-// Album card (a list item): cover via Photo, title, place, photo count. Used on category pages and /portfolio/.
-import type { CategoryCard } from '../lib/category';
-import Photo from './Photo.astro';
+// Album card (a list item): 4/5 cover, meta kicker (place, photo count with the Czech plural), uppercase title.
+// Used on category pages and /portfolio/. All the markup and styles are in CategoryCard.
+import type { CategoryCard as AlbumCardData } from '../lib/category';
+import CategoryCard from './CategoryCard.astro';
 
 interface Props {
-  card: CategoryCard;
+  card: AlbumCardData;
   /** Image base URL, e.g. env.imgBaseUrl. */
   base: string;
 }
 
 const { card, base } = Astro.props;
+const meta = [card.place, card.countLabel].filter(Boolean).join(' · ');
 ---
-<li>
-  <a href={card.path}>
-    <span class="cover">
-      <Photo photo={card.photo} base={base} alt="" context="card" eager={card.eager} priority={card.priority} />
-    </span>
-    <span class="card-title t-h3">{card.title}</span>
-    <span class="card-meta t-caption">
-      {card.place && <span>{card.place}</span>}
-      <span>{card.countLabel}</span>
-    </span>
-  </a>
-</li>
-
-<style>
-  a {
-    display: grid;
-    gap: var(--space-2);
-    text-decoration: none;
-  }
-
-  /* Uniform cover box: every card has the same shape, so a portrait cover cannot make its row tall and leave a hole.
-     The cover is cropped (top-weighted); the whole photo is in the album page. */
-  .cover :global(img) {
-    aspect-ratio: var(--ratio-card);
-    block-size: auto;
-    object-fit: cover;
-    object-position: var(--cover-position);
-  }
-
-  .card-title {
-    text-decoration: underline;
-    text-decoration-thickness: var(--border-width);
-    text-underline-offset: var(--space-1);
-  }
-
-  a:hover .card-title {
-    text-decoration-thickness: var(--bar-thickness);
-  }
-
-  .card-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-3);
-    color: var(--color-text-muted);
-  }
-</style>
+<CategoryCard
+  href={card.path}
+  title={card.title}
+  meta={meta}
+  photo={card.photo}
+  base={base}
+  crop="album"
+  eager={card.eager}
+  priority={card.priority}
+/>

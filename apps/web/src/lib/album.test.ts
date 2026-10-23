@@ -22,10 +22,10 @@ describe('justified grid helpers', () => {
     expect(ROW_REM.few.lg).toBeGreaterThan(ROW_REM.regular.lg);
   });
 
-  it('rounds the aspect ratio and builds a sizes list with three steps and no pixel units', () => {
+  it('rounds the aspect ratio and builds a sizes list with four steps (the 100rem step is the widest layout) and no pixel units', () => {
     expect(aspectOf({ width: 1600, height: 1067 })).toBe(1.5);
     const sizes = gridSizes(1.5, 60);
-    expect(sizes).toMatch(/^\(min-width: 64rem\) min\(.+\), \(min-width: 40rem\) [\d.]+rem, min\(.+\)$/);
+    expect(sizes).toMatch(/^\(min-width: 100rem\) min\(.+\), \(min-width: 64rem\) min\(.+\), \(min-width: 40rem\) [\d.]+rem, min\(.+\)$/);
     expect(sizes).not.toMatch(/px/);
     // Lazy tiles start with `auto` and keep the estimate as fallback.
     expect(gridSizes(1.5, 60, true)).toBe(`auto, ${sizes}`);

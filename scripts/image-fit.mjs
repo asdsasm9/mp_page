@@ -38,7 +38,14 @@ async function measurePage() {
     const hit = srcset.split(',').map((s) => s.trim().split(/\s+/)).find(([url]) => new URL(url, location.href).href === i.currentSrc);
     let fileWidth = hit ? Number.parseInt(hit[1], 10) : 0;
     if (!fileWidth) fileWidth = (await createImageBitmap(await (await fetch(i.currentSrc)).blob())).width;
-    photos.push({ naturalWidth: fileWidth, renderedWidth: rect.width, srcset, src: i.currentSrc });
+    // A cropped cover (object-fit: cover, T-276) is scaled until it fills the box in BOTH directions, so the
+    // picture itself is wider than the box when the photo is wider than the box: that width is what must be sharp.
+    // Only the new crop markup (Photo crop="category|album" puts class `crop` on the img): legacy markup is measured
+    // by its box width as before. Same formula as coverRenderedWidth in image-fit-lib.mjs (this runs in the page).
+    // The LCP cover (fetchpriority high) deliberately uses box-width `sizes` (WP-12 decision 13), so it is judged by box width too.
+    const cover = i.classList.contains('crop') && i.getAttribute('fetchpriority') !== 'high' &&getComputedStyle(i).objectFit === 'cover' && i.naturalHeight > 0;
+    const renderedWidth = cover ? Math.max(rect.width, (rect.height * i.naturalWidth) / i.naturalHeight) : rect.width;
+    photos.push({ naturalWidth: fileWidth, renderedWidth, srcset, src: i.currentSrc });
   }
   return { cls: window.__cls ?? 0, photos };
 }

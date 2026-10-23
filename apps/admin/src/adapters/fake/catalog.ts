@@ -42,6 +42,15 @@ export function createFakeCatalog(core: Core): CatalogPort {
     }
   }
 
+  /** Trigger check_category_cover: the photo must belong to an album (published or not) of this category. */
+  function checkCategoryCover(row: CategoryRow) {
+    if (row.cover_photo_id === null) return;
+    const albumId = state.photos.get(row.cover_photo_id)?.album_id;
+    if (albumId === undefined || state.albums.get(albumId)?.category_id !== row.id) {
+      throw new CatalogError('CATEGORY_COVER_NOT_IN_CATEGORY');
+    }
+  }
+
   function checkAlbum(row: AlbumRow) {
     if (!isValidSlug(row.slug, { legacy: true })) throw new CatalogError('INVALID');
     if (
@@ -86,6 +95,7 @@ export function createFakeCatalog(core: Core): CatalogPort {
         seo_description: input.seo_description ?? null,
         sort: input.sort ?? 0,
         visible: input.visible ?? true,
+        cover_photo_id: null,
         created_at: now,
         updated_at: now,
       };
@@ -102,6 +112,7 @@ export function createFakeCatalog(core: Core): CatalogPort {
       stale(row, options.expectedUpdatedAt);
       const next: CategoryRow = { ...row, ...patch, id: row.id, created_at: row.created_at, updated_at: row.updated_at };
       checkCategory(next, id);
+      checkCategoryCover(next);
       next.updated_at = core.stamp(row.updated_at);
       state.categories.set(id, next);
       core.bump();
@@ -173,6 +184,7 @@ export function createFakeCatalog(core: Core): CatalogPort {
       state.albums.set(id, next);
       core.bump();
       logChange(core, 'albums', { op: 'update', before: row, after: next });
+      if (next.category_id !== row.category_id) clearCategoryCoverOfMovedAlbum(core, id, row.category_id);
       return copy(next);
     },
     async deleteAlbum(id) {
@@ -204,7 +216,7 @@ export function createFakeCatalog(core: Core): CatalogPort {
       const next: PhotoRow = { ...row, ...patch };
       if (tooLong(next.alt, ALT_MAX) || tooLong(next.caption, CAPTION_MAX)) throw new CatalogError('INVALID');
       if (!state.albums.has(next.album_id)) throw new CatalogError('NOT_FOUND');
-      if (next.album_id !== row.album_id) clearCoversOfPhoto(core, id);
+      if (next.album_id !== row.album_id) clearCoversOfPhoto(core, id, next.album_id);
       next.updated_at = core.stamp(row.updated_at);
       state.photos.set(id, next);
       core.bump();
@@ -242,8 +254,12 @@ export function createFakeCatalog(core: Core): CatalogPort {
   };
 }
 
-/** Trigger clear_cover_on_photo_change: a photo that leaves its album or is deleted stops being its cover. */
-export function clearCoversOfPhoto(core: Core, photoId: string): void {
+/**
+ * Triggers clear_cover_on_photo_change and clear_category_cover_on_photo_change: a photo that leaves its album
+ * or is deleted stops being its album's cover, and stops being its category's cover unless it moved to another
+ * album of the same category (`toAlbumId`).
+ */
+export function clearCoversOfPhoto(core: Core, photoId: string, toAlbumId?: string): void {
   for (const album of core.state.albums.values()) {
     if (album.cover_photo_id !== photoId) continue;
     const before = { ...album };
@@ -252,4 +268,26 @@ export function clearCoversOfPhoto(core: Core, photoId: string): void {
     core.bump();
     logChange(core, 'albums', { op: 'update', before, after: album });
   }
+  const target = toAlbumId === undefined ? undefined : core.state.albums.get(toAlbumId);
+  for (const category of core.state.categories.values()) {
+    if (category.cover_photo_id !== photoId) continue;
+    if (target !== undefined && target.category_id === category.id) continue;
+    clearCategoryCover(core, category);
+  }
+}
+
+/** Trigger clear_category_cover_on_album_move: an album that leaves its category takes the category cover along. */
+export function clearCategoryCoverOfMovedAlbum(core: Core, albumId: string, oldCategoryId: string): void {
+  const category = core.state.categories.get(oldCategoryId);
+  if (!category || category.cover_photo_id === null) return;
+  if (core.state.photos.get(category.cover_photo_id)?.album_id !== albumId) return;
+  clearCategoryCover(core, category);
+}
+
+function clearCategoryCover(core: Core, category: CategoryRow): void {
+  const before = { ...category };
+  category.cover_photo_id = null;
+  category.updated_at = core.stamp(category.updated_at);
+  core.bump();
+  logChange(core, 'categories', { op: 'update', before, after: category });
 }

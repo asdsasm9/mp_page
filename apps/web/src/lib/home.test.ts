@@ -4,6 +4,7 @@ import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.j
 import { REVIEWS } from '../content/reviews';
 import { buildCatalog } from './catalog';
 import { homeCategoryCards, homeReviews } from './home';
+import { photoSources } from './images';
 
 const fixture: Snapshot = SnapshotSchema.parse(fixtureJson);
 
@@ -15,15 +16,40 @@ function without(slug: string): Snapshot {
 }
 
 describe('home data', () => {
-  it('has one card per category with the first album cover', () => {
+  it('has one card per category: the chosen photo, else the first album cover', () => {
     const catalog = buildCatalog(fixture);
     const cards = homeCategoryCards(catalog);
     expect(cards.map((c) => c.path)).toEqual(['/svatby/', '/portrety/', '/parove-foceni/']);
     for (const card of cards) {
       const cat = catalog.categoryBySlug.get(card.slug)!;
-      expect(card.photo.id).toBe(catalog.coverOf(cat.albums[0]!)!.id);
+      const expected = cat.coverPhotoId ?? catalog.coverOf(cat.albums[0]!)!.id;
+      expect(card.photo.id).toBe(expected);
       expect(card.name.length).toBeGreaterThan(0);
     }
+    // the fixture has one category with a chosen photo and the others automatic
+    expect(cards[0]!.photo.id).toBe(fixture.categories[0]!.coverPhotoId);
+    expect(cards[1]!.photo.id).toBe(catalog.coverOf(fixture.categories[1]!.albums[0]!)!.id);
+  });
+
+  it('a chosen small-master photo is served from its own tiers, never an assumed 1600', () => {
+    const snap: Snapshot = JSON.parse(JSON.stringify(fixture)) as Snapshot;
+    const cat = snap.categories[0]!;
+    const pick = cat.albums[0]!.photos[3]!;
+    pick.width = 700;
+    pick.height = 467;
+    pick.variants = {
+      master: { w: 700, h: 467, bytes: 90_000 },
+      webp: [{ tier: 480, w: 480, h: 320, bytes: 20_000 }],
+      jpeg: { w: 700, h: 467, bytes: 60_000 },
+      og: { w: 1200, h: 630, bytes: 100_000 },
+    };
+    cat.coverPhotoId = pick.id;
+    const card = homeCategoryCards(buildCatalog(SnapshotSchema.parse(snap)))[0]!;
+    expect(card.photo.id).toBe(pick.id);
+    const src = photoSources(card.photo, 'https://img.example.cz');
+    expect(src.webpSrcset).toContain('480');
+    expect(src.webpSrcset).not.toContain('1600');
+    expect(src.fallback.width).toBe(700);
   });
 
   it('shows the covers of pati and anez next to the reviews', () => {

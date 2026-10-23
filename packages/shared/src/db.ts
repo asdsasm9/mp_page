@@ -15,6 +15,8 @@ export interface CategoryRow {
   seo_description: string | null;
   sort: number;
   visible: boolean;
+  /** Main photo of the category (a photo of one of its albums), null = automatic. */
+  cover_photo_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -128,7 +130,7 @@ export const DB_COLUMNS = {
   admin_emails: ['email', 'created_at'],
   categories: [
     'id', 'slug', 'name', 'description', 'seo_title', 'seo_description',
-    'sort', 'visible', 'created_at', 'updated_at',
+    'sort', 'visible', 'created_at', 'updated_at', 'cover_photo_id',
   ],
   albums: [
     'id', 'category_id', 'slug', 'title', 'place', 'shot_on', 'description',

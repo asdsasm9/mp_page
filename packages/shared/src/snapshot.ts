@@ -47,6 +47,8 @@ export const SnapshotCategorySchema = z
     description: nullableText,
     seoTitle: nullableText,
     seoDescription: nullableText,
+    /** Main photo chosen for the category (a photo of one of its albums), null = automatic. Older snapshots lack it. */
+    coverPhotoId: z.string().nullable().default(null),
     /** Latest change of the category or any of its published albums (sitemap lastmod). */
     updatedAt: isoDateTime,
     albums: z.array(SnapshotAlbumSchema),
@@ -89,6 +91,9 @@ export const SnapshotSchema = z
     s.categories.forEach((c, ci) => {
       if (catSlugs.has(c.slug)) issue(`duplicate category slug "${c.slug}"`, ['categories', ci, 'slug']);
       catSlugs.add(c.slug);
+      if (c.coverPhotoId !== null && !c.albums.some((a) => a.photos.some((x) => x.id === c.coverPhotoId))) {
+        issue(`coverPhotoId "${c.coverPhotoId}" is not a photo of category "${c.slug}"`, ['categories', ci, 'coverPhotoId']);
+      }
       c.albums.forEach((a, ai) => {
         albums++;
         const p = ['categories', ci, 'albums', ai];
@@ -208,12 +213,18 @@ export function buildSnapshot(src: SnapshotSource, now: Date): Snapshot {
           })),
         };
       });
+      // Only a photo of a published album of this visible category is exposed; a stale value becomes null.
+      const coverPhotoId =
+        c.cover_photo_id != null && albums.some((a) => a.photos.some((p) => p.id === c.cover_photo_id))
+          ? c.cover_photo_id
+          : null;
       return {
         slug: c.slug,
         name: c.name,
         description: c.description,
         seoTitle: c.seo_title,
         seoDescription: c.seo_description,
+        coverPhotoId,
         updatedAt: latest(c.updated_at, ...albums.map((a) => a.updatedAt)),
         albums,
       };

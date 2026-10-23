@@ -27,7 +27,7 @@ All tables are in `public` with row level security on. Every migration starts ea
 | Table | Purpose and key constraints |
 |---|---|
 | `admin_emails` | `email` (pk, lowercase, trimmed). The Google sign-in allow-list: `is_admin()` is true only for a confirmed user with a verified Google identity whose e-mail is listed and equals the user's e-mail (migration `20261022100000_admin_google_signin.sql`, which also dropped the old `admins` table). RLS on, no grant to any API role; only the definer reads it. No address is created by migrations or seed. |
-| `categories` | `slug` unique, `^[a-z0-9]+(-[a-z0-9]+)*$`, 2..60, not in the reserved list; `name`, SEO fields, `sort`, `visible`. |
+| `categories` | `slug` unique, `^[a-z0-9]+(-[a-z0-9]+)*$`, 2..60, not in the reserved list; `name`, SEO fields, `sort`, `visible`, `cover_photo_id` (nullable, set null; the main photo chosen by the photographer, migration `20261023100000_category_cover.sql`, T-271). Null means automatic: the public site then shows the first album's cover. The photo must belong to an album of this category, published or not (`check_category_cover`). No new grant or policy: the table-level grant and `categories_admin_all` cover the column. |
 | `albums` | `category_id` (restrict), `slug` unique (`^[a-z0-9]+([-_][a-z0-9]+)*$`, 2..60), `title`, `place`, `shot_on`, `cover_photo_id` (set null), `published`, `legacy_id` unique. |
 | `photos` | `album_id` (restrict), `master_key` unique and equal to `photos/<id>/master.jpg`, `width`, `height`, `variants` jsonb, `bytes_total`, `dominant_color` (null or `^#[0-9a-f]{6}$`), `alt` (at most 300 chars), `caption`, `sort`, `legacy_key` unique (null or 1..200 chars of `A-Za-z0-9_./-`, constraint `photos_legacy_key_format` from migration `20261019100900_photo_input_checks.sql`). A direct `register_photo` call that violates a check fails with SQLSTATE 23514, which the Worker maps to the generic `UPSTREAM_ERROR`. |
 | `url_history` | `old_path` unique, `target`, `status` in (301, 410). Filled by the slug-history triggers and by hand. |
@@ -129,6 +129,9 @@ All functions are `security definer` (except the immutable helper `variants_byte
 | bump_pending | no | no |
 | categories_slug_history | no | no |
 | check_album_cover | no | no |
+| check_category_cover | no | no |
+| clear_category_cover_on_album_move | no | no |
+| clear_category_cover_on_photo_change | no | no |
 | clear_cover_on_photo_change | no | no |
 | delete_photos | no | yes |
 | is_admin | no | yes |
@@ -161,7 +164,9 @@ Functions raise an exception whose message equals the code. `NOT_ADMIN` uses SQL
 Shared code list (`ApiErrorCode`): NOT_ADMIN, STORAGE_FULL, FILE_TOO_LARGE, BATCH_TOO_LARGE, PUBLISH_TOO_SOON,
 BYTES_MISMATCH, ALBUM_NOT_FOUND, KEY_MISMATCH, CONFLICT. KEY_MISMATCH is reserved for the Worker (the database
 derives the key and cannot mismatch). INVALID_ITEMS and INVALID_STATUS are input errors, and
-COVER_NOT_IN_ALBUM (SQLSTATE 23514) comes from the cover trigger.
+COVER_NOT_IN_ALBUM (SQLSTATE 23514) comes from the cover trigger. CATEGORY_COVER_NOT_IN_CATEGORY (SQLSTATE 23514)
+comes from `check_category_cover` when a category cover photo is not in one of its albums (also for a direct REST
+update); the admin maps it to a Czech text.
 
 ## Triggers
 
@@ -170,6 +175,12 @@ COVER_NOT_IN_ALBUM (SQLSTATE 23514) comes from the cover trigger.
 - `log_change` after insert, update or delete, per row, on categories, albums, photos (see "Change log").
 - `check_album_cover`: a cover photo must belong to its album.
 - `clear_cover_on_photo_change`: moving or deleting a photo clears covers that point at it.
+- `check_category_cover` (trigger `categories_check_cover`, before insert or update of `cover_photo_id` on categories;
+  named to fire before `categories_log_change`): the cover photo must belong to an album of the category.
+- `clear_category_cover_on_photo_change` (`photos_clear_category_cover`): deleting a photo, or moving it to an album of
+  another category, clears the category cover that points at it. A move inside the same category keeps it.
+- `clear_category_cover_on_album_move` (`albums_clear_category_cover`): moving an album to another category clears the
+  old category's cover when it was a photo of that album.
 - Slug history (migration `20261019100700_slug_history.sql`): renaming an album slug or moving it to another
   category writes a 301 `/<cat>/<old>/` to the new path (earlier redirects are repointed, no chains); changing a
   category slug writes 301 rows for the category and each of its albums; deleting an album writes a 410 row.
@@ -188,11 +199,23 @@ bookkeeping (`pending_seen`), but the UI no longer shows that raw counter.
 - `url_history` is deliberately not logged: its rows come from the slug and delete triggers of albums and
   categories, which already produce an `edited` or `deleted` line.
 - A cover photo cleared by `clear_cover_on_photo_change` shows as an `edited` album (the cover really changed).
+- Choosing, changing or clearing a category cover, and a category cover cleared by the triggers above, shows as an
+  `edited` category (`log_change` compares whole rows, so the new column needs no code). `bump_pending` fires as for
+  any categories update.
+
 - Clearing: `record_publish(..., 'ok', ...)` deletes every line with `at <=` the request time of that publish
   (`publish_log.requested_at`). Lines written while the build runs stay listed, like the counter keeps them. A failed
   publish clears nothing. (A filter on `last_published_at` was rejected: it would hide edits made during the build.)
 - Lines exist only from the moment the migration is applied. Publish once before applying it (or accept that older
   unpublished edits are not listed). The seed clears the log the same way it resets the counter.
+
+## Snapshot
+
+The public snapshot (`schemaVersion` stays 1) has `categories[].coverPhotoId` (string or null, default null so older
+snapshots still parse). `buildSnapshot` emits it only when the photo is in a published album of the visible category;
+a stale or foreign value becomes null and never fails the build. The web uses it for the category cards on the home
+page and the category page, else the cover of the first album. The Worker bundles `packages/shared`, so it needs a
+redeploy to publish the field; no Worker source changed.
 
 ## Seed and fixtures
 

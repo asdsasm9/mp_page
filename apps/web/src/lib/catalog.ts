@@ -144,7 +144,7 @@ export interface Catalog {
   neighbours(albumSlug: string): { prev: SnapshotAlbum | null; next: SnapshotAlbum | null };
   /** The cover photo of an album (falls back to the first photo; null for an album without photos). */
   coverOf(album: SnapshotAlbum): SnapshotPhoto | null;
-  /** The cover of a category is the cover of its first album. */
+  /** The category's chosen main photo, else the cover of its first album (null for a category without photos). */
   categoryCover(category: SnapshotCategory): SnapshotPhoto | null;
 }
 
@@ -176,6 +176,12 @@ export function buildCatalog(snapshot: Snapshot): Catalog {
     },
     coverOf,
     categoryCover(category) {
+      if (category.coverPhotoId !== null) {
+        for (const album of category.albums) {
+          const chosen = album.photos.find((p) => p.id === category.coverPhotoId);
+          if (chosen) return chosen;
+        }
+      }
       const first = category.albums[0];
       return first ? coverOf(first) : null;
     },

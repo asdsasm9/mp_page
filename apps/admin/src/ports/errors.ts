@@ -34,6 +34,7 @@ export type CatalogErrorCode =
   | 'DUPLICATE_SLUG'
   | 'IN_USE' // foreign key: the row still has children
   | 'COVER_NOT_IN_ALBUM'
+  | 'CATEGORY_COVER_NOT_IN_CATEGORY'
   | 'INVALID'; // a check constraint (slug format, reserved slug, length)
 
 /** A PostgREST (database) refusal. */

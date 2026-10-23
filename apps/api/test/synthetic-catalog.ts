@@ -42,6 +42,7 @@ export function syntheticCatalog(opts: SyntheticOptions): CatalogRows {
       seo_description: 'Kratky SEO popis kategorie, zhruba sto padesat znaku pro odhad velikosti.',
       sort: c,
       visible: true,
+      cover_photo_id: null,
       created_at: stamp,
       updated_at: stamp,
     });

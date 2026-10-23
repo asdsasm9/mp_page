@@ -87,7 +87,7 @@ describe('seed.sql on a freshly migrated database', () => {
   it('buildSnapshot over rows read back from the DB deep-equals the committed fixture (ignoring generatedAt)', async () => {
     const categories = (
       await db.query<CategoryRow>(
-        `select id, slug, name, description, seo_title, seo_description, sort, visible,
+        `select id, slug, name, description, seo_title, seo_description, sort, visible, cover_photo_id,
                 created_at::text, updated_at::text from public.categories`,
       )
     ).rows;

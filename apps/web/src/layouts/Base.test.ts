@@ -67,9 +67,11 @@ describe('Home page (built, shared build)', () => {
     const hrefs = [...cats.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
     expect(hrefs).toEqual(fixture.categories.map((c) => `/${c.slug}/`));
     for (const c of fixture.categories) {
+      // The chosen category photo when there is one (the fixture has it on the first category), else the first album's cover.
       const album = c.albums[0]!;
-      const cover = album.photos.find((p) => p.id === album.coverPhotoId) ?? album.photos[0]!;
-      expect(cats).toContain(`${cover.id}/480.webp 480w`);
+      const coverId = c.coverPhotoId ?? album.coverPhotoId ?? album.photos[0]!.id;
+      expect(cats).toContain(`${coverId}/480.webp 480w`);
+      if (c.coverPhotoId !== null && album.coverPhotoId !== null) expect(cats).not.toContain(`${album.coverPhotoId}/`);
     }
     // The link text names the card, so its image is decorative.
     const imgs = imgTags(cats);

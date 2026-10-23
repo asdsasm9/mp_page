@@ -391,6 +391,38 @@ describe('catalog rules and pending_changes', () => {
     expect((await s.ports.catalog.getAlbum(s.album.id))!.cover_photo_id).toBeNull();
   });
 
+  it('category cover: checked against the category, cleared on delete, move out and album move, kept inside', async () => {
+    const s = await setup();
+    await addPhoto(s, 1);
+    const two = await s.ports.catalog.createAlbum({ category_id: s.category.id, slug: 'two', title: 'Two' });
+    const otherCat = await s.ports.catalog.createCategory({ slug: 'portrety', name: 'Portréty' });
+    const foreign = await s.ports.catalog.createAlbum({ category_id: otherCat.id, slug: 'three', title: 'Three' });
+    const cover = async () => (await s.ports.catalog.getCategory(s.category.id))!.cover_photo_id;
+    const set = (id: string | null) => s.ports.catalog.updateCategory(s.category.id, { cover_photo_id: id });
+
+    expect(await cover()).toBeNull();
+    await expect(set(pid(55))).rejects.toMatchObject({ code: 'CATEGORY_COVER_NOT_IN_CATEGORY' });
+    await set(pid(1));
+    expect(await cover()).toBe(pid(1));
+    await s.ports.catalog.updatePhoto(pid(1), { album_id: two.id }); // same category: kept
+    expect(await cover()).toBe(pid(1));
+    await s.ports.catalog.updatePhoto(pid(1), { album_id: foreign.id }); // other category: cleared
+    expect(await cover()).toBeNull();
+    await expect(set(pid(1))).rejects.toMatchObject({ code: 'CATEGORY_COVER_NOT_IN_CATEGORY' });
+
+    await s.ports.catalog.updatePhoto(pid(1), { album_id: two.id });
+    await set(pid(1));
+    await s.ports.catalog.updateAlbum(two.id, { category_id: otherCat.id }); // album leaves: cleared
+    expect(await cover()).toBeNull();
+
+    await s.ports.catalog.updateAlbum(two.id, { category_id: s.category.id });
+    await set(pid(1));
+    await s.ports.api.deletePhotos({ ids: [pid(1)] }); // deleted: cleared
+    expect(await cover()).toBeNull();
+    // The category is still unpublished in this setup, so its line stays "added" (a cover change is not a new line).
+    expect((await s.ports.catalog.listChangeLog()).filter((l) => l.table_name === 'categories' && l.row_id === s.category.id)).toHaveLength(1);
+  });
+
   it('a category with albums and an album with photos cannot be deleted', async () => {
     const s = await setup();
     await addPhoto(s, 1);

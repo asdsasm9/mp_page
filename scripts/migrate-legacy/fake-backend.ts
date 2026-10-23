@@ -215,6 +215,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}): FakeBackend
         seo_description: null,
         sort: input.sort,
         visible: true,
+        cover_photo_id: null,
         created_at: now,
         updated_at: now,
       };

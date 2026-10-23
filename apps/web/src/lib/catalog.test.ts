@@ -103,7 +103,7 @@ describe('loadSnapshot, snapshot mode', () => {
 
   it('zero albums throws', async () => {
     const empty: Snapshot = { ...clone(), counts: { categories: 1, albums: 0, photos: 0 }, categories: [] };
-    empty.categories = [{ ...clone().categories[0]!, albums: [] }];
+    empty.categories = [{ ...clone().categories[0]!, albums: [], coverPhotoId: null }];
     await expect(
       loadSnapshot(snapshotEnv, { fetch: ok(JSON.stringify(empty)) as unknown as typeof fetch, sleep: noSleep }),
     ).rejects.toThrow(/SNAPSHOT_EMPTY/);
@@ -135,7 +135,32 @@ describe('buildCatalog', () => {
     expect(cat.coverOf(album)?.id).toBe(album.coverPhotoId);
     expect(cat.coverOf({ ...album, coverPhotoId: null })?.id).toBe(album.photos[0]!.id);
     expect(cat.coverOf({ ...album, photos: [], coverPhotoId: null })).toBeNull();
-    expect(cat.categoryCover(fixture.categories[0]!)?.id).toBe(album.coverPhotoId);
+  });
+
+  it('categoryCover uses the chosen photo, else the first album cover, else null', () => {
+    const chosen = fixture.categories[0]!;
+    expect(chosen.coverPhotoId).not.toBeNull();
+    expect(cat.categoryCover(chosen)?.id).toBe(chosen.coverPhotoId);
+    expect(cat.categoryCover(chosen)?.id).not.toBe(chosen.albums[0]!.coverPhotoId);
+    // a photo of a later album works too
+    const later = chosen.albums[1]!.photos[2]!;
+    expect(cat.categoryCover({ ...chosen, coverPhotoId: later.id })?.id).toBe(later.id);
+    // none chosen: first album cover (today's behaviour)
+    const automatic = fixture.categories[1]!;
+    expect(automatic.coverPhotoId).toBeNull();
+    expect(cat.categoryCover(automatic)?.id).toBe(automatic.albums[0]!.coverPhotoId);
+    // stale id that is no photo of the category: fallback, no throw
+    expect(cat.categoryCover({ ...chosen, coverPhotoId: 'gone' })?.id).toBe(chosen.albums[0]!.coverPhotoId);
+    expect(cat.categoryCover({ ...chosen, albums: [], coverPhotoId: null })).toBeNull();
+  });
+
+  it('a snapshot with and without a category cover both build', () => {
+    const without = clone();
+    without.categories[0]!.coverPhotoId = null;
+    const a = buildCatalog(fixture);
+    const b = buildCatalog(without);
+    expect(a.categoryCover(a.categories[0]!)?.id).toBe(fixture.categories[0]!.coverPhotoId);
+    expect(b.categoryCover(b.categories[0]!)?.id).toBe(without.categories[0]!.albums[0]!.coverPhotoId);
   });
 
   it('excludes a category with zero albums from the built list', () => {

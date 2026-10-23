@@ -181,6 +181,12 @@ describe('real catalog', () => {
       [409, { code: '23503' }, 'NOT_FOUND', (c) => c.createAlbum({ category_id: 'x', slug: 'ab', title: 'A' })],
       [400, { code: '23514' }, 'INVALID', (c) => c.createCategory({ slug: 'a', name: 'A' })],
       [400, { code: 'P0001', message: 'COVER_NOT_IN_ALBUM' }, 'COVER_NOT_IN_ALBUM', (c) => c.updateAlbum('a1', { cover_photo_id: 'p' })],
+      [
+        400,
+        { code: '23514', message: 'CATEGORY_COVER_NOT_IN_CATEGORY' },
+        'CATEGORY_COVER_NOT_IN_CATEGORY',
+        (c) => c.updateCategory('c1', { cover_photo_id: 'p' }),
+      ],
     ];
     for (const [status, json, code, run] of cases) {
       const { fetch } = stubFetch({ status, json });

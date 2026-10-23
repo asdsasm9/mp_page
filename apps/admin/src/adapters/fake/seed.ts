@@ -17,6 +17,7 @@ export function seedFromSnapshot(core: Core, snapshot: Snapshot): void {
       seo_description: c.seoDescription,
       sort: (ci + 1) * 10,
       visible: true,
+      cover_photo_id: c.coverPhotoId,
       created_at: c.updatedAt,
       updated_at: c.updatedAt,
     };

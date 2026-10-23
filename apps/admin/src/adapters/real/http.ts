@@ -56,6 +56,7 @@ export async function restError(res: Response, method: string): Promise<Error> {
   if (res.status === 401) return new ApiError('UNAUTHENTICATED');
   if (res.status === 403 && pg !== '42501') return new ApiError('NOT_ADMIN');
   if (res.status === 429 || res.status >= 500) return new ApiError('UPSTREAM_ERROR', { status: res.status });
+  if (text.includes('CATEGORY_COVER_NOT_IN_CATEGORY')) return new CatalogError('CATEGORY_COVER_NOT_IN_CATEGORY');
   if (text.includes('COVER_NOT_IN_ALBUM')) return new CatalogError('COVER_NOT_IN_ALBUM');
   if (pg === '42501') return new ApiError('NOT_ADMIN');
   if (pg === '23505') return new CatalogError('DUPLICATE_SLUG');

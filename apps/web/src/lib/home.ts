@@ -1,6 +1,6 @@
 /**
- * Data for the home page, kept pure so it can be tested without a build: category cards (cover of the
- * first album) and reviews (cover of the album the review belongs to). A review whose album is missing
+ * Data for the home page, kept pure so it can be tested without a build: category cards (the category's
+ * chosen photo, else the cover of the first album) and reviews (cover of the album the review belongs to). A review whose album is missing
  * from the snapshot, or has no photo, is dropped, so a snapshot without `anez` still builds.
  */
 import { effectiveAlt, type SnapshotPhoto } from '@mp/shared';

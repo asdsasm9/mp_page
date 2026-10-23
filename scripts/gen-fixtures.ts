@@ -157,6 +157,7 @@ export function buildSeedRows(legacy: LegacyPhotoEntry[]): SeedRows {
     seo_description: null,
     sort: c.sort,
     visible: true,
+    cover_photo_id: null,
     created_at: FIXTURE_NOW,
     updated_at: FIXTURE_NOW,
   }));
@@ -208,6 +209,12 @@ export function buildSeedRows(legacy: LegacyPhotoEntry[]): SeedRows {
       updated_at: FIXTURE_NOW,
     });
   }
+  // One category has a chosen main photo (the second photo of its first album, so it differs from the
+  // automatic fallback), the others stay automatic: the fixture exercises both paths.
+  const firstCategory = categories[0]!;
+  const firstAlbum = albums.find((a) => a.category_id === firstCategory.id)!;
+  const chosen = photos.filter((p) => p.album_id === firstAlbum.id).sort((a, b) => a.sort - b.sort)[1];
+  if (chosen) firstCategory.cover_photo_id = chosen.id;
   return { categories, albums, photos, urlHistory: [] };
 }
 
@@ -253,6 +260,11 @@ export function renderSeedSql(rows: SeedRows): string {
   out.push('-- Covers (main image of each legacy album).');
   for (const a of rows.albums) {
     out.push(`update public.albums set cover_photo_id = ${q(a.cover_photo_id)} where id = ${q(a.id)};`);
+  }
+  out.push('');
+  out.push('-- Main photo of a category (the others stay automatic).');
+  for (const c of rows.categories) {
+    if (c.cover_photo_id !== null) out.push(`update public.categories set cover_photo_id = ${q(c.cover_photo_id)} where id = ${q(c.id)};`);
   }
   out.push('');
   out.push('-- The seed is not a pending change.');

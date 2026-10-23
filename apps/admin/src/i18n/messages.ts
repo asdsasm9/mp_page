@@ -12,6 +12,7 @@ export type MessageOptions = { retryAfter?: number };
 /** Codes that exist only in the client or in the database layer, on top of the Worker codes. */
 export type ExtraErrorCode =
   | 'COVER_NOT_IN_ALBUM'
+  | 'CATEGORY_COVER_NOT_IN_CATEGORY'
   | 'INVALID_STATUS'
   | 'NETWORK'
   | 'UNKNOWN'
@@ -53,6 +54,7 @@ const WORKER: Record<WorkerErrorCode, Entry> = {
 
 const EXTRA: Record<ExtraErrorCode, Entry> = {
   COVER_NOT_IN_ALBUM: 'Titulní fotka musí být z tohoto alba.',
+  CATEGORY_COVER_NOT_IN_CATEGORY: 'Fotka už není v této kategorii.',
   INVALID_STATUS: 'Album nemá stav, který by šel nastavit. Načtěte stránku znovu.',
   NETWORK: 'Chybí připojení k internetu.',
   UNKNOWN: 'Něco se nepovedlo. Zkuste to znovu.',

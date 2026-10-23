@@ -15,7 +15,7 @@ const TS = '2026-10-19T12:00:00.000Z';
 function cat(n: number, over: Partial<CategoryRow> = {}): CategoryRow {
   return {
     id: uuid(100 + n), slug: `cat-${n}`, name: `Category ${n}`, description: null,
-    seo_title: null, seo_description: null, sort: n * 10, visible: true, created_at: TS, updated_at: TS,
+    seo_title: null, seo_description: null, sort: n * 10, visible: true, cover_photo_id: null, created_at: TS, updated_at: TS,
     ...over,
   };
 }
@@ -48,7 +48,7 @@ describe('SnapshotSchema', () => {
     counts: { categories: 1, albums: 1, photos: 1 },
     categories: [
       {
-        slug: 'svatby', name: 'Svatby', description: null, seoTitle: null, seoDescription: null, updatedAt: TS,
+        slug: 'svatby', name: 'Svatby', description: null, seoTitle: null, seoDescription: null, coverPhotoId: null, updatedAt: TS,
         albums: [
           {
             slug: 'frankovi', title: 'Michal & Rozárka', place: null, shotOn: '2024-06-01', description: null,
@@ -80,6 +80,23 @@ describe('SnapshotSchema', () => {
     const s = valid();
     s.categories[0]!.albums[0]!.coverPhotoId = uuid(99);
     expect(messages(s).join('\n')).toContain('is not a photo of album');
+  });
+  it('an old snapshot without category coverPhotoId parses to null', () => {
+    const s = valid();
+    delete (s.categories[0] as Partial<Snapshot['categories'][number]>).coverPhotoId;
+    const r = SnapshotSchema.safeParse(s);
+    expect(r.success).toBe(true);
+    expect(r.success && r.data.categories[0]!.coverPhotoId).toBeNull();
+  });
+  it('accepts a category cover that is a photo of one of its albums', () => {
+    const s = valid();
+    s.categories[0]!.coverPhotoId = uuid(1);
+    expect(SnapshotSchema.safeParse(s).success).toBe(true);
+  });
+  it('rejects a category cover that is not a photo of the category', () => {
+    const s = valid();
+    s.categories[0]!.coverPhotoId = uuid(99);
+    expect(messages(s).join('\n')).toContain('is not a photo of category');
   });
   it('rejects a null cover on an album with photos', () => {
     const s = valid();
@@ -195,6 +212,20 @@ describe('buildSnapshot', () => {
     expect(by('album-3').coverPhotoId).toBe(stalePhoto.id);
     expect(by('album-4').coverPhotoId).toBeNull();
     expect(by('album-4').photos).toEqual([]);
+  });
+  it('exposes a chosen category cover only when it is a photo of a published album of the visible category', () => {
+    const draft = album(2, c1.id, { published: false });
+    const pPub = photo(1, a1.id);
+    const pDraft = photo(2, draft.id);
+    const build = (cover: string | null, cats: CategoryRow[] = [cat(1, { cover_photo_id: cover })]) =>
+      buildSnapshot({ categories: cats, albums: [a1, draft], photos: [pPub, pDraft], urlHistory: [] }, NOW);
+    expect(build(pPub.id).categories[0]!.coverPhotoId).toBe(pPub.id); // valid
+    expect(build(null).categories[0]!.coverPhotoId).toBeNull(); // none
+    expect(build(pDraft.id).categories[0]!.coverPhotoId).toBeNull(); // unpublished album: not exposed
+    expect(build(uuid(999)).categories[0]!.coverPhotoId).toBeNull(); // stale or foreign: null, no throw
+    const hidden = cat(1, { cover_photo_id: pPub.id, visible: false });
+    expect(build(null, [hidden, cat(2)]).categories.map((c) => c.slug)).toEqual(['cat-2']); // hidden category gone
+    expect(JSON.stringify(build(pDraft.id))).not.toContain(pDraft.id);
   });
   it('maps url_history to redirects and trims shot_on to a date', () => {
     const rows: UrlHistoryRow[] = [

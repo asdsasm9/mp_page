@@ -217,6 +217,9 @@ update public.albums set cover_photo_id = '2b18c5ba-6370-5780-98e7-713b7be78ca8'
 update public.albums set cover_photo_id = 'c9ffc081-d473-5ce5-8188-95d9a2312b45' where id = '1e4b1aaf-2d5d-57a3-aa97-5f3c8efcff93';
 update public.albums set cover_photo_id = '27336a01-6d6a-5851-9266-40dafc22fbbb' where id = 'f2905493-2445-5357-9b21-5ab3e863bb5b';
 
+-- Main photo of a category (the others stay automatic).
+update public.categories set cover_photo_id = '8b4cc91a-96b8-5f34-ac47-6a85b48db744' where id = 'fd33d313-4434-516b-b169-5ea20d8d292b';
+
 -- The seed is not a pending change.
 update public.site_state set pending_changes = 0;
 delete from public.change_log;

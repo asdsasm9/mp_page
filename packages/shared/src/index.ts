@@ -15,3 +15,4 @@ export * from './storage/adapter';
 export * from './storage/fake';
 export * from './legacy/albums';
 export * from './czech-plural';
+export * from './reconcile-classify';

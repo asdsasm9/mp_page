@@ -8,7 +8,6 @@ import {
   CommitResponseSchema,
   DeleteRequestSchema,
   DeleteResponseSchema,
-  ORPHAN_MIN_AGE_MS,
   PUBLISH_MIN_GAP_MS,
   PHOTO_CACHE_CONTROL,
   CONTENT_TYPE_BY_KIND,
@@ -22,9 +21,10 @@ import {
   apiCodeFromZodError,
   assertPublishable,
   buildSnapshot,
+  checkRows,
+  classifyGroups,
   evaluateQuota,
   masterKey,
-  parseKey,
   photoPrefix,
   planUploadFiles,
   PRESIGN_EXPIRY_SEC,
@@ -34,8 +34,8 @@ import {
   itemBytes,
   reservationActive,
   totalBytes,
-  variantBytes,
   type PhotoRow,
+  type ReconcileObject,
   type PublishLogRow,
   type UploadTarget,
 } from '@mp/shared';
@@ -316,11 +316,8 @@ export function createFakeApi(core: Core): ApiPort {
 
       // Objects under photos/ grouped by photo id, in key order. A page is whole groups.
       const groups = new Map<string, string[]>();
-      const unknownKeys: string[] = [];
       for (const key of [...state.objects.keys()].sort()) {
         if (!key.startsWith('photos/')) continue;
-        const parsed = parseKey(key);
-        if (!parsed) unknownKeys.push(key);
         const id = key.split('/')[1] ?? '';
         const list = groups.get(id);
         if (list) list.push(key);
@@ -341,45 +338,35 @@ export function createFakeApi(core: Core): ApiPort {
       const inRange = (id: string) => (after === undefined || id > after) && (!hasMore || (lastId !== undefined && id <= lastId));
       const rows = [...state.photos.values()].filter((p) => inRange(p.id)).sort((a, b) => (a.id < b.id ? -1 : 1));
 
+      // The judgement itself is the Worker's: the shared classifier (packages/shared/src/reconcile-classify.ts).
       let r2Bytes = 0;
-      const orphans: { id: string; objects: number; bytes: number }[] = [];
-      const doomed: string[] = [];
+      const pageGroups = new Map<string, ReconcileObject[]>();
       for (const id of pageIds) {
-        const keys = groups.get(id)!;
-        const bytes = keys.reduce((n, k) => n + state.objects.get(k)!.bytes, 0);
-        r2Bytes += bytes;
-        const parsedId = parseKey(keys[0]!)?.id;
-        if (state.photos.has(id) || parsedId === undefined) continue;
-        if (state.reservations.has(id)) continue;
-        if (!keys.every((k) => now - state.objects.get(k)!.uploadedAtMs > ORPHAN_MIN_AGE_MS)) continue;
-        orphans.push({ id, objects: keys.length, bytes });
-        doomed.push(...keys);
+        const list = groups.get(id)!.map((key) => {
+          const obj = state.objects.get(key)!;
+          return { key, bytes: obj.bytes, uploadedMs: obj.uploadedAtMs };
+        });
+        r2Bytes += list.reduce((n, o) => n + o.bytes, 0);
+        pageGroups.set(id, list);
       }
-
-      const missing: { id: string; keys: string[] }[] = [];
-      const sizeMismatch: { id: string; key: string; expected: number; actual: number }[] = [];
-      for (const row of rows) {
-        const keys = allKeys(row.id, row.variants);
-        const expected = variantBytes(row.variants);
-        const gone: string[] = [];
-        for (const [i, key] of keys.entries()) {
-          const obj = state.objects.get(key);
-          if (!obj) gone.push(key);
-          else if (obj.bytes !== expected[i]) sizeMismatch.push({ id: row.id, key, expected: expected[i]!, actual: obj.bytes });
-        }
-        if (gone.length > 0) missing.push({ id: row.id, keys: gone });
-      }
+      const { orphans, orphanKeys, unknownKeys } = classifyGroups(
+        pageGroups,
+        new Set(state.photos.keys()),
+        new Set(state.reservations.keys()),
+        now,
+      );
+      const { missing, sizeMismatch } = checkRows(rows, state.objects);
 
       const apply = req.apply === true;
+      const doomed = orphanKeys.flat();
       if (apply) for (const key of doomed) state.objects.delete(key);
-      const pageUnknown = unknownKeys.filter((k) => pageIds.includes(k.split('/')[1] ?? ''));
       return respond(ReconcileResponseSchema, {
         r2: { objects: pageObjects, bytes: r2Bytes },
         db: { photos: rows.length, bytes: rows.reduce((n, p) => n + p.bytes_total, 0) },
         orphans,
         missing,
         sizeMismatch,
-        unknownKeys: pageUnknown,
+        unknownKeys,
         applied: apply,
         deleted: apply ? doomed.length : 0,
         ...(hasMore && lastId !== undefined ? { cursor: lastId } : {}),

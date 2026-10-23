@@ -1,5 +1,6 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { CHANGE_SCENARIOS, type ScenarioOp } from '../../packages/shared/src/change-log-scenarios';
 import { asRole, createMigratedDb, seedAdmin } from './helpers/db';
 import { functionPrivilegeMatrix, lintPublicSchema } from './helpers/privileges';
 
@@ -64,67 +65,69 @@ beforeEach(async () => {
   `);
 });
 
-describe('log_change: kinds', () => {
-  it('logs inserts as added with name and grouping context', async () => {
-    await db.exec(photo(P2, ALB2, `'Pár na louce'`));
-    await db.exec(`insert into public.albums (category_id, slug, title) values ('${CAT}', 'three', 'Třetí')`);
-    await db.exec(`insert into public.categories (slug, name) values ('rodina', 'Rodina')`);
+/** SQL ids for the symbolic refs of the shared scenarios (packages/shared/src/change-log-scenarios.ts). */
+const IDS: Record<string, string> = { svatby: CAT, portrety: CAT2, one: ALB1, two: ALB2, P1, P2 };
+const q = (s: string) => `'${s.replace(/'/g, "''")}'`;
+
+function sqlFor(o: ScenarioOp): string {
+  switch (o.op) {
+    case 'addCategory':
+      return `insert into public.categories (slug, name) values (${q(o.ref)}, ${q(o.name)}) returning id`;
+    case 'addAlbum':
+      return `insert into public.albums (category_id, slug, title) values ('${IDS[o.category]}', ${q(o.ref)}, ${q(o.title)}) returning id`;
+    case 'addPhoto':
+      return photo(IDS[o.ref]!, IDS[o.album]!, o.alt === undefined ? '' : q(o.alt));
+    case 'setCategory':
+      return `update public.categories set name = ${q(o.set.name)} where id = '${IDS[o.ref]}'`;
+    case 'setAlbum': {
+      const set: string[] = [];
+      if (o.set.title !== undefined) set.push(`title = ${q(o.set.title)}`);
+      if (o.set.sort !== undefined) set.push(`sort = ${o.set.sort}`);
+      if (o.set.slug !== undefined) set.push(`slug = ${q(o.set.slug)}`);
+      if (o.set.cover !== undefined) set.push(`cover_photo_id = ${o.set.cover === null ? 'null' : `'${IDS[o.set.cover]}'`}`);
+      return `update public.albums set ${set.join(', ')} where id = '${IDS[o.ref]}'`;
+    }
+    case 'setPhoto': {
+      const set: string[] = [];
+      if (o.set.alt !== undefined) set.push(`alt = ${q(o.set.alt)}`);
+      if (o.set.caption !== undefined) set.push(`caption = ${q(o.set.caption)}`);
+      if (o.set.sort !== undefined) set.push(`sort = ${o.set.sort}`);
+      if (o.set.album !== undefined) set.push(`album_id = '${IDS[o.set.album]}'`);
+      return `update public.photos set ${set.join(', ')} where id = '${IDS[o.ref]}'`;
+    }
+    case 'deletePhoto':
+      return `delete from public.photos where id = '${IDS[o.ref]}'`;
+  }
+}
+
+describe('log_change: shared scenarios (same table drives the fake in the admin app)', () => {
+  it.each(CHANGE_SCENARIOS.map((s) => [s.name, s] as const))('%s', async (_name, scenario) => {
+    for (const o of scenario.ops) {
+      const res = await db.query<{ id: string }>(sqlFor(o));
+      // Rows created without a known id get one from the database; later ops may refer to them by ref.
+      if ((o.op === 'addCategory' || o.op === 'addAlbum') && res.rows[0]) IDS[o.ref] = res.rows[0].id;
+    }
     const l = await lines();
-    expect(l.map((x) => [x.table_name, x.kind, x.label, x.category_name, x.album_title])).toEqual([
-      ['photos', 'added', 'Pár na louce', 'Portréty', 'Druhé'],
-      ['albums', 'added', 'Třetí', 'Svatby', 'Třetí'],
-      ['categories', 'added', 'Rodina', 'Rodina', null],
-    ]);
+    expect(l.map((x) => [x.table_name, x.kind, x.label, x.category_name, x.album_title])).toEqual(
+      scenario.lines.map((x) => [...x]),
+    );
   });
+});
 
-  it('a photo without alt text or caption gets an empty label, caption is the fallback', async () => {
-    await db.exec(photo(P2, ALB1));
-    expect((await lines())[0]!.label).toBe('');
-    await db.exec(`update public.photos set caption = 'Podpis' where id = '${P2}'`);
-    expect((await lines())[0]!.label).toBe('Podpis');
-  });
-
-  it('an update of only sort is reordered, any other column makes it edited', async () => {
-    await db.exec(`update public.albums set sort = 5 where id = '${ALB1}'`);
-    expect(await kinds()).toEqual(['albums:reordered']);
-    await db.exec(`update public.photos set sort = 5 where id = '${P1}'`);
-    expect(await kinds()).toEqual(['albums:reordered', 'photos:reordered']);
-    await db.exec(`update public.albums set title = 'První nově', sort = 6 where id = '${ALB1}'`);
-    expect(await kinds()).toEqual(['albums:edited', 'photos:reordered']);
-    expect((await lines())[0]!.label).toBe('První nově');
-  });
-
-  it('an update that changes no value but updated_at is not logged', async () => {
-    await db.exec(`update public.albums set title = title, sort = sort where id = '${ALB1}'`);
-    await db.exec(`update public.photos set alt = alt where id = '${P1}'`);
-    expect(await lines()).toEqual([]);
-  });
-
-  it('moving a photo to another album is edited and carries the new album', async () => {
-    await db.exec(`update public.photos set album_id = '${ALB2}' where id = '${P1}'`);
-    const l = await lines();
-    expect(l.map((x) => [x.kind, x.album_title, x.category_name])).toEqual([['edited', 'Druhé', 'Portréty']]);
-  });
-
-  it('deleting a published row is deleted, with the name at change time', async () => {
-    await db.exec(`delete from public.photos where id = '${P1}'`);
-    expect((await lines()).map((x) => [x.kind, x.label, x.album_title])).toEqual([['deleted', 'Nevěsta', 'První']]);
-  });
-
+describe('log_change: SQL only', () => {
   it('url_history writes are not logged', async () => {
     await db.exec(`insert into public.url_history (old_path, status) values ('/x/', 301)`);
     await db.exec(`update public.url_history set status = 410 where old_path = '/x/'`);
     expect(await lines()).toEqual([]);
   });
 
-  it('a slug change is one edited album line although it also writes url_history', async () => {
+  it('a slug change also writes url_history but is one line', async () => {
     await db.exec(`update public.albums set slug = 'one-new' where id = '${ALB1}'`);
+    expect((await db.query('select 1 from public.url_history')).rows.length).toBeGreaterThan(0);
     expect(await kinds()).toEqual(['albums:edited']);
   });
-});
 
-describe('log_change: one line per row', () => {
-  it('repeated edits refresh the same line (time and label) instead of adding lines', async () => {
+  it('repeated edits refresh the time of the same line', async () => {
     await db.exec(`update public.albums set title = 'A' where id = '${ALB1}'`);
     const first = (await db.query<{ at: string }>('select at::text as at from public.change_log')).rows[0]!.at;
     await db.exec('select pg_sleep(0.02)');
@@ -134,45 +137,10 @@ describe('log_change: one line per row', () => {
     );
     expect(r.rows).toEqual([{ label: 'B', later: true }]);
   });
-
-  it('added stays added when edited or reordered afterwards', async () => {
-    await db.exec(photo(P2, ALB1));
-    await db.exec(`update public.photos set alt = 'x' where id = '${P2}'`);
-    await db.exec(`update public.photos set sort = 3 where id = '${P2}'`);
-    expect(await kinds()).toEqual(['photos:added']);
-    expect((await lines())[0]!.label).toBe('x');
-  });
-
-  it('reordered becomes edited after a content edit, edited stays edited after a reorder', async () => {
-    await db.exec(`update public.photos set sort = 3 where id = '${P1}'`);
-    await db.exec(`update public.photos set alt = 'y' where id = '${P1}'`);
-    expect(await kinds()).toEqual(['photos:edited']);
-    await db.exec(`update public.photos set sort = 4 where id = '${P1}'`);
-    expect(await kinds()).toEqual(['photos:edited']);
-  });
-
-  it('a row added and deleted before publishing leaves no line', async () => {
-    await db.exec(photo(P2, ALB1));
-    await db.exec(`delete from public.photos where id = '${P2}'`);
-    expect(await lines()).toEqual([]);
-  });
-
-  it('a published row that was edited and then deleted is one deleted line', async () => {
-    await db.exec(`update public.photos set alt = 'z' where id = '${P1}'`);
-    await db.exec(`delete from public.photos where id = '${P1}'`);
-    expect((await lines()).map((x) => [x.kind, x.label])).toEqual([['deleted', 'z']]);
-  });
-
-  it('clearing a cover by deleting the cover photo shows the album as edited', async () => {
-    await db.exec(`update public.albums set cover_photo_id = '${P1}' where id = '${ALB1}'`);
-    await db.exec('delete from public.change_log');
-    await db.exec(`delete from public.photos where id = '${P1}'`);
-    expect(await kinds()).toEqual(['albums:edited', 'photos:deleted']);
-  });
 });
 
 describe('change_log: panel count equals the lines', () => {
-  it('count(*) is the number of distinct changed rows, however often they changed', async () => {
+  it('count(*) is the number of lines', async () => {
     await db.exec(`
       update public.albums set title = 'a' where id = '${ALB1}';
       update public.albums set title = 'b' where id = '${ALB1}';

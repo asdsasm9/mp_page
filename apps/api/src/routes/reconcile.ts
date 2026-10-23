@@ -12,16 +12,14 @@
  */
 import {
   PhotoVariantsSchema,
-  ORPHAN_MIN_AGE_MS,
   ReconcileRequestSchema,
-  allKeys,
   apiCodeFromZodError,
-  isValidPhotoId,
-  parseKey,
+  checkRows,
+  classifyGroups,
+  type PhotoVariants,
   type ReconcileResponse,
   type StorageAdapter,
   type StorageObjectInfo,
-  variantBytes,
 } from '@mp/shared';
 import type { Route } from '../index';
 import { errorResponse, jsonResponse, readJsonBody } from '../http';
@@ -181,42 +179,32 @@ export function createReconcileRoute(deps: ReconcileDeps): Route {
         deleted: 0,
       };
 
-      const cutoff = nowMs - ORPHAN_MIN_AGE_MS;
-      const orphanKeys: string[][] = [];
-      for (const [seg, list] of [...groups.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
-        if (!isValidPhotoId(seg)) {
-          report.unknownKeys.push(...list.map((o) => o.key));
-          continue;
-        }
-        if (rowIds.has(seg)) {
-          report.unknownKeys.push(...list.filter((o) => parseKey(o.key) === null).map((o) => o.key));
-          continue;
-        }
-        if (reserved.has(seg)) continue;
-        const old = list.every((o) => o.uploaded !== undefined && Date.parse(o.uploaded) < cutoff);
-        if (!old) continue;
-        report.orphans.push({ id: seg, objects: list.length, bytes: list.reduce((a, o) => a + o.bytes, 0) });
-        orphanKeys.push(list.map((o) => o.key));
-      }
+      const judged = classifyGroups(
+        new Map(
+          [...groups].map(([seg, list]) => [
+            seg,
+            list.map((o) => ({ key: o.key, bytes: o.bytes, uploadedMs: o.uploaded === undefined ? undefined : Date.parse(o.uploaded) })),
+          ]),
+        ),
+        rowIds,
+        reserved,
+        nowMs,
+      );
+      report.orphans.push(...judged.orphans);
+      report.unknownKeys.push(...judged.unknownKeys);
+      const orphanKeys = judged.orphanKeys;
 
       // ---- rows whose id falls in this call's range
+      const inRange: { id: string; variants: PhotoVariants }[] = [];
       for (const row of rows) {
         if (state && row.id <= state.after) continue;
         if (hi !== undefined && row.id > hi) continue;
         const variants = PhotoVariantsSchema.safeParse(row.variants);
-        if (!variants.success) continue;
-        const v = variants.data;
-        const expected = variantBytes(v);
-        const missingKeys: string[] = [];
-        for (const [i, key] of allKeys(row.id, v).entries()) {
-          const found = byKey.get(key);
-          if (!found) missingKeys.push(key);
-          else if (found.bytes !== expected[i]) {
-            report.sizeMismatch.push({ id: row.id, key, expected: expected[i]!, actual: found.bytes });
-          }
-        }
-        if (missingKeys.length > 0) report.missing.push({ id: row.id, keys: missingKeys });
+        if (variants.success) inRange.push({ id: row.id, variants: variants.data });
       }
+      const checked = checkRows(inRange, byKey);
+      report.missing.push(...checked.missing);
+      report.sizeMismatch.push(...checked.sizeMismatch);
 
       // ---- apply: orphans only; a failed group stays in the report and is retried by the next run
       if (apply) {

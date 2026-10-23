@@ -1,6 +1,6 @@
 /** Replace a photo with a better file (T-262, WP-10 step 8, D-21 option A) against the fake world. */
 import axe from 'axe-core';
-import { sumBytes, type AlbumRow, type PhotoRow } from '@mp/shared';
+import { sumBytes, type AlbumRow, type CategoryRow, type PhotoRow } from '@mp/shared';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeWorld, createSeqIds, type FakeWorld } from '../adapters/fake';
 import { App } from '../App';
 import { AppProviders } from '../AppProviders';
+import { takeCategoryCoverCleared } from '../data/categoryCoverNotice';
 import { cs } from '../i18n/cs';
 import { formatBytes } from '../i18n/format';
 import { ApiError, systemClock } from '../ports';
@@ -191,6 +192,33 @@ describe('replace a photo with a better version', () => {
     await waitFor(() => expect(photosOf(world).some((p) => p.id === middle.id)).toBe(false), SLOW);
     expect(updateAlbum.mock.calls.filter(([, patch]) => 'cover_photo_id' in patch)).toHaveLength(0);
     expect(albumOf(world, album.id).cover_photo_id).toBe(first.id);
+  }, 30_000);
+
+  it('the main photo of the category moves to the new photo before the old one is deleted (no cleared choice)', async () => {
+    const user = userEvent.setup();
+    const { world, album, middle } = await setup();
+    await world.ports.catalog.updateCategory(album.category_id, { cover_photo_id: middle.id });
+    const categoryOf = () => (world.snapshot().categories as CategoryRow[]).find((c) => c.id === album.category_id)!;
+    const updateCategory = vi.spyOn(world.ports.catalog, 'updateCategory');
+    await open(world, album, middle);
+    await pickAndConfirm(user);
+    await waitFor(() => expect(photosOf(world).some((p) => p.id === middle.id)).toBe(false), SLOW);
+    const added = photosOf(world).find((p) => p.alt === 'Nevěsta s kyticí')!;
+    expect(categoryOf().cover_photo_id).toBe(added.id);
+    expect(updateCategory).toHaveBeenCalledTimes(1);
+    expect(takeCategoryCoverCleared(album.category_id)).toBe(false);
+  }, 30_000);
+
+  it('a photo that is not the main photo of the category leaves it alone', async () => {
+    const user = userEvent.setup();
+    const { world, album, first, middle } = await setup();
+    await world.ports.catalog.updateCategory(album.category_id, { cover_photo_id: first.id });
+    const updateCategory = vi.spyOn(world.ports.catalog, 'updateCategory');
+    await open(world, album, middle);
+    await pickAndConfirm(user);
+    await waitFor(() => expect(photosOf(world).some((p) => p.id === middle.id)).toBe(false), SLOW);
+    expect(updateCategory).not.toHaveBeenCalled();
+    expect((world.snapshot().categories as CategoryRow[]).find((c) => c.id === album.category_id)!.cover_photo_id).toBe(first.id);
   }, 30_000);
 
   it('a rejected file changes nothing: wrong type, over the pixel limit', async () => {

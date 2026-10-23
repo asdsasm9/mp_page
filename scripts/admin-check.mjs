@@ -390,6 +390,13 @@ async function runProfile(browser, profile) {
       await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Kontrolní svatby', { timeout: 10000 });
       urls.category = new URL(page.url()).pathname;
       await checkpoint(ctx, 'category empty');
+      // T-272: an empty category offers the main photo only as a disabled button with a hint.
+      await waitText(page, /V kategorii zatím nejsou žádné fotky\./);
+      const emptyBlock = await page.evaluate(() => {
+        const button = [...document.querySelectorAll('.category-cover button')].find((b) => /^Vybrat$/.test(b.textContent.trim()));
+        return { disabled: button?.disabled ?? null, auto: /Automaticky/.test(document.querySelector('.category-cover')?.textContent ?? '') };
+      });
+      if (emptyBlock.disabled !== true || !emptyBlock.auto) throw new Error(`empty category block is wrong: ${JSON.stringify(emptyBlock)}`);
     });
 
     // ---- F1: album and 5 photos
@@ -533,6 +540,50 @@ async function runProfile(browser, profile) {
       await find(page, 'button', /^Zveřejnit album$/);
       await clickBy(ctx, 'button', /^Zveřejnit album$/);
       await find(page, 'button', /^Skrýt album$/);
+    });
+
+    // ---- main photo of the category (T-272): none chosen, picker open, chosen
+    await step('category main photo', async () => {
+      await spaGo(page, urls.category);
+      await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Kontrolní svatby', { timeout: 10000 });
+      await page.waitForFunction(
+        () => {
+          const button = [...document.querySelectorAll('.category-cover button')].find((b) => /^Vybrat$/.test(b.textContent.trim()));
+          return Boolean(button) && !button.disabled;
+        },
+        { timeout: 15000 },
+      );
+      await waitText(page, /Automaticky/);
+      await checkpoint(ctx, 'category cover none');
+      await clickBy(ctx, '.category-cover button', /^Vybrat$/);
+      await page.waitForFunction(() => document.querySelectorAll('dialog:modal input[name=cover-photo]').length === 4, { timeout: 15000 });
+      await imagesLoaded(page);
+      await checkpoint(ctx, 'category cover picker');
+      const tilesInPicker = await page.$$('dialog:modal .cover-tile');
+      await press(ctx, tilesInPicker[1]);
+      await page.waitForFunction(() => document.querySelectorAll('dialog:modal input[name=cover-photo]')[1]?.checked === true, { timeout: 5000 });
+      await checkpoint(ctx, 'category cover picker selected');
+      await clickBy(ctx, 'button', /^Nastavit jako hlavní$/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal') === null, { timeout: 15000 });
+      await waitText(page, /Fotka z alba Novákovi/);
+      const stored = await world(
+        page,
+        `(w) => {
+          const s = w.snapshot();
+          const album = s.albums.find((a) => a.title === "Novákovi");
+          const second = s.photos.filter((p) => p.album_id === album.id).sort((a, b) => a.sort - b.sort || (a.id < b.id ? -1 : 1))[1];
+          return { cover: s.categories.find((c) => c.id === album.category_id).cover_photo_id, second: second.id };
+        }`,
+      );
+      if (stored.cover !== stored.second) throw new Error(`the category main photo is ${stored.cover}, expected ${stored.second}`);
+      await page.waitForFunction(() => document.querySelector('.category-cover img') !== null, { timeout: 10000 });
+      await find(page, '.category-cover button', /^Zrušit výběr$/);
+      await imagesLoaded(page);
+      await checkpoint(ctx, 'category cover chosen');
+      await spaGo(page, urls.album);
+      await waitTiles(page, 4);
+      await find(page, '.photo-tile .photo-badge-category', /^Hlavní fotka kategorie$/);
+      await checkpoint(ctx, 'album grid with category badge', { shot: false });
     });
 
     // ---- F6 publish the site, with one failure first

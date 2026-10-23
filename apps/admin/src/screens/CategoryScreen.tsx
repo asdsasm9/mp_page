@@ -23,6 +23,7 @@ import { cs, glossary } from '../i18n/cs';
 import { formatCount, formatShotOn } from '../i18n/format';
 import { useImageBase } from '../ports-context';
 import { HideAlbumDialog, MoveAlbumDialog, NewAlbumDialog } from './AlbumDialogs';
+import { CategoryCoverBlock } from './CategoryCoverBlock';
 import { CategoryFormDialog, DeleteCategoryDialog } from './CategoryDialogs';
 import { DeleteAlbumDialog } from './DeleteDialogs';
 
@@ -213,6 +214,7 @@ function CategoryBody({ category }: { category: CategoryRow }) {
       ) : (
         <Notice>{albumActionMessage(actionError)}</Notice>
       )}
+      {albums.data ? <CategoryCoverBlock category={category} albums={own} photos={photos} /> : null}
       {list}
       {dialog?.kind === 'new' ? (
         <NewAlbumDialog

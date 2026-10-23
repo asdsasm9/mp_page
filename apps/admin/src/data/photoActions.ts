@@ -9,6 +9,7 @@ import { useSession } from '../auth/session';
 import { NetworkError } from '../ports';
 import { usePorts } from '../ports-context';
 import { catalogKeys } from './catalog';
+import { markCategoryCoverCleared } from './categoryCoverNotice';
 import { expectUpdatedAt } from './concurrency';
 import { isOnline } from './health';
 import { SORT_STEP, nextSortAfterLast, sortedRows, type SortUpdate } from './order';
@@ -87,6 +88,24 @@ export function usePhotoActions() {
   }
 
   /**
+   * True when the main photo of the source category is among the moved photos and the target album belongs to another
+   * category (the database then clears the choice; inside one category it stays). Only feeds a notice, so a read that
+   * fails answers false.
+   */
+  async function leavesCategoryCover(source: AlbumRow, targetAlbumId: string, movingIds: readonly string[]): Promise<boolean> {
+    try {
+      const [category, target] = await Promise.all([
+        runAuthed(() => catalog.getCategory(source.category_id)),
+        runAuthed(() => catalog.getAlbum(targetAlbumId)),
+      ]);
+      const cover = category?.cover_photo_id ?? null;
+      return cover !== null && movingIds.includes(cover) && target !== null && target.category_id !== source.category_id;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Moves photos to the end of another album (album_id + sort only; storage keys are untouched). `movingIds`
    * must be in the order they had in the source album. If the source cover moves away, the first remaining
    * photo becomes the cover.
@@ -97,6 +116,7 @@ export function usePhotoActions() {
     try {
       const [sourcePhotos, targetPhotos] = await Promise.all([listFresh(source.id), listFresh(targetAlbumId)]);
       const rows = new Map(sourcePhotos.map((p) => [p.id, p] as const));
+      const losesCategoryCover = await leavesCategoryCover(source, targetAlbumId, movingIds);
       let moved = 0;
       for (const step of planAppend(targetPhotos, movingIds)) {
         const row = rows.get(step.id);
@@ -106,6 +126,7 @@ export function usePhotoActions() {
         );
         moved += 1;
       }
+      if (losesCategoryCover && moved > 0) markCategoryCoverCleared(source.category_id);
       const wasCover = source.cover_photo_id !== null && movingIds.includes(source.cover_photo_id);
       let coverReassigned = false;
       if (wasCover) {

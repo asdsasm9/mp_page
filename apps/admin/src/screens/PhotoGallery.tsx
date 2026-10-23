@@ -224,6 +224,7 @@ export function PhotoGallery({ album, photos, categories, albums }: Props) {
         photos={displayed}
         visibleIds={visibleIds}
         coverId={album.cover_photo_id}
+        categoryCoverId={categories.find((c) => c.id === album.category_id)?.cover_photo_id ?? null}
         imgBase={imgBase}
         albumId={album.id}
         selecting={selecting}

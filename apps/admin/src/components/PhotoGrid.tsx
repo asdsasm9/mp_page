@@ -49,6 +49,8 @@ export interface PhotoGridProps {
   /** Filter: only these are shown (and dragging is off); null = all. */
   visibleIds: ReadonlySet<string> | null;
   coverId: string | null;
+  /** The main photo of the album's category, if it is one of these photos (badge "Hlavní fotka kategorie"). */
+  categoryCoverId?: string | null;
   imgBase: string;
   albumId: string;
   selecting: boolean;
@@ -67,6 +69,7 @@ interface TileProps {
   photo: PhotoRow;
   position: number;
   isCover: boolean;
+  isCategoryCover: boolean;
   imgBase: string;
   albumId: string;
   selecting: boolean;
@@ -186,6 +189,11 @@ function Tile(props: TileProps) {
       </div>
       <div className="photo-badges">
         {isCover ? <span className="photo-badge">{cs.photos.cover}</span> : null}
+        {props.isCategoryCover ? (
+          <span className="photo-badge photo-badge-category" data-category-cover="">
+            {cs.categoryCover.heading}
+          </span>
+        ) : null}
         {props.deleteFailed ? <span className="photo-badge photo-badge-danger">{cs.delete.tileFailed}</span> : null}
         <QualityBadges quality={photoQuality(photo)} hideGood className="quality-badge-tile" />
         {hasNoAlt(photo) ? (
@@ -296,6 +304,7 @@ export function PhotoGrid(props: PhotoGridProps) {
               photo={photo}
               position={positionOf(photo.id)}
               isCover={props.coverId === photo.id}
+              isCategoryCover={props.categoryCoverId === photo.id}
               imgBase={props.imgBase}
               albumId={props.albumId}
               selecting={selecting}

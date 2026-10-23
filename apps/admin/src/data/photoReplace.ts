@@ -5,7 +5,8 @@
  *
  *   1. add     the new photo goes into the same album (the normal upload queue, done by the caller)
  *   2. copy    sort, alt and caption of the old photo are written to the new one (updatePhoto)
- *   3. cover   when the old photo is the album cover, the new photo becomes the cover (updateAlbum)
+ *   3. cover   when the old photo is the album cover, the new photo becomes the cover (updateAlbum); the same for
+ *              the main photo of the category (updateCategory)
  *   4. delete  the old photo is deleted through the Worker (only after both photos are verified in the same album)
  *
  * Any failure after step 1 leaves both photos in place: the old photo is deleted only as the very last step and
@@ -81,8 +82,18 @@ export function usePhotoReplace() {
     requireOnline();
     const album = await runAuthed(() => catalog.getAlbum(target.albumId));
     if (!album) throw new ApiError('NOT_FOUND');
-    if (album.cover_photo_id !== target.oldId) return; // not the cover (or already moved)
-    await runAuthed(() => catalog.updateAlbum(album.id, { cover_photo_id: target.newId }, expectUpdatedAt(album)));
+    if (album.cover_photo_id === target.oldId) {
+      await runAuthed(() => catalog.updateAlbum(album.id, { cover_photo_id: target.newId }, expectUpdatedAt(album)));
+    }
+    // The category cover moves the same way. It must happen before the old photo is deleted: deleting a category's
+    // main photo clears the choice (trigger clear_category_cover_on_photo_change), and the new photo is in the same
+    // album, so the database check accepts it.
+    const category = await runAuthed(() => catalog.getCategory(album.category_id));
+    if (category && category.cover_photo_id === target.oldId) {
+      await runAuthed(() =>
+        catalog.updateCategory(category.id, { cover_photo_id: target.newId }, expectUpdatedAt(category)),
+      );
+    }
   }
 
   async function removeOld(target: ReplaceTarget): Promise<void> {
@@ -92,6 +103,9 @@ export function usePhotoReplace() {
     const album: AlbumRow | null = await runAuthed(() => catalog.getAlbum(target.albumId));
     // The cover must already be off the old photo, or the album would be left without its cover.
     if (!album || album.cover_photo_id === target.oldId) throw new ApiError('CONFLICT');
+    // Same for the category cover: it must already be off the old photo, or the delete would silently clear it.
+    const category = await runAuthed(() => catalog.getCategory(album.category_id));
+    if (category && category.cover_photo_id === target.oldId) throw new ApiError('CONFLICT');
     const result = await deleteRows([old]);
     if (result.error !== null) throw result.error;
     if (result.failedIds.length > 0) throw new ApiError('INTERNAL');

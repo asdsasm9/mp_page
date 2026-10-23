@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../auth/session';
 import { usePorts } from '../ports-context';
 import { catalogKeys, useDeleteAlbum } from './catalog';
+import { markCategoryCoverCleared } from './categoryCoverNotice';
 import { useDeletePhotos } from './storage';
 import { usePhotoActions } from './photoActions';
 
@@ -44,6 +45,8 @@ export interface DeleteOutcome extends PhotoDeleteResult {
 export function usePhotoDeleter() {
   const del = useDeletePhotos();
   const { ensureCover } = usePhotoActions();
+  const { catalog } = usePorts();
+  const { runAuthed } = useSession();
 
   /** Sequential chunks of 200. Stops at the first request that throws. */
   async function deleteRows(rows: readonly DeletableRow[]): Promise<PhotoDeleteResult> {
@@ -72,9 +75,21 @@ export function usePhotoDeleter() {
     return result;
   }
 
+  /** The main photo id of a category, or null (also when it cannot be read: this only feeds a notice). */
+  async function categoryCoverOf(categoryId: string): Promise<string | null> {
+    try {
+      return (await runAuthed(() => catalog.getCategory(categoryId)))?.cover_photo_id ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   /** Deletes photos of one album; a deleted cover is replaced by the first remaining photo. */
   async function deletePhotos(album: AlbumRow, rows: readonly DeletableRow[]): Promise<DeleteOutcome> {
+    const categoryCover = await categoryCoverOf(album.category_id);
     const result = await deleteRows(rows);
+    // The database clears the category's main photo together with the photo; the category screen explains it.
+    if (categoryCover !== null && result.removedIds.includes(categoryCover)) markCategoryCoverCleared(album.category_id);
     let coverReassigned = false;
     const coverGone = album.cover_photo_id !== null && result.removedIds.includes(album.cover_photo_id);
     if (coverGone) {

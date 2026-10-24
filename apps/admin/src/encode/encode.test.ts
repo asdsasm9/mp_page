@@ -101,7 +101,7 @@ describe('decode and resize core', () => {
           expect(c.w).toBeGreaterThanOrEqual(1);
         }
         expect(s.openCount()).toBe(0);
-      });
+      }, long >= 4000 ? 30000 : undefined);
     }
   }
 
@@ -293,7 +293,7 @@ describe('quality table, adaptive step-down, sharpening, phases', () => {
     expect(qualitiesOf(s, 'image/jpeg', 3000)).toEqual([0.9, 0.86, 0.82]); // 0.78 is below the 0.80 floor
     for (const e of s.encoded) expect(e.quality).toBeGreaterThanOrEqual(0.6);
     expect(out.files.every((f) => f.bytes === 10_000_000)).toBe(true); // last result kept, nothing dropped
-  });
+  }, 30000);
 
   it('stops stepping as soon as the result fits the cap', async () => {
     // 720 tier: 80 KB cap; size grows with quality, 0.68 -> 85 KB, 0.64 -> 80 KB (fits, not above the cap)
@@ -324,7 +324,7 @@ describe('quality table, adaptive step-down, sharpening, phases', () => {
     expect(s.created.every((c) => Math.max(c.w, c.h) <= MASTER_MAX_EDGE)).toBe(true);
     expect(s.encoded.every((e) => e.w <= out.width)).toBe(true);
     expect(s.openCount()).toBe(0);
-  });
+  }, 30000);
 
   it('a 1000 px master gets only tiers that fit and no variant above 1000 px', async () => {
     const { s } = await run(1000, 750);

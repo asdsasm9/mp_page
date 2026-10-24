@@ -1,10 +1,11 @@
 /*
  * Cormorant Garamond 400 and Lora 400, self-hosted (@fontsource 5.3.0, SIL OFL 1.1). The same four faces as
- * apps/web/src/styles/fonts.css (fonts.test.ts compares the @font-face blocks). The admin UI still uses
- * --font-ui (system-ui). NOT imported by main.tsx yet: the admin CSP (headers.ts) has default-src 'none' and
- * no font-src, and Chrome reports a CSP error for every @font-face url() at parse time, even for unused faces.
- * The admin restyle batch adds `font-src 'self'` to headers.ts (and hosting.test.ts), then imports this file
- * before tokens.css; from then on a face is fetched only when text uses --font-body.
+ * apps/web/src/styles/fonts.css (fonts.test.ts compares the @font-face blocks).
+ * Imported by main.tsx before tokens.css. This works only because the admin CSP (headers.ts) has
+ * `font-src 'self'` (WP-13, D-24): Chrome checks the CSP of every @font-face url() when the rule is parsed.
+ * The woff2 files must stay separate hashed assets, never data: URLs (vite.config.ts assetsInlineLimit;
+ * `npm run admin-prod-check` fails on a data: font). A face is fetched only when text uses it (unicode-range).
+ * Until the type migration (T-301) the UI still uses --font-ui (system-ui), so no face is requested yet.
  */
 @font-face {
   font-family: 'Cormorant Garamond';

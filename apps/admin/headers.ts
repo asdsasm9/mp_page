@@ -42,6 +42,8 @@ export function buildCsp(raw: Raw): { csp: string; connectOrigins: string[]; img
     "script-src 'self'",
     "style-src 'self'",
     `img-src ${["'self'", 'blob:', 'data:', ...imgOrigins].join(' ')}`,
+    // Self-hosted woff2 only (WP-13, D-24): no third-party font host, no data: fonts.
+    "font-src 'self'",
     // Nothing else is ever requested from script: Supabase, the Worker API, the public site's /_publish.json and the R2 upload origin.
     `connect-src ${connectOrigins.length > 0 ? connectOrigins.join(' ') : "'none'"}`,
     "base-uri 'none'",

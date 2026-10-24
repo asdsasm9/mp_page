@@ -31,15 +31,18 @@ describe('admin fonts.css', () => {
     expect(read('./fonts.css')).not.toMatch(/https?:\/\//);
   });
 
-  // Found in T-274: Chrome checks the CSP of every @font-face url() when the rule is parsed, even for a face
-  // that no text uses. The admin CSP (headers.ts) is default-src 'none' without font-src, so importing
-  // fonts.css would put four CSP errors in the console of every admin page (admin-check fails on them).
-  // Importing it needs `font-src 'self'` in headers.ts and hosting.test.ts: do both in the admin restyle batch.
-  it('is NOT imported by the entry until the admin CSP allows font-src self', () => {
+  // Chrome checks the CSP of every @font-face url() when the rule is parsed, even for a face no text uses, so
+  // importing fonts.css without `font-src 'self'` in headers.ts puts CSP errors in every admin page's console.
+  it('is imported by the entry before tokens.css, and the admin CSP allows font-src self', () => {
     const main = read('../main.tsx');
     const headers = read('../../headers.ts');
-    const imported = /styles\/fonts\.css/.test(main);
-    const allowed = /font-src 'self'/.test(headers);
-    expect(imported && !allowed).toBe(false);
+    expect(main).toMatch(/import '\.\/styles\/fonts\.css';/);
+    expect(main.indexOf('styles/fonts.css')).toBeLessThan(main.indexOf('styles/tokens.css'));
+    expect(headers).toMatch(/"font-src 'self'"/);
+  });
+
+  it('Vite never inlines a woff2 as a data: URL (the CSP has no data: in font-src)', () => {
+    const config = read('../../vite.config.ts');
+    expect(config).toMatch(/assetsInlineLimit[^\n]*\.woff2[^\n]*false/);
   });
 });

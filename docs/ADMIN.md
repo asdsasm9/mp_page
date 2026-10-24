@@ -599,6 +599,7 @@ so it changes with the env and never contains a wildcard or `unsafe-*`:
 | `default-src` | `'none'` |
 | `script-src`, `style-src` | `'self'` |
 | `img-src` | `'self' blob: data:` + origin of `VITE_IMG_BASE_URL` |
+| `font-src` | `'self'` (self-hosted woff2 only; no wildcard, no `data:`, no third-party host; WP-13, D-24) |
 | `connect-src` | origins of `VITE_SUPABASE_URL`, `VITE_API_BASE_URL`, `VITE_PUBLIC_SITE_URL`, `VITE_R2_UPLOAD_ORIGIN` (`'none'` when the env is empty) |
 | `base-uri`, `object-src`, `frame-ancestors` | `'none'` |
 | `form-action` | `'self'` |

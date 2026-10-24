@@ -12,7 +12,7 @@ Goal: rank for local searches in Brno and the South Moravian region, and look tr
 - Brand string: `Mullny Photos` (audit shows `MullnyPhotos` and `Mullny photos` both in use; use `Mullny Photos` everywhere; **Q-3** confirm the spelling).
 - Language: `<html lang="cs">`, `og:locale` `cs_CZ`. Single language, no hreflang.
 - `/portfolio/` is a real page (T-95, D-6): all categories plus a selection of up to 9 albums (first album per category first). There is no `/portfolio` -> `/` redirect; the legacy hash mapping `#/portfolio` -> `/portfolio/` belongs to T-65/T-66.
-- URL scheme (final slugs come from T-2): `/`, `/portfolio/`, `/svatby/`, `/portrety/`, `/parove-foceni/`, `/svatby/<album-slug>/`, `/o-mne/`, `/kontakt/`, `/cookies/`. Trailing slash, lowercase, ASCII, hyphens. Category slugs are editable in the admin, so the sitemap, canonicals and breadcrumbs are always derived from the stored slug, never hardcoded.
+- URL scheme (final slugs come from T-2): `/`, `/portfolio/`, `/svatby/`, `/portrety/`, `/parove-foceni/`, `/svatby/<album-slug>/`, `/cookies/`. "O mně" and "Kontakt" are sections of the home page (`/#o-mne`, `/#kontakt`), not pages; the old `/o-mne/` and `/kontakt/` URLs were removed (WP-12). Trailing slash, lowercase, ASCII, hyphens. Category slugs are editable in the admin, so the sitemap, canonicals and breadcrumbs are always derived from the stored slug, never hardcoded.
 - Every page is real prerendered HTML containing its title, description, canonical, OG and JSON-LD in the served document (no client-side injection), so crawlers need no JavaScript.
 
 ## 2. Title and description patterns
@@ -32,8 +32,7 @@ Rules for all pages:
 | Album `/<kat>/<album>/` | `{album title}{ – {place}} – {category singular} \| Mullny Photos` (e.g. `Adam & Eliška – svatba \| Mullny Photos`) | The album's SEO text field if filled; otherwise `{Category singular} {album title}{ v místě {place}}. {n} fotografií z focení v Brně a okolí od fotografky Mullny Photos.` |
 | Portfolio `/portfolio/` (human decision D-6: a real page listing all categories and a selection of albums) | `Portfolio – svatby, portréty a páry v Brně \| Mullny Photos` | `Portfolio fotografky z Brna: ukázky svateb, portrétů a párového focení. Prohlédněte si všechny kategorie a výběr mých alb.` |
 | Cookies `/cookies/` | `Zásady cookies a ochrany soukromí \| Mullny Photos` | `Zásady používání cookies a ochrany osobních údajů na webu Mullny Photos. Zjistěte, jaké údaje web zpracovává a proč.` |
-| About `/o-mne/` | `O mně – fotografka Terezie Müllnerová, Brno \| Mullny Photos` | `Jsem Terezie Müllnerová, fotografka z Brna. Specializuji se na svatby, portréty a párové focení. Přečtěte si můj příběh a zkušenosti.` |
-| Contact `/kontakt/` | `Kontakt – objednání focení v Brně \| Mullny Photos` | `Napište mi na mullnyphotos@gmail.com nebo na Instagram @mullny_photos a domluvme termín focení svatby, portrétů nebo rodiny.` |
+| About and Contact | no page of their own: sections `#o-mne` and `#kontakt` of Home, covered by the Home title and description (`/o-mne/` and `/kontakt/` removed, WP-12) | n/a |
 | 404 | `Stránka nenalezena \| Mullny Photos` | none (noindex) |
 
 Keywords come from the services above: svatební fotograf Brno, portrétní focení Brno, rodinné focení Brno, těhotenské focení, párové focení, Jihomoravský kraj. They go into titles, H1s and body text naturally; no `meta keywords`.
@@ -44,19 +43,19 @@ Questions:
 - **Q-6**: Does she want to name her style ("přirozené", "reportážní") in the home and wedding descriptions, and in what words? The placeholder wording above was written by us, not by her.
 - **Q-7**: Opening hours are not needed; skip them unless she wants them listed.
 
-Headings: exactly one `<h1>` per page. Home: "Fotograf Brno" style line is the hero tagline (**Q-6**, her wording). Category: category name. Album: album title. About: "O mně". Contact: "Kontakt". Album pages carry a visible one-paragraph description when the SEO text exists (text on the page, not only in meta).
+Headings: exactly one `<h1>` per page. Home: "Fotograf Brno" style line is the hero tagline (**Q-6**, her wording). Category: category name. Album: album title. "O mně" and "Kontakt" are `<h2>` sections of Home. Album pages carry a visible one-paragraph description when the SEO text exists (text on the page, not only in meta).
 
 ## 3. Open Graph and Twitter
 
 Tags on every indexable page: `og:type`, `og:site_name` = `Mullny Photos`, `og:locale` = `cs_CZ`, `og:title` (= the title without the brand suffix), `og:description` (= meta description), `og:url` (= canonical), `og:image` (absolute URL), `og:image:width`, `og:image:height`, `og:image:alt`, `twitter:card` = `summary_large_image`.
 
-`og:type`: `website` for home, categories, about, contact; `article` is not used (no blog). (The old site used `profile`; drop it.)
+`og:type`: `website` for home, portfolio, categories; `article` is not used (no blog). (The old site used `profile`; drop it.)
 
 OG image choice (1200 x 630 px, JPEG, under 300 KB, generated at upload/build from the source photo with a centre/focal crop; the stored variants carry it so the admin does nothing extra):
 - Home: one chosen hero photo (**Q-8**: which photo, ideally one that works when cropped to 1.91:1). Fallback: the current `site/preview/preview.jpg` (2582 x 1723) cropped.
 - Category: the category's cover image (first photo of its first visible album, or the category cover if the admin sets one).
 - Album: the album's cover photo.
-- About and Contact: their hero image from `site/about/main_about.jpg` and `site/contact/main_contact.jpg` (about photo preferred, a portrait of the photographer is the better trust signal; **Q-9**: is she comfortable having her photo as the preview image?).
+- About and Contact have no page of their own, so no OG image of their own (**Q-9**: is she comfortable having her portrait used as a preview image or in `Person` markup?).
 - 404 and any page without an image: the home OG image.
 - `og:image:alt`: the photo's alt text (section 8).
 - Never use a logo as the OG image (the old `preview/logo*.png` files are not used).
@@ -77,7 +76,7 @@ One `<script type="application/ld+json">` per page, built from the same data as 
 
 ### 5.1 Photographer (LocalBusiness subtype) on every page
 
-Type `Photographer` (a schema.org subtype of `LocalBusiness`), included as the site entity on Home and on Contact in full, and as a short `@id` reference elsewhere.
+Type `Photographer` (a schema.org subtype of `LocalBusiness`), included as the site entity on Home in full, and as a short `@id` reference elsewhere.
 
 Required by this spec (the union of Google's LocalBusiness requirements and what we can honestly supply):
 - `@context`, `@type` = `Photographer`, `@id` = `https://www.mullnyphotos.cz/#business`
@@ -93,9 +92,9 @@ Optional, only when answered and shown on the page: `telephone` (**Q-2**), `pric
 
 Do not add `aggregateRating` or `Review` markup for the "RECENZE" texts: they are two quotes tied to albums, not verifiable third-party ratings, and self-serving review markup risks a Google manual action. Show them as plain text.
 
-### 5.2 Person on About
+### 5.2 Person on Home
 
-`Person` with `@id` `https://www.mullnyphotos.cz/#terezie`, `name` = `Terezie Müllnerová`, `jobTitle` = `Fotografka`, `worksFor` = `{ "@id": ".../#business" }`, `url` = the About URL, `image` (about photo; **Q-9**). Required: `@type`, `name`. Only emit with her consent to be named (**Q-13**: public full name OK? It is already on the live site).
+`Person` with `@id` `https://www.mullnyphotos.cz/#terezie`, `name` = `Terezie Müllnerová`, `jobTitle` = `Fotografka`, `worksFor` = `{ "@id": ".../#business" }`, `url` = `https://www.mullnyphotos.cz/#o-mne` (the O mně section of Home), `image` (portrait; **Q-9**). Required: `@type`, `name`. Only emit with her consent to be named (**Q-13**: public full name OK? It is already on the live site).
 
 ### 5.3 ImageGallery on album and category pages
 
@@ -122,8 +121,6 @@ On every page except Home. Required: `@type` = `BreadcrumbList`, `itemListElemen
 |---|---|
 | Category | Úvod > {Category name} |
 | Album | Úvod > {Category name} > {Album title} |
-| About | Úvod > O mně |
-| Contact | Úvod > Kontakt |
 
 The visible breadcrumb on album and category pages (a `<nav aria-label="Drobečková navigace">` with an `<ol>`, the last item `aria-current="page"`) uses the same data. The label of the root is `Úvod` (matches the current nav).
 
@@ -135,11 +132,9 @@ The visible breadcrumb on album and category pages (a `<nav aria-label="Drobečk
 
 | Page | Types emitted |
 |---|---|
-| Home | Photographer (full), WebSite |
+| Home | Photographer (full), Person, WebSite |
 | Category | ImageGallery, BreadcrumbList, Photographer (reference) |
 | Album | ImageGallery, BreadcrumbList, Photographer (reference) |
-| About | Person, BreadcrumbList, Photographer (reference) |
-| Contact | Photographer (full), BreadcrumbList |
 | 404 | none |
 
 Test: a unit test per type asserts its required properties exist and are non-empty, that URLs are absolute and on the production origin, that `position`s are consecutive, and that no `Review`/`AggregateRating` type is emitted.
@@ -147,7 +142,7 @@ Test: a unit test per type asserts its required properties exist and are non-emp
 ## 6. Sitemap and robots
 
 `/sitemap.xml` (generated at build, one file, well under the 50 000 URL / 50 MB limit):
-- Lists: home, three categories (only visible ones), every published album, about, contact. Excludes 404, hidden/unpublished, and redirect sources.
+- Lists: home, three categories (only visible ones), the portfolio page, every published album, the cookies page. Excludes 404, hidden/unpublished, and redirect sources.
 - Each `<url>`: `<loc>` (canonical form), `<lastmod>` in W3C date format taken from the real last change of the content (album `updated_at`, photos changed, category edit; for fixed pages the build/commit date of that page's source, not "now" on every build). No `changefreq`/`priority` (ignored by Google).
 - Images: add the `image` extension (`xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"`) on album URLs with `<image:loc>` for each photo's 1600 px variant and `<image:caption>` from alt text; cap at 1000 images per URL (albums have at most about 45).
 - Regenerated on every publish (same deploy hook as the site rebuild).
@@ -197,7 +192,7 @@ Targets are the "good" thresholds at the 75th percentile, measured on mobile thr
 | INP | at most 200 ms |
 | CLS | at most 0.1 (aim 0) |
 | TTFB | at most 0.8 s (static HTML on the CDN) |
-| Lighthouse (mobile): Performance, Accessibility, Best Practices, SEO | 95 or more / 100 / 100 / 100 on home, category, album, about, contact |
+| Lighthouse (mobile): Performance, Accessibility, Best Practices, SEO | 95 or more / 100 / 100 / 100 on home, portfolio, category, album |
 
 Per page weight budget (transferred, first load, before scrolling; excludes lazy images below the fold):
 - HTML: at most 40 KB compressed (JSON-LD for 20 images stays inside this).
@@ -212,7 +207,7 @@ Image rules (supports VISION constraint "never load a full-size file in grids"):
 - Variants generated at upload: WebP 480, 720, 960, 1600, 2400 px wide, a 1600 px JPEG fallback, an OG JPEG and the 3000 px master (used only by the lightbox zoom), per T-2 storage keys. The audit shows the current photos are 964 to 3162 px and about 1 MB each; the migration generates the variants from them (no upscaling: skip variants larger than the source). Photos stored before the 720 tier existed have a srcset without it (falls back to 960). AVIF is not generated (decision D-9, later).
 - `<picture>` with a WebP `<source>` and a JPEG fallback, and `srcset` / `sizes` matching the real layout widths. Policy: cards and the album grid draw from 480, 720 and 960 (a phone at 412 px and DPR 1.75 needs about 665 px, which 720 covers; larger or denser screens pick 960, 1600 or 2400); the lightbox/full view uses 1600 and 2400; the master only on zoom.
 - Every `<img>` has explicit `width` and `height` (or CSS `aspect-ratio`) from the stored dimensions, so no layout shift. A dominant colour or blurhash placeholder fills the box.
-- The LCP image (hero on home, first photo on album and category, About hero) is not lazy, has `fetchpriority="high"` and is preloaded via the markup (`<link rel="preload" as="image" imagesrcset=... imagesizes=...>` only when the `<img>` cannot be found early). Everything else below the fold uses `loading="lazy"` and `decoding="async"`.
+- The LCP image (hero on home, first photo on album and category) is not lazy, has `fetchpriority="high"` and is preloaded via the markup (`<link rel="preload" as="image" imagesrcset=... imagesizes=...>` only when the `<img>` cannot be found early). Everything else below the fold uses `loading="lazy"` and `decoding="async"`.
 - Category and Home cards pick a tier through `sizes` (480 on desktop, 720 on phones; never the 2400 tier or the master in the initial markup) instead of one fixed tier (the old site loads a 1 MB file at 240 x 320 px displayed).
 - Images are served from the object-storage public host with `Cache-Control: public, max-age=31536000, immutable` and content-hashed or versioned keys; HTML is cached short and revalidated, assets with hashed names long.
 - A category page never loads more than the visible set at once: the page paints its first row of covers eagerly and the rest lazily (old `/portraits` pulled 56 MB; the target first load is under 500 KB).
@@ -226,12 +221,12 @@ Gate: `npm run design-check` (Lighthouse and axe per the visual-check skill) run
 
 - Each page: one title, one description, one canonical, one H1, OG and Twitter tags, JSON-LD per section 5, `lang="cs"`.
 - Internal links are real `<a href>` (the audit found buttons and `div onClick` navigation).
-- Navigation and footer link to home, the three categories, About, Contact; album pages link back to their category and to the previous/next album in the category (crawl paths without JS).
+- Navigation and footer link to home, the three categories and the Home sections O mně and Kontakt (anchors); album pages link back to their category and to the previous/next album in the category (crawl paths without JS).
 - Custom 404 page in Czech with links to home and categories (the old one was an English placeholder) and a real HTTP 404 status.
 - Redirects (T-2): 301 from old paths and from the apex to `www`; HTTP to HTTPS; one hop only.
 - HTTPS everywhere, HSTS via Cloudflare, no mixed content.
 - Footer text: "Fotím v Jihomoravském kraji" (fix of the Slovak "Jihomoravskom" in the old footer).
-- A consistent NAP (name, address or locality, contact) in footer, Contact page and JSON-LD.
+- A consistent NAP (name, address or locality, contact) in footer, the Kontakt section and JSON-LD.
 - Google Business Profile and MyWed are off-site tasks for the human, see questions. **Q-17**: does she have (or want) a Google Business Profile for Brno? It is the single biggest local-search lever for a photographer and costs nothing; the site should link to it in `sameAs` once it exists.
 
 ## 11. Open questions for the photographer (collected)
@@ -260,7 +255,7 @@ Answers are needed before the SEO text is final; none blocks the build, which us
 
 ## 12. Acceptance mapping
 
-- Home, category, album, about, contact each have a title pattern, description pattern, OG image choice and canonical rule (sections 2 to 4).
+- Home, portfolio, category and album each have a title pattern, description pattern, OG image choice and canonical rule (sections 2 to 4).
 - Structured data per page type with required properties: Photographer, Person, ImageGallery, BreadcrumbList, WebSite (section 5; the matrix in 5.6 and the tests listed there).
 - Sitemap and robots: section 6. Alt rules: section 8. Core Web Vitals and weight budget: section 9.
 - Anything that needs the photographer's wording is marked Q-n and collected in section 11.

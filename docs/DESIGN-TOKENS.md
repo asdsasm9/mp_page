@@ -48,7 +48,7 @@ The look since WP-12 (T-274) is "Classical": warm paper, ink, a gold accent used
 | `--color-theme` | `#f6f4f1` | `theme-color` meta |
 | `--band-dark-bg`, `--band-dark-text`, `--band-dark-muted`, `--band-dark-accent` | `#201f1d`, `#f6f4f1`, `#bab6b6`, `#e1ad66` | The Reference band. A token set, so another band colour later is a token edit |
 
-Accent rules: `--color-accent` is used for `border-color`, `text-decoration-color` and hairlines only (the test greps components, layouts, pages and base.css for it as `color:` or `background:`; the skip link and the Header, Footer and kontakt page that predate WP-12 are listed as legacy and go away when those components are rewritten). Buttons are outlined in `--color-accent-strong`; accent-coloured text is `--color-accent-text`.
+Accent rules: `--color-accent` is used for `border-color`, `text-decoration-color` and hairlines only (the test greps components, layouts, pages and base.css for it as `color:` or `background:`; the only exemption is the `.skip-link` rule in base.css). Buttons are outlined in `--color-accent-strong`; accent-coloured text is `--color-accent-text`.
 
 ### Contrast (computed by the test, WCAG 2.x relative luminance)
 
@@ -85,7 +85,7 @@ Accent rules: `--color-accent` is used for `border-color`, `text-decoration-colo
 | Shape | `--radius-none` (0: images, cards and buttons), `--radius-sm`, `--radius-md`, `--radius-full` (lightbox round buttons, admin), `--border-width`, `--focus-width`, `--focus-offset`, `--bar-thickness` (2 px), `--shadow-sm`, `--shadow-md`, `--opacity-disabled` (0.45) |
 | Motion | `--motion-fast` 150 ms, `--motion-base` 250 ms, `--motion-drawer` 400 ms, `--motion-ease`; anything beyond a colour change, including smooth scrolling, is inside `prefers-reduced-motion: no-preference` |
 | Layout | `--layout-max` 110rem, `--layout-gutter`, `--header-height` 85 px, `--section-pad`, `--section-gap-lg`, `--section-gap`, `--heading-gap`, `--drawer-width`, `--target-min` (44 px), `--target-compact` (32 px) |
-| Image shapes | `--ratio-category` 3 / 4, `--ratio-album` 4 / 5, `--cover-position`; `--ratio-card`, `--ratio-portrait` and `--size-avatar` stay only until the old home and album cards are rewritten (T-277, T-279) |
+| Image shapes | `--ratio-category` 3 / 4, `--ratio-album` 4 / 5, `--cover-position` |
 | Stacking | `--z-header` 10, `--z-dialog` 20 (lightbox), `--z-drawer` 21 (inside the header), `--z-skip` 30 |
 
 ## Usage rules

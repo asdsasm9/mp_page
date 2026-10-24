@@ -182,8 +182,6 @@ describe('design tokens', () => {
     expect(parseFloat(tokens['--target-compact']!)).toBeGreaterThanOrEqual(1.5);
     expect(tokens['--ratio-category']).toBe('3 / 4');
     expect(tokens['--ratio-album']).toBe('4 / 5');
-    // kept until the old home and album cards are rewritten (the admin does not use them)
-    expect(tokens['--ratio-card']).toBeTruthy();
     expect(tokens['--cover-position']).toBeTruthy();
   });
 
@@ -273,9 +271,8 @@ describe('docs/DESIGN-TOKENS.md', () => {
 });
 
 describe('the gold accent is decoration only (WP-12 b)', () => {
-  // Fill uses of --color-accent that predate WP-12 and disappear when their component is rewritten
-  // (skip link in base.css stays: dark text on gold is 4.9:1).
-  const LEGACY = ['/styles/base.css'];
+  // The only exemption: the `.skip-link` rule in base.css (dark text on a gold fill is 4.9:1).
+  const SKIP_LINK_RULE = /\.skip-link\s*\{[^}]*\}/g;
   const files = [
     ...walk(join(srcDir, 'components')),
     ...walk(join(srcDir, 'layouts')),
@@ -293,8 +290,9 @@ describe('the gold accent is decoration only (WP-12 b)', () => {
   });
 
   it.each(files.map((f) => [f.slice(srcDir.length)]))('%s does not use --color-accent as text or fill', (rel) => {
-    if (LEGACY.includes(rel as string)) return;
-    const text = readFileSync(join(srcDir, rel as string), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const text = readFileSync(join(srcDir, rel as string), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(SKIP_LINK_RULE, '');
     expect(text.match(FILL)).toBeNull();
   });
 });

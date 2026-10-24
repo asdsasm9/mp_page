@@ -62,7 +62,7 @@ export function photoSources(photo: SnapshotPhoto, base: string): PhotoSources {
   };
 }
 
-export type SizesContext = 'grid' | 'card' | 'review' | 'lightbox' | 'hero';
+export type SizesContext = 'grid' | 'card' | 'lightbox' | 'hero';
 
 const SIZES: Record<SizesContext, string> = {
   // Album grid: three columns from 64rem, two from 40rem, one below; page gutter is 1rem minimum per side.
@@ -74,8 +74,6 @@ const SIZES: Record<SizesContext, string> = {
   // browser take 720 instead of 480 at DPR 2).
   // 33rem = the real three-column track at the 110rem layout width (519 px at 1920); the phone gutter is 1.5rem a side (T-274).
   card: '(min-width: 48rem) min((100vw - 7rem) / 3, 33rem), calc(100vw - 3rem)',
-  // Home page review photo: a fixed profile-like box, --size-avatar (10rem) at every width.
-  review: '10rem',
   // Lightbox and full-width hero use the whole viewport.
   lightbox: '100vw',
   hero: '100vw',

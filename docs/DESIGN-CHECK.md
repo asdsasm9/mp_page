@@ -1,5 +1,9 @@
 # Design-check baseline (WP3-25)
 
+> HISTORICAL (WP-3, the pre-WP-12 look, 2026-10-19/20). The tables below describe the old site, including `/o-mne/` and
+> `/kontakt/`, which no longer exist (WP-12 moved them into the home page as sections). The current routes are in
+> `scripts/design-check.mjs`; current LCP, CLS and font numbers are in the project LOG (T-282, T-274..T-289).
+
 Run date: 2026-10-19. Command: `npm run design-check` (Chrome found automatically at
 `/Applications/Google Chrome.app/...` when `CHROME_PATH` is unset). Tools: lighthouse 13.5.0,
 puppeteer-core 25.14.0, axe-core 4.14.0. Build: local fixture build of `apps/web` (noindex), served by

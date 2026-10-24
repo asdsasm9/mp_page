@@ -12,12 +12,12 @@ interface Props {
 
 const { categoryNames } = Astro.props;
 ---
-<section id="uvod" class="hero" aria-labelledby="nadpis" data-tone="dark">
+<section id="uvod" class="hero" aria-labelledby="uvod-nadpis" data-tone="dark">
   <div class="media"><slot name="image" /></div>
   <div class="scrim">
     <div class="text">
       {categoryNames.length > 0 && <Kicker>{categoryNames.join(' · ')}</Kicker>}
-      <h1 id="nadpis" class="t-display">{SITE.description}</h1>
+      <h1 id="uvod-nadpis" class="t-display">{SITE.description}</h1>
       <a class="btn" href="#kontakt">Poptat termín</a>
     </div>
   </div>

@@ -23,6 +23,9 @@ export const SITE = {
   description: 'Focení svateb, portrétů a párových fotek',
 } as const;
 
+/** Home hero h1 in normal case (T-327); `.t-display` shows it uppercase. The brand stays in title, meta, JSON-LD and the wordmark. */
+export const HERO_TITLE = 'Fotografie, která zachytí váš příběh';
+
 /** Labels only; URLs come from the catalog and SEO.md URL scheme. The legacy "- " prefix of dropdown items is dropped. */
 export const NAV = {
   home: 'Úvod',

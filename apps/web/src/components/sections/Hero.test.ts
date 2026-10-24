@@ -23,6 +23,14 @@ describe('Hero height', () => {
     expect(screen).not.toContain('26rem');
   });
 
+  it('T-327: centres the text block, caps its width at 60rem and balances the h1', () => {
+    expect(screen).toMatch(/justify-items:\s*center/);
+    expect(screen).toMatch(/text-align:\s*center/);
+    expect(screen).toContain('min(60rem, 100%)');
+    expect(screen).toContain('text-wrap: balance');
+    expect(src).toContain('{HERO_TITLE}');
+  });
+
   it('keeps the image cropped to the box with the position token', () => {
     expect(screen).toMatch(/object-fit:\s*cover/);
     expect(screen).toContain('object-position: var(--hero-position)');

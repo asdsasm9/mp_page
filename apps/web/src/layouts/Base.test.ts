@@ -133,7 +133,8 @@ describe('Home page (built, shared build)', () => {
   it('has the hero kicker with the category names, the h1 text and a button to #kontakt', () => {
     const hero = section('id="uvod"');
     expect(hero).toContain('Svatby · Portréty · Párové focení');
-    expect(hero).toMatch(/<h1[^>]*>Focení svateb, portrétů a párových fotek<\/h1>/);
+    expect(hero).toMatch(/<h1[^>]*>Fotografie, která zachytí váš příběh<\/h1>/);
+    expect(count(/<h1[\s>]/g)).toBe(1);
     expect(hero).toMatch(/<a class="btn"[^>]*href="#kontakt"[^>]*>Poptat termín<\/a>/);
   });
 

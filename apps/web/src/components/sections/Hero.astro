@@ -2,7 +2,7 @@
 // Home hero (WP-12 e): the LCP image fills the box (`image` slot: the admin-chosen photo or the bundled main.jpg),
 // a scrim from transparent to 70% ink under the text, the kicker (category names), the single h1 and one button.
 // The header overlays the top of the hero (out of flow), so nothing shifts. The box is exactly the window height (T-326: 100vh, 100svh, 100dvh), so no part of the next section peeks in.
-import { SITE } from '../../content/texts';
+import { HERO_TITLE } from '../../content/texts';
 import Kicker from '../Kicker.astro';
 
 interface Props {
@@ -16,8 +16,8 @@ const { categoryNames } = Astro.props;
   <div class="media"><slot name="image" /></div>
   <div class="scrim">
     <div class="text">
-      {categoryNames.length > 0 && <Kicker>{categoryNames.join(' · ')}</Kicker>}
-      <h1 id="uvod-nadpis" class="t-display">{SITE.description}</h1>
+      {categoryNames.length > 0 && <Kicker plain>{categoryNames.join(' · ')}</Kicker>}
+      <h1 id="uvod-nadpis" class="t-display">{HERO_TITLE}</h1>
       <a class="btn" href="#kontakt">Poptat termín</a>
     </div>
   </div>
@@ -66,9 +66,10 @@ const { categoryNames } = Astro.props;
 
   .text {
     display: grid;
-    justify-items: start;
+    justify-items: center;
+    text-align: center;
     gap: var(--space-4);
-    max-inline-size: var(--layout-max);
+    max-inline-size: min(60rem, 100%);
     margin-inline: auto;
     padding-inline: var(--layout-gutter);
     padding-block-end: var(--section-pad);
@@ -78,12 +79,13 @@ const { categoryNames } = Astro.props;
     color: var(--color-on-overlay);
   }
 
-  .text :global(.kicker)::before {
-    border-block-start-color: var(--band-dark-accent);
+  .text :global(.kicker) {
+    justify-content: center;
+    text-align: center;
   }
 
   h1 {
-    max-inline-size: 24ch;
+    text-wrap: balance;
     margin: 0;
   }
 

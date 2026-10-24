@@ -132,9 +132,9 @@
     --cover-size: 6rem;
     --icon-size: 1.25rem;
     --icon-stroke: 2;
-    /* Hover fill of the gold primary buttons. The web --color-accent-hover (#a06f24) is darker than the gold
-       and gives dark text only 3.8:1, so the admin hover goes a little lighter: 5.5:1 with --color-on-accent. */
-    --color-accent-fill-hover: #bf8c40;
+    /* Solid ink primary buttons: hover and pressed fills, light text (--color-on-overlay) >= 4.5:1 on each */
+    --color-primary-hover: #3b3936;
+    --color-primary-active: #4a4845;
     /* Solid red buttons: white text on every state, each pair >= 4.5:1 (design-pass.test.ts checks it) */
     --color-on-danger: #ffffff;
     --color-danger-hover: #8a1f24;

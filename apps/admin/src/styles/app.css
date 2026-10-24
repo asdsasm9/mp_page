@@ -376,7 +376,9 @@
     font-size: var(--text-caption);
   }
 
+  /* Secondary button (WP-13 3.1): transparent, ink text, 1 px gold-brown stroke through a component-local variable. */
   .button {
+    --button-stroke: var(--color-accent-strong);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -384,36 +386,59 @@
     min-inline-size: var(--target-min);
     padding-inline: var(--space-4);
     font: inherit;
+    font-size: var(--text-small);
     color: var(--color-text);
-    background: var(--color-surface-raised);
-    border: var(--border-width) solid var(--color-border-strong);
-    border-radius: var(--radius-md);
+    background: transparent;
+    border: var(--border-width) solid var(--button-stroke);
+    border-radius: var(--radius-none);
     cursor: pointer;
   }
 
-  .button:hover {
-    background: var(--color-surface);
+  .button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-accent-strong) 12%, transparent);
   }
 
   .button:disabled {
+    --button-stroke: var(--color-border-strong);
     cursor: not-allowed;
     color: var(--color-text-muted);
   }
 
+  /* Primary: solid ink, no gold fill anywhere (gold stays on the pending dot). */
   .button-primary {
-    color: var(--color-on-accent);
-    background: var(--color-accent);
-    border-color: var(--color-border-strong);
+    --button-stroke: var(--color-text);
+    color: var(--color-on-overlay);
+    background: var(--color-text);
   }
 
-  .button-primary:hover {
-    background: var(--color-accent-fill-hover);
+  .button-primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
   }
 
+  .button-primary:disabled {
+    --button-stroke: var(--color-text-muted);
+    color: var(--color-on-overlay);
+    background: var(--color-text-muted);
+  }
+
+  /* Ghost: no stroke, gold underline. */
   .button-link {
-    border-color: transparent;
+    --button-stroke: transparent;
     background: transparent;
     text-decoration: underline;
+    text-decoration-thickness: var(--border-width);
+    text-decoration-color: var(--color-accent);
+    text-underline-offset: var(--space-2);
+  }
+
+  .button-link:hover:not(:disabled),
+  .button-link:active:not(:disabled) {
+    color: var(--color-accent-text);
+    background: transparent;
+  }
+
+  .button-link:disabled {
+    --button-stroke: transparent;
   }
 
   .notice {
@@ -721,7 +746,15 @@
   }
 
   .button:active:not(:disabled) {
-    filter: brightness(0.92);
+    background: color-mix(in srgb, var(--color-accent-strong) 22%, transparent);
+  }
+
+  .button-primary:active:not(:disabled) {
+    background: var(--color-primary-active);
+  }
+
+  .button-link:active:not(:disabled) {
+    background: transparent;
   }
 
   .button-danger:active:not(:disabled) {
@@ -733,14 +766,6 @@
   .header-actions .button-danger:active:not(:disabled) {
     background: color-mix(in srgb, var(--color-danger) 10%, transparent);
     border-color: var(--color-danger);
-  }
-
-  .row-actions .button:not(.button-primary):not(.button-danger) {
-    background: transparent;
-  }
-
-  .row-actions .button:not(.button-primary):not(.button-danger):hover {
-    background: var(--color-surface);
   }
 
   /* Icon buttons (T-244): square 44 px target, inline SVG sized and stroked from tokens. */
@@ -773,8 +798,15 @@
   }
 
   .button[aria-disabled='true'] {
+    --button-stroke: var(--color-border-strong);
     cursor: not-allowed;
     color: var(--color-text-muted);
+  }
+
+  .button-primary[aria-disabled='true'] {
+    --button-stroke: var(--color-text-muted);
+    color: var(--color-on-overlay);
+    background: var(--color-text-muted);
   }
 
   .button-danger[aria-disabled='true'] {
@@ -2159,8 +2191,8 @@ color: var(--color-text);
     justify-content: center;
     inline-size: var(--space-6);
     block-size: var(--space-6);
-    color: var(--color-on-accent);
-    background: var(--color-accent);
+    color: var(--color-on-overlay);
+    background: var(--color-text);
     border-radius: var(--radius-full);
   }
 

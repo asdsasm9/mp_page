@@ -30,7 +30,8 @@ describe('token parity with apps/web', () => {
   it('keeps the admin-only extras small and named', () => {
     const extras = [...admin.keys()].filter((k) => !web.has(k)).sort();
     expect(extras).toEqual([
-      '--bottom-nav-height', '--color-accent-fill-hover', '--color-danger-active', '--color-danger-disabled', '--color-danger-hover', '--color-on-danger',
+      '--bottom-nav-height', '--color-danger-active', '--color-danger-disabled', '--color-danger-hover', '--color-on-danger',
+      '--color-primary-active', '--color-primary-hover',
       '--cover-size', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke', '--weight-ui-strong',
     ]);
   });
@@ -41,7 +42,7 @@ describe('token parity with apps/web', () => {
   });
 });
 
-describe('gold primary button contrast (WP-12 palette)', () => {
+describe('ink primary button contrast (WP-13)', () => {
   const lum = (hex: string) => {
     const n = parseInt(hex.slice(1), 16);
     const f = (c: number) => {
@@ -52,18 +53,33 @@ describe('gold primary button contrast (WP-12 palette)', () => {
   };
   const ratio = (a: string, b: string) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
 
-  it('on-accent text reaches 4.5:1 on the gold fill and on its admin hover fill', () => {
-    expect(ratio(admin.get('--color-on-accent')!, admin.get('--color-accent')!)).toBeGreaterThanOrEqual(4.5);
-    expect(ratio(admin.get('--color-on-accent')!, admin.get('--color-accent-fill-hover')!)).toBeGreaterThanOrEqual(4.5);
+  it('light text reaches 4.5:1 on the ink fill, its hover and pressed fills, and the disabled fill', () => {
+    const on = admin.get('--color-on-overlay')!;
+    for (const t of ['--color-text', '--color-primary-hover', '--color-primary-active', '--color-text-muted']) {
+      expect(ratio(on, admin.get(t)!), t).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
-  it('the web hover colour would fail as a button fill, which is why the admin has its own (negative test)', () => {
-    expect(ratio(admin.get('--color-on-accent')!, admin.get('--color-accent-hover')!)).toBeLessThan(4.5);
+  it('the secondary stroke (accent-strong) is a 3:1 component boundary on the page and on white', () => {
+    expect(ratio(admin.get('--color-accent-strong')!, admin.get('--color-bg')!)).toBeGreaterThanOrEqual(3);
+    expect(ratio(admin.get('--color-accent-strong')!, admin.get('--color-surface-raised')!)).toBeGreaterThanOrEqual(3);
   });
 
-  it('the primary button hover uses the admin fill token', () => {
+  it('the primary button uses the primary tokens and the removed gold hover token is gone', () => {
     const css = read('./app.css');
-    expect(css).toMatch(/\.button-primary:hover\s*\{\s*background: var\(--color-accent-fill-hover\)/);
+    expect(css).toMatch(/\.button-primary:hover:not\(:disabled\)\s*\{\s*background: var\(--color-primary-hover\)/);
+    expect(css).toMatch(/\.button-primary:active:not\(:disabled\)\s*\{\s*background: var\(--color-primary-active\)/);
+    expect(admin.has('--color-accent-fill-hover')).toBe(false);
+    expect(css).not.toContain('accent-fill-hover');
+  });
+
+  it('negative: gold is never a fill except on .pending-dot', () => {
+    const css = read('./app.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    const offenders: string[] = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (/background(-color)?\s*:\s*var\(--color-accent\)/.test(m[2]!) && !/\.pending-dot\b/.test(m[1]!)) offenders.push(m[1]!.trim());
+    }
+    expect(offenders).toEqual([]);
   });
 });
 

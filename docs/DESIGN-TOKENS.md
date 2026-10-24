@@ -35,7 +35,7 @@ The look since WP-12 (T-274) is "Classical": warm paper, ink, a gold accent used
 | `--color-accent` | `#b68235` | DECORATION ONLY: hairline under a card title, kicker rule, the skip link fill. Never text, never the only boundary of a control (3.07:1 on the page, 2.74:1 on the band) |
 | `--color-accent-strong` | `#a06f24` | Border of outlined buttons and the framed nav item (3:1 on page and band); source of the hover tint |
 | `--color-accent-text` | `#7d5411` | Accent-coloured text (hover state of a text button, small labels) |
-| `--color-accent-hover` | `#a06f24` | Hover colour for text and links. As a button FILL under dark text it gives only 3.8:1, so the admin has its own `--color-accent-fill-hover` |
+| `--color-accent-hover` | `#a06f24` | Hover colour for text and links. Not a button fill: the admin primary button is solid ink (`--color-primary-hover` / `--color-primary-active`, admin only) |
 | `--color-on-accent` | `#201f1d` | Text on an accent fill: ink, never white |
 | `--color-border` | `#d4d2cf` | Hairline divider (the text colour at 16% over the page); decorative only |
 | `--color-border-strong` | `#767676` | Boundary of any form control (needs 3:1) |

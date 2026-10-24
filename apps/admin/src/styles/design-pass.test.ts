@@ -146,11 +146,14 @@ describe('design pass: buttons, badges, destructive demotion', () => {
     expect(ruleOf('.row-actions .button-icon.button-icon-danger:hover:not(:disabled)')).toContain('color-mix(in srgb, var(--color-danger) 10%');
   });
 
-  it('gives row buttons a transparent base with a surface hover', () => {
-    expect(ruleOf('.row-actions .button:not(.button-primary):not(.button-danger)')).toContain('background: transparent');
-    expect(ruleOf('.row-actions .button:not(.button-primary):not(.button-danger):hover')).toContain(
-      'background: var(--color-surface)',
-    );
+  it('WP-13: secondary buttons are transparent with a gold-brown stroke and a tinted hover', () => {
+    const base = ruleOf('.button');
+    expect(base).toContain('--button-stroke: var(--color-accent-strong)');
+    expect(base).toContain('background: transparent');
+    expect(base).toContain('border: var(--border-width) solid var(--button-stroke)');
+    expect(base).toContain('border-radius: var(--radius-none)');
+    expect(ruleOf('.button:hover:not(:disabled)')).toContain('color-mix(in srgb, var(--color-accent-strong) 12%');
+    expect(ruleOf('.button:disabled')).toContain('--button-stroke: var(--color-border-strong)');
   });
 
   it('fills badges per real data-state value and darkens pressed buttons without transform', () => {
@@ -158,7 +161,8 @@ describe('design pass: buttons, badges, destructive demotion', () => {
     expect(ruleOf(".badge[data-state='hidden']")).toContain('background: transparent');
     expect(ruleOf(".badge[data-state='unpublished']")).toContain('background: transparent');
     const active = ruleOf('.button:active:not(:disabled)');
-    expect(active).toContain('filter: brightness(');
+    expect(active).toContain('color-mix(in srgb, var(--color-accent-strong) 22%');
+    expect(active).not.toContain('filter');
     expect(active).not.toContain('transform');
   });
 

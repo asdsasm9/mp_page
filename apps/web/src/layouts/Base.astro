@@ -23,6 +23,8 @@ export interface OgImage {
   readonly width: number;
   readonly height: number;
   readonly alt: string;
+  /** MIME type (OgImage.type in lib/images.ts). Every og image on this site is a JPEG, which is the default. */
+  readonly type?: string;
 }
 
 interface Props {
@@ -71,6 +73,9 @@ const categoryNames = catalog.categories.map((c) => c.name);
       ogImage && (
         <>
           <meta property="og:image" content={ogImage.url} />
+          {/* secure_url and type help scrapers (Facebook, WhatsApp, LinkedIn) that ask for them explicitly */}
+          {ogImage.url.startsWith('https://') && <meta property="og:image:secure_url" content={ogImage.url} />}
+          <meta property="og:image:type" content={ogImage.type ?? 'image/jpeg'} />
           <meta property="og:image:width" content={String(ogImage.width)} />
           <meta property="og:image:height" content={String(ogImage.height)} />
           <meta property="og:image:alt" content={ogImage.alt} />

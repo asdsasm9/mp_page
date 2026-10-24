@@ -44,7 +44,7 @@ const { prev, next } = catalog.neighbours(album.slug);
 <Base
   meta={meta}
   path={path}
-  ogImage={og ? { url: og.url, width: og.width, height: og.height, alt: album.title } : undefined}
+  ogImage={og ? { url: og.url, width: og.width, height: og.height, type: og.type, alt: album.title } : undefined}
   jsonLd={[albumGallery(category, album, meta.description ?? '', env.imgBaseUrl), breadcrumbList(crumbs)]}
 >
   <div class="page">

@@ -22,7 +22,7 @@ const crumbs = [{ name: NAV.about, path }];
 
 const weddingAlt = 'Ženich líbá nevěstu na čelo, nevěsta drží kytici z kapradí a trav';
 const og = await getImage({ src: wedding, width: 1200, height: 630, format: 'jpg', quality: 70 });
-const ogImage = { url: `${SITE_ORIGIN}${og.src}`, width: 1200, height: 630, alt: weddingAlt };
+const ogImage = { url: `${SITE_ORIGIN}${og.src}`, width: 1200, height: 630, type: 'image/jpeg', alt: weddingAlt };
 ---
 <Base meta={meta} path={path} ogImage={ogImage} jsonLd={[person(ogImage.url), breadcrumbList(crumbs)]}>
   <div class="band" data-band="ground">

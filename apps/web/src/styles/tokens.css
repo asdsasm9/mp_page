@@ -55,7 +55,7 @@
     --text-h1: clamp(1.875rem, 3.6vw, 2.875rem); /* page and section heads, uppercase */
     --text-h2: clamp(1.5rem, 1.2rem + 1vw, 2rem); /* sub-heads */
     --text-h3: clamp(1.375rem, 1.2rem + 0.5vw, 1.625rem); /* card titles, uppercase */
-    --text-quote: clamp(1.25rem, 2.4vw, 1.875rem); /* reference quote (T-316: 20 to 30 px) */
+    --text-quote: clamp(1.25rem, 1.7vw, 1.5rem); /* reference quote (T-320: 20 to 24 px, the full review is the text) */
     --text-lead: clamp(1.0625rem, 1.03rem + 0.15vw, 1.165rem); /* intro paragraph */
     --text-body: clamp(0.9375rem, 0.91rem + 0.12vw, 1.018rem); /* running text */
     --text-small: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem); /* footer, breadcrumb, secondary links */
@@ -68,7 +68,7 @@
     --leading-lead: 1.5;
     --leading-heading: 1.2;
     --leading-caps: 1.12; /* uppercase headings: Czech carons and rings need room (WP-12 j6) */
-    --leading-quote: 1.25;
+    --leading-quote: 1.4;
     --leading-ui: 1.5;
     --leading-none: 1;
     --tracking-heading: 0.03em;
@@ -92,6 +92,9 @@
        caption of the image below it. */
     --card-title-gap: var(--space-1);
     --grid-row-gap: var(--space-7);
+    /* Column gap of every card grid (T-321): 56 px, 1.75 times the former 32 px. Tracks are never wider than the
+       widths the cover `sizes` assume (images.ts CROP_BASE); a wider gap only makes them narrower or drops a column. */
+    --grid-col-gap: 3.5rem;
 
     /* Radius, borders, shadow. Images, cards and buttons have no radius in this design (--radius-none);
        --radius-md and --radius-full stay for the lightbox round buttons and the admin. */

@@ -27,8 +27,6 @@ export function startCarousel(root: HTMLElement): void {
         slide.removeAttribute('data-active');
         slide.setAttribute('aria-hidden', 'true');
         slide.setAttribute('inert', '');
-        // A long review left open must not be open again when the carousel comes back to it.
-        slide.querySelector('details')?.removeAttribute('open');
       }
     });
     if (counter) counter.textContent = positionLabel(state);

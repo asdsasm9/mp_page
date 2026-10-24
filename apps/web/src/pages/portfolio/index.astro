@@ -28,7 +28,7 @@ const crumbs = [{ name: 'Portfolio', path }];
 <Base
   meta={meta}
   path={path}
-  ogImage={og ? { url: og.url, width: og.width, height: og.height, alt: 'Portfolio' } : undefined}
+  ogImage={og ? { url: og.url, width: og.width, height: og.height, type: og.type, alt: 'Portfolio' } : undefined}
   jsonLd={[breadcrumbList(crumbs)]}
 >
   <div class="page">
@@ -89,7 +89,7 @@ const crumbs = [{ name: 'Portfolio', path }];
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(18.75rem, 100%), 1fr));
     align-items: start;
-    gap: var(--grid-row-gap) var(--space-6);
+    gap: var(--grid-row-gap) var(--grid-col-gap);
     margin: 0;
     padding: 0;
     list-style: none;

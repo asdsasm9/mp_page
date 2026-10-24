@@ -106,17 +106,16 @@ describe('Home page (built, shared build)', () => {
     for (const tag of imgs) expect(tag).toMatch(EMPTY_ALT);
   });
 
-  it('shows the short review text, the full text in a details "Celá recenze", no photos, in the dark band', () => {
+  it('shows the full review text (no details, no "Celá recenze"), no photos, in the dark band', () => {
     const reviews = section('id="reference"').replace(/\sdata-astro-cid-[a-z0-9]+(="")?/g, '');
     expect(reviews).toContain('data-band="dark"');
     expect(reviews).toContain('Reference');
     for (const r of REVIEWS) {
-      expect(reviews).toContain(`<p>${r.short}</p>`);
-      expect(reviews).toContain(r.text);
+      expect(reviews).toContain(`<p>${r.text}</p>`);
       expect(reviews).toContain(`${r.name} · `);
     }
-    expect([...reviews.matchAll(/<details\b/g)]).toHaveLength(REVIEWS.length);
-    expect(reviews).toContain('Celá recenze');
+    expect(reviews).not.toContain('<details');
+    expect(reviews).not.toContain('Celá recenze');
     expect(imgTags(reviews)).toHaveLength(0);
   });
 
@@ -388,6 +387,24 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
     (readdirSync(out, { recursive: true }) as string[])
       .filter((f) => f.endsWith('.html'))
       .map((f): [string, string] => [f, readFileSync(join(out, f), 'utf8')]);
+
+  it('every page with an og:image has og:image:type image/jpeg, and og:image:secure_url (the same URL) whenever it is https (T-322)', () => {
+    const pages = allHtml().filter(([, page]) => page.includes('property="og:image"'));
+    expect(pages.length).toBeGreaterThan(4);
+    let withSecure = 0;
+    for (const [file, page] of pages) {
+      const url = /<meta property="og:image" content="([^"]+)">/.exec(page)?.[1];
+      expect(page, file).toContain('<meta property="og:image:type" content="image/jpeg">');
+      // The fixture build serves category and album images from a relative /_dev-img host (production: https R2 host).
+      if (url?.startsWith('https://')) {
+        withSecure++;
+        expect(page, file).toContain(`<meta property="og:image:secure_url" content="${url}">`);
+      } else {
+        expect(page, file).not.toContain('og:image:secure_url');
+      }
+    }
+    expect(withSecure).toBeGreaterThan(1); // home and /o-mne/ are absolute https in every build
+  });
 
   it('builds /o-mne/ (T-293) but not /kontakt/', () => {
     expect(existsSync(join(out, 'o-mne', 'index.html'))).toBe(true);

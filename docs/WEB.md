@@ -127,6 +127,28 @@ Human steps; the autopilot cannot do them.
     (these are the "Known unproven" rows in [WP8-VERIFICATION.md](WP8-VERIFICATION.md#known-unproven-0-eur-and-no-care-claims)).
     A row still UNVERIFIED or HUMAN blocks the go-live.
 
+## Cloudflare dashboard settings and link previews
+
+Dashboard-only settings (T-322, human step H-21, VERIFY row 61). Nothing in the repository can switch them on or off.
+
+| Setting | Required value | Why |
+|---------|----------------|-----|
+| Security > Settings (or Scrape Shield) > Email Address Obfuscation | OFF | When on, Cloudflare rewrites the `mailto:` link to `/cdn-cgi/l/email-protection` and the visible address to "[email protected]". The CSP blocks its decode script, so "Napsat e-mail" opens an empty page and the address never shows. The site already prints the address as plain text |
+| Security > Bots > Bot Fight Mode, "Block AI bots", managed robots.txt | Off, or a skip rule (next row) | They answer preview crawlers with a challenge or a block; the shared link then has no picture and no text. A managed robots.txt also overwrites the site's own `robots.txt` |
+| Security > WAF > custom rule "Skip" for user agents containing `facebookexternalhit`, `Facebot`, `WhatsApp`, `LinkedInBot`, `Slackbot`, `Twitterbot`, `TelegramBot`, `Googlebot` | Present, action Skip (all remaining custom rules, Bot Fight Mode, rate limits) | Keeps the preview and search crawlers out of every challenge. Check Security > Events for past blocks of these user agents |
+| Rules > Redirect Rules: apex `mullnyphotos.cz` to `https://www.mullnyphotos.cz` (301, keep path and query) | Present | Today both hosts serve the page; the canonical host is `www` (SEO.md section 1) and a share of the apex URL would split previews and counts |
+| Caching > Purge Everything | After every change above | Cached pages keep the old rewritten mailto link until purged |
+
+The pages carry `og:image`, `og:image:secure_url`, `og:image:type` (`image/jpeg`), `og:image:width`, `og:image:height` and `og:image:alt` on every page that has a picture (`Base.astro`; `OgImage.type` in `apps/web/src/lib/images.ts`), and the picture URL is always absolute https.
+
+Link-preview test procedure, after the settings above and a deploy:
+
+1. Facebook Sharing Debugger (`developers.facebook.com/tools/debug/`): paste the page URL and press "Scrape Again"; check that image, title and description show and that "Fetched" has no error.
+2. opengraph.xyz: paste the URL and check the preview cards for Facebook, LinkedIn and X.
+3. LinkedIn Post Inspector (`linkedin.com/post-inspector/`): inspect the URL.
+4. Chat apps (WhatsApp, Messenger, Slack) cache a preview for days: share `https://www.mullnyphotos.cz/?v=2` (and `?v=3` next time) to bypass the cache; the query string only changes the cache key, the canonical stays without it.
+5. Click "Napsat e-mail" on `/` and check that the mail program opens with the address filled in and that the visible address reads correctly.
+
 ## Analytics
 
 Cloudflare Web Analytics only (D-3 option C): no cookies, no banner, no Google, no GTM. Nothing else is measured.

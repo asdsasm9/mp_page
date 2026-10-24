@@ -161,7 +161,18 @@ describe('design tokens', () => {
     expect(bound('--text-body')[1]).toBeLessThanOrEqual(1.125);
   });
 
-  it('Cormorant (headings) is never set under 20px, and uppercase heading leading is at least 1.12', () => {
+  it('the card grid column gap is 48 to 64px, at least 1.5 times the former 32px (T-321)', () => {
+    const rem = Number(/^([\d.]+)rem$/.exec(tokens['--grid-col-gap']!)?.[1]);
+    expect(rem * 16).toBeGreaterThanOrEqual(48);
+    expect(rem * 16).toBeLessThanOrEqual(64);
+  });
+
+  it('the reference quote holds the full review text: 20 to 24px, line height 1.4 (T-320)', () => {
+    expect(bound('--text-quote')).toEqual([1.25, 1.5]);
+    expect(Number(tokens['--leading-quote'])).toBe(1.4);
+  });
+
+  it('Cormorant (headings) is never set under 20px,and uppercase heading leading is at least 1.12', () => {
     for (const name of HEADING_SIZES) expect(bound(name)[0], name).toBeGreaterThanOrEqual(1.25);
     expect(Number(tokens['--leading-caps'])).toBeGreaterThanOrEqual(1.12);
     expect(Number(tokens['--leading-prose'])).toBeGreaterThanOrEqual(1.7);

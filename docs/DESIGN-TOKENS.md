@@ -95,7 +95,7 @@ Accent rules: `--color-accent` is used for `border-color`, `text-decoration-colo
 
 - Components use `var(--...)` only. No hex, `rgb()`, or `px` in components or layouts (the test greps them). Border width uses `--border-width`.
 - Body text is left-aligned, at most 70ch, 1.6 line height (`.t-prose`: 1.8 for long reading).
-- Type (T-252): no `font-size`, `font-family`, `font-weight`, `line-height` or `letter-spacing` in any page, layout or component. Use the element defaults (h1, h2, h3, p) or a `.t-*` class from base.css. `tokens.test.ts` fails on a literal anywhere outside tokens.css and on a non-`var()` value in base.css. Uppercase (`text-transform`) is set only by `.t-display`, `.t-h1`, `.t-h3`, `.t-kicker`, `.btn` and `.btn-ghost`.
+- Type (T-252): no `font-size`, `font-family`, `font-weight`, `line-height` or `letter-spacing` in any page, layout or component. Use the element defaults (h1, h2, h3, p) or a `.t-*` class from base.css. `tokens.test.ts` fails on a literal anywhere outside tokens.css and on a non-`var()` value in base.css. Uppercase (`text-transform`, T-329) is set only in base.css: the `h1, h2, h3` element defaults, `.t-display`, `.t-title`, `.t-h1`, `.t-h3`, `.t-kicker`, `.t-crumb` (breadcrumb row, back link), `.t-nav`, `.t-wordmark`, `.btn` and `.btn-ghost`. Source text stays in normal Czech case (texts.ts, JSON-LD, document title); running text, `.t-quote`, `.t-lead`, `.t-small`, captions and the cookies body are never uppercase. To switch to Title Case, change those rules only.
 - Buttons: `.btn` (outlined, `--color-accent-strong`, uppercase, 44 px minimum height, no radius) and `.btn-ghost` (text with a 1 px accent underline). Hover tints use `color-mix()` of `--color-accent-strong` at 12% and 22%.
 - Every interactive element has a visible `:focus-visible` ring from base.css; do not remove it. On a dark surface set `data-tone="dark"`.
 - Changing a colour token to a failing value turns `tokens.test.ts` red.
@@ -109,10 +109,10 @@ Ceilings (T-314): no size grows past the value it has at a 1440 px viewport, so 
 | Token | Class / element | 360 px | 1280 px | Line height | Use |
 |---|---|---|---|---|---|
 | `--text-display` | `.t-display` | 38 | 72 | `--leading-caps` 1.12 | home hero h1, uppercase |
-| `--text-title` | `.t-title` | 34 | 53.8 | `--leading-heading` 1.2 | statement titles (O mně, Kontakt) |
-| `--text-h1` | `h1`, `.t-h1` | 30 | 46 | 1.2, `.t-h1` 1.12 | page and section heads (`.t-h1`: uppercase, tracking `--tracking-h1`) |
-| `--text-h2` | `h2` | 24 | 28 | 1.2 | sub-heads |
-| `--text-h3` | `h3`, `.t-h3` | 22 | 24.6 | 1.2, `.t-h3` 1.12 | card titles (uppercase, tracking `--tracking-card`), lightbox arrows |
+| `--text-title` | `.t-title` | 34 | 53.8 | `--leading-caps` 1.12 | statement titles (O mně, Kontakt), uppercase, tracking `--tracking-card` |
+| `--text-h1` | `h1`, `.t-h1` | 30 | 46 | 1.12 | page and section heads (`.t-h1`: uppercase, tracking `--tracking-h1`) |
+| `--text-h2` | `h2` | 24 | 28 | 1.12 | sub-heads, uppercase, tracking `--tracking-card` |
+| `--text-h3` | `h3`, `.t-h3` | 22 | 24.6 | 1.12 | card titles (uppercase, tracking `--tracking-card`), lightbox arrows |
 | `--text-quote` | `.t-quote` | 20 | 24 | `--leading-quote` 1.4 | reference quote, the full review text (Cormorant; T-320) |
 | `--text-lead` | `h4`, `.t-lead` | 17 | 18.4 | `--leading-lead` 1.5 | intro paragraph |
 | `--text-body` | `body`, `.t-body` | 15 | 16.1 | `--leading-body` 1.6 | running text |
@@ -122,7 +122,7 @@ Ceilings (T-314): no size grows past the value it has at a 1440 px viewport, so 
 | `--text-nav` | `.btn`, `.btn-ghost`, `.t-nav` | 12 | 12.8 | 1.5 | nav and button labels, uppercase |
 | `--text-wordmark` | `.t-wordmark` | 20 | 21 | `--leading-caps` 1.12 | header wordmark, uppercase, tracking `--tracking-wordmark` |
 
-Other type tokens: `--leading-prose` 1.8 (`.t-prose`), `--leading-none`, `--tracking-heading` 0.03em, `--tracking-h1` 0.06em, `--tracking-card` 0.04em, `--tracking-label` 0.2em, `--tracking-wordmark` 0.14em, `--measure` 70ch.
+Other type tokens: `--leading-heading` 1.2 (`h4` only, since T-329 every uppercase heading uses `--leading-caps`), `--leading-prose` 1.8 (`.t-prose`), `--leading-none`, `--tracking-heading` 0.03em, `--tracking-h1` 0.06em, `--tracking-card` 0.04em, `--tracking-label` 0.2em, `--tracking-wordmark` 0.14em, `--measure` 70ch.
 
 Lining figures (T-312): Cormorant Garamond draws old-style figures by default (a "1" looks like a small capital I). `body` in `apps/web/src/styles/base.css` sets `font-variant-numeric: lining-nums`, which every heading, title and display rule inherits; Lora's figures are already lining, so body text is unchanged. The admin sets the same property on `h1, h2, h3`, `.brand` and the cover-picker legends.
 

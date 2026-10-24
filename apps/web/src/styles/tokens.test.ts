@@ -309,12 +309,28 @@ describe('type literals live only in tokens.css (T-252)', () => {
     for (const f of scripts) expect(readFileSync(f, 'utf8'), f).not.toMatch(/fontSize|fontFamily|fontWeight|lineHeight|font-size/);
   });
 
+  it('every title and sub-title is uppercase by CSS (T-329): h1-h3 defaults and all heading/label classes, not body text', () => {
+    const base = readFileSync(join(here, 'base.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = (selector: string) => {
+      const m = base.match(new RegExp(`(?:^|\\n)\\s*${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`));
+      return m?.[1] ?? '';
+    };
+    const headings = base.match(/h1,\s*h2,\s*h3\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(headings).toMatch(/text-transform:\s*uppercase/);
+    for (const c of ['.t-display', '.t-title', '.t-h1', '.t-h3', '.t-kicker', '.t-crumb', '.t-wordmark', '.t-nav']) {
+      expect(rule(c), c).toMatch(/text-transform:\s*uppercase/);
+    }
+    for (const c of ['.t-quote', '.t-lead', '.t-body', '.t-small', '.t-caption', '.t-prose']) {
+      expect(rule(c), c).not.toMatch(/text-transform/);
+    }
+  });
+
   it('every .t-* class used in markup exists in base.css', () => {
     const base = readFileSync(join(here, 'base.css'), 'utf8');
     const defined = new Set([...base.matchAll(/\.(t-[a-z0-9]+)\s*\{/g)].map((m) => m[1]));
     expect([...defined].sort()).toEqual([
-      't-body', 't-caption', 't-display', 't-h1', 't-h3', 't-kicker', 't-lead', 't-nav', 't-prose', 't-quote', 't-small', 't-title',
-      't-wordmark',
+      't-body', 't-caption', 't-crumb', 't-display', 't-h1', 't-h3', 't-kicker', 't-lead', 't-nav', 't-prose', 't-quote', 't-small',
+      't-title', 't-wordmark',
     ]);
     for (const f of styled) {
       const text = readFileSync(f, 'utf8');

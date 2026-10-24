@@ -440,8 +440,8 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
     const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
     expect([...main.matchAll(/data-band="(\w+)"/g)].map((m) => m[1])).toEqual(['ground', 'surface', 'dark', 'ground']);
     // sub-heads use the h3 token size, no t-title or t-h1 below the page h1
-    expect(main).toMatch(/<h2 id="zkusenosti" class="t-h3"[^>]*>MÉ ZKUŠENOSTI<\/h2>/);
-    expect(main).toMatch(/<h2 id="pribeh" class="t-h3"[^>]*>MŮJ PŘIBĚH<\/h2>/);
+    expect(main).toMatch(/<h2 id="zkusenosti" class="t-h3"[^>]*>Mé zkušenosti<\/h2>/);
+    expect(main).toMatch(/<h2 id="pribeh" class="t-h3"[^>]*>Můj příběh<\/h2>/);
     expect(main).toMatch(/<h2 id="vzpominky-nadpis" class="t-h3"/);
     expect(main).not.toContain('t-title');
     expect([...main.matchAll(/class="t-h1/g)]).toHaveLength(1);

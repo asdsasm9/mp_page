@@ -146,7 +146,7 @@ describe('PageHead', () => {
     expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
     expect(html).toMatch(/<h1 class="t-h1">Svatby<\/h1>/);
     expect(html).toContain('<hr class="rule"');
-    expect(html).toMatch(/<a class="back t-small" href="\/portfolio\/">\s*<svg[\s\S]*?<\/svg>\s*Všechna portfolia\s*<\/a>/);
+    expect(html).toMatch(/<a class="back t-crumb" href="\/portfolio\/">\s*<svg[\s\S]*?<\/svg>\s*Všechna portfolia\s*<\/a>/);
     expect(html).toContain('<p>Úvod</p>');
   });
 

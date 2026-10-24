@@ -89,6 +89,8 @@ describe('Reference', () => {
     expect(css).toMatch(/@media \(scripting: enabled\)[^{]*{[\s\S]*grid-area: 1 \/ 1/);
     expect(css).toMatch(/@media \(scripting: enabled\) and \(prefers-reduced-motion: no-preference\)[^{]*{[\s\S]*transition/);
     expect(css).toContain('touch-action: pan-y');
+    // T-336: slides centred vertically in the shared cell
+    expect(css).toMatch(/\.slide \{\s*display: grid;[^}]*align-content: center;/);
     const script = readFileSync(new URL('../../scripts/reference-carousel.ts', import.meta.url), 'utf8');
     expect(script).not.toMatch(/setInterval|setTimeout/);
   });

@@ -83,6 +83,14 @@ const total = reviews.length;
     gap: var(--space-7);
   }
 
+  /* T-336: every slide is as tall as the tallest one (shared grid cell, below) and its content is centred in that
+     height, so a shorter review neither moves the content nor the switcher */
+  .slide {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+  }
+
   .slide figure {
     display: grid;
     justify-items: start;

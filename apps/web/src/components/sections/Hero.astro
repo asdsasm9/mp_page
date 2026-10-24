@@ -83,4 +83,31 @@ const { categoryNames } = Astro.props;
     max-inline-size: 24ch;
     margin: 0;
   }
+
+  /* Print: the photo on top at a moderate height, the text under it as ink on paper (the scrim is a background and
+     is not printed, so light text over the photo would be unreadable) */
+  @media print {
+    .hero {
+      display: block;
+      min-block-size: 0;
+      background: none;
+    }
+
+    .media {
+      position: static;
+    }
+
+    .media :global(picture) {
+      block-size: auto;
+    }
+
+    .media :global(img) {
+      block-size: 90mm;
+    }
+
+    .scrim {
+      background: none;
+      padding-block-start: var(--space-5);
+    }
+  }
 </style>

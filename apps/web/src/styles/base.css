@@ -347,6 +347,16 @@
       display: none;
     }
 
+    /* Backgrounds are not printed, so the dark bands (Reference, hero text) must switch to ink on paper.
+       Custom properties set on the element itself beat the values inherited from :root. */
+    [data-tone='dark'] {
+      --band-dark-bg: transparent;
+      --band-dark-text: var(--color-text);
+      --band-dark-muted: var(--color-text-muted);
+      --band-dark-accent: var(--color-accent-text);
+      --color-on-overlay: var(--color-text);
+    }
+
     a {
       text-decoration: underline;
     }

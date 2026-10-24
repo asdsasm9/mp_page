@@ -162,6 +162,24 @@ const total = reviews.length;
     }
   }
 
+  /* Print: nothing to operate, every review on paper (after the scripting rules so it wins) */
+  @media print {
+    .controls {
+      display: none;
+    }
+
+    .viewport {
+      gap: var(--space-5);
+    }
+
+    .viewport .slide {
+      grid-area: auto;
+      visibility: visible;
+      opacity: 1;
+      transition: none;
+    }
+  }
+
   @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
     .slide {
       transition:

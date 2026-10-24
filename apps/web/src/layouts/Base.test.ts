@@ -417,6 +417,28 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
     expect(navLinks(page).filter((t) => /aria-current="page"/.test(t))).toHaveLength(1);
   });
 
+  it('/o-mne/ is built from the WP-12 bands: ground, surface, dark, ground; h3-size sub-heads, t-quote, photos after the first text (T-319)', () => {
+    const page = readFileSync(join(out, 'o-mne', 'index.html'), 'utf8');
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    expect([...main.matchAll(/data-band="(\w+)"/g)].map((m) => m[1])).toEqual(['ground', 'surface', 'dark', 'ground']);
+    // sub-heads use the h3 token size, no t-title or t-h1 below the page h1
+    expect(main).toMatch(/<h2 id="zkusenosti" class="t-h3"[^>]*>MÉ ZKUŠENOSTI<\/h2>/);
+    expect(main).toMatch(/<h2 id="pribeh" class="t-h3"[^>]*>MŮJ PŘIBĚH<\/h2>/);
+    expect(main).toMatch(/<h2 id="vzpominky-nadpis" class="t-h3"/);
+    expect(main).not.toContain('t-title');
+    expect([...main.matchAll(/class="t-h1/g)]).toHaveLength(1);
+    // the quote is a t-quote inside the dark band
+    const dark = main.slice(main.indexOf('data-band="dark"'));
+    expect(dark).toMatch(/<blockquote class="t-quote[^"]*"[^>]*>/);
+    expect(dark.slice(0, dark.indexOf('</section>'))).toContain(HOME.quote);
+    // DOM order: first text, then both photos, then the second text (phones); no inline sizes or colours on the page
+    const order = ['id="zkusenosti"', '<img', 'id="pribeh"'].map((m) => main.indexOf(m));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(order.every((p) => p > -1)).toBe(true);
+    expect(main).not.toMatch(/style="[^"]*(font|color)/);
+    expect(main).toMatch(/<a class="btn"[^>]*href="\/#kontakt"[^>]*>Napište mi<\/a>/);
+  });
+
   it('no built page has a tel: link, a +420 number or a telephone property', () => {
     const pages = allHtml();
     expect(pages.length).toBeGreaterThan(10);

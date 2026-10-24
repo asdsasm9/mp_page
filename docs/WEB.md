@@ -8,7 +8,7 @@ Plan: WP-3 and WP-3b (image loading). Related: [SEO.md](SEO.md), [DESIGN-CHECK.m
 
 Home (`/`) is a one-pager with the sections Hero, O mně (`#o-mne`: the short hello and a "Více o mně" link to `/o-mne/`),
 Portfolio (category cards), Reference and Kontakt (`#kontakt`), then the footer (`src/components/sections/`). Further
-pages: `/o-mne/` (the About page again since T-293, with the three texts, the full quote and two photos; the header item
+pages: `/o-mne/` (the About page again since T-293, with the three texts, the full quote and two photos, rebuilt in T-319 as four bands ground / surface / dark / ground: PageHead with the lead, "Mé zkušenosti" and "Můj příběh" as `h2.t-h3` beside the two photos (first photo level with the first sub-head from 48rem, photos after the first text on phones, natural aspect ratio), the quote as `.t-quote` in `<Section band="dark" size="h3">`, and the "Napište mi" button; two font families, the type tokens only; the header item
 "O mně" links to it and is marked `aria-current="page"` there), `/portfolio/`, one page per category, one per album,
 `/cookies/` and the 404. The header item "Portfolio" links to `/portfolio/` from every page, also on the home (T-296);
 it is marked `aria-current="true"` on `/portfolio/`, category and album pages and never by the home scrollspy (the

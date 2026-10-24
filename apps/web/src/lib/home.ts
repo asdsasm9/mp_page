@@ -26,15 +26,15 @@ export interface HomeHero {
   /** The photo's own alt text, else the fixed hero text. */
   alt: string;
   /** Absolute URL of the photo's og.jpg with its stored size (for og:image). */
-  og: { url: string; width: number; height: number };
+  og: { url: string; width: number; height: number; type: string };
 }
 
 /** The photo chosen for the hero in the admin, or null: the page then uses the bundled main.jpg. */
 export function homeHero(catalog: Catalog, fallbackAlt: string, imgBase: string): HomeHero | null {
   const photo = catalog.heroPhoto();
   if (!photo) return null;
-  const { url, width, height } = ogImage(photo, imgBase);
-  return { photo, alt: photo.alt?.trim() || fallbackAlt, og: { url, width, height } };
+  const { url, width, height, type } = ogImage(photo, imgBase);
+  return { photo, alt: photo.alt?.trim() || fallbackAlt, og: { url, width, height, type } };
 }
 
 export function homeCategoryCards(catalog: Catalog): HomeCategoryCard[] {

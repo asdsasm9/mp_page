@@ -2,7 +2,7 @@
 // Reference (WP-12 e, T-278): the client reviews on the dark band. Server HTML: every review as a slide, the first one
 // marked active. Without JavaScript (`@media (scripting: none)`) all slides are stacked and the arrows and counter are
 // hidden; with it the slides share one grid cell (the band is as tall as the tallest slide, nothing shifts) and
-// scripts/reference-carousel.ts moves the active marker. No autoplay. The full text stays in a native <details>.
+// scripts/reference-carousel.ts moves the active marker. No autoplay. The slide shows the full review text (T-320).
 // Zero reviews renders nothing; one review renders no arrows and no counter.
 import type { HomeReview } from '../../lib/home';
 import Icon from '../Icon.astro';
@@ -31,13 +31,9 @@ const total = reviews.length;
             >
               <figure>
                 <blockquote class="t-quote">
-                  <p>{review.short}</p>
+                  <p>{review.text}</p>
                 </blockquote>
                 <figcaption class="t-kicker">{categoryName ? `${review.name} · ${categoryName}` : review.name}</figcaption>
-                <details class="full">
-                  <summary class="btn-ghost">Celá recenze</summary>
-                  <p class="t-prose">{review.text}</p>
-                </details>
               </figure>
             </div>
           ))}
@@ -90,15 +86,6 @@ const total = reviews.length;
 
   .slide figcaption {
     color: var(--band-dark-muted);
-  }
-
-  .full p {
-    padding-block-start: var(--space-3);
-  }
-
-  .full summary:hover {
-    color: var(--band-dark-accent);
-    text-decoration-color: var(--band-dark-accent);
   }
 
   .controls {

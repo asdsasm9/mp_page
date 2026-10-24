@@ -228,7 +228,7 @@ describe('Photo crop', () => {
 
   it('a landscape cover asks for about twice the box width, a portrait cover for no more than the box width', async () => {
     const wide = sizesOf(await render(Photo, { photo: landscape, base: IMG, alt: '', crop: 'category' }));
-    expect(wide).toMatch(/calc\(21rem \* (1\.9\d|2)\)/);
+    expect(wide).toMatch(/calc\(20rem \* (1\.9\d|2)\)/);
     const tall = sizesOf(await render(Photo, { photo: portrait, base: IMG, alt: '', crop: 'album' }));
     expect(tall).toBe('(min-width: 48rem) 26rem, calc(100vw - 3rem)');
   });
@@ -321,9 +321,16 @@ describe('CategoryGrid (T-279)', () => {
     const css = styleOf('./CategoryGrid.astro');
     expect(css).toMatch(/repeat\(auto-fill, minmax\(min\(15rem, 100%\), 1fr\)\)/);
     expect(css).toMatch(/@media \(min-width: 48rem\) \{[^@]*repeat\(auto-fit, minmax\(min\(15rem, 100%\), var\(--track-max\)\)\);[^@]*justify-content: center/s);
-    expect(css).toMatch(/--track-max: 21rem/);
+    expect(css).toMatch(/--track-max: 20rem/); // equals CROP_BASE.category at 48rem; 20 keeps two columns at 768 with the wide gap (T-321)
     expect(css).toMatch(/@media \(min-width: 80rem\) \{\s*\.cards \{\s*--track-max: 18rem/);
     expect(css).toMatch(/@media \(min-width: 100rem\) \{\s*\.cards \{\s*--track-max: 16rem/);
+  });
+
+  it('uses the shared wide column gap token, the same as every album grid (T-321)', () => {
+    expect(styleOf('./CategoryGrid.astro')).toMatch(/gap: var\(--grid-row-gap\) var\(--grid-col-gap\)/);
+    for (const page of ['../pages/[category]/index.astro', '../pages/portfolio/index.astro', '../pages/layout-check/categories/[count]/index.astro']) {
+      expect(styleOf(page), page).toMatch(/\.albums \{[^}]*gap: var\(--grid-row-gap\) var\(--grid-col-gap\)/s);
+    }
   });
 });
 

@@ -85,6 +85,7 @@ Accent rules: `--color-accent` is used for `border-color`, `text-decoration-colo
 | Shape | `--radius-none` (0: images, cards and buttons), `--radius-sm`, `--radius-md`, `--radius-full` (lightbox round buttons, admin), `--border-width`, `--focus-width`, `--focus-offset`, `--bar-thickness` (2 px), `--shadow-sm`, `--shadow-md`, `--opacity-disabled` (0.45) |
 | Motion | `--motion-fast` 150 ms, `--motion-base` 250 ms, `--motion-drawer` 400 ms, `--motion-ease`; anything beyond a colour change, including smooth scrolling, is inside `prefers-reduced-motion: no-preference` |
 | Layout | `--layout-max` 110rem, `--layout-gutter`, `--header-height` 68 px (T-316, was 85), `--section-pad` 52 to 88 px (T-316, was 64 to 110; the home hero is `max(26rem, 80svh)`), `--section-gap-lg`, `--section-gap`, `--heading-gap`, `--drawer-width`, `--target-min` (44 px), `--target-compact` (32 px) |
+| Card grid column gap (T-321) | `--grid-col-gap` (3.5rem = 56 px, was 32 px) between the columns of the category cards (home Portfolio, /portfolio/) and of every album card grid (category pages, "Výběr z alb"). Tracks are never wider than the widths `CROP_BASE` in `images.ts` assumes, so a wider gap only narrows tracks or drops a column; `npm run image-fit` guards it |
 | Overview cards (T-317) | `--card-title-gap` (= `--space-1`, image to its own title) and `--grid-row-gap` (= `--space-7`, between rows of category and album cards), so a title always reads as belonging to the image above it. Category and portfolio pages have no intro text under the title; the generated description is the meta description only |
 | Image shapes | `--ratio-category` 3 / 4, `--ratio-album` 4 / 5, `--cover-position` |
 | Stacking | `--z-header` 10, `--z-dialog` 20 (lightbox), `--z-drawer` 21 (inside the header), `--z-skip` 30 |
@@ -111,7 +112,7 @@ Ceilings (T-314): no size grows past the value it has at a 1440 px viewport, so 
 | `--text-h1` | `h1`, `.t-h1` | 30 | 46 | 1.2, `.t-h1` 1.12 | page and section heads (`.t-h1`: uppercase, tracking `--tracking-h1`) |
 | `--text-h2` | `h2` | 24 | 28 | 1.2 | sub-heads |
 | `--text-h3` | `h3`, `.t-h3` | 22 | 24.6 | 1.2, `.t-h3` 1.12 | card titles (uppercase, tracking `--tracking-card`), lightbox arrows |
-| `--text-quote` | `.t-quote` | 20 | 30 | `--leading-quote` 1.25 | reference quote (Cormorant) |
+| `--text-quote` | `.t-quote` | 20 | 24 | `--leading-quote` 1.4 | reference quote, the full review text (Cormorant; T-320) |
 | `--text-lead` | `h4`, `.t-lead` | 17 | 18.4 | `--leading-lead` 1.5 | intro paragraph |
 | `--text-body` | `body`, `.t-body` | 15 | 16.1 | `--leading-body` 1.6 | running text |
 | `--text-small` | `.t-small` | 14 | 14.9 | `--leading-ui` 1.5 | footer, breadcrumb, secondary links |

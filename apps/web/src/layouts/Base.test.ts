@@ -106,17 +106,16 @@ describe('Home page (built, shared build)', () => {
     for (const tag of imgs) expect(tag).toMatch(EMPTY_ALT);
   });
 
-  it('shows the short review text, the full text in a details "Celá recenze", no photos, in the dark band', () => {
+  it('shows the full review text (no details, no "Celá recenze"), no photos, in the dark band', () => {
     const reviews = section('id="reference"').replace(/\sdata-astro-cid-[a-z0-9]+(="")?/g, '');
     expect(reviews).toContain('data-band="dark"');
     expect(reviews).toContain('Reference');
     for (const r of REVIEWS) {
-      expect(reviews).toContain(`<p>${r.short}</p>`);
-      expect(reviews).toContain(r.text);
+      expect(reviews).toContain(`<p>${r.text}</p>`);
       expect(reviews).toContain(`${r.name} · `);
     }
-    expect([...reviews.matchAll(/<details\b/g)]).toHaveLength(REVIEWS.length);
-    expect(reviews).toContain('Celá recenze');
+    expect(reviews).not.toContain('<details');
+    expect(reviews).not.toContain('Celá recenze');
     expect(imgTags(reviews)).toHaveLength(0);
   });
 
@@ -162,6 +161,29 @@ describe('Home page (built, shared build)', () => {
     }
     expect(contact).toContain('(otevře se v novém okně)');
     expect(contact).not.toMatch(/<form[\s>]|href="tel:/);
+  });
+
+  it('Kontakt drops the Instagram paragraph, shows the address as a plain mailto text link, and the button is a bare mailto (T-318)', () => {
+    const contact = section('id="kontakt"');
+    expect(contact).not.toContain('Neváhejte se podívat');
+    const button = /<a class="btn"[^>]*>/.exec(contact)?.[0] ?? '';
+    expect(button).toMatch(/\shref="mailto:mullnyphotos@gmail\.com"/);
+    expect(button).not.toMatch(/\s(target|onclick|download)=/);
+    expect(contact).toMatch(/<a class="mail-text"[^>]*href="mailto:mullnyphotos@gmail\.com"[^>]*>mullnyphotos@gmail\.com<\/a>/);
+    expect(contact).toContain('(mullnyphotos@gmail.com)');
+    // No script in the page body intercepts clicks on the contact link.
+    expect(contact).not.toMatch(/<script|onclick=/);
+  });
+
+  it('O mně photos keep their native aspect ratio (no square crop) (T-318)', () => {
+    const about = section('id="o-mne"');
+    for (const t of imgTags(about)) {
+      expect(t).toMatch(/width="\d+"/);
+      expect(t).toMatch(/height="\d+"/);
+    }
+    const front = /<div class="shot front[^"]*"[^>]*>\s*(<img[^>]*>)/.exec(about)?.[1] ?? '';
+    const [w, h] = [/width="(\d+)"/.exec(front)?.[1], /height="(\d+)"/.exec(front)?.[1]].map(Number);
+    expect(h! / w!).toBeGreaterThan(1.05);
   });
 
   it('passes an absolute og:image', () => {
@@ -366,6 +388,24 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
       .filter((f) => f.endsWith('.html'))
       .map((f): [string, string] => [f, readFileSync(join(out, f), 'utf8')]);
 
+  it('every page with an og:image has og:image:type image/jpeg, and og:image:secure_url (the same URL) whenever it is https (T-322)', () => {
+    const pages = allHtml().filter(([, page]) => page.includes('property="og:image"'));
+    expect(pages.length).toBeGreaterThan(4);
+    let withSecure = 0;
+    for (const [file, page] of pages) {
+      const url = /<meta property="og:image" content="([^"]+)">/.exec(page)?.[1];
+      expect(page, file).toContain('<meta property="og:image:type" content="image/jpeg">');
+      // The fixture build serves category and album images from a relative /_dev-img host (production: https R2 host).
+      if (url?.startsWith('https://')) {
+        withSecure++;
+        expect(page, file).toContain(`<meta property="og:image:secure_url" content="${url}">`);
+      } else {
+        expect(page, file).not.toContain('og:image:secure_url');
+      }
+    }
+    expect(withSecure).toBeGreaterThan(1); // home and /o-mne/ are absolute https in every build
+  });
+
   it('builds /o-mne/ (T-293) but not /kontakt/', () => {
     expect(existsSync(join(out, 'o-mne', 'index.html'))).toBe(true);
     expect(existsSync(join(out, 'kontakt'))).toBe(false);
@@ -392,6 +432,28 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
     expect(page).toContain('<link rel="canonical" href="https://www.mullnyphotos.cz/o-mne/">');
     expect(currentLinks(page)).toEqual(['/o-mne/']);
     expect(navLinks(page).filter((t) => /aria-current="page"/.test(t))).toHaveLength(1);
+  });
+
+  it('/o-mne/ is built from the WP-12 bands: ground, surface, dark, ground; h3-size sub-heads, t-quote, photos after the first text (T-319)', () => {
+    const page = readFileSync(join(out, 'o-mne', 'index.html'), 'utf8');
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    expect([...main.matchAll(/data-band="(\w+)"/g)].map((m) => m[1])).toEqual(['ground', 'surface', 'dark', 'ground']);
+    // sub-heads use the h3 token size, no t-title or t-h1 below the page h1
+    expect(main).toMatch(/<h2 id="zkusenosti" class="t-h3"[^>]*>MÉ ZKUŠENOSTI<\/h2>/);
+    expect(main).toMatch(/<h2 id="pribeh" class="t-h3"[^>]*>MŮJ PŘIBĚH<\/h2>/);
+    expect(main).toMatch(/<h2 id="vzpominky-nadpis" class="t-h3"/);
+    expect(main).not.toContain('t-title');
+    expect([...main.matchAll(/class="t-h1/g)]).toHaveLength(1);
+    // the quote is a t-quote inside the dark band
+    const dark = main.slice(main.indexOf('data-band="dark"'));
+    expect(dark).toMatch(/<blockquote class="t-quote[^"]*"[^>]*>/);
+    expect(dark.slice(0, dark.indexOf('</section>'))).toContain(HOME.quote);
+    // DOM order: first text, then both photos, then the second text (phones); no inline sizes or colours on the page
+    const order = ['id="zkusenosti"', '<img', 'id="pribeh"'].map((m) => main.indexOf(m));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(order.every((p) => p > -1)).toBe(true);
+    expect(main).not.toMatch(/style="[^"]*(font|color)/);
+    expect(main).toMatch(/<a class="btn"[^>]*href="\/#kontakt"[^>]*>Napište mi<\/a>/);
   });
 
   it('no built page has a tel: link, a +420 number or a telephone property', () => {

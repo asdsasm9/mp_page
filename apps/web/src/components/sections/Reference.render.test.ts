@@ -43,11 +43,12 @@ describe('Reference', () => {
     expect(html).not.toContain('aria-hidden="true" inert');
   });
 
-  it('shows the short text and keeps the full text in a native details; name line copes with a missing category', async () => {
+  it('shows the full review text as the quote, with no details or "Celá recenze"; name line copes with a missing category', async () => {
     const html = await render(mk(2));
-    expect(html).toContain(REVIEWS[0]!.short);
-    expect(html).toContain(REVIEWS[0]!.text);
-    expect(html).toContain('<details class="full">');
+    expect(html).toContain(`<p>${REVIEWS[0]!.text}</p>`);
+    expect(html).toContain(`<p>${REVIEWS[1]!.text}</p>`);
+    expect(html).not.toContain('<details');
+    expect(html).not.toContain('Celá recenze');
     expect(html).toContain('Pati · Svatby');
     expect(html).toMatch(/>Anež</);
   });

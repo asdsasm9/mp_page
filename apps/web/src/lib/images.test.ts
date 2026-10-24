@@ -157,7 +157,7 @@ describe('coverSizes (crop-aware sizes, WP-12 F10)', () => {
       }
     }
     expect(cropSizes('category', 1600, 1067)).toBe(
-      '(min-width: 100rem) calc(16rem * 2), (min-width: 80rem) calc(18rem * 2), (min-width: 48rem) calc(21rem * 2), calc((100vw - 3rem) * 2)',
+      '(min-width: 100rem) calc(16rem * 2), (min-width: 80rem) calc(18rem * 2), (min-width: 48rem) calc(20rem * 2), calc((100vw - 3rem) * 2)',
     );
     expect(cropSizes('album', 1067, 1600)).toBe(ALBUM); // a portrait photo fills the 4 / 5 box with no extra width
   });

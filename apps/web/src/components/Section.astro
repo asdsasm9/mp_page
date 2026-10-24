@@ -14,10 +14,12 @@ interface Props {
   actionHref?: string;
   actionLabel?: string;
   band?: 'ground' | 'surface' | 'dark';
+  /** Heading size: `h1` (the home sections) or `h3` (the quieter sub-head size, /o-mne/). */
+  size?: 'h1' | 'h3';
   class?: string;
 }
 
-const { id, title, kicker, actionHref, actionLabel, band = 'ground', class: className } = Astro.props;
+const { id, title, kicker, actionHref, actionLabel, band = 'ground', size = 'h1', class: className } = Astro.props;
 const headingId = `${id}-nadpis`;
 const hasAction = Boolean(actionHref && actionLabel);
 ---
@@ -32,7 +34,7 @@ const hasAction = Boolean(actionHref && actionLabel);
     <header class="head">
       {kicker && <Kicker tone={band === 'dark' ? 'dark' : 'light'}>{kicker}</Kicker>}
       <div class="head-row">
-        <h2 id={headingId} class="t-h1">{title}</h2>
+        <h2 id={headingId} class={size === 'h3' ? 't-h3' : 't-h1'}>{title}</h2>
         <span class="rule" aria-hidden="true"></span>
         {
           hasAction && (

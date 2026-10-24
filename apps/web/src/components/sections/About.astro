@@ -62,35 +62,32 @@ import wedding from '../../assets/site/about/wedding.jpg';
     padding-inline: var(--layout-gutter);
   }
 
-  /* Back photo top-left, front photo overlapping at the bottom-right; the box keeps its own aspect ratio.
-     No colour filter on photos, no radius. */
+  /* Back photo top-left, front photo overlapping at the bottom-right. Both photos keep their native
+     aspect ratio (from the width/height the image carries), so nothing is cropped and the box grows with
+     them (T-318). No colour filter on photos, no radius. */
   .overlap {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    grid-template-rows: repeat(12, 1fr);
-    aspect-ratio: 1 / 1.05;
+    grid-template-rows: auto auto;
     inline-size: 100%;
     max-inline-size: 32.5rem;
     justify-self: center;
   }
 
-  .shot {
-    overflow: hidden;
-  }
-
   .shot :global(img) {
     display: block;
     inline-size: 100%;
-    block-size: 100%;
-    object-fit: cover;
+    block-size: auto;
   }
 
   .back {
-    grid-area: 1 / 1 / 9 / 8;
+    grid-area: 1 / 1 / 2 / 8;
   }
 
+  /* Percent margins resolve against the grid area width, so the overlap scales with the box. */
   .front {
-    grid-area: 6 / 5 / 13 / 13;
+    grid-area: 2 / 5 / 3 / 13;
+    margin-block-start: -35%;
     z-index: 1;
   }
 

@@ -48,7 +48,7 @@ Headings: exactly one `<h1>` per page. Home: "Fotograf Brno" style line is the h
 
 ## 3. Open Graph and Twitter
 
-Tags on every indexable page: `og:type`, `og:site_name` = `Mullny Photos`, `og:locale` = `cs_CZ`, `og:title` (= the title without the brand suffix), `og:description` (= meta description), `og:url` (= canonical), `og:image` (absolute URL), `og:image:width`, `og:image:height`, `og:image:alt`, `twitter:card` = `summary_large_image`.
+Tags on every indexable page: `og:type`, `og:site_name` = `Mullny Photos`, `og:locale` = `cs_CZ`, `og:title` (= the title without the brand suffix), `og:description` (= meta description), `og:url` (= canonical), `og:image` (absolute URL), `og:image:secure_url` (the same https URL), `og:image:type` (`image/jpeg`, T-322), `og:image:width`, `og:image:height`, `og:image:alt`, `twitter:card` = `summary_large_image`.
 
 `og:type`: `website` for home, portfolio, categories; `article` is not used (no blog). (The old site used `profile`; drop it.)
 

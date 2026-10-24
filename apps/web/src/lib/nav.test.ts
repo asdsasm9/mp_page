@@ -9,10 +9,10 @@ const marked = (current: string): string[] =>
   items.filter((i) => navCurrent(current, i) !== undefined).map((i) => i.anchor);
 
 describe('buildNav', () => {
-  it('lists O mně (the /o-mne/ page), Portfolio, Reference and a framed Kontakt (home anchors)', () => {
+  it('lists O mně (/o-mne/), Portfolio (/portfolio/, no anchor), Reference and a framed Kontakt (home anchors)', () => {
     expect(items.map((i) => [i.label, i.href, i.anchor, Boolean(i.framed)])).toEqual([
       ['O mně', '/o-mne/', 'about', false],
-      ['Portfolio', '/#portfolio', 'portfolio', false],
+      ['Portfolio', '/portfolio/', 'portfolio', false],
       ['Reference', '/#reference', 'reference', false],
       ['Kontakt', '/#kontakt', 'kontakt', true],
     ]);
@@ -79,6 +79,13 @@ describe('Header.astro wiring', () => {
   it('uses the nav helpers for aria-current', () => {
     expect(src).toContain('aria-current={navCurrent(current, item)}');
     expect(src).toContain('aria-current={wordmarkCurrent(current)}');
+  });
+
+  it('scrollspy only marks links to home anchors, so Portfolio (/portfolio/) is never "location" on the home (T-296)', () => {
+    const spy = readFileSync(new URL('../scripts/scrollspy.ts', import.meta.url), 'utf8');
+    expect(spy).toContain('[data-nav-anchor][href^="/#"]');
+    expect(items.find((i) => i.anchor === 'portfolio')!.href.startsWith('/#')).toBe(false);
+    expect(items.filter((i) => i.href.startsWith('/#')).map((i) => i.anchor)).toEqual(['reference', 'kontakt']);
   });
 
   it('never puts backdrop-filter on .site-header itself (containing-block trap for the fixed drawer)', () => {

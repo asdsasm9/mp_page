@@ -3,7 +3,7 @@ export type NavAnchor = 'about' | 'portfolio' | 'reference' | 'kontakt';
 
 export interface NavItem {
   readonly label: string;
-  /** Link target that works from every page: the About page `/o-mne/` or an anchor on the home page, e.g. `/#portfolio`. */
+  /** Link target that works from every page: the About page `/o-mne/`, the Portfolio page `/portfolio/` (T-296) or an anchor on the home page, e.g. `/#kontakt`. */
   readonly href: string;
   readonly anchor: NavAnchor;
   /** The Kontakt item carries a frame. */
@@ -25,7 +25,7 @@ export interface NavLabels {
 export function buildNav(labels: NavLabels, hasReviews: boolean): NavItem[] {
   const items: NavItem[] = [
     { label: labels.about, href: '/o-mne/', anchor: 'about' },
-    { label: labels.portfolio, href: '/#portfolio', anchor: 'portfolio' },
+    { label: labels.portfolio, href: '/portfolio/', anchor: 'portfolio' },
   ];
   if (hasReviews) items.push({ label: labels.reference, href: '/#reference', anchor: 'reference' });
   items.push({ label: labels.contact, href: '/#kontakt', anchor: 'kontakt', framed: true });
@@ -41,7 +41,8 @@ export const isPortfolioPage = (current: string): boolean => !NOT_PORTFOLIO.incl
 /**
  * Server-rendered `aria-current` for a nav item. "O mně" is marked with `page` on /o-mne/ (its link targets that
  * page itself); Portfolio is marked with `true` (a section marker) on /portfolio/, categories and albums.
- * On the home page nothing is marked here; scrollspy.ts sets `location` on the link of the section in view.
+ * On the home page nothing is marked here; scrollspy.ts sets `location` on the link of the section in view
+ * (only for items that link to a home anchor, so Portfolio, which links to /portfolio/, is never marked on the home).
  */
 export const navCurrent = (current: string, item: NavItem): 'page' | 'true' | undefined => {
   if (item.anchor === 'about' && current === '/o-mne/') return 'page';

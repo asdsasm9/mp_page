@@ -224,7 +224,7 @@ describe('Category pages (built, shared build)', () => {
   it('marks Portfolio in the header with aria-current=true (never page), and the header equals the home header', () => {
     for (const c of fixture.categories) {
       const page = categoryHtml[c.slug]!;
-      expect(currentLinks(page)).toEqual(['/#portfolio']);
+      expect(currentLinks(page)).toEqual(['/portfolio/']);
       expect(navLinks(page).filter((t) => /aria-current="true"/.test(t))).toHaveLength(1);
       expect(page).not.toMatch(/<a [^>]*class="t-nav"[^>]*aria-current="page"/);
       // Same header markup as on the home page; only data-over-hero and aria-current differ.
@@ -342,7 +342,7 @@ describe('Portfolio page (built, shared build)', () => {
 
   it('marks Portfolio as the current nav link', () => {
     const page = readFileSync(join(out, 'portfolio', 'index.html'), 'utf8');
-    expect(currentLinks(page)).toEqual(['/#portfolio']);
+    expect(currentLinks(page)).toEqual(['/portfolio/']);
   });
 });
 
@@ -553,11 +553,11 @@ describe('Base layout (built home page)', () => {
   });
 
   it('has four header nav links (O mně is /o-mne/, the rest home anchors, Reference only with reviews) and marks the wordmark as the current page', () => {
-    expect(navLinks(html).map(hrefOf)).toEqual(['/o-mne/', '/#portfolio', '/#reference', '/#kontakt']);
+    expect(navLinks(html).map(hrefOf)).toEqual(['/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
     expect(html).toMatch(/class="wordmark t-wordmark" href="\/"[^>]*aria-current="page"/);
     // The drawer nav carries the same four links, and exactly one nav is exposed at any width.
     const drawer = /<nav aria-label="Hlavní navigace v menu"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/o-mne/', '/#portfolio', '/#reference', '/#kontakt']);
+    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
   });
 
   it('overlays the hero only on the home page (data-over-hero) and uses a native details drawer', () => {

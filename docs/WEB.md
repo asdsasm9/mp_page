@@ -10,7 +10,9 @@ Home (`/`) is a one-pager with the sections Hero, O mně (`#o-mne`: the short he
 Portfolio (category cards), Reference and Kontakt (`#kontakt`), then the footer (`src/components/sections/`). Further
 pages: `/o-mne/` (the About page again since T-293, with the three texts, the full quote and two photos; the header item
 "O mně" links to it and is marked `aria-current="page"` there), `/portfolio/`, one page per category, one per album,
-`/cookies/` and the 404. There is no `/kontakt/` page (it redirects to the home section); `/about` and `#/about` redirect
+`/cookies/` and the 404. The header item "Portfolio" links to `/portfolio/` from every page, also on the home (T-296);
+it is marked `aria-current="true"` on `/portfolio/`, category and album pages and never by the home scrollspy (the
+home Portfolio section keeps `id="portfolio"` and its "celé portfolio" link). There is no `/kontakt/` page (it redirects to the home section); `/about` and `#/about` redirect
 to `/o-mne/`. Look: [DESIGN-TOKENS.md](DESIGN-TOKENS.md) (Cormorant Garamond headings, Lora text, warm paper, gold stroke).
 `docs/DESIGN-CHECK.md` is the historical WP-3 baseline.
 

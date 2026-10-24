@@ -36,7 +36,7 @@ describe('Header.astro', () => {
   it('lists the four items in both navs (O mně is the /o-mne/ page, the rest home anchors) and a framed Kontakt', async () => {
     const html = header(plain(await render('/')));
     const hrefs = [...html.matchAll(/<a [^>]*href="(\/[^"]*)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(['/', '/o-mne/', '/#portfolio', '/#reference', '/#kontakt', '/o-mne/', '/#portfolio', '/#reference', '/#kontakt']);
+    expect(hrefs).toEqual(['/', '/o-mne/', '/portfolio/', '/#reference', '/#kontakt', '/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
     expect(html.match(/data-framed/g)).toHaveLength(2);
   });
 

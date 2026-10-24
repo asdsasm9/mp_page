@@ -11,7 +11,7 @@ function setup(): { menu: HTMLDetailsElement; summary: HTMLElement; link: HTMLAn
     <header>
       <details class="menu" data-menu>
         <summary>Menu</summary>
-        <div class="drawer"><nav><a href="/#portfolio">Portfolio</a></nav><p>text</p></div>
+        <div class="drawer"><nav><a href="/portfolio/">Portfolio</a></nav><p>text</p></div>
       </details>
     </header>
     <main id="obsah"><button>x</button></main>

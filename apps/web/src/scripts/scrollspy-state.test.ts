@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { applyEntries, pickCurrent } from './scrollspy-state';
+import { applyEntries, homeMarker, pickCurrent } from './scrollspy-state';
+
+describe('scrollspy homeMarker', () => {
+  it('marks Hlavní with "page" while the hero is in view, and nothing else', () => {
+    expect(homeMarker('home', 'uvod', false)).toBe('page');
+    expect(homeMarker('kontakt', 'uvod', false)).toBeNull();
+  });
+
+  it('marks Hlavní at the very top even when no section is in the band', () => {
+    expect(homeMarker('home', null, true)).toBe('page');
+    expect(homeMarker('home', null, false)).toBeNull();
+  });
+
+  it('clears Hlavní and marks Kontakt with "location" further down', () => {
+    expect(homeMarker('home', 'kontakt', false)).toBeNull();
+    expect(homeMarker('kontakt', 'kontakt', false)).toBe('location');
+    expect(homeMarker('home', 'reference', false)).toBeNull();
+  });
+});
 
 const order = ['uvod', 'o-mne', 'portfolio', 'reference', 'kontakt'];
 

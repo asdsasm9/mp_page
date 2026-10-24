@@ -7,9 +7,7 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { buildNav, type NavItem } from '../lib/nav';
 import { NAV } from '../content/texts';
-import { REVIEWS } from '../content/reviews';
 import { getCatalog } from '../lib/catalog';
-import { homeReviews } from '../lib/home';
 import { readRawEnv, resolveEnv } from '../lib/env';
 import { pageUrl, serializeJsonLd, type JsonLd } from '../lib/jsonld';
 import { BRAND, type PageMeta } from '../lib/seo';
@@ -45,8 +43,8 @@ const noindex = env.noindex || meta.noindex;
 const robots = noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large';
 const themeColor = /--color-theme:\s*([^;]+);/.exec(tokensCss)?.[1]?.trim();
 
-// Header items: section anchors on the home page, the same from every page. Reference only with reviews.
-const navItems: NavItem[] = buildNav(NAV, homeReviews(catalog, REVIEWS).length > 0);
+// Header items: the same from every page.
+const navItems: NavItem[] = buildNav(NAV);
 const categoryNames = catalog.categories.map((c) => c.name);
 ---
 <!doctype html>

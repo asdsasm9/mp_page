@@ -9,6 +9,20 @@ export function pickCurrent(order: readonly string[], visible: ReadonlySet<strin
   return current;
 }
 
+/**
+ * The `aria-current` value a header link gets on the home page. `navAnchor` is the link's data-nav-anchor,
+ * `sectionId` the section in view (null when none). Hlavní ("home") is `page` while the hero (`uvod`) is in view
+ * or the page is at the very top; other home-anchor links are `location` while their section is in view.
+ */
+export function homeMarker(
+  navAnchor: string,
+  sectionId: string | null,
+  atTop: boolean,
+): 'page' | 'location' | null {
+  if (navAnchor === 'home') return sectionId === 'uvod' || (sectionId === null && atTop) ? 'page' : null;
+  return navAnchor === sectionId ? 'location' : null;
+}
+
 /** Apply an IntersectionObserver batch to the visible set (pure: returns a new set). */
 export function applyEntries(
   visible: ReadonlySet<string>,

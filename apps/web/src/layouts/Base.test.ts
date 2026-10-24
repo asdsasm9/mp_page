@@ -267,8 +267,8 @@ describe('Category pages (built, shared build)', () => {
       const norm = (h: string): string => h.replace(/ data-over-hero(="")?/g, '').replace(/ aria-current="[a-z]+"/g, '');
       expect(norm(headerOf(page))).toBe(norm(headerOf(html)));
     }
-    // The home page marks no nav link on the server (scrollspy does it in the browser).
-    expect(currentLinks(html)).toEqual([]);
+    // The home page marks only Hlavní on the server (the hero is in view; scrollspy moves it in the browser).
+    expect(currentLinks(html)).toEqual(['/']);
   });
 
   it('keeps the first load of every category page under the budget', () => {
@@ -630,12 +630,12 @@ describe('Base layout (built home page)', () => {
     expect(html).toContain('<main id="obsah"');
   });
 
-  it('has four header nav links (O mně is /o-mne/, the rest home anchors, Reference only with reviews) and marks the wordmark as the current page', () => {
-    expect(navLinks(html).map(hrefOf)).toEqual(['/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
+  it('has four header nav links (Hlavní first, no Reference) and marks the wordmark and Hlavní as the current page', () => {
+    expect(navLinks(html).map(hrefOf)).toEqual(['/', '/o-mne/', '/portfolio/', '/#kontakt']);
     expect(html).toMatch(/class="wordmark t-wordmark" href="\/"[^>]*aria-current="page"/);
     // The drawer nav carries the same four links, and exactly one nav is exposed at any width.
     const drawer = /<nav aria-label="Hlavní navigace v menu"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
+    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/', '/o-mne/', '/portfolio/', '/#kontakt']);
   });
 
   it('overlays the hero only on the home page (data-over-hero) and uses a native details drawer', () => {

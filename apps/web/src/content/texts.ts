@@ -30,8 +30,9 @@ export const NAV = {
   weddings: 'Svatby',
   portraits: 'Portréty',
   couples: 'Párové focení',
+  /** Header item that goes to the top of the home page (same target as the wordmark). */
+  main: 'Hlavní',
   about: 'O mně',
-  reference: 'Reference',
   contact: 'Kontakt',
   /** Header wordmark: the brand ("Mullny Photos") as one word, shown uppercase by `.t-wordmark`. */
   wordmark: 'MullnyPhotos',

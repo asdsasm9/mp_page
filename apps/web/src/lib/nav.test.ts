@@ -4,26 +4,19 @@ import { NAV } from '../content/texts';
 import { buildNav, isPortfolioPage, navCurrent, normalizeBrand, wordmarkCurrent } from './nav';
 import { BRAND } from './seo';
 
-const items = buildNav(NAV, true);
+const items = buildNav(NAV);
 const marked = (current: string): string[] =>
   items.filter((i) => navCurrent(current, i) !== undefined).map((i) => i.anchor);
 
 describe('buildNav', () => {
-  it('lists O mně (/o-mne/), Portfolio (/portfolio/, no anchor), Reference and a framed Kontakt (home anchors)', () => {
+  it('lists Hlavní (/), O mně (/o-mne/), Portfolio (/portfolio/) and a framed Kontakt (home anchor); no Reference', () => {
     expect(items.map((i) => [i.label, i.href, i.anchor, Boolean(i.framed)])).toEqual([
+      ['Hlavní', '/', 'home', false],
       ['O mně', '/o-mne/', 'about', false],
       ['Portfolio', '/portfolio/', 'portfolio', false],
-      ['Reference', '/#reference', 'reference', false],
       ['Kontakt', '/#kontakt', 'kontakt', true],
     ]);
-  });
-
-  it('leaves Reference out when there are no reviews', () => {
-    expect(buildNav(NAV, false).map((i) => i.anchor)).toEqual(['about', 'portfolio', 'kontakt']);
-  });
-
-  it('keeps Reference for exactly one review', () => {
-    expect(buildNav(NAV, true).map((i) => i.anchor)).toContain('reference');
+    expect(items.some((i) => /reference/i.test(i.href + i.label))).toBe(false);
   });
 
   it('has no category links', () => {
@@ -32,20 +25,25 @@ describe('buildNav', () => {
 });
 
 describe('aria-current in the header nav', () => {
-  it('marks nothing on the home page (scrollspy sets "location" in the browser)', () => {
-    expect(marked('/')).toEqual([]);
+  it('marks only Hlavní with "page" on the home page (scrollspy moves it in the browser)', () => {
+    expect(marked('/')).toEqual(['home']);
+    expect(navCurrent('/', items[0]!)).toBe('page');
+  });
+
+  it('never marks Hlavní on other pages', () => {
+    for (const path of ['/o-mne/', '/portfolio/', '/svatby/', '/cookies/', '/404/']) expect(marked(path)).not.toContain('home');
   });
 
   it('marks Portfolio with "true" on /portfolio/, a category page and an album page', () => {
     for (const path of ['/portfolio/', '/svatby/', '/svatby/sedlakovi/']) {
       expect(marked(path), path).toEqual(['portfolio']);
-      expect(navCurrent(path, items[1]!)).toBe('true');
+      expect(navCurrent(path, items[2]!)).toBe('true');
     }
   });
 
   it('marks O mně with "page" on /o-mne/ and nothing else there', () => {
     expect(marked('/o-mne/')).toEqual(['about']);
-    expect(navCurrent('/o-mne/', items[0]!)).toBe('page');
+    expect(navCurrent('/o-mne/', items[1]!)).toBe('page');
     expect(isPortfolioPage('/o-mne/')).toBe(false);
   });
 
@@ -54,8 +52,8 @@ describe('aria-current in the header nav', () => {
     expect(isPortfolioPage('/cookies/')).toBe(false);
   });
 
-  it('uses "page" only for O mně on /o-mne/', () => {
-    for (const path of ['/', '/portfolio/', '/svatby/', '/svatby/sedlakovi/', '/cookies/']) {
+  it('uses "page" only for O mně on /o-mne/ and Hlavní on /', () => {
+    for (const path of ['/portfolio/', '/svatby/', '/svatby/sedlakovi/', '/cookies/']) {
       for (const item of items) expect(navCurrent(path, item)).not.toBe('page');
     }
   });
@@ -84,8 +82,9 @@ describe('Header.astro wiring', () => {
   it('scrollspy only marks links to home anchors, so Portfolio (/portfolio/) is never "location" on the home (T-296)', () => {
     const spy = readFileSync(new URL('../scripts/scrollspy.ts', import.meta.url), 'utf8');
     expect(spy).toContain('[data-nav-anchor][href^="/#"]');
+    expect(spy).toContain('[data-nav-anchor][href="/"]');
     expect(items.find((i) => i.anchor === 'portfolio')!.href.startsWith('/#')).toBe(false);
-    expect(items.filter((i) => i.href.startsWith('/#')).map((i) => i.anchor)).toEqual(['reference', 'kontakt']);
+    expect(items.filter((i) => i.href.startsWith('/#')).map((i) => i.anchor)).toEqual(['kontakt']);
   });
 
   it('never puts backdrop-filter on .site-header itself (containing-block trap for the fixed drawer)', () => {

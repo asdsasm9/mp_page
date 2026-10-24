@@ -2,7 +2,7 @@
  * Current-section marker on the home page (progressive enhancement). Without this script no nav link is
  * marked. An IntersectionObserver watches a band just below the header; the section in that band gets
  * `aria-current="location"` on its header links (desktop nav and drawer copy). The hero (`uvod`) is watched
- * too: while it is in view (or at the very top) Hlavní carries `aria-current="page"` and no other link is
+ * too: while it is in view (or at the very top) Úvod carries `aria-current="page"` and no other link is
  * marked. The Reference section has no header item (T-325). Only the fixed list of ids below is ever read.
  * `o-mne` is the short hello section of the home: it stays in the list so the marker clears there, but the
  * "O mně" nav item links to the /o-mne/ page (data-nav-anchor="about") and is never marked here; the same holds
@@ -16,7 +16,7 @@ export function startScrollspy(root: Document = document): void {
   if (!('IntersectionObserver' in window)) return;
   const sections = ORDER.map((id) => root.getElementById(id)).filter((el): el is HTMLElement => el !== null);
   if (sections.length === 0) return;
-  // Only items that link to the top of the home (`/`, Hlavní) or to a home anchor (`/#...`); Portfolio links to
+  // Only items that link to the top of the home (`/`, Úvod) or to a home anchor (`/#...`); Portfolio links to
   // /portfolio/ (T-296) and is never marked here.
   const links = [...root.querySelectorAll<HTMLAnchorElement>('[data-nav-anchor][href="/"], [data-nav-anchor][href^="/#"]')];
 
@@ -31,7 +31,7 @@ export function startScrollspy(root: Document = document): void {
     }
   };
 
-  // The wordmark and Hlavní both go to the very top and drop any #hash (also when already on `/`).
+  // The wordmark and Úvod both go to the very top and drop any #hash (also when already on `/`).
   for (const a of root.querySelectorAll<HTMLAnchorElement>('a[href="/"]')) {
     a.addEventListener('click', (event) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

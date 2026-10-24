@@ -33,12 +33,12 @@ describe('Header.astro', () => {
     expect(text.startsWith(NAV.wordmark)).toBe(true);
   });
 
-  it('lists Hlavní first, then O mně, Portfolio and a framed Kontakt in both navs, wordmark separate', async () => {
+  it('lists Úvod first, then O mně, Portfolio and a framed Kontakt in both navs, wordmark separate', async () => {
     const html = header(plain(await render('/')));
     const hrefs = [...html.matchAll(/<a [^>]*href="(\/[^"]*)"/g)].map((m) => m[1]);
     expect(hrefs).toEqual(['/', '/', '/o-mne/', '/portfolio/', '/#kontakt', '/', '/o-mne/', '/portfolio/', '/#kontakt']);
     expect(html.match(/data-framed/g)).toHaveLength(2);
-    expect(html.match(/>\s*Hlavní\s*</g)).toHaveLength(2);
+    expect(html.match(/>\s*Úvod\s*</g)).toHaveLength(2);
   });
 
   it('has no Reference item in either nav', async () => {
@@ -73,7 +73,7 @@ describe('Header.astro', () => {
     }
     const home = header(plain(await render('/', true)));
     expect(home).not.toContain('aria-current="true"');
-    // wordmark plus Hlavní in the desktop nav and in the drawer
+    // wordmark plus Úvod in the desktop nav and in the drawer
     expect(home.match(/aria-current="page"/g)).toHaveLength(3);
     for (const m of home.matchAll(/<a [^>]*class="t-nav"[^>]*aria-current="page"[^>]*>/g)) expect(m[0]).toContain('href="/"');
   });

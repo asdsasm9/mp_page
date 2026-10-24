@@ -12,11 +12,11 @@ pages: `/o-mne/` (the About page again since T-293, with the three texts, the fu
 "O mně" links to it and is marked `aria-current="page"` there), `/portfolio/`, one page per category, one per album,
 `/cookies/` and the 404. The header item "Portfolio" links to `/portfolio/` from every page, also on the home (T-296);
 it is marked `aria-current="true"` on `/portfolio/`, category and album pages and never by the home scrollspy (the
-home Portfolio section keeps `id="portfolio"` and its "celé portfolio" link). Header items, in order (T-325): Hlavní
+home Portfolio section keeps `id="portfolio"` and its "celé portfolio" link). Header items, in order (T-325, renamed from "Hlavní" in T-334): Úvod
 (`/`, the same target as the wordmark: on `/` it scrolls to the very top and drops any `#hash`, elsewhere it opens `/`),
-O mně, Portfolio and a framed Kontakt. The Reference section stays on the home page but has no header item. Hlavní is
+O mně, Portfolio and a framed Kontakt. The Reference section stays on the home page but has no header item. Úvod is
 `aria-current="page"` only on `/` while the hero is in view or at the top (server-rendered, then kept by the scrollspy:
-`location` goes to Kontakt when it is in view); the wordmark and Hlavní stay two separate links. There is no `/kontakt/` page (it redirects to the home section); `/about` and `#/about` redirect
+`location` goes to Kontakt when it is in view); the wordmark and Úvod stay two separate links. There is no `/kontakt/` page (it redirects to the home section); `/about` and `#/about` redirect
 to `/o-mne/`. Look: [DESIGN-TOKENS.md](DESIGN-TOKENS.md) (Cormorant Garamond headings, Lora text, warm paper, gold stroke).
 `docs/DESIGN-CHECK.md` is the historical WP-3 baseline.
 

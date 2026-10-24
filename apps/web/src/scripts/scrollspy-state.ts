@@ -11,7 +11,7 @@ export function pickCurrent(order: readonly string[], visible: ReadonlySet<strin
 
 /**
  * The `aria-current` value a header link gets on the home page. `navAnchor` is the link's data-nav-anchor,
- * `sectionId` the section in view (null when none). Hlavní ("home") is `page` while the hero (`uvod`) is in view
+ * `sectionId` the section in view (null when none). Úvod ("home") is `page` while the hero (`uvod`) is in view
  * or the page is at the very top; other home-anchor links are `location` while their section is in view.
  */
 export function homeMarker(

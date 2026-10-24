@@ -9,9 +9,9 @@ const marked = (current: string): string[] =>
   items.filter((i) => navCurrent(current, i) !== undefined).map((i) => i.anchor);
 
 describe('buildNav', () => {
-  it('lists Hlavní (/), O mně (/o-mne/), Portfolio (/portfolio/) and a framed Kontakt (home anchor); no Reference', () => {
+  it('lists Úvod (/), O mně (/o-mne/), Portfolio (/portfolio/) and a framed Kontakt (home anchor); no Reference', () => {
     expect(items.map((i) => [i.label, i.href, i.anchor, Boolean(i.framed)])).toEqual([
-      ['Hlavní', '/', 'home', false],
+      ['Úvod', '/', 'home', false],
       ['O mně', '/o-mne/', 'about', false],
       ['Portfolio', '/portfolio/', 'portfolio', false],
       ['Kontakt', '/#kontakt', 'kontakt', true],
@@ -25,12 +25,12 @@ describe('buildNav', () => {
 });
 
 describe('aria-current in the header nav', () => {
-  it('marks only Hlavní with "page" on the home page (scrollspy moves it in the browser)', () => {
+  it('marks only Úvod with "page" on the home page (scrollspy moves it in the browser)', () => {
     expect(marked('/')).toEqual(['home']);
     expect(navCurrent('/', items[0]!)).toBe('page');
   });
 
-  it('never marks Hlavní on other pages', () => {
+  it('never marks Úvod on other pages', () => {
     for (const path of ['/o-mne/', '/portfolio/', '/svatby/', '/cookies/', '/404/']) expect(marked(path)).not.toContain('home');
   });
 
@@ -52,7 +52,7 @@ describe('aria-current in the header nav', () => {
     expect(isPortfolioPage('/cookies/')).toBe(false);
   });
 
-  it('uses "page" only for O mně on /o-mne/ and Hlavní on /', () => {
+  it('uses "page" only for O mně on /o-mne/ and Úvod on /', () => {
     for (const path of ['/portfolio/', '/svatby/', '/svatby/sedlakovi/', '/cookies/']) {
       for (const item of items) expect(navCurrent(path, item)).not.toBe('page');
     }

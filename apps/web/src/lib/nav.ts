@@ -18,7 +18,7 @@ export interface NavLabels {
 }
 
 /**
- * Header items, in order: Hlavní (the top of the home page, same target as the wordmark), O mně, Portfolio,
+ * Header items, in order: Úvod (the top of the home page, same target as the wordmark), O mně, Portfolio,
  * a framed Kontakt. The Reference section stays on the home page but has no header item (T-325).
  * The three category links are not in the header; categories stay linked from the home Portfolio
  * section, /portfolio/ and the footer.
@@ -41,8 +41,8 @@ export const isPortfolioPage = (current: string): boolean => !NOT_PORTFOLIO.incl
 /**
  * Server-rendered `aria-current` for a nav item. "O mně" is marked with `page` on /o-mne/ (its link targets that
  * page itself); Portfolio is marked with `true` (a section marker) on /portfolio/, categories and albums.
- * On the home page Hlavní starts as `page` (the hero is in view on load); scrollspy.ts moves the marker:
- * `page` on Hlavní while the hero is in view or at the top, `location` on the link of the section in view
+ * On the home page Úvod starts as `page` (the hero is in view on load); scrollspy.ts moves the marker:
+ * `page` on Úvod while the hero is in view or at the top, `location` on the link of the section in view
  * (only for items that link to a home anchor, so Portfolio, which links to /portfolio/, is never marked on the home).
  */
 export const navCurrent = (current: string, item: NavItem): 'page' | 'true' | undefined => {

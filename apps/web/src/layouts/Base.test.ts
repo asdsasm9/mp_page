@@ -275,7 +275,7 @@ describe('Category pages (built, shared build)', () => {
       const norm = (h: string): string => h.replace(/ data-over-hero(="")?/g, '').replace(/ aria-current="[a-z]+"/g, '');
       expect(norm(headerOf(page))).toBe(norm(headerOf(html)));
     }
-    // The home page marks only Hlavní on the server (the hero is in view; scrollspy moves it in the browser).
+    // The home page marks only Úvod on the server (the hero is in view; scrollspy moves it in the browser).
     expect(currentLinks(html)).toEqual(['/']);
   });
 
@@ -639,7 +639,7 @@ describe('Base layout (built home page)', () => {
     expect(html).toContain('<main id="obsah"');
   });
 
-  it('has four header nav links (Hlavní first, no Reference) and marks the wordmark and Hlavní as the current page', () => {
+  it('has four header nav links (Úvod first, no Reference) and marks the wordmark and Úvod as the current page', () => {
     expect(navLinks(html).map(hrefOf)).toEqual(['/', '/o-mne/', '/portfolio/', '/#kontakt']);
     expect(html).toMatch(/class="wordmark t-wordmark" href="\/"[^>]*aria-current="page"/);
     // The drawer nav carries the same four links, and exactly one nav is exposed at any width.

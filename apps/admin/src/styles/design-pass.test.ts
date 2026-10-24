@@ -226,10 +226,13 @@ describe('design pass: photo grid and upload surfaces', () => {
     expect(badge).toContain('box-shadow: var(--shadow-sm)');
   });
 
-  it('raises the hovered tile to shadow-md, transitioning only under no-preference', () => {
-    expect(css.match(/\n  \.photo-tile:hover \{[^}]*\}/)?.[0] ?? '').toContain('box-shadow: var(--shadow-md)');
+  it('WP-13: a hovered tile darkens its hairline (no shadow), transitioning only under no-preference', () => {
+    const hover = css.match(/\n  \.photo-tile:hover \{[^}]*\}/)?.[0] ?? '';
+    expect(hover).toContain('border-color: var(--color-border-strong)');
+    expect(hover).not.toContain('box-shadow');
+    expect(css.match(/\n  \.cover-tile:hover \{[^}]*\}/)?.[0] ?? '').not.toContain('box-shadow');
     const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.photo-tile \{[^}]*\}/)?.[0] ?? '';
-    expect(block).toContain('transition: box-shadow');
+    expect(block).toContain('transition: border-color');
     expect(css.match(/\.photo-tile \{[^}]*transition/g)?.length).toBe(1);
   });
 
@@ -239,6 +242,62 @@ describe('design pass: photo grid and upload surfaces', () => {
     expect(bar).toContain('gap: var(--space-3)');
     expect(css.match(/\n  \.dropzone \{[^}]*\}/)?.[0] ?? '').toMatch(/gap: var\(--space-\d\)/);
     expect(css.match(/\n  \.upload-row \{[^}]*\}/)?.[0] ?? '').toMatch(/gap: var\(--space-\d\) var\(--space-\d\)/);
+  });
+});
+
+describe('WP-13 T-305..T-308: screen polish', () => {
+  const ruleOf = (selector: string) => {
+    const esc = selector.replace(/[.[\]()'=>:]/g, '\\$&');
+    return css.match(new RegExp(`\\n  ${esc} \\{[^}]*\\}`))?.[0] ?? '';
+  };
+
+  it('T-305: icon buttons are 44 px squares; cover block, tiles and hero crops are square hairlines', () => {
+    expect(ruleOf('.button-icon')).toContain('inline-size: var(--target-min)');
+    for (const sel of ['.category-cover', '.cover-tile', '.hero-preview-frame img', '.cover']) {
+      expect(ruleOf(sel) || css.match(/\.hero-preview-frame img \{[^}]*\}/)?.[0], sel).toContain('border-radius: var(--radius-none)');
+    }
+    expect(ruleOf('.category-cover')).toContain('background: var(--color-surface)');
+    expect(ruleOf('.cover-tile-mark')).toContain('background: var(--color-text)');
+    expect(ruleOf('.cover-tile:has(input:checked)')).toContain('outline: var(--focus-width) solid var(--color-focus)');
+  });
+
+  it('T-306: quality badges are --font-ui with a border style per verdict (icon and text stay in the markup)', () => {
+    const badge = ruleOf('.quality-badge');
+    expect(badge).toContain('font-family: var(--font-ui)');
+    expect(badge).toContain('font-weight: var(--weight-ui-strong)');
+    expect(ruleOf(".quality-badge[data-verdict='low']")).toContain('border-color: var(--color-danger)');
+    expect(ruleOf(".quality-badge[data-verdict='missing']")).toContain('border-style: dashed');
+    expect(ruleOf('.dropzone')).toContain('border: var(--border-width) dashed var(--color-border-strong)');
+    expect(ruleOf('.selection-bar')).toContain('box-shadow: var(--shadow-md)');
+    expect(ruleOf('.photo-preview')).toContain('border-radius: var(--radius-none)');
+    expect(ruleOf('.quality-list dd')).toContain('font-variant-numeric: tabular-nums');
+  });
+
+  it('T-307: drawer and pill are raised hairline overlays; the page keeps room for them', () => {
+    const drawer = ruleOf('.upload-drawer');
+    expect(drawer).toContain('box-shadow: var(--shadow-md)');
+    expect(drawer).toContain('border-radius: var(--radius-none)');
+    expect(ruleOf('.upload-pill')).toContain('box-shadow: var(--shadow-md)');
+    expect(ruleOf('.upload-row')).toContain('background: var(--color-surface)');
+    expect(ruleOf('.upload-progress')).toContain('accent-color: var(--color-focus)');
+    expect(ruleOf('.upload-warning')).toContain('border-inline-start');
+    expect(css).toContain('.shell:has(.upload-pill) .shell-main');
+    expect(css).toContain('.shell:has(.upload-pill) .selection-bar');
+  });
+
+  it('T-308: pending publish card is raised, clean card flat; tables are hairline; narrow cards are square and flat', () => {
+    expect(ruleOf(".publish-card[data-state='pending']")).toContain('box-shadow: var(--shadow-md)');
+    expect(ruleOf(".publish-card[data-state='clean']")).toContain('box-shadow: none');
+    expect(ruleOf('.data-table th,\n  .data-table td')).toContain('border-block-end: var(--border-width) solid var(--color-border)');
+    expect(ruleOf('.changes-line')).toContain('border-block-end: var(--border-width) solid var(--color-border)');
+    const narrow = css.match(/@container \(max-width: 48rem\)[\s\S]*?\n  \}\n\}/)?.[0] ?? '';
+    expect(narrow).toContain('border-radius: var(--radius-none)');
+    expect(narrow).not.toContain('box-shadow');
+  });
+
+  it('T-308: the pager uses the shared disabled rule, not opacity', () => {
+    expect(css).not.toMatch(/opacity:\s*0?\.\d/);
+    expect(ruleOf(".button[aria-disabled='true']")).toContain('color: var(--color-text-muted)');
   });
 });
 

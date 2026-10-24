@@ -897,7 +897,7 @@
     font-family: var(--font-ui);
     font-size: var(--text-caption);
     font-weight: var(--weight-ui-strong);
-border: var(--border-width) solid var(--color-border-strong);
+    border: var(--border-width) solid var(--color-border-strong);
     border-radius: var(--radius-full);
   }
 
@@ -1127,13 +1127,14 @@ border: var(--border-width) solid var(--color-border-strong);
     -webkit-touch-callout: none;
   }
 
+  /* In-flow tiles are flat (WP-13 3.3): hover darkens the hairline, shadow is for overlays only. */
   .photo-tile:hover {
-    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-strong);
   }
 
   @media (prefers-reduced-motion: no-preference) {
     .photo-tile {
-      transition: box-shadow var(--motion-fast) var(--motion-ease);
+      transition: border-color var(--motion-fast) var(--motion-ease);
     }
   }
 
@@ -1176,7 +1177,7 @@ border: var(--border-width) solid var(--color-border-strong);
     font-family: var(--font-ui);
     font-size: var(--text-caption);
     font-weight: var(--weight-ui-strong);
-color: var(--color-text);
+    color: var(--color-text);
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border-strong);
     border-radius: var(--radius-full);
@@ -1197,7 +1198,7 @@ color: var(--color-text);
     font-family: var(--font-ui);
     font-size: var(--text-caption);
     font-weight: var(--weight-ui-strong);
-color: var(--color-text);
+    color: var(--color-text);
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border-strong);
     border-radius: var(--radius-full);
@@ -1396,6 +1397,7 @@ color: var(--color-text);
   }
 
   .photo-preview {
+    border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-none);
     overflow: hidden;
   }
@@ -1430,8 +1432,6 @@ color: var(--color-text);
       max-inline-size: 100%;
       margin-block: auto 0;
       margin-inline: 0;
-      border-end-start-radius: 0;
-      border-end-end-radius: 0;
       padding-block-end: calc(var(--space-5) + env(safe-area-inset-bottom));
     }
 
@@ -1964,11 +1964,6 @@ color: var(--color-text);
     gap: var(--space-3);
   }
 
-  .photo-pager .button[aria-disabled='true'] {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
   @container (max-width: 48rem) {
     .photo-list-table,
     .photo-list-table tbody,
@@ -2151,7 +2146,7 @@ color: var(--color-text);
   }
 
   .cover-tile:hover {
-    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-strong);
   }
 
   .cover-tile:has(input:checked) {
@@ -2201,7 +2196,7 @@ color: var(--color-text);
 
   @media (prefers-reduced-motion: no-preference) {
     .cover-tile {
-      transition: box-shadow var(--motion-fast) var(--motion-ease);
+      transition: border-color var(--motion-fast) var(--motion-ease);
     }
   }
 }

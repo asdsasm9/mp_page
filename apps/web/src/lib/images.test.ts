@@ -114,7 +114,7 @@ describe('sizesFor', () => {
 
 describe('coverSizes (crop-aware sizes, WP-12 F10)', () => {
   const CATEGORY = '(min-width: 48rem) 21rem, calc(100vw - 3rem)';
-  const ALBUM = '(min-width: 48rem) 26rem, calc(100vw - 3rem)';
+  const ALBUM = '(min-width: 48rem) 20rem, calc(100vw - 3rem)';
 
   it('cropFactor is max(1, aspect x box height / width), rounded to 2 decimals', () => {
     // category box 3 / 4 (height over width 4 / 3)
@@ -132,7 +132,7 @@ describe('coverSizes (crop-aware sizes, WP-12 F10)', () => {
 
   it('multiplies every length and leaves the media conditions alone (landscape 3:2 into 3/4: twice the box width)', () => {
     expect(coverSizes(CATEGORY, 1.5, 4 / 3)).toBe('(min-width: 48rem) calc(21rem * 2), calc((100vw - 3rem) * 2)');
-    expect(coverSizes(ALBUM, 1.5, 5 / 4)).toBe('(min-width: 48rem) calc(26rem * 1.88), calc((100vw - 3rem) * 1.88)');
+    expect(coverSizes(ALBUM, 1.5, 5 / 4)).toBe('(min-width: 48rem) calc(20rem * 1.88), calc((100vw - 3rem) * 1.88)');
     expect(coverSizes(CATEGORY, 1, 4 / 3)).toBe('(min-width: 48rem) calc(21rem * 1.33), calc((100vw - 3rem) * 1.33)');
   });
 
@@ -157,9 +157,15 @@ describe('coverSizes (crop-aware sizes, WP-12 F10)', () => {
       }
     }
     expect(cropSizes('category', 1600, 1067)).toBe(
-      '(min-width: 100rem) calc(16rem * 2), (min-width: 80rem) calc(18rem * 2), (min-width: 48rem) calc(20rem * 2), calc((100vw - 3rem) * 2)',
+      '(min-width: 48rem) calc(22rem * 2), calc((100vw - 3rem) * 2)',
     );
     expect(cropSizes('album', 1067, 1600)).toBe(ALBUM); // a portrait photo fills the 4 / 5 box with no extra width
+  });
+
+  it('T-333/T-335 profile crop: 12rem from 48rem, 6rem on phones, times the landscape crop factor of the square box', () => {
+    expect(cropSizes('profile', 1000, 1000)).toBe('(min-width: 48rem) 12rem, 6rem');
+    expect(cropSizes('profile', 1600, 1067)).toBe('(min-width: 48rem) calc(12rem * 1.5), calc(6rem * 1.5)');
+    expect(cropSizes('profile', 1067, 1600)).toBe('(min-width: 48rem) 12rem, 6rem');
   });
 });
 

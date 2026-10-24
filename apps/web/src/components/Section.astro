@@ -69,7 +69,13 @@ const hasAction = Boolean(actionHref && actionLabel);
   }
 
   .section[data-band='dark'] .inner {
-    gap: var(--space-6);
+    gap: var(--space-7); /* T-335: more air between the title and the content (was --space-6) */
+  }
+
+  @media (min-width: 48rem) {
+    .section[data-band='dark'] .inner {
+      gap: var(--space-8);
+    }
   }
 
   .inner {

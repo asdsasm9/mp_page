@@ -71,7 +71,7 @@ const ogImage = chosenHero
 
   {
     cards.length > 0 && (
-      <Section id="portfolio" title="Portfolio" actionHref="/portfolio/" actionLabel="Celé portfolio">
+      <Section id="portfolio" class="fill fill-tall" title="Portfolio" actionHref="/portfolio/" actionLabel="Celé portfolio">
         <CategoryGrid>
           {cards.map((card) => (
             <CategoryCard href={card.path} title={card.name} photo={card.photo} base={env.imgBaseUrl} />
@@ -81,7 +81,7 @@ const ogImage = chosenHero
     )
   }
 
-  <Reference reviews={reviews} />
-
+  <!-- T-335: Reference is window-tall on its own (fill-tall in the component); Kontakt keeps its content height -->
+  <Reference reviews={reviews} base={env.imgBaseUrl} />
   <Contact />
 </Base>

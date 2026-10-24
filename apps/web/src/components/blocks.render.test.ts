@@ -146,7 +146,7 @@ describe('PageHead', () => {
     expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
     expect(html).toMatch(/<h1 class="t-h1">Svatby<\/h1>/);
     expect(html).toContain('<hr class="rule"');
-    expect(html).toMatch(/<a class="back t-small" href="\/portfolio\/">\s*<svg[\s\S]*?<\/svg>\s*Všechna portfolia\s*<\/a>/);
+    expect(html).toMatch(/<a class="back t-crumb" href="\/portfolio\/">\s*<svg[\s\S]*?<\/svg>\s*Všechna portfolia\s*<\/a>/);
     expect(html).toContain('<p>Úvod</p>');
   });
 
@@ -228,16 +228,16 @@ describe('Photo crop', () => {
 
   it('a landscape cover asks for about twice the box width, a portrait cover for no more than the box width', async () => {
     const wide = sizesOf(await render(Photo, { photo: landscape, base: IMG, alt: '', crop: 'category' }));
-    expect(wide).toMatch(/calc\(20rem \* (1\.9\d|2)\)/);
+    expect(wide).toMatch(/calc\(22rem \* (1\.9\d|2)\)/);
     const tall = sizesOf(await render(Photo, { photo: portrait, base: IMG, alt: '', crop: 'album' }));
-    expect(tall).toBe('(min-width: 48rem) 26rem, calc(100vw - 3rem)');
+    expect(tall).toBe('(min-width: 48rem) 20rem, calc(100vw - 3rem)');
   });
 
   it('the priority (LCP) card gets the plain box-width sizes, the others stay crop-aware (WP-12 decision 13)', async () => {
     const lcp = sizesOf(await render(Photo, { photo: landscape, base: IMG, alt: '', crop: 'album', eager: true, priority: true }));
-    expect(lcp).toBe('(min-width: 48rem) 26rem, calc(100vw - 3rem)');
+    expect(lcp).toBe('(min-width: 48rem) 20rem, calc(100vw - 3rem)');
     const eager = sizesOf(await render(Photo, { photo: landscape, base: IMG, alt: '', crop: 'album', eager: true }));
-    expect(eager).toMatch(/calc\(26rem \* 1\.\d+\)/);
+    expect(eager).toMatch(/calc\(20rem \* 1\.\d+\)/);
     const catLcp = sizesOf(await render(Photo, { photo: landscape, base: IMG, alt: '', crop: 'category', priority: true }));
     expect(catLcp).not.toContain('*');
   });
@@ -317,13 +317,19 @@ describe('CategoryGrid (T-279)', () => {
     expect(html).toMatch(/<ul class="cards[^"]*">\s*<li>a<\/li>\s*<\/ul>/);
   });
 
-  it('collapses empty tracks (auto-fit), caps the track width at the widths the cover sizes assume and centres, from 48rem', () => {
+  it('caps the tracks at --track-category-max, centres them, two columns from 48rem and auto-fit from 80rem (T-328)', () => {
     const css = styleOf('./CategoryGrid.astro');
     expect(css).toMatch(/repeat\(auto-fill, minmax\(min\(15rem, 100%\), 1fr\)\)/);
-    expect(css).toMatch(/@media \(min-width: 48rem\) \{[^@]*repeat\(auto-fit, minmax\(min\(15rem, 100%\), var\(--track-max\)\)\);[^@]*justify-content: center/s);
-    expect(css).toMatch(/--track-max: 20rem/); // equals CROP_BASE.category at 48rem; 20 keeps two columns at 768 with the wide gap (T-321)
-    expect(css).toMatch(/@media \(min-width: 80rem\) \{\s*\.cards \{\s*--track-max: 18rem/);
-    expect(css).toMatch(/@media \(min-width: 100rem\) \{\s*\.cards \{\s*--track-max: 16rem/);
+    expect(css).toMatch(/@media \(min-width: 48rem\) \{[^@]*repeat\(2, minmax\(0, var\(--track-category-max\)\)\);[^@]*justify-content: center/s);
+    expect(css).toMatch(/last-child:nth-child\(odd\)[^}]*grid-column: 1 \/ -1;[^}]*justify-self: center/s); // lone last card centred
+    expect(css).toMatch(/@media \(min-width: 80rem\) \{\s*\.cards \{\s*grid-template-columns: repeat\(auto-fit, var\(--track-category-max\)\)/);
+    expect(css).not.toMatch(/--track-max/);
+  });
+
+  it('album grids use fixed centred tracks of --track-album-max from 48rem (T-328)', () => {
+    for (const page of ['../pages/[category]/index.astro', '../pages/portfolio/index.astro', '../pages/layout-check/categories/[count]/index.astro']) {
+      expect(styleOf(page), page).toMatch(/@media \(min-width: 48rem\) \{\s*\.albums \{\s*grid-template-columns: repeat\(auto-fill, var\(--track-album-max\)\);\s*justify-content: center/);
+    }
   });
 
   it('uses the shared wide column gap token, the same as every album grid (T-321)', () => {

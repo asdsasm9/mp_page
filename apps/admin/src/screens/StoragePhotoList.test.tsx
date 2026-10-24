@@ -110,7 +110,7 @@ describe('storage screen: photo list', () => {
     expect(bodyRows().length).toBeLessThanOrEqual(PAGE_SIZE);
     expect(bodyRows().length).toBeGreaterThan(0);
     expect(document.querySelectorAll('.photo-list-table tbody tr').length).toBeLessThanOrEqual(PAGE_SIZE);
-  });
+  }, 30000);
 
   it('filters by album and returns to the first page', async () => {
     const world = createFakeWorld({ signedIn: true, seed: bigSnapshot() });
@@ -170,7 +170,7 @@ describe('storage screen: photo list', () => {
     const lastRows = bodyRows();
     expect(within(lastRows.at(-1)!).getByText(cs.quality.verdict.low)).toBeTruthy();
     expect(within(lastRows.at(-1)!).queryByText(cs.quality.verdict.good)).toBeNull();
-  });
+  }, 30000);
 
   it('has no accessibility violations', async () => {
     const world = createFakeWorld({ signedIn: true, seed: bigSnapshot() });

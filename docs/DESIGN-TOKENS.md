@@ -84,17 +84,19 @@ Accent rules: `--color-accent` is used for `border-color`, `text-decoration-colo
 | Space | `--space-1`, `--space-2`, `--space-3`, `--space-4`, `--space-5`, `--space-6`, `--space-7`, `--space-8` = 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4.5 rem |
 | Shape | `--radius-none` (0: images, cards and buttons), `--radius-sm`, `--radius-md`, `--radius-full` (lightbox round buttons, admin), `--border-width`, `--focus-width`, `--focus-offset`, `--bar-thickness` (2 px), `--shadow-sm`, `--shadow-md`, `--opacity-disabled` (0.45) |
 | Motion | `--motion-fast` 150 ms, `--motion-base` 250 ms, `--motion-drawer` 400 ms, `--motion-ease`; anything beyond a colour change, including smooth scrolling, is inside `prefers-reduced-motion: no-preference` |
-| Layout | `--layout-max` 110rem, `--layout-gutter`, `--header-height` 68 px (T-316, was 85), `--section-pad` 52 to 88 px (T-316, was 64 to 110; the home hero is `max(26rem, 80svh)`), `--section-gap-lg`, `--section-gap`, `--heading-gap`, `--drawer-width`, `--target-min` (44 px), `--target-compact` (32 px) |
+| Layout | `--layout-max` 110rem, `--layout-gutter`, `--header-height` 68 px (T-316, was 85), `--section-pad` 52 to 88 px (T-316, was 64 to 110; the home hero is exactly the window tall: `100vh`, `100svh`, `100dvh`, T-326), `--section-gap-lg`, `--section-gap`, `--heading-gap`, `--drawer-width`, `--target-min` (44 px), `--target-compact` (32 px) |
 | Card grid column gap (T-321) | `--grid-col-gap` (3.5rem = 56 px, was 32 px) between the columns of the category cards (home Portfolio, /portfolio/) and of every album card grid (category pages, "Výběr z alb"). Tracks are never wider than the widths `CROP_BASE` in `images.ts` assumes, so a wider gap only narrows tracks or drops a column; `npm run image-fit` guards it |
+| Window-tall home blocks (T-330) | `--section-min-block` = `calc(100dvh - var(--header-height))`, used by `.fill-tall` in `base.css` (with a `100vh` line before it) only from 48rem and above 32rem window height; `.fill` centres the content vertically (O mně, Portfolio, Reference; T-335 dropped the `.home-end` wrapper, Kontakt keeps content height). Min only, never a fixed height. Mirrored in the admin `tokens.css` (parity test) |
+| Card track widths (T-328) | `--track-album-max` (20rem) and `--track-category-max` (22rem = 1.1 x the album track), from 48rem up. Album grids use fixed tracks of the album width, centred; the category grid has 2 columns (an odd last card centred under them) and from 80rem as many 22rem tracks as fit (3), centred. Below 22rem free width (48rem to about 52rem) the category track shrinks but stays at least an album track. The cover `sizes` (`CROP_BASE` in `images.ts`) use the same two lengths. Measured category/album ratio: 1.02 at 768, 1.10 at 1024, 1280 and 1920 |
 | Overview cards (T-317) | `--card-title-gap` (= `--space-1`, image to its own title) and `--grid-row-gap` (= `--space-7`, between rows of category and album cards), so a title always reads as belonging to the image above it. Category and portfolio pages have no intro text under the title; the generated description is the meta description only |
-| Image shapes | `--ratio-category` 3 / 4, `--ratio-album` 4 / 5, `--cover-position` |
+| Image shapes | `--ratio-category` 3 / 4, `--ratio-album` 4 / 5, `--cover-position`, `--profile-size` 12rem / `--profile-size-compact` 6rem (also in the admin `tokens.css`) (T-333 round review author portrait) |
 | Stacking | `--z-header` 10, `--z-dialog` 20 (lightbox), `--z-drawer` 21 (inside the header), `--z-skip` 30 |
 
 ## Usage rules
 
 - Components use `var(--...)` only. No hex, `rgb()`, or `px` in components or layouts (the test greps them). Border width uses `--border-width`.
 - Body text is left-aligned, at most 70ch, 1.6 line height (`.t-prose`: 1.8 for long reading).
-- Type (T-252): no `font-size`, `font-family`, `font-weight`, `line-height` or `letter-spacing` in any page, layout or component. Use the element defaults (h1, h2, h3, p) or a `.t-*` class from base.css. `tokens.test.ts` fails on a literal anywhere outside tokens.css and on a non-`var()` value in base.css. Uppercase (`text-transform`) is set only by `.t-display`, `.t-h1`, `.t-h3`, `.t-kicker`, `.btn` and `.btn-ghost`.
+- Type (T-252): no `font-size`, `font-family`, `font-weight`, `line-height` or `letter-spacing` in any page, layout or component. Use the element defaults (h1, h2, h3, p) or a `.t-*` class from base.css. `tokens.test.ts` fails on a literal anywhere outside tokens.css and on a non-`var()` value in base.css. Uppercase (`text-transform`, T-329) is set only in base.css: the `h1, h2, h3` element defaults, `.t-display`, `.t-title`, `.t-h1`, `.t-h3`, `.t-kicker`, `.t-crumb` (breadcrumb row, back link), `.t-nav`, `.t-wordmark`, `.btn` and `.btn-ghost`. Source text stays in normal Czech case (texts.ts, JSON-LD, document title); running text, `.t-quote`, `.t-lead`, `.t-small`, captions and the cookies body are never uppercase. To switch to Title Case, change those rules only.
 - Buttons: `.btn` (outlined, `--color-accent-strong`, uppercase, 44 px minimum height, no radius) and `.btn-ghost` (text with a 1 px accent underline). Hover tints use `color-mix()` of `--color-accent-strong` at 12% and 22%.
 - Every interactive element has a visible `:focus-visible` ring from base.css; do not remove it. On a dark surface set `data-tone="dark"`.
 - Changing a colour token to a failing value turns `tokens.test.ts` red.
@@ -108,10 +110,10 @@ Ceilings (T-314): no size grows past the value it has at a 1440 px viewport, so 
 | Token | Class / element | 360 px | 1280 px | Line height | Use |
 |---|---|---|---|---|---|
 | `--text-display` | `.t-display` | 38 | 72 | `--leading-caps` 1.12 | home hero h1, uppercase |
-| `--text-title` | `.t-title` | 34 | 53.8 | `--leading-heading` 1.2 | statement titles (O mně, Kontakt) |
-| `--text-h1` | `h1`, `.t-h1` | 30 | 46 | 1.2, `.t-h1` 1.12 | page and section heads (`.t-h1`: uppercase, tracking `--tracking-h1`) |
-| `--text-h2` | `h2` | 24 | 28 | 1.2 | sub-heads |
-| `--text-h3` | `h3`, `.t-h3` | 22 | 24.6 | 1.2, `.t-h3` 1.12 | card titles (uppercase, tracking `--tracking-card`), lightbox arrows |
+| `--text-title` | `.t-title` | 34 | 53.8 | `--leading-caps` 1.12 | statement titles (O mně, Kontakt), uppercase, tracking `--tracking-card` |
+| `--text-h1` | `h1`, `.t-h1` | 30 | 46 | 1.12 | page and section heads (`.t-h1`: uppercase, tracking `--tracking-h1`) |
+| `--text-h2` | `h2` | 24 | 28 | 1.12 | sub-heads, uppercase, tracking `--tracking-card` |
+| `--text-h3` | `h3`, `.t-h3` | 22 | 24.6 | 1.12 | card titles (uppercase, tracking `--tracking-card`), lightbox arrows |
 | `--text-quote` | `.t-quote` | 20 | 24 | `--leading-quote` 1.4 | reference quote, the full review text (Cormorant; T-320) |
 | `--text-lead` | `h4`, `.t-lead` | 17 | 18.4 | `--leading-lead` 1.5 | intro paragraph |
 | `--text-body` | `body`, `.t-body` | 15 | 16.1 | `--leading-body` 1.6 | running text |
@@ -121,7 +123,7 @@ Ceilings (T-314): no size grows past the value it has at a 1440 px viewport, so 
 | `--text-nav` | `.btn`, `.btn-ghost`, `.t-nav` | 12 | 12.8 | 1.5 | nav and button labels, uppercase |
 | `--text-wordmark` | `.t-wordmark` | 20 | 21 | `--leading-caps` 1.12 | header wordmark, uppercase, tracking `--tracking-wordmark` |
 
-Other type tokens: `--leading-prose` 1.8 (`.t-prose`), `--leading-none`, `--tracking-heading` 0.03em, `--tracking-h1` 0.06em, `--tracking-card` 0.04em, `--tracking-label` 0.2em, `--tracking-wordmark` 0.14em, `--measure` 70ch.
+Other type tokens: `--leading-heading` 1.2 (`h4` only, since T-329 every uppercase heading uses `--leading-caps`), `--leading-prose` 1.8 (`.t-prose`), `--leading-none`, `--tracking-heading` 0.03em, `--tracking-h1` 0.06em, `--tracking-card` 0.04em, `--tracking-label` 0.2em, `--tracking-wordmark` 0.14em, `--measure` 70ch.
 
 Lining figures (T-312): Cormorant Garamond draws old-style figures by default (a "1" looks like a small capital I). `body` in `apps/web/src/styles/base.css` sets `font-variant-numeric: lining-nums`, which every heading, title and display rule inherits; Lora's figures are already lining, so body text is unchanged. The admin sets the same property on `h1, h2, h3`, `.brand` and the cover-picker legends.
 

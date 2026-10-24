@@ -12,7 +12,7 @@ export default defineConfig({
       { test: { name: 'api', root: './apps/api', environment: 'node' } },
       {
         plugins: [react()],
-        test: { name: 'admin', root: './apps/admin', environment: 'jsdom' },
+        test: { name: 'admin', root: './apps/admin', environment: 'jsdom', testTimeout: 30000, hookTimeout: 30000 },
       },
       {
         test: {

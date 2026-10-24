@@ -11,7 +11,7 @@ const { crumbs } = Astro.props;
 const all: readonly Crumb[] = [{ name: 'Úvod', path: '/' }, ...crumbs];
 ---
 <nav class="breadcrumb" aria-label="Drobečková navigace">
-  <ol class="t-small">
+  <ol class="t-crumb">
     {
       all.map((crumb, i) =>
         i === all.length - 1 ? (

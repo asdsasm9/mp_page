@@ -89,7 +89,7 @@ describe('design tokens', () => {
       '--space-1', '--space-2', '--space-3', '--space-4', '--space-5', '--space-6', '--space-7',
       '--space-8', '--radius-none', '--radius-md', '--radius-full', '--shadow-sm', '--shadow-md',
       '--motion-fast', '--motion-base', '--motion-drawer', '--motion-ease', '--layout-max', '--layout-gutter',
-      '--header-height', '--section-pad', '--section-gap-lg', '--drawer-width', '--target-min', '--ratio-category',
+      '--header-height', '--section-pad', '--section-min-block', '--section-gap-lg', '--drawer-width', '--target-min', '--ratio-category',
       '--ratio-album', '--focus-width', '--focus-offset', '--bar-thickness', '--border-width',
       '--z-header', '--z-dialog', '--z-drawer', '--z-skip',
     ];
@@ -161,10 +161,35 @@ describe('design tokens', () => {
     expect(bound('--text-body')[1]).toBeLessThanOrEqual(1.125);
   });
 
+  it('the default h2 is smaller than the page h1: at most 70% at the cap, never above it at the floor (T-323)', () => {
+    const [h1Min, h1Max] = bound('--text-h1');
+    const [h2Min, h2Max] = bound('--text-h2');
+    expect(h2Max).toBeLessThanOrEqual(h1Max * 0.7 + 0.01);
+    expect(h2Min).toBeLessThan(h1Min);
+  });
+
+  it('pages with a PageHead h1 never set an h2 in a headline class, so every h2 stays the sub-head size (T-323)', () => {
+    const pages = walk(join(srcDir, 'pages')).filter((f) => f.endsWith('.astro'));
+    const withHead = pages.filter((f) => readFileSync(f, 'utf8').includes('<PageHead'));
+    expect(withHead.length).toBeGreaterThan(0);
+    for (const f of withHead) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/<h2\b[^>]*>/g)) {
+        expect(m[0], f).not.toMatch(/\bt-(title|display|h1)\b/);
+      }
+    }
+  });
+
   it('the card grid column gap is 48 to 64px, at least 1.5 times the former 32px (T-321)', () => {
     const rem = Number(/^([\d.]+)rem$/.exec(tokens['--grid-col-gap']!)?.[1]);
     expect(rem * 16).toBeGreaterThanOrEqual(48);
     expect(rem * 16).toBeLessThanOrEqual(64);
+  });
+
+  it('the category track is 1.05 to 1.15 times the album track, never below it (T-328)', () => {
+    const rem = (name: string) => Number(/^([\d.]+)rem$/.exec(tokens[name]!)?.[1]);
+    const ratio = rem('--track-category-max') / rem('--track-album-max');
+    expect(ratio).toBeGreaterThanOrEqual(1.05);
+    expect(ratio).toBeLessThanOrEqual(1.15);
   });
 
   it('the reference quote holds the full review text: 20 to 24px, line height 1.4 (T-320)', () => {
@@ -221,6 +246,27 @@ describe('design tokens', () => {
     expect(tokens['--header-height']).toBe('4.25rem');
     expect(tokens['--section-pad']).toBe('clamp(3.25rem, 7.2vw, 5.5rem)');
     expect(tokens['--radius-none']).toBe('0');
+  });
+
+  it('window-tall home blocks (T-330): one token, one rule, 48rem up, not on short landscape windows', () => {
+    expect(tokens['--section-min-block']).toBe('calc(100dvh - var(--header-height))');
+    const base = readFileSync(join(here, 'base.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const block = /@media \(min-width: 48rem\) and \(min-height: 32\.01rem\) \{([\s\S]*?)\n  \}\n\}/.exec(base);
+    expect(block).not.toBeNull();
+    expect(block![1]).toMatch(/\.fill-tall \{[^}]*min-block-size: calc\(100vh - var\(--header-height\)\);[^}]*min-block-size: var\(--section-min-block\);/);
+    expect(block![1]).toMatch(/\.fill \{[^}]*justify-content: center/);
+    expect(block![1]).not.toContain('.home-end');
+    expect(block![1]).not.toMatch(/(?<!min-)block-size:|animation|transition/);
+  });
+
+  it('the home page marks O mně, Portfolio and Reference as window-tall; Kontakt keeps its content height (T-335)', () => {
+    const page = readFileSync(join(srcDir, 'pages', 'index.astro'), 'utf8');
+    expect(page).toMatch(/id="portfolio" class="fill fill-tall"/);
+    expect(page).not.toContain('home-end');
+    expect(page).toMatch(/<Reference[^>]*\/>\s*<Contact \/>/);
+    expect(readFileSync(join(srcDir, 'components', 'sections', 'About.astro'), 'utf8')).toContain('class="about fill fill-tall"');
+    expect(readFileSync(join(srcDir, 'components', 'sections', 'Contact.astro'), 'utf8')).toContain('id="kontakt" class="contact"');
+    expect(readFileSync(join(srcDir, 'components', 'sections', 'Reference.astro'), 'utf8')).toContain('id="reference" class="fill fill-tall"');
   });
 
   it('the contrast helper turns red for a failing colour', () => {
@@ -284,12 +330,28 @@ describe('type literals live only in tokens.css (T-252)', () => {
     for (const f of scripts) expect(readFileSync(f, 'utf8'), f).not.toMatch(/fontSize|fontFamily|fontWeight|lineHeight|font-size/);
   });
 
+  it('every title and sub-title is uppercase by CSS (T-329): h1-h3 defaults and all heading/label classes, not body text', () => {
+    const base = readFileSync(join(here, 'base.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = (selector: string) => {
+      const m = base.match(new RegExp(`(?:^|\\n)\\s*${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`));
+      return m?.[1] ?? '';
+    };
+    const headings = base.match(/h1,\s*h2,\s*h3\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(headings).toMatch(/text-transform:\s*uppercase/);
+    for (const c of ['.t-display', '.t-title', '.t-h1', '.t-h3', '.t-kicker', '.t-crumb', '.t-wordmark', '.t-nav']) {
+      expect(rule(c), c).toMatch(/text-transform:\s*uppercase/);
+    }
+    for (const c of ['.t-quote', '.t-lead', '.t-body', '.t-small', '.t-caption', '.t-prose']) {
+      expect(rule(c), c).not.toMatch(/text-transform/);
+    }
+  });
+
   it('every .t-* class used in markup exists in base.css', () => {
     const base = readFileSync(join(here, 'base.css'), 'utf8');
     const defined = new Set([...base.matchAll(/\.(t-[a-z0-9]+)\s*\{/g)].map((m) => m[1]));
     expect([...defined].sort()).toEqual([
-      't-body', 't-caption', 't-display', 't-h1', 't-h3', 't-kicker', 't-lead', 't-nav', 't-prose', 't-quote', 't-small', 't-title',
-      't-wordmark',
+      't-body', 't-caption', 't-crumb', 't-display', 't-h1', 't-h3', 't-kicker', 't-lead', 't-nav', 't-prose', 't-quote', 't-small',
+      't-title', 't-wordmark',
     ]);
     for (const f of styled) {
       const text = readFileSync(f, 'utf8');

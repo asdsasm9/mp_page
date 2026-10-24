@@ -4,7 +4,7 @@ import { NAV } from '../content/texts';
 import { buildNav } from '../lib/nav';
 import Header from './Header.astro';
 
-const items = buildNav(NAV, true);
+const items = buildNav(NAV);
 const categoryNames = ['Svatby', 'Portréty', 'Párové focení'];
 
 async function render(current: string, overHero = false, nav = items): Promise<string> {
@@ -33,16 +33,18 @@ describe('Header.astro', () => {
     expect(text.startsWith(NAV.wordmark)).toBe(true);
   });
 
-  it('lists the four items in both navs (O mně is the /o-mne/ page, the rest home anchors) and a framed Kontakt', async () => {
+  it('lists Úvod first, then O mně, Portfolio and a framed Kontakt in both navs, wordmark separate', async () => {
     const html = header(plain(await render('/')));
     const hrefs = [...html.matchAll(/<a [^>]*href="(\/[^"]*)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(['/', '/o-mne/', '/portfolio/', '/#reference', '/#kontakt', '/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
+    expect(hrefs).toEqual(['/', '/', '/o-mne/', '/portfolio/', '/#kontakt', '/', '/o-mne/', '/portfolio/', '/#kontakt']);
     expect(html.match(/data-framed/g)).toHaveLength(2);
+    expect(html.match(/>\s*Úvod\s*</g)).toHaveLength(2);
   });
 
-  it('omits Reference from both navs without reviews', async () => {
-    const html = await render('/', false, buildNav(NAV, false));
+  it('has no Reference item in either nav', async () => {
+    const html = await render('/');
     expect(html).not.toContain('/#reference');
+    expect(html).not.toContain('Reference');
   });
 
   it('shows the category names as plain text at the bottom of the drawer', async () => {
@@ -71,7 +73,9 @@ describe('Header.astro', () => {
     }
     const home = header(plain(await render('/', true)));
     expect(home).not.toContain('aria-current="true"');
-    expect(home).toContain('aria-current="page"'); // the wordmark only
+    // wordmark plus Úvod in the desktop nav and in the drawer
+    expect(home.match(/aria-current="page"/g)).toHaveLength(3);
+    for (const m of home.matchAll(/<a [^>]*class="t-nav"[^>]*aria-current="page"[^>]*>/g)) expect(m[0]).toContain('href="/"');
   });
 
   it('marks O mně with aria-current="page" in both navs on /o-mne/ and nowhere else', async () => {

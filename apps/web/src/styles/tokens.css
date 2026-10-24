@@ -95,6 +95,11 @@
     /* Column gap of every card grid (T-321): 56 px, 1.75 times the former 32 px. Tracks are never wider than the
        widths the cover `sizes` assume (images.ts CROP_BASE); a wider gap only makes them narrower or drops a column. */
     --grid-col-gap: 3.5rem;
+    /* Card track widths from 48rem (T-328): a category card is 1.1 times an album card (22rem = 1.1 x 20rem; on narrower
+       windows the category track shrinks to the free width, never below the album track). The cover `sizes` in
+       images.ts CROP_BASE use the same two lengths. */
+    --track-album-max: 20rem;
+    --track-category-max: 22rem;
 
     /* Radius, borders, shadow. Images, cards and buttons have no radius in this design (--radius-none);
        --radius-md and --radius-full stay for the lightbox round buttons and the admin. */
@@ -121,12 +126,15 @@
     --layout-gutter: clamp(1.5rem, 4vw, 6rem);
     --header-height: 4.25rem; /* sticky header, 68 px (T-316); html scroll-padding-block-start is the only anchor offset */
     --section-pad: clamp(3.25rem, 7.2vw, 5.5rem); /* 52 to 88 px (T-316) */
+    --section-min-block: calc(100dvh - var(--header-height)); /* T-330: window below the sticky header; base.css .fill-tall, 48rem up only */
     --section-gap-lg: clamp(3rem, 6vw, 5rem);
     --drawer-width: min(21.25rem, 86vw);
     --target-min: 2.75rem;
     --target-compact: 2rem; /* quiet links (breadcrumb, footer): above the 24 px WCAG 2.2 minimum */
     --ratio-category: 3 / 4; /* category card covers */
     --ratio-album: 4 / 5; /* album card covers */
+    --profile-size: 12rem; /* T-333/T-335: review author portrait from 48rem; the sizes string in lib/images.ts says the same */
+    --profile-size-compact: 6rem; /* phones */
     --cover-position: center 30%; /* keeps heads of portrait people photos in the crop */
     --section-gap: var(--space-6); /* between page sections */
     --heading-gap: var(--space-4); /* heading to its text */

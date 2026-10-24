@@ -106,7 +106,7 @@ describe('Home page (built, shared build)', () => {
     for (const tag of imgs) expect(tag).toMatch(EMPTY_ALT);
   });
 
-  it('shows the full review text (no details, no "Celá recenze"), no photos, in the dark band', () => {
+  it('shows the full review text (no details, no "Celá recenze"), one lazy author portrait per review (T-333), in the dark band', () => {
     const reviews = section('id="reference"').replace(/\sdata-astro-cid-[a-z0-9]+(="")?/g, '');
     expect(reviews).toContain('data-band="dark"');
     expect(reviews).toContain('Reference');
@@ -116,7 +116,12 @@ describe('Home page (built, shared build)', () => {
     }
     expect(reviews).not.toContain('<details');
     expect(reviews).not.toContain('Celá recenze');
-    expect(imgTags(reviews)).toHaveLength(0);
+    const imgs = imgTags(reviews);
+    expect(imgs).toHaveLength(REVIEWS.length);
+    REVIEWS.forEach((r, i) => {
+      expect(imgs[i]).toContain(`alt="${r.name}, klientka"`);
+      expect(imgs[i]).toContain('loading="lazy"');
+    });
   });
 
   it('orders the sections uvod, o-mne, portfolio, reference, kontakt, with no quote section and no collage', () => {
@@ -133,7 +138,8 @@ describe('Home page (built, shared build)', () => {
   it('has the hero kicker with the category names, the h1 text and a button to #kontakt', () => {
     const hero = section('id="uvod"');
     expect(hero).toContain('Svatby · Portréty · Párové focení');
-    expect(hero).toMatch(/<h1[^>]*>Focení svateb, portrétů a párových fotek<\/h1>/);
+    expect(hero).toMatch(/<h1[^>]*>Fotografie, která zachytí váš příběh<\/h1>/);
+    expect(count(/<h1[\s>]/g)).toBe(1);
     expect(hero).toMatch(/<a class="btn"[^>]*href="#kontakt"[^>]*>Poptat termín<\/a>/);
   });
 
@@ -171,6 +177,8 @@ describe('Home page (built, shared build)', () => {
     expect(button).not.toMatch(/\s(target|onclick|download)=/);
     expect(contact).toMatch(/<a class="mail-text"[^>]*href="mailto:mullnyphotos@gmail\.com"[^>]*>mullnyphotos@gmail\.com<\/a>/);
     expect(contact).toContain('(mullnyphotos@gmail.com)');
+    // T-332: both mailto links are wrapped so Cloudflare e-mail obfuscation leaves them alone.
+    expect(contact.match(/<!--email_off--><a [^>]*href="mailto:[^>]*>[\s\S]*?<\/a><!--\/email_off-->/g)).toHaveLength(2);
     // No script in the page body intercepts clicks on the contact link.
     expect(contact).not.toMatch(/<script|onclick=/);
   });
@@ -250,7 +258,7 @@ describe('Category pages (built, shared build)', () => {
     expect(page).toContain('480.webp 480w');
     expect(page).toContain('960.webp 960w');
     // Album covers are cropped into the 4/5 box: sizes is the box width times the crop factor (T-276, F10).
-    expect(page).toMatch(/sizes="\(min-width: 48rem\) calc\(26rem \* [\d.]+\), calc\(\(100vw - 3rem\) \* [\d.]+\)"/);
+    expect(page).toMatch(/sizes="\(min-width: 48rem\) calc\(20rem \* [\d.]+\), calc\(\(100vw - 3rem\) \* [\d.]+\)"/);
     // T-315: the cards show the title only, no "place · N fotografií" meta line.
     const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
     expect(main).not.toMatch(/\d+ fotografi(e|í)/);
@@ -267,8 +275,8 @@ describe('Category pages (built, shared build)', () => {
       const norm = (h: string): string => h.replace(/ data-over-hero(="")?/g, '').replace(/ aria-current="[a-z]+"/g, '');
       expect(norm(headerOf(page))).toBe(norm(headerOf(html)));
     }
-    // The home page marks no nav link on the server (scrollspy does it in the browser).
-    expect(currentLinks(html)).toEqual([]);
+    // The home page marks only Úvod on the server (the hero is in view; scrollspy moves it in the browser).
+    expect(currentLinks(html)).toEqual(['/']);
   });
 
   it('keeps the first load of every category page under the budget', () => {
@@ -439,8 +447,8 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
     const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
     expect([...main.matchAll(/data-band="(\w+)"/g)].map((m) => m[1])).toEqual(['ground', 'surface', 'dark', 'ground']);
     // sub-heads use the h3 token size, no t-title or t-h1 below the page h1
-    expect(main).toMatch(/<h2 id="zkusenosti" class="t-h3"[^>]*>MÉ ZKUŠENOSTI<\/h2>/);
-    expect(main).toMatch(/<h2 id="pribeh" class="t-h3"[^>]*>MŮJ PŘIBĚH<\/h2>/);
+    expect(main).toMatch(/<h2 id="zkusenosti" class="t-h3"[^>]*>Mé zkušenosti<\/h2>/);
+    expect(main).toMatch(/<h2 id="pribeh" class="t-h3"[^>]*>Můj příběh<\/h2>/);
     expect(main).toMatch(/<h2 id="vzpominky-nadpis" class="t-h3"/);
     expect(main).not.toContain('t-title');
     expect([...main.matchAll(/class="t-h1/g)]).toHaveLength(1);
@@ -477,6 +485,7 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
     expect(footer).toContain('© Mullny Photos');
     expect(footer).toContain('Fotím v Jihomoravském kraji');
     expect(footer).toContain('href="mailto:mullnyphotos@gmail.com"');
+    expect(footer).toMatch(/<!--email_off--><a [^>]*href="mailto:[^>]*>[\s\S]*?<\/a><!--\/email_off-->/);
     expect(footer).toMatch(/href="https:\/\/www\.instagram\.com\/[^"]*"[^>]*rel="noopener noreferrer"|rel="noopener noreferrer"[^>]*href="https:\/\/www\.instagram\.com\//);
     expect(footer).toMatch(/href="https:\/\/mywed\.com[^"]*"/);
     const mywed = /<a\b[^>]*href="https:\/\/mywed\.com[^"]*"[^>]*>[\s\S]*?<\/a>/.exec(footer)?.[0] ?? '';
@@ -630,12 +639,12 @@ describe('Base layout (built home page)', () => {
     expect(html).toContain('<main id="obsah"');
   });
 
-  it('has four header nav links (O mně is /o-mne/, the rest home anchors, Reference only with reviews) and marks the wordmark as the current page', () => {
-    expect(navLinks(html).map(hrefOf)).toEqual(['/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
+  it('has four header nav links (Úvod first, no Reference) and marks the wordmark and Úvod as the current page', () => {
+    expect(navLinks(html).map(hrefOf)).toEqual(['/', '/o-mne/', '/portfolio/', '/#kontakt']);
     expect(html).toMatch(/class="wordmark t-wordmark" href="\/"[^>]*aria-current="page"/);
     // The drawer nav carries the same four links, and exactly one nav is exposed at any width.
     const drawer = /<nav aria-label="Hlavní navigace v menu"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
+    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/', '/o-mne/', '/portfolio/', '/#kontakt']);
   });
 
   it('overlays the hero only on the home page (data-over-hero) and uses a native details drawer', () => {

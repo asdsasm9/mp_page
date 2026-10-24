@@ -64,6 +64,14 @@ const crumbs = [{ name: category.name, path }];
     list-style: none;
   }
 
+  /* From 48rem the album tracks are at most --track-album-max (T-328; category cards are 1.1 times that) and centred */
+  @media (min-width: 48rem) {
+    .albums {
+      grid-template-columns: repeat(auto-fill, var(--track-album-max));
+      justify-content: center;
+    }
+  }
+
   .cta {
     display: flex;
     justify-content: center;

@@ -1,9 +1,9 @@
 ---
-// Grid of category cards (home Portfolio section, /portfolio/). The track maths of the category cover `sizes`
-// (images.ts CROP_BASE) assume tracks of at least 15rem and at most 20rem (from 48rem), 18rem (from 80rem) or 16rem
-// (from 100rem). From 48rem the tracks are auto-fit with exactly that maximum and the group is centred: with fewer
-// cards than tracks (3 categories at 1280 or 1920) the empty tracks collapse, so there is no empty column on the
-// right, and a card is never wider than the width the image was requested for. On phones one full-width column.
+// Grid of category cards (home Portfolio section, /portfolio/). From 48rem the tracks are at most --track-category-max
+// (22rem, 1.1 times the album track --track-album-max, T-328) and the group is centred: two columns (a lone last card is
+// centred under them, no half-empty ragged row) and three columns from 80rem, where three tracks fit. Below the track
+// maximum the tracks shrink to the free width, which is still at least an album track at 48rem. The cover `sizes`
+// (images.ts CROP_BASE.category) use the same 22rem. On phones one full-width column.
 interface Props {
   class?: string;
 }
@@ -16,9 +16,6 @@ const { class: className } = Astro.props;
 
 <style>
   .cards {
-    /* CROP_BASE.category at 48rem (20rem, was 21rem): with the 56 px column gap (T-321) two 21rem tracks no longer fit at
-       768 px (2 x 336 + 56 > 706) and the cards would drop to one column; two 20rem tracks do. */
-    --track-max: 20rem;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
     align-items: start;
@@ -30,20 +27,29 @@ const { class: className } = Astro.props;
 
   @media (min-width: 48rem) {
     .cards {
-      grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), var(--track-max)));
+      grid-template-columns: repeat(2, minmax(0, var(--track-category-max)));
       justify-content: center;
+    }
+
+    /* an odd last card sits centred under the two columns, one track wide */
+    .cards > :global(:last-child:nth-child(odd)) {
+      grid-column: 1 / -1;
+      justify-self: center;
+      inline-size: calc((100% - var(--grid-col-gap)) / 2);
+      max-inline-size: var(--track-category-max);
     }
   }
 
   @media (min-width: 80rem) {
     .cards {
-      --track-max: 18rem;
+      grid-template-columns: repeat(auto-fit, var(--track-category-max)); /* 3 tracks fit from 80rem; fewer cards collapse the empty ones */
     }
-  }
 
-  @media (min-width: 100rem) {
-    .cards {
-      --track-max: 16rem;
+    .cards > :global(:last-child:nth-child(odd)) {
+      grid-column: auto;
+      justify-self: stretch;
+      inline-size: auto;
+      max-inline-size: none;
     }
   }
 </style>

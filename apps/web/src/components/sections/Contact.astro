@@ -17,8 +17,8 @@ const links = [
       <p class="t-prose">{CONTACT.contact.body}</p>
     </div>
     <div class="actions">
-      <a class="btn" href={MAIL_URL}>Napsat e-mail <span class="visually-hidden">({MAIL_ADDRESS})</span></a>
-      <p class="address">nebo na adresu <a class="mail-text" href={MAIL_URL}>{MAIL_ADDRESS}</a></p>
+      <!--email_off--><a class="btn" href={MAIL_URL}>Napsat e-mail <span class="visually-hidden">({MAIL_ADDRESS})</span></a><!--/email_off-->
+      <p class="address">nebo na adresu <!--email_off--><a class="mail-text" href={MAIL_URL}>{MAIL_ADDRESS}</a><!--/email_off--></p>
       <ul>
         {
           links.map((l) => (

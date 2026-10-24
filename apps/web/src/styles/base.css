@@ -66,13 +66,17 @@
   h3 {
     font-family: var(--font-heading);
     font-weight: var(--weight-heading);
-    line-height: var(--leading-heading);
-    letter-spacing: var(--tracking-heading);
+    /* T-329: every title is shown in capitals by CSS only; the source text stays in normal Czech case
+       (lang="cs" makes the browser capitalise Č Ř Š Ž Ě Ů correctly). The caps leading leaves room for the carons. */
+    line-height: var(--leading-caps);
+    letter-spacing: var(--tracking-card);
+    text-transform: uppercase;
     text-wrap: balance;
   }
 
   h1 {
     font-size: var(--text-h1);
+    letter-spacing: var(--tracking-h1);
   }
 
   h2 {
@@ -125,7 +129,7 @@
   }
 
   /* Type classes: the only way a component picks a level other than the element default (T-252).
-     Uppercase lives here and in .btn only, so Czech capitals are handled in one place. */
+     Uppercase lives here (h1-h3 defaults, .t-*) and in .btn only, so Czech capitals are handled in one place. */
   .t-display {
     font-family: var(--font-heading);
     font-size: var(--text-display);
@@ -137,8 +141,9 @@
   .t-title {
     font-family: var(--font-heading);
     font-size: var(--text-title);
-    line-height: var(--leading-heading);
-    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-caps);
+    letter-spacing: var(--tracking-card);
+    text-transform: uppercase;
   }
 
   .t-h1 {
@@ -190,6 +195,14 @@
     font-size: var(--text-kicker);
     line-height: var(--leading-ui);
     letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  /* Breadcrumb row, back link and album neighbours: small uppercase Lora, lightly tracked (names can be long) */
+  .t-crumb {
+    font-size: var(--text-small);
+    line-height: var(--leading-ui);
+    letter-spacing: var(--tracking-card);
     text-transform: uppercase;
   }
 
@@ -313,6 +326,30 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+}
+
+/* Window-tall home blocks (T-330, T-335): O mně, Portfolio and Reference (Kontakt keeps its content height) are at least the
+   window below the sticky header, so one block fills the window after an anchor jump. Content is centred vertically in
+   the block, the band stays full width, a taller content only makes the block grow (min only, nothing clipped).
+   Not on phones (below 48rem) and not on short landscape windows (max-height 32rem). Pure layout, no animation. */
+@layer base {
+  @media (min-width: 48rem) and (min-height: 32.01rem) {
+    .fill-tall {
+      min-block-size: calc(100vh - var(--header-height));
+      min-block-size: var(--section-min-block);
+    }
+
+    .fill {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .fill > .inner {
+      inline-size: 100%;
+    }
+
   }
 }
 

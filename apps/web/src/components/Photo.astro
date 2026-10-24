@@ -69,4 +69,9 @@ const sourceSizes = sizes ?? (crop ? cropSizes(crop, src.width, src.height, prio
   .photo img.crop-album {
     aspect-ratio: var(--ratio-album);
   }
+
+  .photo img.crop-profile {
+    aspect-ratio: 1;
+    border-radius: var(--radius-full);
+  }
 </style>

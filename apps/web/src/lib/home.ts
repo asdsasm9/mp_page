@@ -1,7 +1,7 @@
 /**
  * Data for the home page, kept pure so it can be tested without a build: category cards (the category's
- * chosen photo, else the cover of the first album) and reviews (no photos; the album only gives the category name,
- * and a review whose album is missing from the snapshot is kept without one).
+ * chosen photo, else the cover of the first album) and reviews (the album gives the category name and the cover
+ * portrait; a review whose album is missing from the snapshot is kept without either).
  */
 import type { SnapshotPhoto } from '@mp/shared';
 import type { Review } from '../content/reviews';
@@ -19,6 +19,8 @@ export interface HomeReview {
   review: Review;
   /** Name of the category the review's album belongs to (the name line reads `Name · Category`), or null. */
   categoryName: string | null;
+  /** The review album's cover (the author's portrait, T-333/D-25), or null when the album is not in the snapshot. */
+  photo: SnapshotPhoto | null;
 }
 
 export interface HomeHero {
@@ -53,10 +55,14 @@ export function homeCategoryCards(catalog: Catalog): HomeCategoryCard[] {
   return cards;
 }
 
-/** Every review is kept; the album only supplies the category name (null when the album is not in the snapshot). */
+/** Every review is kept; the album supplies the category name and the cover portrait (both null when the album is not in the snapshot). */
 export function homeReviews(catalog: Catalog, reviews: readonly Review[]): HomeReview[] {
-  return reviews.map((review) => ({
-    review,
-    categoryName: catalog.albumBySlug.get(review.albumId)?.category.name ?? null,
-  }));
+  return reviews.map((review) => {
+    const entry = catalog.albumBySlug.get(review.albumId);
+    return {
+      review,
+      categoryName: entry?.category.name ?? null,
+      photo: entry ? catalog.coverOf(entry.album) : null,
+    };
+  });
 }

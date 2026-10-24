@@ -54,7 +54,7 @@ const { prev, next } = catalog.neighbours(album.slug);
 
     <AlbumGrid thumbs={thumbs} base={env.imgBaseUrl} />
 
-    <nav class="album-nav t-small" aria-label="Další alba">
+    <nav class="album-nav t-crumb" aria-label="Další alba">
       {
         prev ? (
           <a class="prev" rel="prev" href={albumPath(category, prev)}>

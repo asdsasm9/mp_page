@@ -95,6 +95,11 @@
     /* Column gap of every card grid (T-321): 56 px, 1.75 times the former 32 px. Tracks are never wider than the
        widths the cover `sizes` assume (images.ts CROP_BASE); a wider gap only makes them narrower or drops a column. */
     --grid-col-gap: 3.5rem;
+    /* Card track widths from 48rem (T-328): a category card is 1.1 times an album card (22rem = 1.1 x 20rem; on narrower
+       windows the category track shrinks to the free width, never below the album track). The cover `sizes` in
+       images.ts CROP_BASE use the same two lengths. */
+    --track-album-max: 20rem;
+    --track-category-max: 22rem;
 
     /* Radius, borders, shadow. Images, cards and buttons have no radius in this design (--radius-none);
        --radius-md and --radius-full stay for the lightbox round buttons and the admin. */

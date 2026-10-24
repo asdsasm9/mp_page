@@ -71,4 +71,11 @@ const meta: PageMeta = {
     padding: 0;
     list-style: none;
   }
+
+  @media (min-width: 48rem) {
+    .albums {
+      grid-template-columns: repeat(auto-fill, var(--track-album-max));
+      justify-content: center;
+    }
+  }
 </style>

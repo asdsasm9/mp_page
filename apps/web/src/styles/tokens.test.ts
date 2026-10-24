@@ -185,6 +185,13 @@ describe('design tokens', () => {
     expect(rem * 16).toBeLessThanOrEqual(64);
   });
 
+  it('the category track is 1.05 to 1.15 times the album track, never below it (T-328)', () => {
+    const rem = (name: string) => Number(/^([\d.]+)rem$/.exec(tokens[name]!)?.[1]);
+    const ratio = rem('--track-category-max') / rem('--track-album-max');
+    expect(ratio).toBeGreaterThanOrEqual(1.05);
+    expect(ratio).toBeLessThanOrEqual(1.15);
+  });
+
   it('the reference quote holds the full review text: 20 to 24px, line height 1.4 (T-320)', () => {
     expect(bound('--text-quote')).toEqual([1.25, 1.5]);
     expect(Number(tokens['--leading-quote'])).toBe(1.4);

@@ -89,6 +89,8 @@
     /* Column gap of every card grid (T-321): 56 px, 1.75 times the former 32 px. Tracks are never wider than the
        widths the cover `sizes` assume (images.ts CROP_BASE); a wider gap only makes them narrower or drops a column. */
     --grid-col-gap: 3.5rem;
+    --track-album-max: 20rem;
+    --track-category-max: 22rem;
 
     /* Radius, borders, shadow */
     --radius-none: 0;

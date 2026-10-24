@@ -92,9 +92,10 @@ export type CropContext = 'category' | 'album';
 
 /** Box-width `sizes` of the card grids (auto-fill tracks: 15rem and 18.75rem minimum, 3.5rem column gap (--grid-col-gap, T-321), 1.5rem gutter on phones). */
 const CROP_BASE: Record<CropContext, string> = {
-  // Tracks measured with image-fit (before T-321, gap 32 px, 21rem at 48rem; now 56 px gap and 20rem: 320 px at 768): 337 px at 768, 293 at 1024, 270 at 1280, 241 at 1920 (so the steps at 80rem and 100rem)
-  category: '(min-width: 100rem) 16rem, (min-width: 80rem) 18rem, (min-width: 48rem) 20rem, calc(100vw - 3rem)',
-  album: '(min-width: 48rem) 26rem, calc(100vw - 3rem)',
+  // T-328: from 48rem the tracks are capped by --track-category-max (22rem) and --track-album-max (20rem), the category
+  // track being 1.1 times the album track; they shrink below the cap only on windows of 48rem to about 52rem.
+  category: '(min-width: 48rem) 22rem, calc(100vw - 3rem)',
+  album: '(min-width: 48rem) 20rem, calc(100vw - 3rem)',
 };
 
 /** Box height over box width of the cover boxes (`--ratio-category` 3 / 4, `--ratio-album` 4 / 5). */

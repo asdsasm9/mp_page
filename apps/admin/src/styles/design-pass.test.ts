@@ -69,8 +69,31 @@ describe('design pass: surfaces and tables', () => {
     return [...css.matchAll(new RegExp(`\\n  ${esc} \\{[^}]*\\}`, 'g'))].map((m) => m[0]).join('\n');
   };
 
-  it.each(['.panel', '.storage-large', '.finding', '.publish-card'])('%s has the row shadow', (sel) => {
-    expect(ruleOf(sel)).toContain('box-shadow: var(--shadow-sm)');
+  it.each(['.card', '.panel', '.storage-large', '.finding', '.publish-card', '.sortable-row'])(
+    'WP-13: %s is a flat hairline surface (no shadow-sm)',
+    (sel) => {
+      expect(ruleOf(sel)).not.toContain('box-shadow: var(--shadow');
+    },
+  );
+
+  it('WP-13: --radius-md is used nowhere in app.css and only overlays carry shadow-md', () => {
+    expect(css).not.toContain('--radius-md');
+    expect(ruleOf('.dialog')).toContain('box-shadow: var(--shadow-md)');
+    expect(ruleOf('.toast')).toContain('box-shadow: var(--shadow-md)');
+    expect(ruleOf('.dialog')).toContain('border-radius: var(--radius-none)');
+    expect(ruleOf('.toast')).toContain('border-radius: var(--radius-none)');
+  });
+
+  it('WP-13: shadow-sm only remains on overlaying tile controls and tile badges', () => {
+    const rules = [...css.matchAll(/\n\s*([^{}\n]+)\s*\{[^{}]*box-shadow: var\(--shadow-sm\)[^{}]*\}/g)].map((m) => m[1].trim());
+    expect(rules.sort()).toEqual(['.cover-tile .quality-badge', '.photo-badge', '.photo-check', '.quality-badge-tile']);
+  });
+
+  it('WP-13: notices are hairline with a 3 px ink bar, danger for errors', () => {
+    const rule = ruleOf('.notice');
+    expect(rule).toContain('border: var(--border-width) solid var(--color-border)');
+    expect(rule).toContain('border-inline-start: var(--focus-width) solid var(--color-text)');
+    expect(ruleOf('.notice-error')).toContain('border-color: var(--color-danger)');
   });
 
   it('quiets the table header and highlights hovered body rows', () => {
@@ -231,12 +254,22 @@ describe('design pass: phone and shell polish', () => {
   it('marks the active bottom-nav item and keeps its 44 px height', () => {
     const rule = phone.match(/\.bottom-nav \.nav-link\[aria-current='page'\] \{[^}]*\}/)?.[0] ?? '';
     expect(rule).toContain('background: var(--color-surface)');
-    expect(rule).toContain('border-block-end-color: var(--color-text)');
+    expect(rule).toContain('border-block-end-color: var(--color-accent)');
     expect(phone).toContain('min-block-size: var(--bottom-nav-height)');
   });
 
-  it('gives the shell header a small shadow on phone and keeps it sticky (T-245)', () => {
-    expect(phone.match(/\.shell-header \{[^}]*\}/)?.[0] ?? '').toContain('box-shadow: var(--shadow-sm)');
+  it('WP-13: header is the page ground with a hairline, the active link has the accent bar', () => {
+    const header = css.match(/\n  \.shell-header \{[^}]*position: sticky[^}]*\}/)?.[0] ?? '';
+    expect(header).toContain('background: var(--color-bg)');
+    expect(header).toContain('border-block-end: var(--border-width) solid var(--color-border)');
+    expect(header).not.toContain('box-shadow');
+    expect(css.match(/\n  \.nav-link\[aria-current='page'\] \{[^}]*\}/)?.[0] ?? '').toContain('border-block-end-color: var(--color-accent)');
+    expect(css.match(/\n  \.brand \{[^}]*\}/)?.[0] ?? '').toContain('font-family: var(--font-heading)');
+    expect(phone.match(/\.bottom-nav \{[^}]*\}/)?.[0] ?? '').toContain('border-block-start: var(--border-width) solid var(--color-border)');
+  });
+
+  it('keeps the shell header sticky without a shadow on phone (T-245, WP-13)', () => {
+    expect(phone.match(/\.shell-header \{[^}]*\}/)).toBeNull();
     const rule = css.match(/\.shell-header \{[^}]*position: sticky[^}]*\}/)?.[0] ?? '';
     expect(rule).toContain('inset-block-start: 0');
     expect(rule).toContain('z-index: var(--z-header)');

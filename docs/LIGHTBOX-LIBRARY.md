@@ -56,3 +56,17 @@ Locked by `npm run lightbox-layout` (`scripts/lightbox-layout.mjs`): at 360x640,
 landscape and a portrait photo, fit and zoomed, it asserts the stage and photo centre equal the viewport centre,
 the X and plus glyphs are centred in their buttons (within 1.5 px), counter and close mirror each other, the zoom
 group centre equals the viewport centre, and prev and next mirror; screenshots go to `design-check-out/`.
+
+## Stuck after a pinch on a phone (T-291)
+
+Cause: `touch-action: none` was set on the stage only, and only when `data-zoom="on"`. A pinch that began on a
+button, the counter or the bare dialog (and any pinch on iOS) zoomed the browser's page instead of the photo. The
+dialog is fixed to the layout viewport, so the close button then sat off screen, and because the stage forbids
+browser gestures the page could not be pinched back out there. `npm run lightbox-a11y` now emulates a page scale
+of 2.5 (`Emulation.setPageScaleFactor`) and asserts close, prev, next and counter stay inside the visible window.
+
+Fix: `touch-action: none` on the whole dialog and the stage; `gesturestart` is cancelled (iOS); if the page is zoomed
+anyway, `lightbox-viewport.ts` (`pageZoomFrame`) re-fits the dialog to the visible window (`data-page-zoomed`,
+touch-action `pinch-zoom` so the browser can pinch out); a pinch ending within 5 % of fit snaps to exactly fit
+(`settleView`); controls are above the stage (`z-index`) and clear of safe-area insets. Viewport meta is unchanged.
+Tests: `lightbox-escape.test.ts` and the page-zoom block at the end of `scripts/lightbox-a11y.mjs`.

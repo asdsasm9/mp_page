@@ -148,6 +148,10 @@ export function pinchMove(start: PinchStart, a: Point, b: Point, g: ZoomGeometry
   );
 }
 
+/** A scale this close to fit is fit: the end of a pinch (or any gesture) never leaves a sliver of zoom behind. */
+export const SNAP_TO_FIT = 1.05;
+export const settleView = (view: ZoomView): ZoomView => (!(view.scale >= SNAP_TO_FIT) ? identity : view);
+
 /** A photo change always starts at fit. */
 export const resetOnPhotoChange = (): ZoomView => identity;
 

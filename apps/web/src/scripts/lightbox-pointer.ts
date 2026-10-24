@@ -28,6 +28,8 @@ export interface GestureHost {
   readonly zoomed: boolean;
   pinchBegin(a: Point, b: Point): void;
   pinchTo(a: Point, b: Point): void;
+  /** The pinch is over (finger lifted or cancelled); optional so older hosts keep working. */
+  pinchEnd?(): void;
   panByPx(dx: number, dy: number): void;
   toggleAt(x: number, y: number): void;
   /** Gesture in progress (true) or over (false): the page drops the transform transition meanwhile. */
@@ -49,6 +51,7 @@ export function createGestures(host: GestureHost, now: () => number = () => perf
   };
 
   function endPinch(): void {
+    if (pinching) host.pinchEnd?.();
     pinching = false;
   }
 

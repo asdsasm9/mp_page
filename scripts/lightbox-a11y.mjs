@@ -406,6 +406,41 @@ try {
   await phone.tap('[data-lb="zoom-fit"]');
   await sleep(100);
   check(near((await readView(phone)).scale, 1, 0.001), 'the "1x" button returns to fit');
+
+  // T-291: nothing in the lightbox may start a browser pinch of the page, and if the page is zoomed anyway the
+  // controls must follow the visible window so the user can always close.
+  const touchActions = await phone.$$eval('dialog[data-lightbox], [data-lb="stage"], [data-lb="close"], [data-lb="prev"], [data-lb="next"], [data-lb="zoom-in"]', (els) => els.map((e) => getComputedStyle(e).touchAction));
+  check(touchActions.slice(0, 2).every((t) => t === 'none'), `dialog and stage refuse browser pan/pinch (${touchActions.slice(0, 2).join(', ')})`);
+  await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 2.5 });
+  await sleep(300);
+  const pageZoom = await phone.evaluate(() => ({
+    scale: window.visualViewport.scale,
+    flagged: document.querySelector('dialog[data-lightbox]').hasAttribute('data-page-zoomed'),
+  }));
+  console.log(`page zoom emulation: scale ${pageZoom.scale.toFixed(2)}, dialog flagged ${pageZoom.flagged}`);
+  check(pageZoom.scale > 2, `page scale emulation took effect (${pageZoom.scale.toFixed(2)})`);
+  const insideWindow = async (name) =>
+    phone.$eval(`[data-lb="${name}"]`, (el) => {
+      const r = el.getBoundingClientRect();
+      const vv = window.visualViewport;
+      // getBoundingClientRect is in layout coordinates; the visible window is offset by the visual viewport.
+      return r.left >= vv.offsetLeft - 1 && r.top >= vv.offsetTop - 1 && r.right <= vv.offsetLeft + vv.width + 1 && r.bottom <= vv.offsetTop + vv.height + 1;
+    });
+  check(pageZoom.flagged, 'a zoomed page flags the dialog (data-page-zoomed)');
+  for (const name of ['close', 'prev', 'next', 'count']) {
+    check(await insideWindow(name), `page-zoomed: ${name} stays inside the visible window`);
+  }
+  const closeSize = await phone.$eval('[data-lb="close"]', (el) => {
+    const r = el.getBoundingClientRect();
+    return r.width * window.visualViewport.scale;
+  });
+  check(closeSize >= 43.5, `page-zoomed: the close button is still about 44 px on screen (${closeSize.toFixed(1)})`);
+  await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 });
+  await sleep(300);
+  check(!(await phone.$eval('dialog[data-lightbox]', (d) => d.hasAttribute('data-page-zoomed'))), 'back at page scale 1 the dialog is unflagged');
+  await phone.tap('[data-lb="close"]');
+  await sleep(200);
+  check(!(await phone.$eval('dialog[data-lightbox]', (d) => d.open)), 'the close button closes the lightbox');
   await phone.close();
 } catch (e) {
   failures.push(`error: ${e.message}`);

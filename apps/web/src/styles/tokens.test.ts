@@ -205,9 +205,10 @@ describe('design tokens', () => {
     expect(tokens['--cover-position']).toBeTruthy();
   });
 
-  it('layout tokens match the design (110rem frame, 85px header, no radius on images and buttons)', () => {
+  it('layout tokens match the design (110rem frame, 68px header, no radius on images and buttons)', () => {
     expect(tokens['--layout-max']).toBe('110rem');
-    expect(tokens['--header-height']).toBe('5.3125rem');
+    expect(tokens['--header-height']).toBe('4.25rem');
+    expect(tokens['--section-pad']).toBe('clamp(3.25rem, 7.2vw, 5.5rem)');
     expect(tokens['--radius-none']).toBe('0');
   });
 

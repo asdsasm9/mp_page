@@ -55,20 +55,20 @@
     --text-h1: clamp(1.875rem, 3.6vw, 2.875rem); /* page and section heads, uppercase */
     --text-h2: clamp(1.5rem, 1.2rem + 1vw, 2rem); /* sub-heads */
     --text-h3: clamp(1.375rem, 1.2rem + 0.5vw, 1.625rem); /* card titles, uppercase */
-    --text-quote: clamp(1.5rem, 3.2vw, 2.5rem); /* reference quote */
+    --text-quote: clamp(1.25rem, 2.4vw, 1.875rem); /* reference quote (T-316: 20 to 30 px) */
     --text-lead: clamp(1.0625rem, 1.03rem + 0.15vw, 1.165rem); /* intro paragraph */
     --text-body: clamp(0.9375rem, 0.91rem + 0.12vw, 1.018rem); /* running text */
     --text-small: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem); /* footer, breadcrumb, secondary links */
     --text-caption: clamp(0.8125rem, 0.79rem + 0.08vw, 0.862rem); /* meta lines, captions, counters */
     --text-kicker: clamp(0.75rem, 0.72rem + 0.1vw, 0.81rem); /* uppercase label, never under 12 px */
     --text-nav: clamp(0.75rem, 0.72rem + 0.1vw, 0.81rem); /* nav and buttons, uppercase */
-    --text-wordmark: clamp(1.25rem, 5vw, 1.625rem); /* header wordmark, uppercase Cormorant (20 to 26 px) */
+    --text-wordmark: clamp(1.25rem, 5vw, 1.3125rem); /* header wordmark, uppercase Cormorant (20 to 21 px; T-316) */
     --leading-body: 1.6;
     --leading-prose: 1.8; /* running text */
     --leading-lead: 1.5;
     --leading-heading: 1.2;
     --leading-caps: 1.12; /* uppercase headings: Czech carons and rings need room (WP-12 j6) */
-    --leading-quote: 1.35;
+    --leading-quote: 1.25;
     --leading-ui: 1.5;
     --leading-none: 1;
     --tracking-heading: 0.03em;
@@ -111,8 +111,8 @@
     /* Layout */
     --layout-max: 110rem;
     --layout-gutter: clamp(1.5rem, 4vw, 6rem);
-    --header-height: 5.3125rem; /* sticky header; html scroll-padding-block-start is the only anchor offset */
-    --section-pad: clamp(4rem, 9vw, 6.875rem);
+    --header-height: 4.25rem; /* sticky header, 68 px (T-316); html scroll-padding-block-start is the only anchor offset */
+    --section-pad: clamp(3.25rem, 7.2vw, 5.5rem); /* 52 to 88 px (T-316) */
     --section-gap-lg: clamp(3rem, 6vw, 5rem);
     --drawer-width: min(21.25rem, 86vw);
     --target-min: 2.75rem;

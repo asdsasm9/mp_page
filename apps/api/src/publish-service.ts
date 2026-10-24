@@ -65,8 +65,10 @@ export async function loadCatalogRows(supabase: SupabaseClient, jwt: string): Pr
   const albums = await read<AlbumRow>('albums');
   const photos = await read<PhotoRow>('photos');
   const urlHistory = await read<UrlHistoryRow>('url_history');
-  // Optional: a missing table (migration not applied yet), a failed read or no row all mean "no hero chosen".
+  // A missing table (HTTP 404, e.g. 42P01 / PGRST205: migration not applied yet) or no row means "no hero chosen".
+  // Any other failure (5xx, network error, timeout) fails the publish so a chosen hero is never silently dropped.
   const settings = await supabase.select<SiteSettingsRow>('site_settings', { select: '*', order: 'id.asc' }, jwt);
+  if (!settings.ok && settings.status !== 404) throw new PublishServiceError(settings.code);
   const siteSettings = settings.ok ? (settings.data[0] ?? null) : null;
   return { categories, albums, photos, urlHistory, siteSettings };
 }

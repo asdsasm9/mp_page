@@ -129,7 +129,7 @@ for the admin build to that origin. Check Workers, Triggers that the cron trigge
 
 **HUMAN** Hero photo (T-285/T-289): the Worker now reads `site_settings` when publishing, so the chosen home hero only
 reaches the public snapshot after (1) migration `20261023110000_hero_photo.sql` is applied live and (2) the Worker is
-redeployed (`npx wrangler deploy`). Until then publishing still works and the snapshot has `heroPhotoId: null`. No new
+redeployed (`npx wrangler deploy`). Until then publishing still works and the snapshot has `heroPhotoId: null` (only a missing table, HTTP 404, counts as "no hero"; any other `site_settings` read failure, such as a 5xx or a network error, fails the publish with `UPSTREAM_ERROR` so a chosen hero is never silently dropped). No new
 route, binding or secret.
 
 ## 9. First live smoke test

@@ -159,6 +159,24 @@ describe('buildAndStoreSnapshot', () => {
     expect(result.snapshot.heroPhotoId).toBeNull();
   });
 
+  it.each([
+    ['a 500 response', async () => new Response('x', { status: 500 })],
+    ['a thrown fetch', async () => Promise.reject(new Error('network down'))],
+  ])('%s on the site_settings read fails the publish with UPSTREAM_ERROR and writes nothing', async (_name, fail) => {
+    const broken = createSupabaseClient({
+      supabaseUrl: SHIM_SUPABASE_URL,
+      anonKey: SHIM_ANON_KEY,
+      fetch: async (input, init) =>
+        String(input instanceof Request ? input.url : input).includes('/site_settings')
+          ? fail()
+          : world.shim.fetch(input, init),
+    });
+    await expect(buildAndStoreSnapshot({ ...deps(), supabase: broken }, world.tokens.admin)).rejects.toMatchObject({
+      code: 'UPSTREAM_ERROR',
+    });
+    expect(publicBucket.keys()).toEqual([]);
+  });
+
   it('a failing read is a PublishServiceError and writes nothing', async () => {
     const failing = createSupabaseClient({
       supabaseUrl: SHIM_SUPABASE_URL,

@@ -80,6 +80,11 @@ const crumbs = [{ name: 'Portfolio', path }];
     margin-block-start: var(--space-4);
   }
 
+  /* T-331: Kategorie and Výběr z alb are separated by the section gap token (page gap included) */
+  section + section {
+    margin-block-start: calc(var(--section-gap-lg) - var(--space-5));
+  }
+
   section h2 {
     margin: 0;
   }

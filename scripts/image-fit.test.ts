@@ -3,9 +3,30 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 // @ts-expect-error plain .mjs module without types
-import { EXIT, evaluate, formatTable, judgePhoto, parseFitArgs, srcsetWidths } from './image-fit-lib.mjs';
+import { EXIT, coverRenderedWidth, evaluate, formatTable, judgePhoto, parseFitArgs, srcsetWidths } from './image-fit-lib.mjs';
 
 const TIERS = [480, 720, 960, 1600, 2400];
+
+describe('coverRenderedWidth (T-276: only the new crop markup is measured by picture width)', () => {
+  const landscape = { boxWidth: 300, boxHeight: 400, naturalWidth: 1500, naturalHeight: 1000 };
+  it('a cropped 3:2 photo in a 3/4 box is drawn twice as wide as the box', () => {
+    expect(coverRenderedWidth({ isCrop: true, ...landscape })).toBe(600);
+  });
+  it('legacy markup (no crop class) keeps the box width, even with the same geometry', () => {
+    expect(coverRenderedWidth({ isCrop: false, ...landscape })).toBe(300);
+  });
+  it('a portrait photo in a 4/5 box and a missing natural height never go below the box width', () => {
+    expect(coverRenderedWidth({ isCrop: true, boxWidth: 400, boxHeight: 500, naturalWidth: 800, naturalHeight: 1000 })).toBe(400);
+    expect(coverRenderedWidth({ isCrop: true, ...landscape, naturalHeight: 0 })).toBe(300);
+  });
+  it('image-fit.mjs applies it only to img elements with the crop class', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('./image-fit.mjs', import.meta.url), 'utf8');
+    expect(src).toMatch(/classList\.contains\('crop'\)/);
+    // the LCP cover is the documented exception (box-width sizes, WP-12 decision 13)
+    expect(src).toMatch(/getAttribute\('fetchpriority'\) !== 'high'/);
+  });
+});
 
 describe('srcsetWidths', () => {
   it('reads w descriptors in ascending order', () => {

@@ -9,6 +9,7 @@ import { useSession } from '../auth/session';
 import { usePorts } from '../ports-context';
 import { catalogKeys, useDeleteAlbum } from './catalog';
 import { markCategoryCoverCleared } from './categoryCoverNotice';
+import { markHeroPhotoCleared } from './heroPhotoNotice';
 import { useDeletePhotos } from './storage';
 import { usePhotoActions } from './photoActions';
 
@@ -52,6 +53,16 @@ export function usePhotoDeleter() {
   async function deleteRows(rows: readonly DeletableRow[]): Promise<PhotoDeleteResult> {
     const bytes = new Map(rows.map((r) => [r.id, r.bytes_total] as const));
     const result: PhotoDeleteResult = { removedIds: [], failedIds: [], freedBytes: 0, error: null };
+    const hero = await heroPhotoOf();
+    try {
+      return await deleteChunks(bytes, result);
+    } finally {
+      // The database clears the home hero photo together with the photo; the "Úvodní stránka" screen explains it.
+      if (hero !== null && result.removedIds.includes(hero)) markHeroPhotoCleared();
+    }
+  }
+
+  async function deleteChunks(bytes: Map<string, number>, result: PhotoDeleteResult): Promise<PhotoDeleteResult> {
     const chunks = chunkIds([...bytes.keys()]);
     for (let i = 0; i < chunks.length; i += 1) {
       const ids = chunks[i]!;
@@ -73,6 +84,15 @@ export function usePhotoDeleter() {
       }
     }
     return result;
+  }
+
+  /** The home hero photo id, or null (also when it cannot be read: this only feeds a notice). */
+  async function heroPhotoOf(): Promise<string | null> {
+    try {
+      return (await runAuthed(() => catalog.getSiteSettings())).hero_photo_id;
+    } catch {
+      return null;
+    }
   }
 
   /** The main photo id of a category, or null (also when it cannot be read: this only feeds a notice). */

@@ -6,8 +6,10 @@ import { gzipSync } from 'node:zlib';
 import { SnapshotSchema } from '@mp/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
+import { REVIEWS } from '../content/reviews';
+import { ABOUT, HOME } from '../content/texts';
 import { HASH_REDIRECT_SCRIPT } from '../lib/hash-redirect';
-import { aboutMeta, contactMeta, portfolioMeta } from '../lib/seo';
+import { portfolioMeta } from '../lib/seo';
 import { checkWeight, measureFirstLoad, snapshotImageBytes } from '../lib/weight';
 
 // Builds the real site into a temp dir (fixture mode) and checks the shell of the home page.
@@ -46,6 +48,16 @@ const section = (marker: string): string => {
   expect(start, marker).toBeGreaterThan(-1);
   return html.slice(start, html.indexOf('</section>', start));
 };
+/** The anchor tags of the desktop header nav of a built page. */
+const navLinks = (page: string): string[] => {
+  const nav = /<nav class="nav-desk" aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(page)?.[1] ?? '';
+  return [...nav.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+};
+const hrefOf = (tag: string): string => /href="([^"]+)"/.exec(tag)?.[1] ?? '';
+const currentLinks = (page: string): string[] => navLinks(page).filter((t) => /aria-current/.test(t)).map(hrefOf);
+/** The header element of a built page without Astro's scoped-style ids. */
+const headerOf = (page: string): string =>
+  (/<header class="site-header"[\s\S]*?<\/header>/.exec(page)?.[0] ?? '').replace(/\sdata-astro-cid-[a-z0-9]+(="")?/g, '');
 const jsonLdTypes = (): string[] =>
   [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(
     (m) => (JSON.parse(m[1]!) as { '@type': string })['@type'],
@@ -62,8 +74,23 @@ describe('Home page (built, shared build)', () => {
     expect(high[0]).toMatch(/\balt="[^"]+"/);
   });
 
-  it('links the three fixture categories from #kategorie with their 480 cover', () => {
-    const cats = section('id="kategorie"');
+  it('uses the hero photo chosen in the snapshot: every stored tier, 100vw, eager, high, its own og.jpg', () => {
+    const id = fixture.heroPhotoId!;
+    expect(id).toBeTruthy();
+    const photo = fixture.categories.flatMap((c) => c.albums).flatMap((a) => a.photos).find((p) => p.id === id)!;
+    const hero = section('class="hero"');
+    const tag = imgTags(hero)[0]!;
+    expect(tag).toContain('fetchpriority="high"');
+    expect(tag).toContain('loading="eager"');
+    expect(tag).toContain(`${id}/1600.jpg`);
+    for (const v of photo.variants.webp) expect(hero).toContain(`${id}/${v.tier}.webp ${v.w}w`);
+    expect(hero).toContain('sizes="100vw"');
+    expect(hero).not.toContain('/_astro/main.'); // the bundled fallback is not rendered
+    expect(html).toMatch(new RegExp(`<meta property="og:image" content="https://www\\.mullnyphotos\\.cz/[^"]*${id}/og\\.jpg">`));
+  });
+
+  it('links the three fixture categories from #portfolio with their 480 cover', () => {
+    const cats = section('id="portfolio"');
     const hrefs = [...cats.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
     expect(hrefs).toEqual(fixture.categories.map((c) => `/${c.slug}/`));
     for (const c of fixture.categories) {
@@ -79,23 +106,61 @@ describe('Home page (built, shared build)', () => {
     for (const tag of imgs) expect(tag).toMatch(EMPTY_ALT);
   });
 
-  it('shows the pati and anez review images and no other eager image', () => {
-    const reviews = section('<section class="reviews');
-    const cover = (slug: string): string => {
-      const album = fixture.categories.flatMap((c) => c.albums).find((a) => a.slug === slug)!;
-      return album.coverPhotoId!;
-    };
-    expect(reviews).toContain(`${cover('pati')}/480.webp`);
-    expect(reviews).toContain(`${cover('anez')}/480.webp`);
-    expect(reviews).not.toContain('loading="eager"');
+  it('shows the short review text, the full text in a details "Celá recenze", no photos, in the dark band', () => {
+    const reviews = section('id="reference"').replace(/\sdata-astro-cid-[a-z0-9]+(="")?/g, '');
+    expect(reviews).toContain('data-band="dark"');
+    expect(reviews).toContain('Reference');
+    for (const r of REVIEWS) {
+      expect(reviews).toContain(`<p>${r.short}</p>`);
+      expect(reviews).toContain(r.text);
+      expect(reviews).toContain(`${r.name} · `);
+    }
+    expect([...reviews.matchAll(/<details\b/g)]).toHaveLength(REVIEWS.length);
+    expect(reviews).toContain('Celá recenze');
+    expect(imgTags(reviews)).toHaveLength(0);
   });
 
-  it('orders the sections hero, hello, categories, quote, reviews, collage and has no hero button', () => {
-    const marks = ['class="hero"', 'class="hello"', 'id="kategorie"', '<section class="quote', '<section class="reviews', '<section class="collage'];
+  it('orders the sections uvod, o-mne, portfolio, reference, kontakt, with no quote section and no collage', () => {
+    const marks = ['id="uvod"', 'id="o-mne"', 'id="portfolio"', 'id="reference"', 'id="kontakt"'];
     const at = marks.map((m) => html.indexOf(m));
     for (const [i, p] of at.entries()) expect(p, marks[i]).toBeGreaterThan(-1);
     expect(at).toEqual([...at].sort((a, b) => a - b));
+    for (const m of marks) expect(count(new RegExp(m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')), m).toBe(1);
+    expect(html).not.toContain('class="collage"');
+    expect(html).not.toContain('id="kategorie"');
     expect(html).not.toMatch(/class="button"/);
+  });
+
+  it('has the hero kicker with the category names, the h1 text and a button to #kontakt', () => {
+    const hero = section('id="uvod"');
+    expect(hero).toContain('Svatby · Portréty · Párové focení');
+    expect(hero).toMatch(/<h1[^>]*>Focení svateb, portrétů a párových fotek<\/h1>/);
+    expect(hero).toMatch(/<a class="btn"[^>]*href="#kontakt"[^>]*>Poptat termín<\/a>/);
+  });
+
+  it('O mně has the corrected alt texts, lazy images, the details with the long text and the quote, and a link to #kontakt', () => {
+    const about = section('id="o-mne"');
+    expect(about).toContain('alt="Ruce novomanželů s prsteny v pšeničném poli"');
+    expect(about).not.toContain('Fotografka Terezie Müllnerová');
+    const imgs = imgTags(about);
+    expect(imgs).toHaveLength(2);
+    for (const t of imgs) expect(t).toContain('loading="lazy"');
+    expect(about).toContain(HOME.hello.paragraphs[0]!);
+    expect(about).toMatch(/<details[^>]*class="more[^"]*"/);
+    expect(about).toContain(ABOUT.experience.body);
+    expect(about).toContain(HOME.quote);
+    expect(about).toContain('href="#kontakt"');
+  });
+
+  it('Kontakt has the mailto button, Instagram and MyWed with rel and the new-window hint, and no form or tel link', () => {
+    const contact = section('id="kontakt"');
+    expect(contact).toContain('href="mailto:mullnyphotos@gmail.com"');
+    for (const host of ['www.instagram.com', 'mywed.com']) {
+      const tag = new RegExp(`<a\\b[^>]*href="https://${host.replace('.', '\\.')}[^"]*"[^>]*>`).exec(contact)?.[0];
+      expect(tag, host).toContain('rel="noopener noreferrer"');
+    }
+    expect(contact).toContain('(otevře se v novém okně)');
+    expect(contact).not.toMatch(/<form[\s>]|href="tel:/);
   });
 
   it('passes an absolute og:image', () => {
@@ -103,7 +168,7 @@ describe('Home page (built, shared build)', () => {
   });
 
   it('emits Photographer and WebSite JSON-LD only, no Review', () => {
-    expect(jsonLdTypes().sort()).toEqual(['Photographer', 'WebSite']);
+    expect(jsonLdTypes().sort()).toEqual(['Person', 'Photographer', 'WebSite']);
     expect(html).not.toMatch(/"@type":"(Review|AggregateRating)"/);
   });
 });
@@ -150,19 +215,23 @@ describe('Category pages (built, shared build)', () => {
     }
     expect(page).toContain('480.webp 480w');
     expect(page).toContain('960.webp 960w');
-    expect(page).toContain('(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)');
+    // Album covers are cropped into the 4/5 box: sizes is the box width times the crop factor (T-276, F10).
+    expect(page).toMatch(/sizes="\(min-width: 48rem\) calc\(26rem \* [\d.]+\), calc\(\(100vw - 3rem\) \* [\d.]+\)"/);
     expect(page).toMatch(/\d+ fotografi(e|í)/);
   });
 
-  it('marks the category link in the header with aria-current=page', () => {
+  it('marks Portfolio in the header with aria-current=true (never page), and the header equals the home header', () => {
     for (const c of fixture.categories) {
-      const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(categoryHtml[c.slug]!)?.[1] ?? '';
-      const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((m) => m[1]);
-      expect(current).toEqual([`/${c.slug}/`]);
+      const page = categoryHtml[c.slug]!;
+      expect(currentLinks(page)).toEqual(['/#portfolio']);
+      expect(navLinks(page).filter((t) => /aria-current="true"/.test(t))).toHaveLength(1);
+      expect(page).not.toMatch(/<a [^>]*class="t-nav"[^>]*aria-current="page"/);
+      // Same header markup as on the home page; only data-over-hero and aria-current differ.
+      const norm = (h: string): string => h.replace(/ data-over-hero(="")?/g, '').replace(/ aria-current="[a-z]+"/g, '');
+      expect(norm(headerOf(page))).toBe(norm(headerOf(html)));
     }
-    // The home page has no current nav link (its logo is the current page).
-    const homeNav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    expect(homeNav).not.toContain('aria-current');
+    // The home page marks no nav link on the server (scrollspy does it in the browser).
+    expect(currentLinks(html)).toEqual([]);
   });
 
   it('keeps the first load of every category page under the budget', () => {
@@ -272,109 +341,54 @@ describe('Portfolio page (built, shared build)', () => {
 
   it('marks Portfolio as the current nav link', () => {
     const page = readFileSync(join(out, 'portfolio', 'index.html'), 'utf8');
-    const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(page)?.[1] ?? '';
-    const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((x) => x[1]);
-    expect(current).toEqual(['/portfolio/']);
+    expect(currentLinks(page)).toEqual(['/#portfolio']);
   });
 });
 
-describe('About and Contact pages (built, shared build)', () => {
-  const read = (dir: string): string => readFileSync(join(out, dir, 'index.html'), 'utf8');
-  const ldBlocks = (page: string): Array<Record<string, unknown>> =>
-    [...page.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(
-      (x) => JSON.parse(x[1]!) as Record<string, unknown>,
-    );
-  const pages = [
-    { dir: 'o-mne', path: '/o-mne/', m: aboutMeta(), types: ['Person', 'BreadcrumbList'] },
-    { dir: 'kontakt', path: '/kontakt/', m: contactMeta(), types: ['Photographer', 'BreadcrumbList'] },
-  ];
+describe('Removed pages, footer and site-wide guards (built, shared build, T-281)', () => {
+  const allHtml = (): Array<[string, string]> =>
+    (readdirSync(out, { recursive: true }) as string[])
+      .filter((f) => f.endsWith('.html'))
+      .map((f): [string, string] => [f, readFileSync(join(out, f), 'utf8')]);
 
-  it('has SEO pattern title and description, one h1, breadcrumb, canonical and the expected JSON-LD', () => {
-    for (const { dir, path, m, types } of pages) {
-      const page = read(dir);
-      expect(page).toContain(`<title>${m.title}</title>`);
-      expect(page).toContain(`<meta name="description" content="${m.description}">`);
-      expect([...page.matchAll(/<h1[\s>]/g)], dir).toHaveLength(1);
-      expect(page).toContain('<nav class="breadcrumb"');
-      expect(page).toContain(`<link rel="canonical" href="https://www.mullnyphotos.cz${path}">`);
-      expect(ldBlocks(page).map((b) => b['@type'])).toEqual(types);
-      expect(page).not.toMatch(/"@type":"(Review|AggregateRating)"/);
+  it('does not build /o-mne/ and /kontakt/ any more', () => {
+    expect(existsSync(join(out, 'o-mne'))).toBe(false);
+    expect(existsSync(join(out, 'kontakt'))).toBe(false);
+  });
+
+  it('no built page has a tel: link, a +420 number or a telephone property', () => {
+    const pages = allHtml();
+    expect(pages.length).toBeGreaterThan(10);
+    for (const [f, page] of pages) {
+      expect(page, f).not.toMatch(/href="tel:/i);
+      expect(page, f).not.toContain('+420');
+      expect(page, f).not.toMatch(/"telephone"/i);
     }
   });
 
-  it('has the hero as the only fetchpriority=high image and real alt text on every image', () => {
-    for (const { dir } of pages) {
-      const page = read(dir);
-      const imgs = imgTags(page.slice(page.indexOf('<main'), page.indexOf('</main>')));
-      const high = imgs.filter((t) => t.includes('fetchpriority="high"'));
-      expect(high, dir).toHaveLength(1);
-      expect(high[0]).toContain('loading="eager"');
-      expect([...page.matchAll(/fetchpriority="high"/g)]).toHaveLength(1);
-      for (const t of imgs) {
-        if (!/\salt="[^"]+"/.test(t)) {
-          expect(t).toMatch(EMPTY_ALT);
-          continue;
-        }
-        expect(/\salt="([^"]+)"/.exec(t)?.[1]).not.toMatch(/\.(jpe?g|webp|png)$/i);
-      }
-      // The Instagram icon is the only decorative image; every other one has text.
-      expect(imgs.filter((t) => !/\salt="[^"]+"/.test(t)).length).toBeLessThanOrEqual(1);
+  it('no built page has placeholder text', () => {
+    for (const [f, page] of allHtml()) {
+      for (const needle of ['Jméno klienta', 'priklad.cz', 'Zde bude']) expect(page, `${f}: ${needle}`).not.toContain(needle);
     }
   });
 
-  it('Contact has a working mailto and an Instagram link with rel, and no form', () => {
-    const page = read('kontakt');
-    expect(page).toContain('href="mailto:mullnyphotos@gmail.com"');
-    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
-    const ig = [...main.matchAll(/<a\b[^>]*href="https:\/\/www\.instagram\.com\/[^"]*"[^>]*>/g)].map((x) => x[0]);
-    expect(ig).toHaveLength(1);
-    expect(ig[0]).toContain('rel="noopener noreferrer"');
-    expect(page).not.toMatch(/<form[\s>]/);
-    expect(read('o-mne')).not.toMatch(/<form[\s>]/);
+  it('the footer has the hairline row: copyright, icon links without Facebook, category links, tagline and the legal link', () => {
+    const footer = /<footer\b[\s\S]*?<\/footer>/.exec(html)?.[0] ?? '';
+    expect(footer).toContain('© Mullny Photos');
+    expect(footer).toContain('Fotím v Jihomoravském kraji');
+    expect(footer).toContain('href="mailto:mullnyphotos@gmail.com"');
+    expect(footer).toMatch(/href="https:\/\/www\.instagram\.com\/[^"]*"[^>]*rel="noopener noreferrer"|rel="noopener noreferrer"[^>]*href="https:\/\/www\.instagram\.com\//);
+    expect(footer).toMatch(/href="https:\/\/mywed\.com[^"]*"/);
+    expect(footer).toContain('href="/cookies/"');
+    expect(footer).not.toMatch(/facebook/i);
+    const nav = /<nav[^>]*aria-label="Kategorie"[^>]*>([\s\S]*?)<\/nav>/.exec(footer)?.[1] ?? '';
+    const hrefs = [...nav.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+    expect(hrefs).toEqual(fixture.categories.map((c) => `/${c.slug}/`));
   });
 
-  it('About emits Person referencing #business; Contact emits the full Photographer', () => {
-    const person = ldBlocks(read('o-mne'))[0]!;
-    expect(person['@type']).toBe('Person');
-    expect(person['worksFor']).toEqual({ '@id': 'https://www.mullnyphotos.cz/#business' });
-    const photographer = ldBlocks(read('kontakt'))[0]!;
-    expect(photographer['@id']).toBe('https://www.mullnyphotos.cz/#business');
-    expect(photographer['email']).toBe('mullnyphotos@gmail.com');
-  });
-
-  it('has an absolute 1200x630 og:image under 300 KB', () => {
-    for (const { dir } of pages) {
-      const page = read(dir);
-      const url = /<meta property="og:image" content="(https:\/\/www\.mullnyphotos\.cz\/[^"]+)">/.exec(page)?.[1];
-      expect(url, dir).toBeTruthy();
-      expect(page).toContain('<meta property="og:image:width" content="1200">');
-      expect(page).toContain('<meta property="og:image:height" content="630">');
-      const file = join(out, new URL(url!).pathname);
-      expect(existsSync(file), file).toBe(true);
-      const buf = readFileSync(file);
-      expect(buf.length).toBeLessThan(300 * 1024);
-      // JPEG SOF0/SOF2 marker carries the pixel size.
-      let w = 0;
-      let h = 0;
-      for (let i = 2; i < buf.length - 9; ) {
-        if (buf[i] !== 0xff) break;
-        const marker = buf[i + 1]!;
-        if (marker === 0xc0 || marker === 0xc2) {
-          h = buf.readUInt16BE(i + 5);
-          w = buf.readUInt16BE(i + 7);
-          break;
-        }
-        i += 2 + buf.readUInt16BE(i + 2);
-      }
-      expect([w, h]).toEqual([1200, 630]);
-    }
-  });
-
-  it('marks About and Contact as the current nav link', () => {
-    for (const { dir, path } of pages) {
-      const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(read(dir))?.[1] ?? '';
-      const current = [...nav.matchAll(/<a href="([^"]+)"[^>]*aria-current="page"/g)].map((x) => x[1]);
-      expect(current).toEqual([path]);
+  it('the footer is present on the home page, a category page, /cookies/ and the 404', () => {
+    for (const f of ['index.html', join(fixture.categories[0]!.slug, 'index.html'), join('cookies', 'index.html'), '404.html']) {
+      expect(readFileSync(join(out, f), 'utf8'), f).toContain('class="site-footer');
     }
   });
 });
@@ -414,13 +428,16 @@ describe('Cookies page and 404 (built, shared build)', () => {
     expect(page).toContain('<meta name="robots" content="noindex, nofollow">');
     expect(page).toContain('<title>Stránka nenalezena | Mullny Photos</title>');
     const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
-    const hrefs = [...main.matchAll(/<a href="([^"]+)"/g)].map((x) => x[1]);
-    expect(hrefs).toEqual(['/', ...fixture.categories.map((c) => `/${c.slug}/`)]);
+    const hrefs = [...main.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map((x) => x[1]);
+    // Breadcrumb "Úvod", the "Na úvodní stránku" button, then the category buttons.
+    expect(hrefs).toEqual(['/', '/', ...fixture.categories.map((c) => `/${c.slug}/`)]);
+    expect([...page.matchAll(/<h1[\s>]/g)]).toHaveLength(1);
+    expect(page).toContain('<nav class="breadcrumb"');
   });
 });
 
 describe('Sitemap and robots (built, shared build)', () => {
-  it('sitemap.xml lists the 21 fixture URLs (1 + 1 + 3 + 13 + 3), without 404, and sedlakovi has 44 images', () => {
+  it('sitemap.xml lists the 19 fixture URLs (1 + 1 + 3 + 13 + 1), without 404 and without /o-mne/ and /kontakt/, and sedlakovi has 44 images', () => {
     const xml = readFileSync(join(out, 'sitemap.xml'), 'utf8');
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     const albums = fixture.categories.flatMap((c) => c.albums.map((a) => `/${c.slug}/${a.slug}/`));
@@ -429,11 +446,9 @@ describe('Sitemap and robots (built, shared build)', () => {
       '/portfolio/',
       ...fixture.categories.map((c) => `/${c.slug}/`),
       ...albums,
-      '/o-mne/',
-      '/kontakt/',
       '/cookies/',
     ].map((p) => `https://www.mullnyphotos.cz${p}`);
-    expect(locs).toHaveLength(21);
+    expect(locs).toHaveLength(19);
     expect([...locs].sort()).toEqual([...expected].sort());
     expect(locs.filter((l) => /404/.test(l!))).toEqual([]);
     const sedlakovi = xml.slice(xml.indexOf('/svatby/sedlakovi/</loc>'));
@@ -507,16 +522,26 @@ describe('Base layout (built home page)', () => {
     expect(html).toContain('<main id="obsah"');
   });
 
-  it('has six header nav links and marks the current page', () => {
-    const nav = /<nav aria-label="Hlavní navigace"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    const hrefs = [...nav.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(['/portfolio/', '/svatby/', '/portrety/', '/parove-foceni/', '/o-mne/', '/kontakt/']);
-    // On the home page the logo link is the current page.
-    expect(html).toMatch(/class="logo" href="\/"[^>]*aria-current="page"/);
+  it('has four header nav links (home anchors, Reference only with reviews) and marks the wordmark as the current page', () => {
+    expect(navLinks(html).map(hrefOf)).toEqual(['/#o-mne', '/#portfolio', '/#reference', '/#kontakt']);
+    expect(html).toMatch(/class="wordmark t-wordmark" href="\/"[^>]*aria-current="page"/);
+    // The drawer nav carries the same four links, and exactly one nav is exposed at any width.
+    const drawer = /<nav aria-label="Hlavní navigace v menu"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
+    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/#o-mne', '/#portfolio', '/#reference', '/#kontakt']);
   });
 
-  it('uses a native details disclosure for the menu', () => {
-    expect(html).toMatch(/<details class="menu" data-menu[^>]*><summary/);
+  it('overlays the hero only on the home page (data-over-hero) and uses a native details drawer', () => {
+    expect(html).toMatch(/<header class="site-header" data-over-hero/);
+    for (const page of Object.values(categoryHtml)) expect(page).not.toContain('data-over-hero');
+    expect(html).toMatch(/<details class="menu" data-menu[^>]*>\s*<summary/);
+    expect(html).toContain('Svatby · Portréty · Párové focení');
+  });
+
+  it('sets the anchor offset once, as scroll-padding on html, and no scroll-margin anywhere in the CSS', () => {
+    const cssFiles = readdirSync(join(out, '_astro')).filter((f) => f.endsWith('.css'));
+    const css = cssFiles.map((f) => readFileSync(join(out, '_astro', f), 'utf8')).join('\n');
+    expect(css).toMatch(/scroll-padding-block-start:\s*var\(--header-height\)/);
+    expect(css).not.toContain('scroll-margin');
   });
 
   it('carries canonical, robots, Open Graph and Twitter tags', () => {

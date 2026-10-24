@@ -13,8 +13,12 @@ import type {
   ChangeLogRow,
   PhotoRow,
   PublishLogRow,
+  SiteSettingsRow,
   SiteStateRow,
 } from '@mp/shared';
+
+/** The only settings column the database lets the browser update. */
+export type SiteSettingsPatch = Pick<SiteSettingsRow, 'hero_photo_id'>;
 
 export const CHANGE_LOG_MAX = 1000;
 
@@ -58,6 +62,13 @@ export interface CatalogPort {
   /** The single app_config row (upload limits); readable by admins only. */
   getAppConfig(): Promise<AppConfigRow>;
   getSiteState(): Promise<SiteStateRow>;
+  /** The single site_settings row (T-286): the home hero photo. */
+  getSiteSettings(): Promise<SiteSettingsRow>;
+  /**
+   * Chooses (or with null clears) the home hero photo. The column grant allows hero_photo_id only. A photo that does
+   * not exist is refused with HERO_PHOTO_NOT_FOUND.
+   */
+  updateSiteSettings(patch: SiteSettingsPatch): Promise<SiteSettingsRow>;
   /** Newest first. */
   listPublishLog(limit: number): Promise<PublishLogRow[]>;
   /**

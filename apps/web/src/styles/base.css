@@ -1,4 +1,4 @@
-/* Reset, typography, focus ring, skip link. Uses tokens only (see tokens.css). */
+/* Reset, typography, buttons, focus ring, skip link, reduced-motion and print layers. Uses tokens only (see tokens.css). */
 @layer reset {
   *,
   *::before,
@@ -30,7 +30,9 @@
 
 @layer base {
   html {
-    scroll-padding-block-start: calc(var(--header-height) + var(--space-4));
+    /* The single anchor offset: sections get no scroll-margin (the two would add up). It also keeps a
+       focused element out from under the sticky header (WCAG 2.4.11). */
+    scroll-padding-block-start: var(--header-height);
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
@@ -48,6 +50,8 @@
     line-height: var(--leading-body);
     text-align: start;
     overflow-wrap: break-word;
+    /* Only weight 400 is loaded: never let the browser fake bold or italic */
+    font-synthesis: none;
   }
 
   body > main {
@@ -56,8 +60,7 @@
 
   h1,
   h2,
-  h3,
-  h4 {
+  h3 {
     font-family: var(--font-heading);
     font-weight: var(--weight-heading);
     line-height: var(--leading-heading);
@@ -77,8 +80,13 @@
     font-size: var(--text-h3);
   }
 
+  /* h4 is small, so it is set in the body face: Cormorant is never used under 1.25rem */
   h4 {
+    font-family: var(--font-body);
+    font-weight: var(--weight-body);
     font-size: var(--text-lead);
+    line-height: var(--leading-heading);
+    text-wrap: balance;
   }
 
   p,
@@ -97,21 +105,59 @@
     text-decoration-thickness: var(--focus-offset);
   }
 
+  ::selection {
+    background: var(--color-accent-text);
+    color: var(--color-on-overlay);
+  }
+
   :focus-visible {
     outline: var(--focus-width) solid var(--color-focus);
     outline-offset: var(--focus-offset);
   }
 
-  /* Type classes: the only way a component picks a level other than the element default (T-252). */
+  /* Dark surfaces (Reference band, hero, lightbox) use the light focus ring */
+  [data-tone='dark'] :focus-visible,
+  [data-tone='dark']:focus-visible {
+    outline-color: var(--color-focus-on-dark);
+  }
+
+  /* Type classes: the only way a component picks a level other than the element default (T-252).
+     Uppercase lives here and in .btn only, so Czech capitals are handled in one place. */
   .t-display {
+    font-family: var(--font-heading);
     font-size: var(--text-display);
+    line-height: var(--leading-caps);
+    letter-spacing: var(--tracking-heading);
+    text-transform: uppercase;
+  }
+
+  .t-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-title);
     line-height: var(--leading-heading);
     letter-spacing: var(--tracking-heading);
   }
 
+  .t-h1 {
+    font-family: var(--font-heading);
+    font-size: var(--text-h1);
+    line-height: var(--leading-caps);
+    letter-spacing: var(--tracking-h1);
+    text-transform: uppercase;
+  }
+
   .t-h3 {
+    font-family: var(--font-heading);
     font-size: var(--text-h3);
-    line-height: var(--leading-heading);
+    line-height: var(--leading-caps);
+    letter-spacing: var(--tracking-card);
+    text-transform: uppercase;
+  }
+
+  .t-quote {
+    font-family: var(--font-heading);
+    font-size: var(--text-quote);
+    line-height: var(--leading-quote);
     letter-spacing: var(--tracking-heading);
   }
 
@@ -133,6 +179,108 @@
   .t-caption {
     font-size: var(--text-caption);
     line-height: var(--leading-ui);
+  }
+
+  /* Small uppercase label in the body face (Lora, never Cormorant at this size) */
+  .t-kicker {
+    font-family: var(--font-body);
+    font-size: var(--text-kicker);
+    line-height: var(--leading-ui);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  /* Header wordmark: one word, Cormorant, uppercase and tracked */
+  .t-wordmark {
+    font-family: var(--font-heading);
+    font-size: var(--text-wordmark);
+    line-height: var(--leading-caps);
+    letter-spacing: var(--tracking-wordmark);
+    text-transform: uppercase;
+  }
+
+  /* Navigation labels: small uppercase Lora, tracked */
+  .t-nav {
+    font-family: var(--font-body);
+    font-size: var(--text-nav);
+    line-height: var(--leading-ui);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  /* Running text with the long reading leading */
+  .t-prose {
+    line-height: var(--leading-prose);
+  }
+
+  /* Outlined button: gold-brown stroke (3:1 on page and band), no radius, transparent fill */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-block-size: var(--target-min);
+    padding-block: var(--space-2);
+    padding-inline: var(--space-5);
+    border: var(--border-width) solid var(--color-accent-strong);
+    border-radius: var(--radius-none);
+    background: transparent;
+    color: inherit;
+    font-family: var(--font-body);
+    font-size: var(--text-nav);
+    line-height: var(--leading-ui);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    background: color-mix(in srgb, var(--color-accent-strong) 12%, transparent);
+    text-decoration: none;
+  }
+
+  .btn:active {
+    background: color-mix(in srgb, var(--color-accent-strong) 22%, transparent);
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+
+  /* Text button with a quiet accent underline ("Napsat mi") */
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--target-min);
+    padding-block: var(--space-2);
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font-family: var(--font-body);
+    font-size: var(--text-nav);
+    line-height: var(--leading-ui);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: var(--border-width);
+    text-underline-offset: var(--space-2);
+    cursor: pointer;
+  }
+
+  .btn-ghost:hover {
+    color: var(--color-accent-text);
+    text-decoration-color: var(--color-accent-text);
+  }
+
+  .btn-ghost:disabled,
+  .btn-ghost[aria-disabled='true'] {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
   }
 
   .skip-link {
@@ -163,10 +311,54 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
+}
 
+/* Motion: everything beyond a colour change is allowed only when the visitor has not asked for less */
+@layer base {
   @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+
     .skip-link {
       transition: transform var(--motion-fast) var(--motion-ease);
+    }
+
+    .btn,
+    .btn-ghost {
+      transition:
+        background-color var(--motion-fast) var(--motion-ease),
+        color var(--motion-fast) var(--motion-ease);
+    }
+  }
+}
+
+/* Print skeleton (filled in by the section tasks): ink on white, no chrome, link URLs not appended */
+@layer base {
+  @media print {
+    body {
+      background: none;
+      color: var(--color-text);
+      min-block-size: 0;
+    }
+
+    .skip-link,
+    .no-print {
+      display: none;
+    }
+
+    /* Backgrounds are not printed, so the dark bands (Reference, hero text) must switch to ink on paper.
+       Custom properties set on the element itself beat the values inherited from :root. */
+    [data-tone='dark'] {
+      --band-dark-bg: transparent;
+      --band-dark-text: var(--color-text);
+      --band-dark-muted: var(--color-text-muted);
+      --band-dark-accent: var(--color-accent-text);
+      --color-on-overlay: var(--color-text);
+    }
+
+    a {
+      text-decoration: underline;
     }
   }
 }

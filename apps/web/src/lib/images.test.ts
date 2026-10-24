@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { Snapshot, SnapshotPhoto } from '@mp/shared';
 import { describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
-import { loadingAttrs, ogImage, photoSources, sizesFor } from './images';
+import { coverSizes, cropFactor, cropSizes, loadingAttrs, ogImage, photoSources, sizesFor } from './images';
 
 const IMG = 'https://img.mullnyphotos.cz';
 const ID = '00000000-0000-4000-8000-000000000001';
@@ -100,16 +100,66 @@ describe('photoSources', () => {
 
 describe('sizesFor', () => {
   it('returns a sizes string per context without pixel units', () => {
-    for (const c of ['grid', 'card', 'review', 'lightbox', 'hero'] as const) {
+    for (const c of ['grid', 'card', 'lightbox', 'hero'] as const) {
       expect(sizesFor(c).length).toBeGreaterThan(0);
       expect(sizesFor(c)).not.toMatch(/px/);
     }
     expect(sizesFor('lightbox')).toBe('100vw');
     // Cards sit in three columns from 48rem, capped at the real column maximum.
-    expect(sizesFor('card')).toBe('(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)');
-    expect(sizesFor('grid')).toBe('(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 2rem)');
+    expect(sizesFor('card')).toBe('(min-width: 48rem) min((100vw - 7rem) / 3, 33rem), calc(100vw - 3rem)');
+    expect(sizesFor('grid')).toBe('(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 3rem)');
     expect(sizesFor('hero')).toBe('100vw');
-    expect(sizesFor('review')).toBe('10rem');
+  });
+});
+
+describe('coverSizes (crop-aware sizes, WP-12 F10)', () => {
+  const CATEGORY = '(min-width: 48rem) 21rem, calc(100vw - 3rem)';
+  const ALBUM = '(min-width: 48rem) 26rem, calc(100vw - 3rem)';
+
+  it('cropFactor is max(1, aspect x box height / width), rounded to 2 decimals', () => {
+    // category box 3 / 4 (height over width 4 / 3)
+    expect(cropFactor(1.5, 4 / 3)).toBe(2);
+    expect(cropFactor(1, 4 / 3)).toBe(1.33);
+    expect(cropFactor(0.8, 4 / 3)).toBe(1.07);
+    // album box 4 / 5 (height over width 5 / 4)
+    expect(cropFactor(1.5, 5 / 4)).toBe(1.88);
+    expect(cropFactor(1, 5 / 4)).toBe(1.25);
+    expect(cropFactor(0.8, 5 / 4)).toBe(1);
+    // a photo narrower than the box never shrinks the request
+    expect(cropFactor(0.5, 5 / 4)).toBe(1);
+    expect(cropFactor(Number.NaN, 5 / 4)).toBe(1);
+  });
+
+  it('multiplies every length and leaves the media conditions alone (landscape 3:2 into 3/4: twice the box width)', () => {
+    expect(coverSizes(CATEGORY, 1.5, 4 / 3)).toBe('(min-width: 48rem) calc(21rem * 2), calc((100vw - 3rem) * 2)');
+    expect(coverSizes(ALBUM, 1.5, 5 / 4)).toBe('(min-width: 48rem) calc(26rem * 1.88), calc((100vw - 3rem) * 1.88)');
+    expect(coverSizes(CATEGORY, 1, 4 / 3)).toBe('(min-width: 48rem) calc(21rem * 1.33), calc((100vw - 3rem) * 1.33)');
+  });
+
+  it('returns the box-width string unchanged when the photo already fills the box (k = 1)', () => {
+    expect(coverSizes(ALBUM, 0.8, 5 / 4)).toBe(ALBUM);
+    expect(coverSizes(CATEGORY, 0.5, 4 / 3)).toBe(CATEGORY);
+  });
+
+  it('keeps commas inside min() and calc() together and wraps a bare min() length', () => {
+    expect(coverSizes('(min-width: 48rem) min((100vw - 7rem) / 3, 24.5rem), calc(100vw - 2rem)', 1.5, 4 / 3)).toBe(
+      '(min-width: 48rem) calc(min((100vw - 7rem) / 3, 24.5rem) * 2), calc((100vw - 2rem) * 2)',
+    );
+    expect(coverSizes('100vw', 1.5, 4 / 3)).toBe('calc(100vw * 2)');
+  });
+
+  it('cropSizes uses the photo aspect and the box of the crop context, with no px', () => {
+    for (const crop of ['category', 'album'] as const) {
+      for (const [w, h] of [[1600, 1067], [1067, 1600], [1000, 1000], [2400, 1200]] as const) {
+        const s = cropSizes(crop, w, h);
+        expect(s, `${crop} ${w}x${h}`).not.toMatch(/px/);
+        expect(s).toMatch(/^\(min-width: \d+rem\) /);
+      }
+    }
+    expect(cropSizes('category', 1600, 1067)).toBe(
+      '(min-width: 100rem) calc(16rem * 2), (min-width: 80rem) calc(18rem * 2), (min-width: 48rem) calc(21rem * 2), calc((100vw - 3rem) * 2)',
+    );
+    expect(cropSizes('album', 1067, 1600)).toBe(ALBUM); // a portrait photo fills the 4 / 5 box with no extra width
   });
 });
 

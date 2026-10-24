@@ -15,7 +15,7 @@ import {
   type PhotoRow,
 } from '@mp/shared';
 import { CatalogError, type CatalogPort } from '../../ports';
-import { logChange, sortedChangeLog } from './changes';
+import { logChange, logSettingsChange, sortedChangeLog } from './changes';
 import { bySortThenId, copy, type Core } from './core';
 
 const PHOTO_PATCH_COLUMNS = ['album_id', 'sort', 'alt', 'caption'];
@@ -240,6 +240,22 @@ export function createFakeCatalog(core: Core): CatalogPort {
       guard('catalog.getSiteState');
       return copy(state.site);
     },
+    async getSiteSettings() {
+      guard('catalog.getSiteSettings');
+      return copy(state.settings);
+    },
+    async updateSiteSettings(patch) {
+      guard('catalog.updateSiteSettings');
+      // Column grant: update (hero_photo_id) only.
+      if (Object.keys(patch).some((k) => k !== 'hero_photo_id')) throw new CatalogError('INVALID');
+      // Trigger check_hero_photo: the photo must exist (it may be in an unpublished album).
+      if (patch.hero_photo_id !== null && !state.photos.has(patch.hero_photo_id)) throw new CatalogError('NOT_FOUND');
+      const before = { ...state.settings };
+      state.settings.hero_photo_id = patch.hero_photo_id;
+      if (before.hero_photo_id !== patch.hero_photo_id) core.bump();
+      logSettingsChange(core, before, state.settings);
+      return copy(state.settings);
+    },
     async listChangeLog() {
       guard('catalog.listChangeLog');
       return copy(sortedChangeLog(state.changeLog));
@@ -267,6 +283,13 @@ export function clearCoversOfPhoto(core: Core, photoId: string, toAlbumId?: stri
     album.updated_at = core.stamp(album.updated_at);
     core.bump();
     logChange(core, 'albums', { op: 'update', before, after: album });
+  }
+  // site_settings.hero_photo_id is "on delete set null": only a deleted photo clears it, a move does not.
+  if (toAlbumId === undefined && core.state.settings.hero_photo_id === photoId) {
+    const before = { ...core.state.settings };
+    core.state.settings.hero_photo_id = null;
+    core.bump();
+    logSettingsChange(core, before, core.state.settings);
   }
   const target = toAlbumId === undefined ? undefined : core.state.albums.get(toAlbumId);
   for (const category of core.state.categories.values()) {

@@ -64,6 +64,7 @@ export function seedFromSnapshot(core: Core, snapshot: Snapshot): void {
       });
     });
   });
+  state.settings.hero_photo_id = snapshot.heroPhotoId;
   state.site.last_published_at = snapshot.generatedAt;
   state.published = { snapshotGeneratedAt: snapshot.generatedAt, builtAt: snapshot.generatedAt, counts: structuredClone(snapshot.counts) };
 }

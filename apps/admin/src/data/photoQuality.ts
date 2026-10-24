@@ -3,7 +3,7 @@
  * The verdict comes from the shared photoVerdict; "low resolution" is also derived from the master size alone so a photo
  * that lacks a variant AND is small is still counted by the album summary and the filter.
  */
-import { DETAIL_MIN_LONG_EDGE, photoVerdict, type PhotoRow, type PhotoVerdict } from '@mp/shared';
+import { DETAIL_MIN_LONG_EDGE, HERO_MIN_MASTER_WIDTH, photoVerdict, type PhotoRow, type PhotoVerdict } from '@mp/shared';
 
 type QualityInput = Pick<PhotoRow, 'width' | 'height' | 'variants'>;
 
@@ -25,6 +25,11 @@ export interface PhotoQuality {
 
 export function isLowResolution(photo: Pick<PhotoRow, 'width' | 'height'>): boolean {
   return Math.max(photo.width, photo.height) < DETAIL_MIN_LONG_EDGE;
+}
+
+/** Too small for the full-width home hero: a low-resolution verdict, or a master narrower than HERO_MIN_MASTER_WIDTH. */
+export function isLowForHero(photo: Pick<PhotoRow, 'width' | 'height'>): boolean {
+  return isLowResolution(photo) || photo.width < HERO_MIN_MASTER_WIDTH;
 }
 
 export function photoQuality(photo: QualityInput): PhotoQuality {

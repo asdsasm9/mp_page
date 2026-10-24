@@ -12,7 +12,7 @@ export const THRESHOLDS = {
   cls: 0.1,
 };
 
-export const WIDTHS = [360, 768, 1280];
+export const WIDTHS = [360, 768, 1280, 1920]; // index 1 and 2 are special-cased in design-check.mjs: keep them
 export const REFLOW_WIDTH = 320;
 export const RUNS = 3;
 
@@ -20,6 +20,7 @@ export const RUNS = 3;
 export const ROUTES = [
   { path: '/', name: 'home' },
   { path: '/svatby/', name: 'category' },
+  { path: '/portfolio/', name: 'portfolio' },
   { path: '/svatby/sedlakovi/', name: 'album' },
   // Album layout fixtures (T-216): 5, 9, 60 and 120 distinct photos; built in fixture mode only (pages/layout-check).
   { path: '/layout-check/5/', name: 'album-5' },
@@ -32,8 +33,13 @@ export const ROUTES = [
   { path: '/layout-check/categories/3/', name: 'category-3', light: true },
   { path: '/layout-check/categories/4/', name: 'category-4', light: true },
   { path: '/layout-check/categories/7/', name: 'category-7', light: true },
-  { path: '/o-mne/', name: 'about' },
-  { path: '/kontakt/', name: 'contact' },
+  // Category-card layout fixtures (T-276): the Portfolio section with 1, 3 and 12 cards, with chosen covers
+  // (alternating landscape/portrait) and automatic ones (landscape). Light for the same reason as above.
+  { path: '/layout-check/portfolio/1/', name: 'portfolio-1', light: true },
+  { path: '/layout-check/portfolio/3/', name: 'portfolio-3', light: true },
+  { path: '/layout-check/portfolio/12/', name: 'portfolio-12', light: true },
+  { path: '/layout-check/portfolio/3-auto/', name: 'portfolio-3-auto', light: true },
+  { path: '/layout-check/portfolio/12-auto/', name: 'portfolio-12-auto', light: true },
   // `short`: sticky footer cases (T-242), see STICKY_VIEWPORTS.
   { path: '/cookies/', name: 'cookies', light: true, short: true },
   { path: '/neexistuje/', name: '404', light: true, short: true },

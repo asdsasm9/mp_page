@@ -45,7 +45,7 @@ export const ROW_REM = {
  * Only the eager first photo relies on this estimate (lazy ones use sizes="auto"); from 40rem a tile is capped at
  * 2.2 x nominal (CSS --cap in AlbumGrid).
  */
-const STRETCH = { base: 2, md: 1.3, lg: 1.3 } as const;
+const STRETCH = { base: 2, md: 1.3, lg: 1.3, xl: 1 } as const; // xl: from 100rem the rows are wider than the cap, tiles barely stretch (first tile 409 px at 1920)
 
 export function rowRemFor(count: number) {
   return count < FEW_PHOTOS ? ROW_REM.few : ROW_REM.regular;
@@ -67,9 +67,10 @@ export function gridSizes(aspect: number, count: number, lazy = false): string {
   // that follows is the fallback for browsers without it. The eager first photo loads before layout and needs the estimate.
   return [
     ...(lazy ? ['auto'] : []),
+    `(min-width: 100rem) min(${rem(rows.lg, STRETCH.xl)}, 75rem)`,
     `(min-width: 64rem) min(${rem(rows.lg, STRETCH.lg)}, 75rem)`,
     `(min-width: 40rem) ${rem(rows.md, STRETCH.md)}`,
-    `min(${rem(rows.base, STRETCH.base)}, calc(100vw - 2rem))`,
+    `min(${rem(rows.base, STRETCH.base)}, calc(100vw - 3rem))`,
   ].join(', ');
 }
 

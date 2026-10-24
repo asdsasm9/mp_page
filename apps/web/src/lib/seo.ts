@@ -4,7 +4,6 @@
  * text and never fails the build. Limits: title 65, description 160 (hard), see `checkMetas`.
  */
 import type { SnapshotAlbum, SnapshotCategory } from '@mp/shared';
-import { INSTAGRAM_HANDLE, MAIL_ADDRESS } from '../content/texts';
 import { plural, type PluralForms } from './plural';
 
 export const BRAND = 'Mullny Photos';
@@ -67,18 +66,6 @@ export const portfolioMeta = (): PageMeta =>
   meta(
     'Portfolio – svatby, portréty a páry v Brně',
     'Portfolio fotografky z Brna: ukázky svateb, portrétů a párového focení. Prohlédněte si všechny kategorie a výběr mých alb.',
-  );
-
-export const aboutMeta = (): PageMeta =>
-  meta(
-    'O mně – fotografka Terezie Müllnerová, Brno',
-    'Jsem Terezie Müllnerová, fotografka z Brna. Specializuji se na svatby, portréty a párové focení. Přečtěte si můj příběh a zkušenosti.',
-  );
-
-export const contactMeta = (): PageMeta =>
-  meta(
-    'Kontakt – objednání focení v Brně',
-    `Napište mi na ${MAIL_ADDRESS} nebo na Instagram ${INSTAGRAM_HANDLE} a domluvme termín focení svatby, portrétů nebo rodiny.`,
   );
 
 /** Title from SEO.md section 6; the description is not specified there, so this wording is ours. */

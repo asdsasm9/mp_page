@@ -161,11 +161,8 @@ export function checkHeavyImages(page) {
 export function jsonLdMatrix(page) {
   if (is404(page)) return { required: [], allowed: [] };
   const route = routeOf(page.path);
-  if (route === '/') return { required: ['Photographer', 'WebSite'], allowed: ['Photographer', 'WebSite'] };
-  if (route === '/kontakt/') return { required: ['Photographer', 'BreadcrumbList'], allowed: ['Photographer', 'BreadcrumbList'] };
-  if (route === '/o-mne/') {
-    return { required: ['Person', 'BreadcrumbList'], allowed: ['Person', 'BreadcrumbList', 'Photographer'] };
-  }
+  // About and Contact are home sections (the /o-mne/ and /kontakt/ pages are gone), so the home also carries the Person entity.
+  if (route === '/') return { required: ['Photographer', 'WebSite'], allowed: ['Photographer', 'WebSite', 'Person'] };
   if (route === '/portfolio/' || route === '/cookies/') return { required: ['BreadcrumbList'], allowed: ['BreadcrumbList'] };
   return {
     required: ['ImageGallery', 'BreadcrumbList'],
@@ -278,14 +275,17 @@ export function sitemapLocs(sitemapXml) {
   return [...(sitemapXml ?? '').matchAll(/<loc>\s*([^<]*?)\s*<\/loc>/gi)].map((m) => decode(m[1]));
 }
 
-export function checkSitemapCanonical(pages, sitemapXml) {
+export function checkSitemapCanonical(pages, sitemapXml, redirectsText = '') {
   const p = [];
   if (!sitemapXml) return ['sitemap.xml is missing'];
   const locs = sitemapLocs(sitemapXml);
   if (new Set(locs).size !== locs.length) p.push('sitemap has duplicate <loc> entries');
+  // A page whose route is an exact redirect source is redirect-only (e.g. /o-mne/, /kontakt/ since T-288): not in the sitemap.
+  const { exact } = redirectSources(redirectsText);
   const canon = new Set();
   for (const page of pages) {
     if (is404(page)) continue;
+    if (exact.has(routeOf(page.path))) continue;
     const href = links(page.html, 'canonical')[0]?.href;
     if (href) canon.add(href);
   }
@@ -330,7 +330,7 @@ export function runSiteChecks(site) {
   }
   add('unique', checkUnique(site.pages));
   add('links', checkInternalLinks(site.pages, site));
-  add('sitemap', checkSitemapCanonical(site.pages, site.sitemapXml));
+  add('sitemap', checkSitemapCanonical(site.pages, site.sitemapXml, site.redirectsText));
   add('layout-check', checkLayoutCheckAbsent(site));
   const open = placeholderPages(site.pages);
   if (open.length > 0) {

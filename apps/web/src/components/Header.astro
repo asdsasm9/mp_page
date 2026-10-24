@@ -1,57 +1,81 @@
 ---
-// Sticky header: logo link and a flat nav. Below the wide breakpoint the nav is a native <details>
-// disclosure (works without JavaScript); menu.ts only adds Escape and close-on-navigation.
-import logo from '../assets/site/common/main_logo_2.png';
-import { Image } from 'astro:assets';
-
-import { ariaCurrent, isSection, type NavItem } from '../lib/nav';
+// Header, identical on every page except `data-over-hero` (set by the layout where the page has a full-bleed hero).
+// Wordmark, a desktop nav (from 47.5rem) and, below that, a native <details> drawer with its own nav copy:
+// only one of the two navs is ever displayed, so only one landmark is exposed. The drawer opens, closes
+// and navigates without JavaScript; menu.ts and scrollspy.ts only enhance it.
+import { NAV } from '../content/texts';
+import { navCurrent, wordmarkCurrent, type NavItem } from '../lib/nav';
 
 interface Props {
   items: readonly NavItem[];
   /** Path of the current page, e.g. `/svatby/sedlakovi/`. */
   current: string;
+  /** Category names for the line at the bottom of the drawer. */
+  categoryNames?: readonly string[];
+  /** True where the page starts with a full-bleed hero that the header overlays. */
+  overHero?: boolean;
 }
 
-const { items, current } = Astro.props;
+const { items, current, categoryNames = [], overHero = false } = Astro.props;
 ---
-<header class="site-header">
+<header class="site-header" data-over-hero={overHero ? '' : undefined}>
   <div class="bar">
-    <a
-      class="logo"
-      href="/"
-      aria-label="Mullny Photos – úvodní stránka"
-      aria-current={ariaCurrent(current, '/')}
+    <a class="wordmark t-wordmark" href="/" aria-current={wordmarkCurrent(current)}
+      >{NAV.wordmark}<span class="visually-hidden"> – úvodní stránka</span></a
     >
-      <Image src={logo} alt="" width={151} height={60} loading="eager" format="webp" />
-    </a>
+    <nav class="nav-desk" aria-label="Hlavní navigace">
+      <ul>
+        {
+          items.map((item) => (
+            <li>
+              <a
+                class="t-nav"
+                href={item.href}
+                data-nav-anchor={item.anchor}
+                data-framed={item.framed ? '' : undefined}
+                aria-current={navCurrent(current, item)}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
     <details class="menu" data-menu>
       <summary class="menu-toggle">
         <span class="visually-hidden">Menu</span>
         <span class="bars" aria-hidden="true"></span>
       </summary>
-      <nav aria-label="Hlavní navigace">
-        <ul>
-          {
-            items.map((item) => (
-              <li>
-                <a
-                  href={item.path}
-                  aria-current={ariaCurrent(current, item.path)}
-                  data-section={isSection(current, item.path) ? '' : undefined}
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </nav>
+      <div class="drawer">
+        <nav aria-label="Hlavní navigace v menu">
+          <ul>
+            {
+              items.map((item) => (
+                <li>
+                  <a
+                    class="t-h3"
+                    href={item.href}
+                    data-nav-anchor={item.anchor}
+                    data-framed={item.framed ? '' : undefined}
+                    aria-current={navCurrent(current, item)}
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+        {categoryNames.length > 0 && <p class="drawer-cats t-kicker">{categoryNames.join(' · ')}</p>}
+      </div>
     </details>
   </div>
 </header>
 
 <script>
   import '../scripts/menu';
+  import '../scripts/scrollspy';
 </script>
 
 <style>
@@ -59,8 +83,34 @@ const { items, current } = Astro.props;
     position: sticky;
     inset-block-start: 0;
     z-index: var(--z-header);
+  }
+
+  /* The fill and the blur live on a pseudo-element, never on the header: backdrop-filter on an ancestor
+     would make it the containing block of the position: fixed drawer inside it. */
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
     background: var(--color-bg);
     border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  .site-header[data-over-hero] {
+    /* Out of flow: the hero starts at the very top of the page */
+    margin-block-end: calc(-1 * var(--header-height));
+  }
+
+  .site-header[data-over-hero]::before {
+    background: color-mix(in srgb, var(--color-bg) 78%, transparent);
+    border-block-end-color: transparent;
+    backdrop-filter: blur(0.75rem);
+  }
+
+  @supports not (backdrop-filter: blur(0)) {
+    .site-header[data-over-hero]::before {
+      background: color-mix(in srgb, var(--color-bg) 94%, transparent);
+    }
   }
 
   .bar {
@@ -70,30 +120,80 @@ const { items, current } = Astro.props;
     justify-content: space-between;
     gap: var(--space-4);
     max-inline-size: var(--layout-max);
-    min-block-size: var(--header-height);
+    block-size: var(--header-height);
     margin-inline: auto;
     padding-inline: var(--layout-gutter);
   }
 
-  .logo {
+  .wordmark {
     display: inline-flex;
     align-items: center;
     min-block-size: var(--target-min);
+    text-decoration: none;
   }
 
-  .logo :global(img) {
-    inline-size: auto;
-    block-size: var(--space-7);
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
+  li {
+    max-inline-size: none;
+  }
+
+  nav a {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--target-min);
+    text-decoration: none;
+  }
+
+  nav a[aria-current='location'],
+  nav a[aria-current='true'] {
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent-strong);
+    text-decoration-thickness: var(--bar-thickness);
+    text-underline-offset: var(--space-2);
+  }
+
+  /* Desktop nav: hidden below the breakpoint, where the drawer takes over */
+  .nav-desk {
+    display: none;
+  }
+
+  .nav-desk ul {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .nav-desk a {
+    white-space: nowrap;
+  }
+
+  .nav-desk a:hover {
+    color: var(--color-accent-text);
+  }
+
+  .nav-desk a[data-framed] {
+    padding-inline: var(--space-4);
+    border: var(--border-width) solid var(--color-accent-strong);
+  }
+
+  .nav-desk a[data-framed]:hover {
+    background: color-mix(in srgb, var(--color-accent-strong) 12%, transparent);
+  }
+
+  /* Burger: the summary is also the close button while the drawer is open */
   .menu-toggle {
-    display: inline-flex;
+    position: relative;
+    z-index: calc(var(--z-drawer) + 1);
+    display: flex;
     align-items: center;
     justify-content: center;
     inline-size: var(--target-min);
     block-size: var(--target-min);
-    border: var(--border-width) solid var(--color-border-strong);
-    border-radius: var(--radius-md);
     cursor: pointer;
     list-style: none;
   }
@@ -130,71 +230,111 @@ const { items, current } = Astro.props;
     inset-block-start: var(--space-2);
   }
 
-  nav {
-    position: absolute;
-    inset-inline: 0;
-    inset-block-start: 100%;
-    background: var(--color-bg);
-    border-block-end: var(--border-width) solid var(--color-border);
-    padding: var(--space-2) var(--layout-gutter) var(--space-4);
+  .menu[open] .bars {
+    background: transparent;
   }
 
-  ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
+  .menu[open] .bars::before {
+    inset-block-start: 0;
+    rotate: 45deg;
   }
 
-  nav a {
+  .menu[open] .bars::after {
+    inset-block-start: 0;
+    rotate: -45deg;
+  }
+
+  /* Backdrop: no script needed, it is the open <details> element's own pseudo-element */
+  .menu[open]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--color-overlay) 35%, transparent);
+  }
+
+  .drawer {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-end: 0;
+    z-index: var(--z-drawer);
     display: flex;
-    align-items: center;
-    min-block-size: var(--target-min);
-    padding-inline: var(--space-2);
-    text-decoration: none;
+    flex-direction: column;
+    gap: var(--space-5);
+    inline-size: var(--drawer-width);
+    padding: var(--header-height) var(--space-5) var(--space-5);
+    overflow-y: auto;
+    background: var(--color-bg);
+    border-inline-start: var(--border-width) solid var(--color-border);
   }
 
-  nav a:hover {
-    background: var(--color-surface);
+  .drawer a {
+    padding-block: var(--space-2);
   }
 
-  nav a[aria-current='page'] {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+  .drawer a[data-framed] {
+    margin-block-start: var(--space-3);
+    padding-block-start: var(--space-4);
+    border-block-start: var(--border-width) solid var(--color-border);
   }
 
-  nav a[data-section] {
-    text-decoration: underline;
-    text-decoration-thickness: var(--bar-thickness);
-    text-underline-offset: var(--space-1);
+  .drawer-cats {
+    margin-block-start: auto;
+    color: var(--color-text-muted);
   }
 
-  @media (min-width: 60em) {
-    nav {
-      position: static;
-      border: 0;
-      padding: 0;
-      background: transparent;
+  @media (min-width: 47.5rem) {
+    .nav-desk {
+      display: block;
     }
 
-    ul {
-      display: flex;
-      gap: var(--space-1);
+    .menu {
+      display: none;
     }
 
-    nav a {
-      border-radius: var(--radius-md);
+    .wordmark {
+      flex-shrink: 0;
+    }
+  }
+
+  /* From 768 to 1023 the wordmark and four items only just fit, so the gaps open up on wider screens */
+  @media (min-width: 64rem) {
+    .nav-desk ul {
+      gap: var(--space-6);
+    }
+  }
+
+  /* Opening is animated only for visitors who have not asked for less motion; closing is instant */
+  @media (prefers-reduced-motion: no-preference) {
+    .menu[open] .drawer {
+      animation: drawer-in var(--motion-drawer) var(--motion-ease);
     }
 
-    /* Where the disclosure content can be forced visible, hide the toggle and show the nav inline. */
-    @supports selector(::details-content) {
-      .menu::details-content {
-        content-visibility: visible;
-        display: contents;
-      }
-
-      .menu-toggle {
-        display: none;
-      }
+    .menu[open]::before {
+      animation: backdrop-in var(--motion-drawer) var(--motion-ease);
     }
+  }
+
+  @keyframes drawer-in {
+    from {
+      translate: 100% 0;
+      opacity: 0;
+    }
+  }
+
+  @keyframes backdrop-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media print {
+    .site-header {
+      display: none;
+    }
+  }
+
+  /* Scroll lock while the drawer is open (where :has exists) */
+  :global(body:has(.menu[open])) {
+    overflow: hidden;
   }
 </style>

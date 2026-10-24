@@ -2,7 +2,7 @@
 // Album photo: WebP srcset over the tiers that exist, JPEG 1600 fallback, stored width and height.
 // `alt` is required (pass "" only for a decorative image). All values come from lib/images.ts.
 import type { SnapshotPhoto } from '@mp/shared';
-import { loadingAttrs, photoSources, sizesFor, type SizesContext } from '../lib/images';
+import { cropSizes, loadingAttrs, photoSources, sizesFor, type CropContext, type SizesContext } from '../lib/images';
 
 interface Props {
   photo: SnapshotPhoto;
@@ -10,7 +10,12 @@ interface Props {
   base: string;
   alt: string;
   context?: SizesContext;
-  /** Overrides the sizes of `context` (the justified album grid, where tile widths differ). */
+  /**
+   * Cover that is cropped into the category (3/4) or album (4/5) card box: `sizes` is the box width times the crop
+   * factor of this photo's own aspect ratio, and the image is cropped uniformly (same box, `object-fit: cover`).
+   */
+  crop?: CropContext;
+  /** Overrides the sizes of `context` or `crop` (the justified album grid, where tile widths differ). */
   sizes?: string;
   eager?: boolean;
   /** LCP image: eager plus fetchpriority="high". */
@@ -18,14 +23,16 @@ interface Props {
   class?: string;
 }
 
-const { photo, base, alt, context = 'grid', sizes, eager = false, priority = false, class: className } = Astro.props;
+const { photo, base, alt, context = 'grid', crop, sizes, eager = false, priority = false, class: className } = Astro.props;
 const src = photoSources(photo, base);
 const load = loadingAttrs({ eager, priority });
+// The intrinsic size (width/height) is the stored fallback; the aspect ratio is the same as the photo's.
+const sourceSizes = sizes ?? (crop ? cropSizes(crop, src.width, src.height, priority) : sizesFor(context));
 ---
 <picture class="photo">
-  <source type="image/webp" srcset={src.webpSrcset} sizes={sizes ?? sizesFor(context)} />
+  <source type="image/webp" srcset={src.webpSrcset} sizes={sourceSizes} />
   <img
-    class={className}
+    class:list={[className, crop ? ['crop', `crop-${crop}`] : undefined]}
     src={src.fallback.url}
     alt={alt}
     width={src.width}
@@ -46,5 +53,20 @@ const load = loadingAttrs({ eager, priority });
     inline-size: 100%;
     block-size: auto;
     background-color: var(--c, var(--color-placeholder));
+  }
+
+  /* Uniform crop: every cover has the same box, so a portrait cover cannot make its row tall and leave a hole.
+     The whole photo is in the album page. No filter on photos, ever. */
+  .photo img.crop {
+    object-fit: cover;
+    object-position: var(--cover-position);
+  }
+
+  .photo img.crop-category {
+    aspect-ratio: var(--ratio-category);
+  }
+
+  .photo img.crop-album {
+    aspect-ratio: var(--ratio-album);
   }
 </style>

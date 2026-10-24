@@ -45,14 +45,29 @@ const all: readonly Crumb[] = [{ name: 'Úvod', path: '/' }, ...crumbs];
     min-block-size: var(--target-compact);
   }
 
+  /* Hairline slash between items, in the border colour: decoration, not information */
   .breadcrumb li:not(:last-child)::after {
     content: '/';
     margin-inline-start: var(--space-2);
+    color: var(--color-border-strong);
+  }
+
+  /* The current page reads as text, the links as quiet links */
+  .breadcrumb li[aria-current='page'] {
+    color: var(--color-text);
   }
 
   .breadcrumb a {
     display: inline-flex;
     align-items: center;
     min-block-size: var(--target-compact);
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--color-accent-text);
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-width);
+    text-underline-offset: var(--space-1);
   }
 </style>

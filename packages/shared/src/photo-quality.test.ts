@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DETAIL_MIN_LONG_EDGE,
+  HERO_MIN_MASTER_WIDTH,
   MAX_INPUT_FILE_BYTES,
   MAX_INPUT_MEGAPIXELS_DESKTOP,
   MAX_INPUT_MEGAPIXELS_TOUCH,
@@ -24,6 +25,8 @@ function full(w: number, h: number, opts: { skipTiers?: number[] } = {}): PhotoV
 describe('constants', () => {
   it('match the plan', () => {
     expect(DETAIL_MIN_LONG_EDGE).toBe(2000);
+    expect(HERO_MIN_MASTER_WIDTH).toBe(2400);
+    expect(HERO_MIN_MASTER_WIDTH).not.toBe(DETAIL_MIN_LONG_EDGE);
     expect(MAX_INPUT_FILE_BYTES).toBe(50 * 1024 * 1024);
     expect(MAX_INPUT_MEGAPIXELS_DESKTOP).toBe(64);
     expect(MAX_INPUT_MEGAPIXELS_TOUCH).toBe(40);

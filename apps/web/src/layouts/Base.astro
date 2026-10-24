@@ -5,9 +5,11 @@ import Analytics from '../components/Analytics.astro';
 import Fonts from '../components/Fonts.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
-import type { NavItem } from '../lib/nav';
+import { buildNav, type NavItem } from '../lib/nav';
 import { NAV } from '../content/texts';
+import { REVIEWS } from '../content/reviews';
 import { getCatalog } from '../lib/catalog';
+import { homeReviews } from '../lib/home';
 import { readRawEnv, resolveEnv } from '../lib/env';
 import { pageUrl, serializeJsonLd, type JsonLd } from '../lib/jsonld';
 import { BRAND, type PageMeta } from '../lib/seo';
@@ -29,9 +31,11 @@ interface Props {
   path: string;
   ogImage?: OgImage;
   jsonLd?: readonly JsonLd[];
+  /** True only where the page starts with a full-bleed hero that the header overlays (the home page). */
+  heroHeader?: boolean;
 }
 
-const { meta, path, ogImage, jsonLd = [] } = Astro.props;
+const { meta, path, ogImage, jsonLd = [], heroHeader = false } = Astro.props;
 const env = resolveEnv(readRawEnv());
 const catalog = await getCatalog(env);
 const canonical = pageUrl(path);
@@ -39,12 +43,9 @@ const noindex = env.noindex || meta.noindex;
 const robots = noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large';
 const themeColor = /--color-theme:\s*([^;]+);/.exec(tokensCss)?.[1]?.trim();
 
-const navItems: NavItem[] = [
-  { label: NAV.portfolio, path: '/portfolio/' },
-  ...catalog.categories.map((c) => ({ label: c.name, path: `/${c.slug}/` })),
-  { label: NAV.about, path: '/o-mne/' },
-  { label: NAV.contact, path: '/kontakt/' },
-];
+// Header items: section anchors on the home page, the same from every page. Reference only with reviews.
+const navItems: NavItem[] = buildNav(NAV, homeReviews(catalog, REVIEWS).length > 0);
+const categoryNames = catalog.categories.map((c) => c.name);
 ---
 <!doctype html>
 <html lang="cs">
@@ -89,11 +90,11 @@ const navItems: NavItem[] = [
   </head>
   <body>
     <a class="skip-link" href="#obsah">Přeskočit na obsah</a>
-    <Header items={navItems} current={path} />
+    <Header items={navItems} current={path} categoryNames={categoryNames} overHero={heroHeader} />
     <main id="obsah" tabindex="-1">
       <slot />
     </main>
-    <Footer />
+    <Footer categories={catalog.categories.map((c) => ({ name: c.name, slug: c.slug }))} />
   </body>
 </html>
 

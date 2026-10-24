@@ -65,10 +65,9 @@ export function staticRedirects(ogImagePath?: string): RedirectRow[] {
       add(`/${old}/${id}/`, `/${slug}/${id}/`);
     }
   }
-  add('/about', '/o-mne/');
-  add('/about/', '/o-mne/');
-  add('/contact', '/kontakt/');
-  add('/contact/', '/kontakt/');
+  // T-288: /o-mne/ and /kontakt/ are sections of the home page now (WP-12 section a).
+  for (const from of ['/o-mne/', '/o-mne', '/about', '/about/']) add(from, '/#o-mne');
+  for (const from of ['/kontakt/', '/kontakt', '/contact', '/contact/']) add(from, '/#kontakt');
   add('/manifest.json', '/manifest.webmanifest');
   if (ogImagePath) add('/fotky_web/site/preview/preview.jpg', ogImagePath);
   return rows;

@@ -8,6 +8,8 @@
 export const EXIT = { PASS: 0, FAIL: 1, SKIPPED: 2 };
 export const FIT_WIDTHS = [360, 412, 768, 1280, 1920];
 export const FIT_DPRS = [1, 2, 3];
+// The cropped category (3/4) and album (4/5) covers of T-276 are checked on the fixture-only pages with
+// `--routes /layout-check/portfolio/12/,/layout-check/portfolio/12-auto/,/layout-check/categories/7/` (they do not exist in a snapshot build).
 export const FIT_ROUTES = ['/', '/svatby/', '/svatby/sedlakovi/'];
 export const OVERFETCH_LIMIT = 1.6;
 /** Rounding slack in pixels: a rendered width of 379.6 x 1.75 needs 664.3, a 664 px file is fine. */
@@ -41,6 +43,16 @@ export function parseFitArgs(argv) {
     else throw new Error(`unknown argument ${a}`);
   }
   return opts;
+}
+
+/**
+ * Width the picture itself is drawn at. A cropped cover (`crop` markup, object-fit: cover) is scaled until it fills the
+ * box in both directions, so it is wider than the box for a photo wider than the box. Legacy markup (isCrop false)
+ * is measured by its box width. image-fit.mjs applies the same formula inside the page.
+ */
+export function coverRenderedWidth({ isCrop, boxWidth, boxHeight, naturalWidth, naturalHeight }) {
+  if (!isCrop || !(naturalHeight > 0)) return boxWidth;
+  return Math.max(boxWidth, (boxHeight * naturalWidth) / naturalHeight);
 }
 
 /** Widths (w descriptors) listed in a srcset string, ascending. */

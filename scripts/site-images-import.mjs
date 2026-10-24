@@ -1,4 +1,4 @@
-// One-off import of the 15 site images the site really uses (the legacy contact/instagram.png feed screenshot was dropped, T-96) (plan WP3-6, CONTENT-MAPPING row "site/*").
+// One-off import of the 3 site images the home page really uses (plan WP3-6, CONTENT-MAPPING row "site/*"; trimmed from 15 in T-284).
 // Reads legacy/fotky_web/site/ (read-only), writes apps/web/src/assets/site/ with the long edge at most
 // 2400 px (JPEG quality 80, PNG lossless). The result is committed so the build survives the later
 // removal of legacy/. Idempotent: an existing output file is kept (use --force to regenerate).
@@ -15,24 +15,8 @@ export const DEFAULT_OUT = join(REPO_ROOT, 'apps', 'web', 'src', 'assets', 'site
 export const MAX_EDGE = 2400;
 export const JPEG_QUALITY = 80;
 
-/** Files the legacy app referenced (git show legacy-cra:src/...). The 5 unused files and preview.jpg are not imported. */
-export const SITE_FILES = [
-  'common/main_logo_2.png',
-  'home/main.jpg',
-  'home/hello.jpg',
-  'home/trio1.jpg',
-  'home/trio2.jpg',
-  'home/trio3.jpg',
-  'home/weddings.jpg',
-  'home/portraits.jpg',
-  'home/couples.jpg',
-  'about/main_about.jpg',
-  'about/nature.jpg',
-  'about/wedding.jpg',
-  'about/cake.jpg',
-  'contact/main_contact.jpg',
-  'contact/contact.jpg',
-];
+/** The three legacy images the rebuilt home page still imports (T-284 dropped the 12 that became unused). */
+export const SITE_FILES = ['home/main.jpg', 'home/hello.jpg', 'about/wedding.jpg'];
 
 /** Imports every file; returns one row per file with the action taken. */
 export async function importSiteImages({ srcDir = DEFAULT_SRC, outDir = DEFAULT_OUT, force = false } = {}) {

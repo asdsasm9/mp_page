@@ -41,6 +41,7 @@ const ROWS = {
   albums: [],
   photos: [],
   app_config: [{ id: true, quota_hard_bytes: 10_000_000_000, quota_warn_bytes: 8_000_000_000, max_upload_bytes: 12_000_000, max_files_per_batch: 100, reservation_ttl_min: 30 }],
+  site_settings: [{ id: true, hero_photo_id: null }],
   site_state: [{ id: true, pending_changes: 2, last_published_at: NOW, last_publish_requested_at: null }],
   publish_log: [],
   // T-251: the publish screen counts these lines (2), the same as the raw counter above.

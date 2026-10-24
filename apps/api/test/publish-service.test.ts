@@ -122,6 +122,61 @@ describe('buildAndStoreSnapshot', () => {
     expect(publicBucket.keys()).toEqual([]);
   });
 
+  it('publishes the chosen hero photo from site_settings', async () => {
+    await world.db.exec(`update public.site_settings set hero_photo_id = '${PHOTO}'`);
+    try {
+      const result = await buildAndStoreSnapshot(deps(), world.tokens.admin);
+      expect(result.snapshot.heroPhotoId).toBe(PHOTO);
+    } finally {
+      await world.db.exec('update public.site_settings set hero_photo_id = null');
+    }
+  });
+
+  it('publishes heroPhotoId null when no hero is chosen or the row is missing', async () => {
+    expect((await buildAndStoreSnapshot(deps(), world.tokens.admin)).snapshot.heroPhotoId).toBeNull();
+    await world.db.exec('delete from public.site_settings');
+    try {
+      const rows = await loadCatalogRows(supabase(), world.tokens.admin);
+      expect(rows.siteSettings).toBeNull();
+      expect((await buildAndStoreSnapshot(deps(), world.tokens.admin)).snapshot.heroPhotoId).toBeNull();
+    } finally {
+      await world.db.exec('insert into public.site_settings default values');
+    }
+  });
+
+  it('a missing site_settings table (migration not applied) does not break publishing', async () => {
+    const noTable = createSupabaseClient({
+      supabaseUrl: SHIM_SUPABASE_URL,
+      anonKey: SHIM_ANON_KEY,
+      fetch: async (input, init) =>
+        String(input instanceof Request ? input.url : input).includes('/site_settings')
+          ? new Response(JSON.stringify({ code: '42P01', message: 'relation does not exist' }), { status: 404 })
+          : world.shim.fetch(input, init),
+    });
+    const rows = await loadCatalogRows(noTable, world.tokens.admin);
+    expect(rows.siteSettings).toBeNull();
+    const result = await buildAndStoreSnapshot({ ...deps(), supabase: noTable }, world.tokens.admin);
+    expect(result.snapshot.heroPhotoId).toBeNull();
+  });
+
+  it.each([
+    ['a 500 response', async () => new Response('x', { status: 500 })],
+    ['a thrown fetch', async () => Promise.reject(new Error('network down'))],
+  ])('%s on the site_settings read fails the publish with UPSTREAM_ERROR and writes nothing', async (_name, fail) => {
+    const broken = createSupabaseClient({
+      supabaseUrl: SHIM_SUPABASE_URL,
+      anonKey: SHIM_ANON_KEY,
+      fetch: async (input, init) =>
+        String(input instanceof Request ? input.url : input).includes('/site_settings')
+          ? fail()
+          : world.shim.fetch(input, init),
+    });
+    await expect(buildAndStoreSnapshot({ ...deps(), supabase: broken }, world.tokens.admin)).rejects.toMatchObject({
+      code: 'UPSTREAM_ERROR',
+    });
+    expect(publicBucket.keys()).toEqual([]);
+  });
+
   it('a failing read is a PublishServiceError and writes nothing', async () => {
     const failing = createSupabaseClient({
       supabaseUrl: SHIM_SUPABASE_URL,

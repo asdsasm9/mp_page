@@ -40,9 +40,9 @@ describe('ApiErrorCode', () => {
 });
 
 describe('DB_COLUMNS', () => {
-  it('covers the 11 tables', () => {
+  it('covers the 12 tables', () => {
     expect(Object.keys(DB_COLUMNS).sort()).toEqual(
-      ['admin_emails', 'albums', 'app_config', 'categories', 'change_log', 'keepalive', 'photos', 'publish_log', 'site_state', 'upload_reservations', 'url_history'].sort(),
+      ['admin_emails', 'albums', 'app_config', 'categories', 'change_log', 'keepalive', 'photos', 'publish_log', 'site_settings', 'site_state', 'upload_reservations', 'url_history'].sort(),
     );
   });
   it('photos columns are the PhotoRow keys', () => {

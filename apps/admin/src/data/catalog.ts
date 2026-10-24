@@ -14,6 +14,7 @@ import {
   type CategoryInput,
   type CategoryPatch,
   type PhotoPatch,
+  type SiteSettingsPatch,
   type UpdateOptions,
 } from '../ports';
 import { usePorts } from '../ports-context';
@@ -30,6 +31,7 @@ export const catalogKeys = {
   photos: (albumId: string) => [...ALL, 'photos', albumId] as const,
   photo: (id: string) => [...ALL, 'photo', id] as const,
   siteState: () => [...ALL, 'site-state'] as const,
+  siteSettings: () => [...ALL, 'site-settings'] as const,
   appConfig: () => [...ALL, 'app-config'] as const,
   publishLog: (limit: number) => [...ALL, 'publish-log', limit] as const,
   changeLog: () => [...ALL, 'change-log'] as const,
@@ -80,6 +82,7 @@ export function usePhotosByAlbum(albumIds: readonly string[]): ReadonlyMap<strin
   return new Map(albumIds.map((id, i) => [id, lists[i]] as const));
 }
 
+export const useSiteSettings = () => useCatalogQuery(catalogKeys.siteSettings(), (c) => c.getSiteSettings());
 export const useSiteState = () => useCatalogQuery(catalogKeys.siteState(), (c) => c.getSiteState());
 export const useChangeLog = () => useCatalogQuery(catalogKeys.changeLog(), (c) => c.listChangeLog());
 
@@ -126,5 +129,8 @@ export const useUpdateAlbum = () =>
   useCatalogMutation((c, v: Update<AlbumPatch>) => c.updateAlbum(v.id, v.patch, v.options));
 export const useDeleteAlbum = () => useCatalogMutation((c, id: string) => c.deleteAlbum(id));
 
-export const useUpdatePhoto = () =>
+export const useUpdateSiteSettings = () =>
+  useCatalogMutation((c, patch: SiteSettingsPatch) => c.updateSiteSettings(patch));
+
+export const useUpdatePhoto =() =>
   useCatalogMutation((c, v: Update<PhotoPatch>) => c.updatePhoto(v.id, v.patch, v.options));

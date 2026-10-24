@@ -1,23 +1,65 @@
 /*
- * Martel, weight 400 only, self-hosted (@fontsource/martel 5.3.0, SIL OFL).
- * Two WOFF2 files: latin and latin-ext (Czech needs both). font-display: optional gives no
- * layout shift from the font; the preload links in components/Fonts.astro make it usually win.
- * The unicode-range lines are copied from the package so fonts.test.ts can check Czech coverage.
+ * Cormorant Garamond 400 (headings) and Lora 400 (body), self-hosted (@fontsource 5.3.0, SIL OFL 1.1).
+ * Four WOFF2 files: latin and latin-ext of each face (Czech needs both). Weight 400 only; nothing is
+ * faux-bolded (font-synthesis: none in base.css). font-display: swap with metric-matched local
+ * fallbacks, so the swap moves nothing. All four files are preloaded in components/Fonts.astro.
+ * The unicode-range lines are copied from the packages so fonts.test.ts can check Czech coverage.
+ * Fallback metrics were computed with fontTools from the latin files against Times New Roman and
+ * Georgia (average advance width of a Czech sample sentence): Cormorant size-adjust 97.1%, Lora 104.6%.
+ * apps/admin/src/styles/fonts.css repeats the same faces (parity test in the admin).
  */
 @font-face {
-  font-family: 'Martel';
+  font-family: 'Cormorant Garamond';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
-  src: url('@fontsource/martel/files/martel-latin-ext-400-normal.woff2') format('woff2');
+  src: url('@fontsource/cormorant-garamond/files/cormorant-garamond-latin-ext-400-normal.woff2') format('woff2');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
 @font-face {
-  font-family: 'Martel';
+  font-family: 'Cormorant Garamond';
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 400;
-  src: url('@fontsource/martel/files/martel-latin-400-normal.woff2') format('woff2');
+  src: url('@fontsource/cormorant-garamond/files/cormorant-garamond-latin-400-normal.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/lora/files/lora-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/lora/files/lora-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Metric-matched fallbacks: used first in the font stacks of tokens.css, so text set before the swap
+   has nearly the size and line height of the final face. */
+@font-face {
+  font-family: 'Cormorant Fallback';
+  src: local('Times New Roman'), local('Times');
+  size-adjust: 97.1%;
+  ascent-override: 95.1%;
+  descent-override: 29.6%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Lora Fallback';
+  src: local('Georgia');
+  size-adjust: 104.6%;
+  ascent-override: 96.1%;
+  descent-override: 26.2%;
+  line-gap-override: 0%;
 }

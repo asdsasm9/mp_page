@@ -598,6 +598,30 @@ describe('real catalog getAppConfig', () => {
   });
 });
 
+describe('real catalog site settings (home hero photo)', () => {
+  const PHOTO = '33333333-3333-4333-8333-333333333333';
+
+  it('reads the single row and PATCHes hero_photo_id on id=eq.true', async () => {
+    const read = stubFetch({ json: [{ id: true, hero_photo_id: null }] });
+    expect(await createRealCatalog(restWith(read.fetch)).getSiteSettings()).toEqual({ id: true, hero_photo_id: null });
+    expect(read.calls[0]!.url).toBe(`${BASE}/rest/v1/site_settings?select=*&limit=1`);
+
+    const write = stubFetch({ json: [{ id: true, hero_photo_id: PHOTO }] });
+    expect(await createRealCatalog(restWith(write.fetch)).updateSiteSettings({ hero_photo_id: PHOTO })).toEqual({ id: true, hero_photo_id: PHOTO });
+    expect(write.calls[0]!.method).toBe('PATCH');
+    expect(write.calls[0]!.url).toContain('/rest/v1/site_settings?id=eq.true');
+    expect(write.calls[0]!.body).toEqual({ hero_photo_id: PHOTO });
+  });
+
+  it('refuses other columns before the request, and a missing photo (23503) is NOT_FOUND', async () => {
+    const stub = stubFetch({ json: [] });
+    await expect(createRealCatalog(restWith(stub.fetch)).updateSiteSettings({ hero_photo_id: null, id: false } as never)).rejects.toMatchObject({ code: 'INVALID' });
+    expect(stub.calls).toHaveLength(0);
+    const gone = stubFetch({ status: 409, json: { code: '23503', message: 'HERO_PHOTO_NOT_FOUND' } });
+    await expect(createRealCatalog(restWith(gone.fetch)).updateSiteSettings({ hero_photo_id: PHOTO })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+});
+
 describe('real api commit signal', () => {
   it('passes the abort signal to fetch', async () => {
     const seen: Array<AbortSignal | null | undefined> = [];

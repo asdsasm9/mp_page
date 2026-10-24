@@ -2,11 +2,9 @@ import type { Snapshot, SnapshotAlbum, SnapshotCategory } from '@mp/shared';
 import { describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
 import {
-  aboutMeta,
   albumMeta,
   categoryMeta,
   checkMetas,
-  contactMeta,
   cookiesMeta,
   homeMeta,
   notFoundMeta,
@@ -56,17 +54,7 @@ describe('golden strings from docs/SEO.md', () => {
     expect(withCount(22)).toMatch(/Prohlédněte si 22 svateb\.$/);
   });
 
-  it('About, Contact, Cookies', () => {
-    expect(aboutMeta()).toMatchObject({
-      title: 'O mně – fotografka Terezie Müllnerová, Brno | Mullny Photos',
-      description:
-        'Jsem Terezie Müllnerová, fotografka z Brna. Specializuji se na svatby, portréty a párové focení. Přečtěte si můj příběh a zkušenosti.',
-    });
-    expect(contactMeta()).toMatchObject({
-      title: 'Kontakt – objednání focení v Brně | Mullny Photos',
-      description:
-        'Napište mi na mullnyphotos@gmail.com nebo na Instagram @mullny_photos a domluvme termín focení svatby, portrétů nebo rodiny.',
-    });
+  it('Cookies', () => {
     expect(cookiesMeta().title).toBe('Zásady cookies a ochrany soukromí | Mullny Photos');
     expect(cookiesMeta().noindex).toBe(false);
     expect(cookiesMeta().description).toBe(
@@ -138,8 +126,6 @@ describe('albums', () => {
     const entries: Array<[string, ReturnType<typeof homeMeta>]> = [
       ['/', homeMeta()],
       ['/portfolio/', portfolioMeta()],
-      ['/o-mne/', aboutMeta()],
-      ['/kontakt/', contactMeta()],
       ['/cookies/', cookiesMeta()],
       ['/404.html', notFoundMeta()],
     ];

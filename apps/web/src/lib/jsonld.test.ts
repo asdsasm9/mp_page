@@ -109,7 +109,7 @@ describe('Person (5.2)', () => {
     expect(p.name).toBe('Terezie Müllnerová');
     expect(p.jobTitle).toBe('Fotografka');
     expect(p.worksFor).toEqual({ '@id': `${SITE_ORIGIN}/#business` });
-    expect(p.url).toBe(`${SITE_ORIGIN}/o-mne/`);
+    expect(p.url).toBe(`${SITE_ORIGIN}/#o-mne`);
     expect(p['@id']).toBe(`${SITE_ORIGIN}/#terezie`);
   });
 });

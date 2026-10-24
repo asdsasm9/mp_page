@@ -2,8 +2,9 @@
 // Portfolio (decision D-6): all categories as cover cards, then a selection of albums (lib/portfolio.ts).
 // The category cards are the first row, so they are eager and the first one is the LCP candidate.
 import AlbumCard from '../../components/AlbumCard.astro';
-import Breadcrumb from '../../components/Breadcrumb.astro';
-import Photo from '../../components/Photo.astro';
+import CategoryCard from '../../components/CategoryCard.astro';
+import CategoryGrid from '../../components/CategoryGrid.astro';
+import PageHead from '../../components/PageHead.astro';
 import Base from '../../layouts/Base.astro';
 import { getCatalog } from '../../lib/catalog';
 import { FIRST_ROW } from '../../lib/category';
@@ -31,37 +32,32 @@ const crumbs = [{ name: 'Portfolio', path }];
   jsonLd={[breadcrumbList(crumbs)]}
 >
   <div class="page">
-    <Breadcrumb crumbs={crumbs} />
-    <h1>Portfolio</h1>
+    <PageHead crumbs={crumbs} title="Portfolio" />
 
     <section aria-labelledby="kategorie">
-      <h2 id="kategorie">Kategorie</h2>
-      <ul class="grid">
+      <h2 id="kategorie" class="t-title">Kategorie</h2>
+      <CategoryGrid>
         {
           categories.map((card, i) => (
-            <li>
-              <a href={card.path}>
-                <Photo
-                  photo={card.photo}
-                  base={env.imgBaseUrl}
-                  alt=""
-                  context="card"
-                  eager={i < FIRST_ROW}
-                  priority={i === 0}
-                />
-                <span class="card-name t-h3">{card.name}</span>
-              </a>
-            </li>
+            <CategoryCard
+              href={card.path}
+              title={card.name}
+              meta={card.countLabel}
+              photo={card.photo}
+              base={env.imgBaseUrl}
+              eager={i < FIRST_ROW}
+              priority={i === 0}
+            />
           ))
         }
-      </ul>
+      </CategoryGrid>
     </section>
 
     {
       albums.length > 0 && (
         <section aria-labelledby="alba">
-          <h2 id="alba">Výběr z alb</h2>
-          <ul class="grid">
+          <h2 id="alba" class="t-title">Výběr z alb</h2>
+          <ul class="albums">
             {albums.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
           </ul>
         </section>
@@ -85,33 +81,18 @@ const crumbs = [{ name: 'Portfolio', path }];
     margin-block-start: var(--space-4);
   }
 
-  .grid {
+  section h2 {
+    margin: 0;
+  }
+
+  /* Album cards (T-276): auto-fill tracks, the grid the crop-aware `sizes` of the 4/5 cover assume */
+  .albums {
     display: grid;
-    gap: var(--space-6) var(--space-5);
+    grid-template-columns: repeat(auto-fill, minmax(min(18.75rem, 100%), 1fr));
+    align-items: start;
+    gap: var(--space-6);
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  .grid a {
-    display: grid;
-    gap: var(--space-2);
-    text-decoration: none;
-  }
-
-  .card-name {
-    text-decoration: underline;
-    text-decoration-thickness: var(--border-width);
-    text-underline-offset: var(--space-1);
-  }
-
-  .grid a:hover .card-name {
-    text-decoration-thickness: var(--bar-thickness);
-  }
-
-  @media (min-width: 48rem) {
-    .grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
   }
 </style>

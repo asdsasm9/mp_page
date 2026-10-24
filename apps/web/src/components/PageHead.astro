@@ -1,0 +1,84 @@
+---
+// Head of a real page (category, album, portfolio, cookies, 404): breadcrumb row with the back link, the h1,
+// an optional meta line (kicker) and a hairline. Whatever is in the slot (intro text) follows the hairline.
+import type { Crumb } from '../lib/jsonld';
+import Breadcrumb from './Breadcrumb.astro';
+import Icon from './Icon.astro';
+import Kicker from './Kicker.astro';
+
+interface Props {
+  /** Crumbs after "Úvod"; the last one is the current page. */
+  crumbs: readonly Crumb[];
+  title: string;
+  /** Meta line under the title, e.g. `Brno · 17. června 2023`. */
+  kicker?: string;
+  backHref?: string;
+  backLabel?: string;
+}
+
+const { crumbs, title, kicker, backHref, backLabel } = Astro.props;
+const hasBack = Boolean(backHref && backLabel);
+---
+<header class="page-head">
+  <div class="crumb-row">
+    <Breadcrumb crumbs={crumbs} />
+    {
+      hasBack && (
+        <a class="back t-small" href={backHref}>
+          <Icon name="arrow-left" />
+          {backLabel}
+        </a>
+      )
+    }
+  </div>
+  <h1 class="t-h1">{title}</h1>
+  {kicker && <Kicker plain>{kicker}</Kicker>}
+  <hr class="rule" />
+  {Astro.slots.has('default') && <div class="intro"><slot /></div>}
+</header>
+
+<style>
+  .page-head {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .crumb-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-5);
+  }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--target-compact);
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .back:hover {
+    color: var(--color-accent-text);
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-width);
+    text-underline-offset: var(--space-1);
+  }
+
+  .page-head h1 {
+    margin: 0;
+  }
+
+  .rule {
+    inline-size: 100%;
+    margin: 0;
+    border: 0;
+    border-block-start: var(--border-width) solid var(--color-border);
+  }
+
+  .intro {
+    max-inline-size: var(--measure);
+  }
+</style>

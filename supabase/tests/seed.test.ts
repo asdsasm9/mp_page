@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { LEGACY_ALBUMS } from '../../packages/shared/src/legacy/albums';
 import { buildSnapshot, SnapshotSchema, type Snapshot } from '../../packages/shared/src/snapshot';
-import type { AlbumRow, CategoryRow, PhotoRow, UrlHistoryRow } from '../../packages/shared/src/db';
+import type { AlbumRow, CategoryRow, PhotoRow, SiteSettingsRow, UrlHistoryRow } from '../../packages/shared/src/db';
 import { SEED_SQL, SNAPSHOT_FIXTURE_JSON } from '../../scripts/gen-fixtures';
 import { asRole, createMigratedDb, seedAdmin } from './helpers/db';
 
@@ -109,7 +109,10 @@ describe('seed.sql on a freshly migrated database', () => {
       await db.query<UrlHistoryRow>('select id, old_path, target, status, created_at::text from public.url_history')
     ).rows;
 
-    const fromDb = buildSnapshot({ categories, albums, photos, urlHistory }, new Date(fixture.generatedAt));
+    const siteSettings = (await db.query<SiteSettingsRow>('select id, hero_photo_id from public.site_settings')).rows[0]!;
+    expect(siteSettings.hero_photo_id).not.toBeNull();
+
+    const fromDb = buildSnapshot({ categories, albums, photos, urlHistory, siteSettings }, new Date(fixture.generatedAt));
     expect(SnapshotSchema.safeParse(fromDb).success).toBe(true);
     // The seed rows take the database clock, so updatedAt (derived from row timestamps) cannot match
     // the fixture's fixed clock. It is checked separately: every value is a valid ISO date-time.

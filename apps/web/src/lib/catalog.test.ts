@@ -102,7 +102,7 @@ describe('loadSnapshot, snapshot mode', () => {
   });
 
   it('zero albums throws', async () => {
-    const empty: Snapshot = { ...clone(), counts: { categories: 1, albums: 0, photos: 0 }, categories: [] };
+    const empty: Snapshot = { ...clone(), counts: { categories: 1, albums: 0, photos: 0 }, heroPhotoId: null, categories: [] };
     empty.categories = [{ ...clone().categories[0]!, albums: [], coverPhotoId: null }];
     await expect(
       loadSnapshot(snapshotEnv, { fetch: ok(JSON.stringify(empty)) as unknown as typeof fetch, sleep: noSleep }),
@@ -161,6 +161,17 @@ describe('buildCatalog', () => {
     const b = buildCatalog(without);
     expect(a.categoryCover(a.categories[0]!)?.id).toBe(fixture.categories[0]!.coverPhotoId);
     expect(b.categoryCover(b.categories[0]!)?.id).toBe(without.categories[0]!.albums[0]!.coverPhotoId);
+  });
+
+  it('heroPhoto gives the chosen photo, else null (bundled image); a stale id gives null', () => {
+    expect(fixture.heroPhotoId).not.toBeNull();
+    expect(cat.heroPhoto()?.id).toBe(fixture.heroPhotoId);
+    const none = clone();
+    none.heroPhotoId = null;
+    expect(buildCatalog(none).heroPhoto()).toBeNull();
+    const stale = clone();
+    stale.heroPhotoId = 'gone';
+    expect(buildCatalog(stale).heroPhoto()).toBeNull();
   });
 
   it('excludes a category with zero albums from the built list', () => {

@@ -1,9 +1,13 @@
 ---
-// Preloads both Martel files (latin and latin-ext) and loads the @font-face rules.
+// Preloads the four font files (Cormorant Garamond and Lora, each latin and latin-ext) and loads the @font-face rules.
 // Put this once inside <head>. The font URLs are the hashed build outputs.
-import latinUrl from '@fontsource/martel/files/martel-latin-400-normal.woff2?url';
-import latinExtUrl from '@fontsource/martel/files/martel-latin-ext-400-normal.woff2?url';
+import cormorantLatinUrl from '@fontsource/cormorant-garamond/files/cormorant-garamond-latin-400-normal.woff2?url';
+import cormorantLatinExtUrl from '@fontsource/cormorant-garamond/files/cormorant-garamond-latin-ext-400-normal.woff2?url';
+import loraLatinUrl from '@fontsource/lora/files/lora-latin-400-normal.woff2?url';
+import loraLatinExtUrl from '@fontsource/lora/files/lora-latin-ext-400-normal.woff2?url';
 import '../styles/fonts.css';
 ---
-<link rel="preload" href={latinUrl} as="font" type="font/woff2" crossorigin />
-<link rel="preload" href={latinExtUrl} as="font" type="font/woff2" crossorigin />
+<link rel="preload" href={cormorantLatinUrl} as="font" type="font/woff2" crossorigin />
+<link rel="preload" href={cormorantLatinExtUrl} as="font" type="font/woff2" crossorigin />
+<link rel="preload" href={loraLatinUrl} as="font" type="font/woff2" crossorigin />
+<link rel="preload" href={loraLatinExtUrl} as="font" type="font/woff2" crossorigin />

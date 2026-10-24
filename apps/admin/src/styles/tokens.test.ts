@@ -18,12 +18,15 @@ const admin = tokens(read('./tokens.css'));
 describe('token parity with apps/web', () => {
   it('reads a real token set from both files', () => {
     expect(web.size).toBeGreaterThan(40);
-    expect(admin.size).toBeGreaterThanOrEqual(web.size);
+    const shared = [...web.keys()].filter((name) => !/^--(text|leading|weight|tracking)-|^--font-heading$/.test(name));
+    expect(shared.length).toBeGreaterThan(60);
+    expect(admin.size).toBeGreaterThanOrEqual(shared.length);
   });
 
-  // T-252: the public site owns its own type scale (--text-*, --leading-*, --weight-*, --font-heading).
-  // The admin keeps its denser legacy scale (--font-size-*, --line-height-*), so type tokens are not compared.
-  const isWebType = (name: string) => /^--(text|leading|weight)-|^--font-heading$/.test(name);
+  // T-252 / WP-12: the public site owns its own type scale (--text-*, --leading-*, --weight-*, --tracking-*,
+  // --font-heading). The admin keeps its denser legacy scale (--font-size-*, --line-height-*) and its own
+  // --tracking-heading, so type tokens are not compared. --font-body IS compared (same Lora stack).
+  const isWebType = (name: string) => /^--(text|leading|weight|tracking)-|^--font-heading$/.test(name);
 
   it.each([...web.entries()].filter(([name]) => !isWebType(name)))('%s has the web value', (name, value) => {
     expect(admin.get(name)).toBe(value);
@@ -32,11 +35,37 @@ describe('token parity with apps/web', () => {
   it('keeps the admin-only extras small and named', () => {
     const extras = [...admin.keys()].filter((k) => !web.has(k)).sort();
     expect(extras).toEqual([
-      '--bottom-nav-height', '--color-danger-active', '--color-danger-disabled', '--color-danger-hover', '--color-on-danger',
+      '--bottom-nav-height', '--color-accent-fill-hover', '--color-danger-active', '--color-danger-disabled', '--color-danger-hover', '--color-on-danger',
       '--cover-size', '--font-size-0', '--font-size-1', '--font-size-2', '--font-size-3', '--font-size-4', '--font-size-5',
       '--font-size-small', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke',
       '--line-height-body', '--line-height-heading',
     ]);
+  });
+});
+
+describe('gold primary button contrast (WP-12 palette)', () => {
+  const lum = (hex: string) => {
+    const n = parseInt(hex.slice(1), 16);
+    const f = (c: number) => {
+      const s = c / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * f((n >> 16) & 255) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255);
+  };
+  const ratio = (a: string, b: string) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+
+  it('on-accent text reaches 4.5:1 on the gold fill and on its admin hover fill', () => {
+    expect(ratio(admin.get('--color-on-accent')!, admin.get('--color-accent')!)).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(admin.get('--color-on-accent')!, admin.get('--color-accent-fill-hover')!)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('the web hover colour would fail as a button fill, which is why the admin has its own (negative test)', () => {
+    expect(ratio(admin.get('--color-on-accent')!, admin.get('--color-accent-hover')!)).toBeLessThan(4.5);
+  });
+
+  it('the primary button hover uses the admin fill token', () => {
+    const css = read('./app.css');
+    expect(css).toMatch(/\.button-primary:hover\s*\{\s*background: var\(--color-accent-fill-hover\)/);
   });
 });
 

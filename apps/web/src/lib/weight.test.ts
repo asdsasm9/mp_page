@@ -94,6 +94,24 @@ describe('measureFirstLoad', () => {
     expect(measureFirstLoad({ distDir: dir, page: '/p/' }).unknownImages).toHaveLength(1);
   });
 
+  it('allows the four preloaded font files of the WP-12 faces and fails on a fifth (T-274)', () => {
+    expect(BUDGET.fontFiles).toBe(4);
+    const links = (n: number) =>
+      Array.from({ length: n }, (_, i) => `<link rel="preload" as="font" href="/f${i}.woff2">`).join('');
+    const files: Record<string, string> = {};
+    for (let i = 0; i < 5; i++) files[`f${i}.woff2`] = 'f'.repeat(1000);
+    const four = measureFirstLoad({ distDir: site(links(4), files), page: '/p/' });
+    expect(four.fontFiles).toBe(4);
+    expect(checkWeight(four)).toEqual([]);
+    const five = measureFirstLoad({ distDir: site(links(5), files), page: '/p/' });
+    expect(checkWeight(five).join()).toContain('font files 5 B is over 4 B');
+  });
+
+  it('fails on fonts over the byte budget', () => {
+    const dir = site('<link rel="preload" as="font" href="/f.woff2">', { 'f.woff2': 'f'.repeat(BUDGET.fonts + 1) });
+    expect(checkWeight(measureFirstLoad({ distDir: dir, page: '/p/' })).join()).toContain('fonts ');
+  });
+
   it('reports a page over budget', () => {
     const dir = site(picture('x1', 'loading="eager"'));
     const w = measureFirstLoad({ distDir: dir, page: '/p/', imageBytes: () => BUDGET.images + 1 });

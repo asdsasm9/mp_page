@@ -31,11 +31,24 @@ export const NAV = {
   portraits: 'Portréty',
   couples: 'Párové focení',
   about: 'O mně',
+  reference: 'Reference',
   contact: 'Kontakt',
+  /** Header wordmark: the brand ("Mullny Photos") as one word, shown uppercase by `.t-wordmark`. */
+  wordmark: 'MullnyPhotos',
 } as const;
+
+/** Closing call to action of a category page, keyed by slug like seo.ts CATEGORY_PATTERNS; other slugs use the fallback. */
+export const CTA_LABELS: Readonly<Record<string, string>> = {
+  svatby: 'Poptat svatební focení',
+  portrety: 'Poptat portrétní focení',
+  'parove-foceni': 'Poptat párové focení',
+};
+export const CTA_FALLBACK = 'Poptat focení';
+export const ctaLabel = (slug: string): string => CTA_LABELS[slug] ?? CTA_FALLBACK;
 
 export const FOOTER = {
   brand: 'MULLNY',
+  copyright: '© Mullny Photos',
   region: 'Fotím v Jihomoravském kraji',
 } as const;
 

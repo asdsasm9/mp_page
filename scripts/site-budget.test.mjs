@@ -36,7 +36,7 @@ describe('budget gate', () => {
     expect(runChecks({ files: [], dist: [], site }, { checks: [row] }).rows[0].status).toBe('PASS');
     const { errors, lines } = runBudget(site);
     expect(errors).toEqual([]);
-    expect(lines[0]).toMatch(/html .* \/ 40\.0 KB; css .* \/ 30\.0 KB; js .* \/ 60\.0 KB; fonts 0\/2 files .* \/ 60\.0 KB; images .* \/ 250\.0 KB; lcp image .* \/ 150\.0 KB; total .* \/ 500\.0 KB/);
+    expect(lines[0]).toMatch(/html .* \/ 40\.0 KB; css .* \/ 30\.0 KB; js .* \/ 60\.0 KB; fonts 0\/4 files .* \/ 84\.0 KB; images .* \/ 250\.0 KB; lcp image .* \/ 150\.0 KB; total .* \/ 500\.0 KB/);
   });
 
   it('fails when an extra 100 KB script is added', () => {
@@ -48,13 +48,18 @@ describe('budget gate', () => {
     expect(runBudget(site).errors.join()).toContain('js (gzip)');
   });
 
-  it('fails on a third font file and on fonts over 60 KB', () => {
+  it('allows four preloaded font files within 84 KB, fails on a fifth and on fonts over 84 KB', () => {
     const font = (n) => `<link rel="preload" as="font" href="/f${n}.woff2">`;
-    const bytes = randomBytes(25 * 1024);
-    const site = dist('', { 'f1.woff2': bytes, 'f2.woff2': bytes, 'f3.woff2': bytes }, font(1) + font(2) + font(3));
-    const msg = runBudget(site).errors.join();
-    expect(msg).toContain('font files');
-    expect(msg).toContain('fonts 76800 B is over 61440 B');
+    const small = randomBytes(15 * 1024);
+    const names = [1, 2, 3, 4, 5];
+    const files = (list) => Object.fromEntries(list.map((n) => [`f${n}.woff2`, small]));
+    const four = dist('', files(names.slice(0, 4)), names.slice(0, 4).map(font).join(''));
+    expect(runBudget(four).errors).toEqual([]);
+    const five = dist('', files(names), names.map(font).join(''));
+    expect(runBudget(five).errors.join()).toContain('font files');
+    const big = randomBytes(25 * 1024);
+    const heavy = dist('', { 'f1.woff2': big, 'f2.woff2': big, 'f3.woff2': big, 'f4.woff2': big }, [1, 2, 3, 4].map(font).join(''));
+    expect(runBudget(heavy).errors.join()).toContain('fonts 102400 B is over 86016 B');
   });
 
   it('fails on an eager image over the above-the-fold and LCP limits, ignores lazy ones', () => {

@@ -1,0 +1,63 @@
+---
+// Category-card layout fixtures for design-check (T-276): the home Portfolio section with 1, 3 and 12 category cards,
+// with chosen covers (alternating landscape and portrait, the worst case for gaps) and without (automatic covers are
+// the first album cover, in practice landscape). Same guard as ../../[count]: fixture mode only, noindex, never in a
+// production or snapshot build (site-checks fails on any layout-check/ file there).
+import CategoryCard from '../../../../components/CategoryCard.astro';
+import CategoryGrid from '../../../../components/CategoryGrid.astro';
+import Section from '../../../../components/Section.astro';
+import Base from '../../../../layouts/Base.astro';
+import { getCatalog } from '../../../../lib/catalog';
+import { FIRST_ROW } from '../../../../lib/category';
+import { readRawEnv, resolveEnv } from '../../../../lib/env';
+import { plural } from '../../../../lib/plural';
+import type { PageMeta } from '../../../../lib/seo';
+
+export async function getStaticPaths() {
+  const env = resolveEnv(readRawEnv());
+  if (env.source !== 'fixture') return [];
+  return ['1', '3', '12', '3-auto', '12-auto'].map((variant) => ({ params: { variant } }));
+}
+
+const env = resolveEnv(readRawEnv());
+const catalog = await getCatalog(env);
+const variant = Astro.params.variant!;
+const count = Number.parseInt(variant, 10);
+const auto = variant.endsWith('-auto');
+const pool = [...catalog.photoById.values()].map((e) => e.photo);
+const landscape = pool.filter((p) => p.width >= p.height);
+const portrait = pool.filter((p) => p.width < p.height);
+const pick = (list: typeof pool, i: number) => list[i % list.length]!;
+const cards = Array.from({ length: count }, (_, i) => ({
+  name: `Kategorie ${i + 1}`,
+  path: '/layout-check/',
+  photo: auto || i % 2 === 0 ? pick(landscape, i) : pick(portrait, i >> 1),
+  countLabel: plural(i + 1, { one: 'album', few: 'alba', many: 'alb' }),
+}));
+const meta: PageMeta = {
+  title: `Rozložení kategorií, ${variant} | Mullny Photos`,
+  ogTitle: `Rozložení kategorií, ${variant}`,
+  description: `Zkušební rozložení sekce Portfolio s ${count} kategoriemi pro kontrolu vzhledu.`,
+  noindex: true,
+};
+---
+<Base meta={meta} path={`/layout-check/portfolio/${variant}/`}>
+  <h1 class="visually-hidden">Rozložení kategorií, {variant}</h1>
+  <Section id="portfolio" kicker="Moje práce" title="Portfolio" actionHref="/portfolio/" actionLabel="Celé portfolio">
+    <CategoryGrid>
+      {
+        cards.map((card, i) => (
+          <CategoryCard
+            href={card.path}
+            title={card.name}
+            meta={card.countLabel}
+            photo={card.photo}
+            base={env.imgBaseUrl}
+            eager={i < FIRST_ROW}
+            priority={i === 0}
+          />
+        ))
+      }
+    </CategoryGrid>
+  </Section>
+</Base>

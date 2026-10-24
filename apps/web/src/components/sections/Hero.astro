@@ -1,0 +1,113 @@
+---
+// Home hero (WP-12 e): the LCP image fills the box (`image` slot: the admin-chosen photo or the bundled main.jpg),
+// a scrim from transparent to 70% ink under the text, the kicker (category names), the single h1 and one button.
+// The header overlays the top of the hero (out of flow), so nothing shifts. The box is min-height only, never a fixed height.
+import { SITE } from '../../content/texts';
+import Kicker from '../Kicker.astro';
+
+interface Props {
+  /** Category names, joined by " · " in the kicker. */
+  categoryNames: readonly string[];
+}
+
+const { categoryNames } = Astro.props;
+---
+<section id="uvod" class="hero" aria-labelledby="uvod-nadpis" data-tone="dark">
+  <div class="media"><slot name="image" /></div>
+  <div class="scrim">
+    <div class="text">
+      {categoryNames.length > 0 && <Kicker>{categoryNames.join(' · ')}</Kicker>}
+      <h1 id="uvod-nadpis" class="t-display">{SITE.description}</h1>
+      <a class="btn" href="#kontakt">Poptat termín</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    --hero-position: center 40%;
+    position: relative;
+    display: grid;
+    align-content: end;
+    min-block-size: max(32.5rem, 100svh);
+    background: var(--color-placeholder);
+    color: var(--color-on-overlay);
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .media {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+
+  /* The image (bundled <img> or the Photo <picture>) is cropped to the box, never stretched */
+  .media :global(picture) {
+    block-size: 100%;
+  }
+
+  .media :global(img) {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    object-position: var(--hero-position);
+  }
+
+  /* Reads as a darkening toward the bottom; the text sits where it is at full strength */
+  .scrim {
+    --fade: calc(var(--space-8) * 2);
+    background: linear-gradient(to bottom, var(--scrim-hero-from), var(--scrim-hero-to) var(--fade));
+    padding-block-start: var(--fade);
+  }
+
+  .text {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding-inline: var(--layout-gutter);
+    padding-block-end: var(--section-pad);
+  }
+
+  .text :global(.kicker) {
+    color: var(--color-on-overlay);
+  }
+
+  .text :global(.kicker)::before {
+    border-block-start-color: var(--band-dark-accent);
+  }
+
+  h1 {
+    max-inline-size: 24ch;
+    margin: 0;
+  }
+
+  /* Print: the photo on top at a moderate height, the text under it as ink on paper (the scrim is a background and
+     is not printed, so light text over the photo would be unreadable) */
+  @media print {
+    .hero {
+      display: block;
+      min-block-size: 0;
+      background: none;
+    }
+
+    .media {
+      position: static;
+    }
+
+    .media :global(picture) {
+      block-size: auto;
+    }
+
+    .media :global(img) {
+      block-size: 90mm;
+    }
+
+    .scrim {
+      background: none;
+      padding-block-start: var(--space-5);
+    }
+  }
+</style>

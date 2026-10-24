@@ -32,9 +32,13 @@ facts and human steps: [VERIFY.md](VERIFY.md). Page texts (Home, About, Contact)
 | `/zverejnit` | Publish the site |
 | `/ulozeni` | Storage and reconcile |
 | `/nahravani` | Upload page (the queue also shows as a panel; no header link since T-246, phones keep the bottom-nav entry) |
+| `/uvodni-stranka` | "Úvodní stránka" (T-286): choose the home hero photo (picker, "Zrušit výběr", desktop and phone crops, "Nízké rozlišení pro velkou fotku" under `HERO_MIN_MASTER_WIDTH` = 2400 px master width). Header and phone bottom nav link to it |
 | `*` | 404 |
 
-`a11y/scope.test.tsx` fixes this table as the information architecture; there is no pages or settings screen.
+`a11y/scope.test.tsx` fixes this table as the information architecture; there is no page-text editor. The only
+setting is the hero photo (`site_settings.hero_photo_id`, migration 20261023110000, not applied live; publishing it
+needs T-289 and a Worker redeploy). A deleted hero photo clears the choice (database `on delete set null`) and the
+screen says so; a replaced photo (T-262) passes the choice on to the new photo before the old one is deleted.
 
 ### Environment variables
 

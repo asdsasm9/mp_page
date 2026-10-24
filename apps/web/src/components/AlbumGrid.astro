@@ -47,7 +47,7 @@ const rowStyle = `--row-h:${rows.base}rem;--row-h-md:${rows.md}rem;--row-h-lg:${
     --cap: 2.5; /* phone: rows hold one or two tiles, a lone one may fill the width */
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    gap: var(--space-2);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -58,7 +58,7 @@ const rowStyle = `--row-h:${rows.base}rem;--row-h-md:${rows.md}rem;--row-h-lg:${
   .grid::after {
     content: '';
     flex: 1000000 1 0;
-    margin-inline-start: calc(-1 * var(--space-3));
+    margin-inline-start: calc(-1 * var(--space-2));
   }
 
   /* A tile never grows past --cap times its nominal width, so a lone portrait next to a panorama is not stretched

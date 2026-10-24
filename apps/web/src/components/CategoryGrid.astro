@@ -1,0 +1,47 @@
+---
+// Grid of category cards (home Portfolio section, /portfolio/). The track maths of the category cover `sizes`
+// (images.ts CROP_BASE) assume tracks of at least 15rem and at most 21rem (from 48rem), 18rem (from 80rem) or 16rem
+// (from 100rem). From 48rem the tracks are auto-fit with exactly that maximum and the group is centred: with fewer
+// cards than tracks (3 categories at 1280 or 1920) the empty tracks collapse, so there is no empty column on the
+// right, and a card is never wider than the width the image was requested for. On phones one full-width column.
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+<ul class:list={['cards', className]}>
+  <slot />
+</ul>
+
+<style>
+  .cards {
+    --track-max: 21rem; /* CROP_BASE.category at 48rem */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+    align-items: start;
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 48rem) {
+    .cards {
+      grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), var(--track-max)));
+      justify-content: center;
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .cards {
+      --track-max: 18rem;
+    }
+  }
+
+  @media (min-width: 100rem) {
+    .cards {
+      --track-max: 16rem;
+    }
+  }
+</style>

@@ -11,6 +11,12 @@ import { variantPlan, type PhotoVariants } from './variants';
  */
 export const DETAIL_MIN_LONG_EDGE = 2000;
 
+/**
+ * A master narrower than this is too small for the full-width home hero (WP-12 step 28, T-286): the hero uses the
+ * 2400 px tier at 100vw. Separate from DETAIL_MIN_LONG_EDGE (D-21), which judges detail on album pages.
+ */
+export const HERO_MIN_MASTER_WIDTH = 2400;
+
 /** Largest accepted input file (per-part upload cap maxUploadBytes stays separate). */
 export const MAX_INPUT_FILE_BYTES = 50 * 1024 * 1024;
 /** Largest accepted decoded size, in megapixels. */

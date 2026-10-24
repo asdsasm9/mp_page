@@ -1,0 +1,130 @@
+---
+// A home-page section (WP-12 e): optional kicker, the section title (h2), a hairline and an optional action link
+// ("Celé portfolio" with an arrow), then the content in the slot. `band` picks the ground:
+// `ground` (page colour), `surface` (the alternate band) or `dark` (the Reference band, which uses the dark token set).
+// The section is named by its own heading (aria-labelledby). Anchor offset is html scroll-padding, never scroll-margin.
+import Icon from './Icon.astro';
+import Kicker from './Kicker.astro';
+
+interface Props {
+  /** Anchor id, also the base of the heading id (`<id>-nadpis`). */
+  id: string;
+  title: string;
+  kicker?: string;
+  actionHref?: string;
+  actionLabel?: string;
+  band?: 'ground' | 'surface' | 'dark';
+  class?: string;
+}
+
+const { id, title, kicker, actionHref, actionLabel, band = 'ground', class: className } = Astro.props;
+const headingId = `${id}-nadpis`;
+const hasAction = Boolean(actionHref && actionLabel);
+---
+<section
+  id={id}
+  class:list={['section', className]}
+  data-band={band}
+  data-tone={band === 'dark' ? 'dark' : undefined}
+  aria-labelledby={headingId}
+>
+  <div class="inner">
+    <header class="head">
+      {kicker && <Kicker tone={band === 'dark' ? 'dark' : 'light'}>{kicker}</Kicker>}
+      <div class="head-row">
+        <h2 id={headingId} class="t-h1">{title}</h2>
+        <span class="rule" aria-hidden="true"></span>
+        {
+          hasAction && (
+            <a class="action t-nav" href={actionHref}>
+              {actionLabel}
+              <Icon name="arrow-right" />
+            </a>
+          )
+        }
+      </div>
+    </header>
+    <slot />
+  </div>
+</section>
+
+<style>
+  .section {
+    padding-block: var(--section-pad);
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  .section[data-band='surface'] {
+    background: var(--color-surface);
+  }
+
+  .section[data-band='dark'] {
+    background: var(--band-dark-bg);
+    color: var(--band-dark-text);
+  }
+
+  .inner {
+    display: grid;
+    gap: var(--section-gap-lg);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding-inline: var(--layout-gutter);
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .head-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
+  }
+
+  .head-row h2 {
+    margin: 0;
+  }
+
+  /* The hairline fills the row between title and action; on a narrow row it drops below as a full-width line */
+  .rule {
+    flex: 1 1 var(--space-7);
+    block-size: 0;
+    border-block-start: var(--border-width) solid var(--color-border);
+  }
+
+  .section[data-band='dark'] .rule {
+    border-block-start-color: color-mix(in srgb, var(--band-dark-text) 24%, transparent);
+  }
+
+  .action {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--target-min);
+    color: var(--color-accent-text);
+    text-decoration: none;
+  }
+
+  .section[data-band='dark'] .action {
+    color: var(--band-dark-accent);
+  }
+
+  .action:hover {
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-width);
+    text-underline-offset: var(--space-2);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .action :global(.icon) {
+      transition: translate var(--motion-fast) var(--motion-ease);
+    }
+
+    .action:hover :global(.icon) {
+      translate: var(--space-1) 0;
+    }
+  }
+</style>

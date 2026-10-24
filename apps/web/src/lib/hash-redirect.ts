@@ -20,8 +20,8 @@ const PAGES = new Map<string, string>([
   ['', '/'],
   ['home', '/'],
   ['portfolio', '/portfolio/'],
-  ['about', '/o-mne/'],
-  ['contact', '/kontakt/'],
+  ['about', '/#o-mne'],
+  ['contact', '/#kontakt'],
 ]);
 
 const ALBUMS = new Map<string, readonly string[]>([
@@ -55,7 +55,7 @@ export const HASH_REDIRECT_SCRIPT =
   "var p=h.slice(2).split('?')[0].replace(/\\/+$/,'').split('/'),k=p[0],q=p[1]," +
   'o=function(m,x){return Object.prototype.hasOwnProperty.call(m,x)},' +
   "c={weddings:'svatby',portraits:'portrety',couples:'parove-foceni'}," +
-  "g={'':'/',home:'/',portfolio:'/portfolio/',about:'/o-mne/',contact:'/kontakt/'}," +
+  "g={'':'/',home:'/',portfolio:'/portfolio/',about:'/#o-mne',contact:'/#kontakt'}," +
   "a={weddings:'frankovi hradsti sedlakovi suranovi',portraits:'anez lucka lukas mia pati pati2'," +
   "couples:'pavla_rafael helis_tom lucka_filip'},t='/';" +
   "if(o(c,k)){t='/'+c[k]+'/';if(q&&a[k].split(' ').indexOf(q)>-1)t+=q+'/'}" +

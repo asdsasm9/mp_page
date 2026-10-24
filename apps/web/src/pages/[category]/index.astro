@@ -1,8 +1,9 @@
 ---
 // Category page: breadcrumb, h1, album cards (cover 480/960 via Photo, title, place, count).
 // Only categories with at least one published album get a page (getStaticPaths from the catalog).
-import Breadcrumb from '../../components/Breadcrumb.astro';
 import AlbumCard from '../../components/AlbumCard.astro';
+import PageHead from '../../components/PageHead.astro';
+import { ctaLabel } from '../../content/texts';
 import Base from '../../layouts/Base.astro';
 import { getCatalog } from '../../lib/catalog';
 import { categoryCards, categoryPaths } from '../../lib/category';
@@ -33,11 +34,15 @@ const crumbs = [{ name: category.name, path }];
   jsonLd={[categoryGallery(category, meta.description ?? '', env.imgBaseUrl), breadcrumbList(crumbs)]}
 >
   <div class="page">
-    <Breadcrumb crumbs={crumbs} />
-    <h1>{category.name}</h1>
+    <PageHead crumbs={crumbs} title={category.name} backHref="/portfolio/" backLabel="Všechna portfolia">
+      {meta.description && <p class="t-body">{meta.description}</p>}
+    </PageHead>
     <ul class="albums">
       {cards.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
     </ul>
+    <p class="cta">
+      <a class="btn" href="/#kontakt">{ctaLabel(category.slug)}</a>
+    </p>
   </div>
 </Base>
 
@@ -50,18 +55,21 @@ const crumbs = [{ name: category.name, path }];
     padding: var(--space-4) var(--layout-gutter) var(--space-7);
   }
 
+  /* Auto-fill tracks of the 4/5 album cards; the crop-aware `sizes` of Photo crop="album" assume this grid (T-276) */
   .albums {
     display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(18.75rem, 100%), 1fr));
     align-items: start;
-    gap: var(--space-6) var(--space-5);
+    gap: var(--space-6);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  @media (min-width: 48rem) {
-    .albums {
-      grid-template-columns: repeat(3, 1fr);
-    }
+  .cta {
+    display: flex;
+    justify-content: center;
+    max-inline-size: none; /* base.css limits paragraphs to the text measure; the CTA is centred on the full width */
+    margin: var(--space-4) 0 0;
   }
 </style>

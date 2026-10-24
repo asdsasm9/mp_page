@@ -10,7 +10,6 @@ import Base from '../../../../layouts/Base.astro';
 import { getCatalog } from '../../../../lib/catalog';
 import { FIRST_ROW } from '../../../../lib/category';
 import { readRawEnv, resolveEnv } from '../../../../lib/env';
-import { plural } from '../../../../lib/plural';
 import type { PageMeta } from '../../../../lib/seo';
 
 export async function getStaticPaths() {
@@ -32,7 +31,6 @@ const cards = Array.from({ length: count }, (_, i) => ({
   name: `Kategorie ${i + 1}`,
   path: '/layout-check/',
   photo: auto || i % 2 === 0 ? pick(landscape, i) : pick(portrait, i >> 1),
-  countLabel: plural(i + 1, { one: 'album', few: 'alba', many: 'alb' }),
 }));
 const meta: PageMeta = {
   title: `Rozložení kategorií, ${variant} | Mullny Photos`,
@@ -50,7 +48,6 @@ const meta: PageMeta = {
           <CategoryCard
             href={card.path}
             title={card.name}
-            meta={card.countLabel}
             photo={card.photo}
             base={env.imgBaseUrl}
             eager={i < FIRST_ROW}

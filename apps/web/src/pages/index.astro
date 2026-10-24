@@ -73,7 +73,7 @@ const ogImage = chosenHero
       <Section id="portfolio" title="Portfolio" actionHref="/portfolio/" actionLabel="Celé portfolio">
         <CategoryGrid>
           {cards.map((card) => (
-            <CategoryCard href={card.path} title={card.name} meta={card.countLabel} photo={card.photo} base={env.imgBaseUrl} />
+            <CategoryCard href={card.path} title={card.name} photo={card.photo} base={env.imgBaseUrl} />
           ))}
         </CategoryGrid>
       </Section>

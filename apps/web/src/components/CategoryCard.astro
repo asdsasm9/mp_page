@@ -1,19 +1,16 @@
 ---
 // Card for a category (home Portfolio section, /portfolio/) or, with crop="album", for an album (AlbumCard wraps this).
 // A list item with ONE link around everything: cover in a fixed box (3/4 for categories, 4/5 for albums, cropped
-// uniformly, so a portrait cover cannot leave a hole in a row), a meta kicker ("12 alb"), the uppercase name with an
+// uniformly, so a portrait cover cannot leave a hole in a row), the uppercase name (no counts, T-315) with an
 // accent underline that thickens on hover, and a slight image zoom that is off under prefers-reduced-motion.
 // The cover is decorative (alt=""): the link text names it. No filter, no radius.
 import type { SnapshotPhoto } from '@mp/shared';
 import type { CropContext } from '../lib/images';
-import Kicker from './Kicker.astro';
 import Photo from './Photo.astro';
 
 interface Props {
   href: string;
   title: string;
-  /** Meta line above the name, e.g. `12 alb` or `Brno · 24 fotografií`. */
-  meta?: string;
   photo: SnapshotPhoto;
   /** Image base URL, e.g. env.imgBaseUrl. */
   base: string;
@@ -22,14 +19,13 @@ interface Props {
   priority?: boolean;
 }
 
-const { href, title, meta, photo, base, crop = 'category', eager = false, priority = false } = Astro.props;
+const { href, title, photo, base, crop = 'category', eager = false, priority = false } = Astro.props;
 ---
 <li class="card">
   <a href={href}>
     <span class="cover">
       <Photo photo={photo} base={base} alt="" crop={crop} eager={eager} priority={priority} />
     </span>
-    {meta && <Kicker as="span" plain class="card-meta">{meta}</Kicker>}
     <span class="card-title t-h3">{title}</span>
   </a>
 </li>
@@ -61,10 +57,6 @@ const { href, title, meta, photo, base, crop = 'category', eager = false, priori
 
   a:hover .card-title {
     text-decoration-thickness: var(--bar-thickness);
-  }
-
-  .card :global(.card-meta) {
-    color: var(--color-text-muted);
   }
 
   @media (prefers-reduced-motion: no-preference) {

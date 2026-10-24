@@ -202,7 +202,7 @@ describe('Category pages (built, shared build)', () => {
     }
   });
 
-  it('shows the count with a plural, cover 480 and 960 srcset, first row eager, first card high priority, rest lazy', () => {
+  it('shows no count on the cards, cover 480 and 960 srcset, first row eager, first card high priority, rest lazy', () => {
     const page = categoryHtml['portrety']!;
     const imgs = imgTags(page).filter((t) => t.includes('/photos/'));
     expect(imgs).toHaveLength(6);
@@ -218,7 +218,10 @@ describe('Category pages (built, shared build)', () => {
     expect(page).toContain('960.webp 960w');
     // Album covers are cropped into the 4/5 box: sizes is the box width times the crop factor (T-276, F10).
     expect(page).toMatch(/sizes="\(min-width: 48rem\) calc\(26rem \* [\d.]+\), calc\(\(100vw - 3rem\) \* [\d.]+\)"/);
-    expect(page).toMatch(/\d+ fotografi(e|í)/);
+    // T-315: the cards show the title only, no "place · N fotografií" meta line.
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    expect(main).not.toMatch(/\d+ fotografi(e|í)/);
+    expect(main).not.toMatch(/ · /);
   });
 
   it('marks Portfolio in the header with aria-current=true (never page), and the header equals the home header', () => {
@@ -434,13 +437,15 @@ describe('Cookies page and 404 (built, shared build)', () => {
     expect(page).toContain('"@type":"BreadcrumbList"');
   });
 
-  it('/cookies/ implies no banner, claims nothing about analytics, and has [doplnit] markers and the slot', () => {
+  it('/cookies/ implies no banner, claims nothing about analytics, and shows the controller details without markers', () => {
     const page = cookies();
     const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
     // The shared build is token-less: no marker comment, no analytics section.
     expect(main).not.toMatch(/cookiebar|souhlas|analytic|google analytics|měření/i);
     // Name and address are required; IČO is optional and its line is omitted while unset (T-220).
-    expect((main.match(/\[doplnit\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(main).not.toContain('[doplnit]');
+    expect(main).toContain('Terezie Müllnerová');
+    expect(main).toContain('Spodní, 625 00 Brno');
     expect(main).not.toContain('IČO');
     expect(page).not.toContain('ANALYTICS_PARAGRAPH');
     expect(page).not.toContain('id="mereni"');

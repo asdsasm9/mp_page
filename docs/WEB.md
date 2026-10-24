@@ -157,7 +157,7 @@ Cloudflare Web Analytics only (D-3 option C): no cookies, no banner, no Google, 
 3. Adam, after the first production deploy: the browser check (VERIFY row 10). View-source shows one beacon tag; the network panel shows
    only the two Cloudflare hosts; the Application tab shows no cookies and empty local and session storage after three pages; the dashboard
    shows the visit. If a cookie or storage entry appears: remove the variable, redeploy, tell the architect (option C premise broken).
-4. The photographer approves the Czech analytics paragraph and gives the controller details (H-7) that replace the `[doplnit]` lines.
+4. The photographer approves the Czech analytics paragraph and gives the controller details (H-7; filled in by T-313, house number still to VERIFY).
 5. Optional: read the dashboard monthly; no alerting by design.
 
 ## Photographer checklist: keyboard and phone

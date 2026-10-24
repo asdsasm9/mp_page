@@ -1,5 +1,5 @@
 ---
-// Album card (a list item): 4/5 cover, meta kicker (place, photo count with the Czech plural), uppercase title.
+// Album card (a list item): 4/5 cover and the uppercase title only (no place or count, T-315).
 // Used on category pages and /portfolio/. All the markup and styles are in CategoryCard.
 import type { CategoryCard as AlbumCardData } from '../lib/category';
 import CategoryCard from './CategoryCard.astro';
@@ -11,12 +11,10 @@ interface Props {
 }
 
 const { card, base } = Astro.props;
-const meta = [card.place, card.countLabel].filter(Boolean).join(' · ');
 ---
 <CategoryCard
   href={card.path}
   title={card.title}
-  meta={meta}
   photo={card.photo}
   base={base}
   crop="album"

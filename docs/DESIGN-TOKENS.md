@@ -101,9 +101,11 @@ Accent rules: `--color-accent` is used for `border-color`, `text-decoration-colo
 
 One global scale in `tokens.css`. Headings are `--font-heading` (Cormorant Garamond), everything else `--font-body` (Lora). Only weight 400 of each is loaded, so `--weight-body` and `--weight-heading` are both 400 and `base.css` sets `font-synthesis: none`: no faux bold or italic anywhere, hierarchy comes from size, case, tracking and colour. Rules, all in `tokens.test.ts`: Cormorant is never set under 20 px (`--text-h3` is the smallest heading level, h4 is Lora); uppercase headings have leading of at least 1.12 (`--leading-caps`) because Czech carons and rings (ČŘŠŽĚŮ) would touch the line above at the design's 1.02; the label levels `--text-kicker` and `--text-nav` are at least 12 px; the four body levels stay in a narrow range (at most 0.7 rem between min and max) and the headline levels `display`, `title`, `h1`, `quote` scale on purpose.
 
+Ceilings (T-314): no size grows past the value it has at a 1440 px viewport, so 1920 and 2560 px render the same sizes as 1440 (a `tokens.test.ts` case evaluates every clamp at those widths). Maximums: display 4.5 rem (72 px), title 3.5 rem, h1 2.875 rem, h2 2 rem, h3 1.625 rem, quote 2.5 rem, lead 1.165 rem (18.6 px), body 1.018 rem (16.3 px), small 0.9375 rem, caption 0.862 rem, kicker and nav 0.81 rem, wordmark 1.625 rem. Line length stays at `--measure` 70ch. The admin copy of the scale is kept identical.
+
 | Token | Class / element | 360 px | 1280 px | Line height | Use |
 |---|---|---|---|---|---|
-| `--text-display` | `.t-display` | 38 | 76.8 | `--leading-caps` 1.12 | home hero h1, uppercase |
+| `--text-display` | `.t-display` | 38 | 72 | `--leading-caps` 1.12 | home hero h1, uppercase |
 | `--text-title` | `.t-title` | 34 | 53.8 | `--leading-heading` 1.2 | statement titles (O mně, Kontakt) |
 | `--text-h1` | `h1`, `.t-h1` | 30 | 46 | 1.2, `.t-h1` 1.12 | page and section heads (`.t-h1`: uppercase, tracking `--tracking-h1`) |
 | `--text-h2` | `h2` | 24 | 28 | 1.2 | sub-heads |

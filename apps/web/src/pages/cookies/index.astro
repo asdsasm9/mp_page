@@ -25,9 +25,9 @@ const hasBeacon = resolveEnv(readRawEnv()).analyticsToken !== null;
       <p>{controller.intro}</p>
       <dl>
         <dt>{controller.nameLabel}</dt>
-        <dd>{controller.placeholder}</dd>
+        <dd>{controller.name}</dd>
         <dt>{controller.addressLabel}</dt>
-        <dd>{controller.placeholder}</dd>
+        <dd>{controller.address}</dd>
         {controller.companyId !== null && (
           <>
             <dt>{controller.idLabel}</dt>

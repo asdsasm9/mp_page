@@ -38,14 +38,14 @@ These are our wording, not yours. Please check that they describe the photos cor
 - Heading "Napište mi" above the contact text (the old site had no heading there) and the hidden note "(Instagram, otevře se v novém okně)" on the Instagram button.
 - The About page opens with the "O MNĚ" text as the first block under the page title (the title is not repeated).
 
-## Cookies page (open `[doplnit]` items)
+## Cookies page (open items)
 
 The text on `/cookies/` is our wording, reduced to what is true today (no cookies, Cloudflare hosting, self-hosted fonts, e-mail only). Please check it and fill in:
 
-- **[doplnit] Controller name** (your name or trading name) and **address**. The page shows `[doplnit]` until these are entered in `apps/web/src/content/texts.ts` (`COOKIES.controller`). The page must not go live with the markers.
+- **Controller name and address (H-7, filled in).** The page shows "Terezie Müllnerová" and "Spodní, 625 00 Brno" (`COOKIES.controller` in `apps/web/src/content/texts.ts`). VERIFY: house number missing? The address was given without one; please confirm or add it.
 - **IČO is optional (T-220, please review).** If you work as a private person without IČO, leave `COOKIES.controller.companyId` empty: the "IČO" line is then not shown at all, and name, address and e-mail are enough. If you have an IČO, enter it and the line appears. Copy change for your approval: the page no longer shows an "IČO" row by default.
 - **To approve: analytics paragraph** (`COOKIES.ANALYTICS_PARAGRAPH`, heading "Měření návštěvnosti"). It appears on `/cookies/` only in a build that has the Cloudflare Web Analytics token; without the token the page has no such section. Wording: "Web měří návštěvnost službou Cloudflare Web Analytics. Měření nepoužívá cookies ani místní úložiště prohlížeče a neukládá do vašeho zařízení nic. Zpracovávají se jen souhrnné technické údaje o návštěvě, například zobrazená stránka, odkazující web, země, typ zařízení a prohlížeče a rychlost načtení stránky. Službu poskytuje společnost Cloudflare, která provozuje servery po celém světě. Údaje používám k tomu, abych poznala, které stránky návštěvníky zajímají a zda se web rychle načítá; právním základem je můj oprávněný zájem. Měření můžete zablokovat v prohlížeči nebo blokátorem obsahu, web funguje stejně i bez něj." Please approve or correct it before the first production deploy with analytics.
-- **[doplnit] Date of last update**, to be added when the text is approved.
+- **Date of last update**, to be added when the text is approved.
 - Please confirm the 404 wording "Tuto stránku se nepodařilo najít. Vraťte se na úvod nebo si prohlédněte portfolio." and the link list under it.
 
 ## Questions

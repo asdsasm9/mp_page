@@ -141,6 +141,26 @@ describe('design tokens', () => {
     expect(bound('--text-nav')[0]).toBeGreaterThanOrEqual(0.75);
   });
 
+  it('no fluid size grows beyond its 1440px value: 1920 and 2560 equal 1440 (T-314)', () => {
+    const names = [...TYPE_SIZES, '--text-quote', '--text-kicker', '--text-nav', '--text-wordmark'];
+    const at = (name: string, vw: number): number => {
+      const m = /^clamp\(([\d.]+)rem,\s*([^,]+),\s*([\d.]+)rem\)$/.exec(tokens[name]!);
+      expect(m, name).not.toBeNull();
+      let preferred = 0;
+      for (const part of m![2]!.split('+').map((s) => s.trim())) {
+        const n = parseFloat(part);
+        preferred += part.endsWith('vw') ? (n * vw) / 100 : n * 16;
+      }
+      return Math.min(Math.max(Number(m![1]) * 16, preferred), Number(m![3]) * 16);
+    };
+    for (const name of names) {
+      expect(at(name, 1920), `${name} at 1920`).toBeCloseTo(at(name, 1440), 6);
+      expect(at(name, 2560), `${name} at 2560`).toBeCloseTo(at(name, 1440), 6);
+    }
+    expect(bound('--text-display')[1]).toBeLessThanOrEqual(4.5);
+    expect(bound('--text-body')[1]).toBeLessThanOrEqual(1.125);
+  });
+
   it('Cormorant (headings) is never set under 20px, and uppercase heading leading is at least 1.12', () => {
     for (const name of HEADING_SIZES) expect(bound(name)[0], name).toBeGreaterThanOrEqual(1.25);
     expect(Number(tokens['--leading-caps'])).toBeGreaterThanOrEqual(1.12);

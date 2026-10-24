@@ -47,7 +47,6 @@ const albumData = (over: Partial<AlbumCardData> = {}): AlbumCardData => ({
   place: 'Brno',
   path: '/svatby/sedlakovi/',
   photo: landscape,
-  countLabel: '44 fotografií',
   eager: false,
   priority: false,
   ...over,
@@ -277,23 +276,21 @@ describe('Photo crop', () => {
 });
 
 describe('CategoryCard', () => {
-  const props = { href: '/svatby/', title: 'Svatby', meta: '4 alba', photo: landscape, base: IMG };
+  const props = { href: '/svatby/', title: 'Svatby', photo: landscape, base: IMG };
 
-  it('is one list item with ONE link around cover, meta and name; the cover is decorative', async () => {
+  it('is one list item with ONE link around cover and name; the cover is decorative', async () => {
     const html = await render(CategoryCard, props);
     expect(html.match(/<a /g)).toHaveLength(1);
     expect(html).toMatch(/<li class="card">\s*<a href="\/svatby\/">/);
     expect(html).toMatch(/<\/a>\s*<\/li>/);
     expect(html).toMatch(/<img[^>]*\salt(?:="")?[\s>]/);
     expect(html).toContain('class="card-title t-h3">Svatby</span>');
-    expect(html).toContain('4 alba');
     expect(html).toMatch(/crop crop-category/);
   });
 
-  it('puts the meta kicker before the name and omits it without meta', async () => {
+  it('has no meta line, only the name (T-315)', async () => {
     const html = await render(CategoryCard, props);
-    expect(html.indexOf('4 alba')).toBeLessThan(html.indexOf('card-title'));
-    expect(await render(CategoryCard, { ...props, meta: undefined })).not.toContain('kicker');
+    expect(html).not.toMatch(/kicker|alb/);
   });
 
   it('loads lazily by default, eager and low for the first row, high for the priority card', async () => {
@@ -340,21 +337,13 @@ describe('category call to action labels (T-279)', () => {
 });
 
 describe('AlbumCard', () => {
-  it('shows place and the photo count with the Czech plural in the meta kicker and uses the 4/5 crop', async () => {
+  it('shows only the title (no place, no photo count) and uses the 4/5 crop', async () => {
     const html = await render(AlbumCard, { card: albumData(), base: IMG });
-    expect(html).toContain('Brno · 44 fotografií');
+    expect(html).not.toMatch(/fotografi|Brno|kicker| · /);
+    expect(html).toContain('class="card-title t-h3"');
     expect(html).toContain('crop crop-album');
     expect(html).toMatch(/<a href="\/svatby\/sedlakovi\/">/);
     expect(html.match(/<a /g)).toHaveLength(1);
-  });
-
-  it('meta lines for one and for a few photos, and without a place', async () => {
-    expect(await render(AlbumCard, { card: albumData({ countLabel: '1 fotografie' }), base: IMG })).toContain('Brno · 1 fotografie');
-    expect(await render(AlbumCard, { card: albumData({ place: null, countLabel: '3 fotografie' }), base: IMG })).toMatch(
-      />\s*3 fotografie\s*</,
-    );
-    const noPlace = await render(AlbumCard, { card: albumData({ place: null }), base: IMG });
-    expect(noPlace).not.toContain(' · ');
   });
 
   it('passes eager and priority through to the cover', async () => {

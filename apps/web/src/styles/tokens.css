@@ -50,18 +50,18 @@
     --font-heading: 'Cormorant Garamond', 'Cormorant Fallback', 'Times New Roman', Georgia, serif;
     --weight-body: 400;
     --weight-heading: 400;
-    --text-display: clamp(2.375rem, 6vw, 5.25rem); /* home hero h1 only, uppercase */
+    --text-display: clamp(2.375rem, 6vw, 4.5rem); /* home hero h1 only, uppercase */
     --text-title: clamp(2.125rem, 4.2vw, 3.5rem); /* statement titles (O mně, Kontakt) */
     --text-h1: clamp(1.875rem, 3.6vw, 2.875rem); /* page and section heads, uppercase */
     --text-h2: clamp(1.5rem, 1.2rem + 1vw, 2rem); /* sub-heads */
     --text-h3: clamp(1.375rem, 1.2rem + 0.5vw, 1.625rem); /* card titles, uppercase */
     --text-quote: clamp(1.5rem, 3.2vw, 2.5rem); /* reference quote */
-    --text-lead: clamp(1.0625rem, 1.03rem + 0.15vw, 1.1875rem); /* intro paragraph */
-    --text-body: clamp(0.9375rem, 0.91rem + 0.12vw, 1.0625rem); /* running text */
+    --text-lead: clamp(1.0625rem, 1.03rem + 0.15vw, 1.165rem); /* intro paragraph */
+    --text-body: clamp(0.9375rem, 0.91rem + 0.12vw, 1.018rem); /* running text */
     --text-small: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem); /* footer, breadcrumb, secondary links */
-    --text-caption: clamp(0.8125rem, 0.79rem + 0.08vw, 0.875rem); /* meta lines, captions, counters */
-    --text-kicker: clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem); /* uppercase label, never under 12 px */
-    --text-nav: clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem); /* nav and buttons, uppercase */
+    --text-caption: clamp(0.8125rem, 0.79rem + 0.08vw, 0.862rem); /* meta lines, captions, counters */
+    --text-kicker: clamp(0.75rem, 0.72rem + 0.1vw, 0.81rem); /* uppercase label, never under 12 px */
+    --text-nav: clamp(0.75rem, 0.72rem + 0.1vw, 0.81rem); /* nav and buttons, uppercase */
     --text-wordmark: clamp(1.25rem, 5vw, 1.625rem); /* header wordmark, uppercase Cormorant (20 to 26 px) */
     --leading-body: 1.6;
     --leading-prose: 1.8; /* running text */

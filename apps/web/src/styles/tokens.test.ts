@@ -241,6 +241,12 @@ describe('type literals live only in tokens.css (T-252)', () => {
     }
   });
 
+  it('Cormorant headings show lining figures (body sets lining-nums, every heading rule inherits it)', () => {
+    const text = strip(readFileSync(join(here, 'base.css'), 'utf8'));
+    expect(text).toMatch(/\n\s*body\s*\{[^}]*font-variant-numeric: lining-nums/);
+    expect(text).not.toMatch(/oldstyle-nums/);
+  });
+
   it('scripts never set font properties from JavaScript', () => {
     const scripts = walk(join(srcDir, 'scripts')).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
     for (const f of scripts) expect(readFileSync(f, 'utf8'), f).not.toMatch(/fontSize|fontFamily|fontWeight|lineHeight|font-size/);

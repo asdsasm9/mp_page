@@ -52,6 +52,8 @@
     font-family: var(--font-heading);
     font-weight: var(--weight-heading);
     line-height: var(--leading-heading);
+    /* Cormorant's default figures are old-style ("1" looks like a small capital I): use lining figures */
+    font-variant-numeric: lining-nums;
   }
 
   h1 {
@@ -123,6 +125,7 @@
 
   .brand {
     font-family: var(--font-heading);
+    font-variant-numeric: lining-nums;
     font-size: var(--text-h3);
     line-height: var(--leading-heading);
     text-decoration: none;
@@ -261,7 +264,7 @@
   }
 
   .desktop-nav .nav-list {
-    gap: 0;
+    gap: var(--space-1);
   }
 
   /* admin-check: the collapsed upload queue is fixed at the bottom right and covered the last lines of the page
@@ -2113,7 +2116,8 @@
   .cover-picker-albums legend,
   .cover-picker-photos legend {
     font-family: var(--font-heading);
-    font-size: var(--text-h3);
+    font-variant-numeric: lining-nums;
+    font-size: var(--text-lead);
     line-height: var(--leading-heading);
   }
 
@@ -2196,7 +2200,11 @@
     inset-block-end: var(--space-2);
     inset-inline-start: var(--space-2);
     max-inline-size: calc(100% - var(--space-4));
-    white-space: normal;
+    padding-inline: var(--space-2);
+    font-size: var(--text-kicker);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     box-shadow: var(--shadow-sm);
   }
 

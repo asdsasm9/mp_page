@@ -322,7 +322,7 @@ Recorded where the build differs from the spec on purpose. None of them removes 
    The fake world implements the same rules (`adapters/fake/changes.ts`). T-247: the publish card has `data-state` `pending` (thick start
    border, larger count, the same dot and words as the header, primary button), `clean` (flat, muted surface,
    neutral button) or `loading`; it sits `--space-7` below the heading, and the top-bar publish link is set apart
-   from "Kategorie". The header dot uses `--color-accent` with a strong border, the same as the primary button.
+   from "Kategorie". The header dot uses `--color-accent` with a strong border (the dot is the one gold fill left in the admin; the primary button is solid ink since WP-13).
 9. **Reconcile has no "use the real value" step.** `docs/API.md` removed it: the database total is the sum of the
    photo rows and cannot drift. "Zkontrolovat úložiště" reports orphans, missing objects, size mismatches and unknown
    keys; only orphans can be deleted, in a separate confirmed action ("Smazat nepotřebné soubory", `apply: true`).
@@ -495,7 +495,7 @@ What the first real-browser run found, all fixed in `apps/admin` and guarded by
 | Finding | Fix |
 | --- | --- |
 | `/favicon.ico` 404 showed as a console error on every load | inline `data:` icon in `index.html` |
-| Desktop top bar wrapped to two rows at 1280 px ("Odhlásit se" alone on the second row) | tighter nav link padding, no gap in the link list, smaller header gap |
+| Desktop top bar wrapped to two rows at 1280 px ("Odhlásit se" alone on the second row) | tighter nav link padding, `--space-1` gap in the link list (T-312; was 0, links touched), smaller header gap |
 | Phone top bar used three mostly empty rows | brand and sign-out on one row, storage and queue below |
 | Collapsed upload queue (fixed, bottom right) covered the "Zpět na album" link and tiles at the bottom; scrolling parked controls under it | room under `.shell-main` and `scroll-padding-block-end` while the queue exists |
 | "Zpět na album" link 18 px high; list titles (categories, albums) 26 px high on the phone | whole-line links and `.row-title` get the 44 px target |
@@ -504,7 +504,7 @@ What the first real-browser run found, all fixed in `apps/admin` and guarded by
 | "Zkontrolovat úložiště" button touched its intro line and the result box | spacing in sections with a heading |
 
 Open observations (not changed): the upload queue stays open after a batch until it is collapsed (by design, 3.5),
-(T-246: the top-bar button is gone, see "Upload indicator" below). The accent button colour is a muted tan; brand colour stays H-3.
+(T-246: the top-bar button is gone, see "Upload indicator" below). (Historical: the accent button colour was a muted tan; since WP-13 the primary button is solid ink.)
 
 Final run (2026-10-20, headless Chrome on macOS, fake world), `ADMIN_CHECK: PASS`, 57 page states:
 
@@ -518,10 +518,38 @@ contentful paint 108 / 84 ms; encoding and fake-uploading 5 photos takes 2.9 s d
 photo at a time); a publish with a 1.5 s fake build takes about 6 s because the status is polled every 5 s. Initial JS is
 520 kB (159 kB gzip) plus 223 kB (58 kB gzip) for the adapter chunk of this fake build; the real budget belongs to WP5-29.
 
-### Design pass (WP-08a, T-173 to T-180)
+### Admin restyle (WP-13, T-299 to T-312)
+
+Supersedes the WP-08a design pass below where they differ (shadows, rounded corners, brown fills, the denser type
+scale and "no fonts" no longer apply). Plan: `plans/WP-13-admin-restyle.md`. CSS and tokens only; no class, text, route
+or role changed.
+
+**Fonts.** Headings (`h1` to `h3`, `.brand`, dialog and cover-picker legends) are Cormorant Garamond 400, body text is
+Lora 400, both self-hosted woff2 (`apps/admin/src/styles/fonts.css`, ~74 KB, same files as the public site). Tiny
+dense labels (badges, counters, table heads, inputs at 16 px) use `--font-ui`, the system UI stack. No faux bold or
+italic (`font-synthesis: none`). Cormorant headings use `font-variant-numeric: lining-nums` so digits ("Fotka 1 z 5")
+are not old-style.
+
+**CSP.** One directive was added in `apps/admin/headers.ts`: `font-src 'self'` (D-24). Fonts must be first-party
+files; a `data:` URL in any `@font-face` fails `npm run admin-prod-check` (`judgeNoDataFonts`).
+
+**Buttons** (`.button` rules in `app.css`, square corners, 44 px minimum target):
+
+| Kind | Class | Look | Hover | Disabled |
+| --- | --- | --- | --- | --- |
+| Primary | `.button-primary` | solid ink fill, light text, ink stroke (no gold fill anywhere) | `--color-primary-hover`, pressed `--color-primary-active` | muted-grey fill |
+| Secondary | `.button` | transparent, ink text, 1 px gold-brown stroke (`--color-accent-strong`) | 12% gold-brown tint | border-strong stroke, muted text |
+| Ghost | `.button-link` | no stroke, gold underline | text turns `--color-accent-text` | no stroke |
+| Danger | `.button-danger` | solid red in confirm dialogs, red outline in the page header | darker red | desaturated red |
+| Icon | `.button-icon` | 44 x 44, inline SVG, same stroke as secondary | as secondary | as secondary |
+
+Focus is the one shared ring (`--color-focus`, `--focus-width`, `--focus-offset`) on every kind. Gold (`--color-accent`)
+is decoration only: the pending dot, the active nav bar and underlines.
+
+### Design pass (WP-08a, T-173 to T-180, superseded by WP-13 above)
 
 A CSS-only pass over `apps/admin/src/styles/app.css` to give the tool a clearer hierarchy. No token value, new token,
-markup, class name, route, role or Czech text changed; brand colour (H-3), dark mode and fonts are untouched. Guarded by
+markup, class name, route, role or Czech text changed (historical: fonts were untouched then; WP-13 later added them). Guarded by
 `apps/admin/src/styles/design-pass.test.ts` (no literal colours or px in `app.css`, plus one check per step below).
 
 - Type and rhythm (step 2): h1 is `--font-size-2`, h2 gets a rule at `--font-size-1`, and h2 in a page or section has

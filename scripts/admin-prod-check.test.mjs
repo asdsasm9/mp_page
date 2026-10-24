@@ -54,6 +54,8 @@ describe('admin-prod-check judges', () => {
   it('fails when built CSS inlines a font as a data: URL (WP-13)', () => {
     expect(judgeNoDataFonts([{ file: 'a.css', text: "@font-face{src:url(/assets/x-abc.woff2) format('woff2')}" }, { file: 'b.css', text: 'x{background:url(data:image/svg+xml,y)}' }])).toEqual([]);
     expect(judgeNoDataFonts([{ file: 'a.css', text: '@font-face{src:url(data:font/woff2;base64,AAAA)}' }])[0]).toMatch(/a\.css inlines a font/);
+    expect(judgeNoDataFonts([{ file: 'c.css', text: '@font-face{font-family:X;src:url("data:application/octet-stream;base64,AAAA") format("woff2")}' }])[0]).toMatch(/c\.css inlines a font/);
+    expect(judgeNoDataFonts([{ file: 'd.css', text: '@font-face{src:url(data:;base64,AAAA)}' }])[0]).toMatch(/d\.css inlines a font/);
   });
 
   it('fails when the admin dist carries the analytics beacon', () => {

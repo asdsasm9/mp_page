@@ -365,7 +365,16 @@ describe('design pass: existing finding guards remain', () => {
   it('keeps the summary chevron and the one-row desktop top bar', () => {
     expect(css).toContain('.details summary::before');
     expect(css).toContain('.details[open] > summary::before');
-    expect(css).toMatch(/\.desktop-nav \.nav-list\s*\{\s*gap: 0;/);
+    expect(css).toMatch(/\.desktop-nav \.nav-list\s*\{\s*gap: var\(--space-1\);/);
     expect(css).toMatch(/\.desktop-nav \.nav-link\s*\{\s*padding-inline: var\(--space-2\);/);
+  });
+
+  it('T-312: Cormorant text uses lining figures, the cover picker legend is small and its badge does not wrap', () => {
+    expect(css).toMatch(/\n\s*h1,\s*h2,\s*h3\s*\{[^}]*font-variant-numeric: lining-nums/);
+    expect(css.match(/\n  \.brand \{[^}]*\}/)?.[0] ?? '').toContain('font-variant-numeric: lining-nums');
+    const legend = css.match(/\.cover-picker-albums legend,[^{]*\{[^}]*\}/)?.[0] ?? '';
+    expect(legend).toContain('font-size: var(--text-lead)');
+    expect(legend).toContain('lining-nums');
+    expect(css.match(/\.cover-tile \.quality-badge \{[^}]*\}/)?.[0] ?? '').toContain('white-space: nowrap');
   });
 });

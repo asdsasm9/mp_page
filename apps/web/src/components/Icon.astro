@@ -1,7 +1,7 @@
 ---
 // Inline SVG icons (Lucide-style strokes). The web fonts have no arrow glyphs (U+2190 and friends), so arrows
 // are drawn, not typed. Decorative: the link or button around the icon carries the accessible name.
-export type IconName = 'arrow-left' | 'arrow-right' | 'chevron-left' | 'chevron-right';
+export type IconName = 'arrow-left' | 'arrow-right' | 'chevron-left' | 'chevron-right' | 'close' | 'plus' | 'minus';
 
 interface Props {
   name: IconName;
@@ -15,6 +15,9 @@ const PATHS: Record<IconName, string> = {
   'arrow-right': 'M5 12h14M12 5l7 7-7 7',
   'chevron-left': 'M15 18l-6-6 6-6',
   'chevron-right': 'M9 18l6-6-6-6',
+  close: 'M6 6l12 12M18 6L6 18',
+  plus: 'M12 5v14M5 12h14',
+  minus: 'M5 12h14',
 };
 ---
 <svg

@@ -54,7 +54,8 @@ const measure = (page) =>
     const glyph = (el) => {
       const range = document.createRange();
       range.selectNodeContents(el);
-      const r = range.getBoundingClientRect();
+      const svg = el.querySelector('svg');
+      const r = svg ? svg.getBoundingClientRect() : range.getBoundingClientRect();
       return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
     };
     const q = (n) => document.querySelector(`[data-lb="${n}"]`);

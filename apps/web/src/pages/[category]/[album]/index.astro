@@ -91,13 +91,13 @@ const { prev, next } = catalog.neighbours(album.slug);
     <p class="lb-status t-caption" data-lb="status" role="status" aria-live="polite"></p>
     <p class="lb-level" data-lb="level" role="status" aria-live="polite"></p>
     <div class="lb-zoom" data-lb="zoom" role="group" aria-label="Přiblížení" hidden>
-      <button type="button" class="lb-btn t-body" data-lb="zoom-out" aria-label="Oddálit">&minus;</button>
-      <button type="button" class="lb-btn t-body" data-lb="zoom-fit" aria-label="Přizpůsobit 1×">1&times;</button>
-      <button type="button" class="lb-btn t-body" data-lb="zoom-in" aria-label="Přiblížit">+</button>
+      <button type="button" class="lb-btn" data-lb="zoom-out" aria-label="Oddálit"><Icon name="minus" /></button>
+      <button type="button" class="lb-btn lb-btn-text t-body" data-lb="zoom-fit" aria-label="Přizpůsobit 1×">1&times;</button>
+      <button type="button" class="lb-btn" data-lb="zoom-in" aria-label="Přiblížit"><Icon name="plus" /></button>
     </div>
-    <button type="button" class="lb-btn t-h3 lb-close" data-lb="close" aria-label="Zavřít">&times;</button>
-    <button type="button" class="lb-btn t-h3 lb-prev" data-lb="prev" aria-label="Předchozí fotografie">&lsaquo;</button>
-    <button type="button" class="lb-btn t-h3 lb-next" data-lb="next" aria-label="Další fotografie">&rsaquo;</button>
+    <button type="button" class="lb-btn lb-close" data-lb="close" aria-label="Zavřít"><Icon name="close" /></button>
+    <button type="button" class="lb-btn lb-prev" data-lb="prev" aria-label="Předchozí fotografie"><Icon name="chevron-left" /></button>
+    <button type="button" class="lb-btn lb-next" data-lb="next" aria-label="Další fotografie"><Icon name="chevron-right" /></button>
   </dialog>
 </Base>
 
@@ -228,8 +228,12 @@ const { prev, next } = catalog.neighbours(album.slug);
 
   .lb-status {
     position: absolute;
-    inset-block-start: var(--space-3);
+    inset-block-start: max(var(--space-3), env(safe-area-inset-top));
     inset-inline: var(--space-8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    block-size: var(--target-min);
     margin: 0;
     text-align: center;
   }
@@ -273,15 +277,21 @@ const { prev, next } = catalog.neighbours(album.slug);
     z-index: 1;
     display: inline-flex;
     align-items: center;
+    box-sizing: border-box;
     block-size: var(--target-min);
     margin: 0;
     padding-inline: var(--space-3);
+    border: var(--border-width) solid var(--color-on-overlay);
     border-radius: var(--radius-full);
     background: var(--color-overlay);
+    font-variant-numeric: tabular-nums;
   }
 
+  /* One button recipe for all five round buttons: a fixed square box and the SVG icon centred by flex. The
+     only text button, "1x", is centred by the same flex box (its type comes from the t-body class). */
   .lb-btn {
     position: absolute;
+    box-sizing: border-box;
     inline-size: var(--target-min);
     block-size: var(--target-min);
     display: inline-flex;
@@ -293,12 +303,34 @@ const { prev, next } = catalog.neighbours(album.slug);
     background: var(--color-overlay);
     color: var(--color-on-overlay);
     cursor: pointer;
+    transition: background-color var(--motion-fast) var(--motion-ease);
+  }
+
+  /* All icons share one size, so +, -, x and the chevrons have the same optical weight. */
+  .lb-btn :global(.icon) {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+  }
+
+  .lb-btn-text {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (hover: hover) {
+    .lb-btn:hover {
+      background: color-mix(in oklab, var(--color-overlay), var(--color-on-overlay) 18%);
+    }
+  }
+
+  .lb-btn:active {
+    background: color-mix(in oklab, var(--color-overlay), var(--color-on-overlay) 32%);
   }
 
   .lb-btn:disabled,
   .lb-btn[aria-disabled='true'] {
     opacity: 0.4;
     cursor: default;
+    background: var(--color-overlay);
   }
 
   .lb-btn:focus-visible {

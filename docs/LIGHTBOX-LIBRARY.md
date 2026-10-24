@@ -57,6 +57,56 @@ landscape and a portrait photo, fit and zoomed, it asserts the stage and photo c
 the X and plus glyphs are centred in their buttons (within 1.5 px), counter and close mirror each other, the zoom
 group centre equals the viewport centre, and prev and next mirror; screenshots go to `design-check-out/`.
 
+## Look: keep or rebuild, second round (T-292)
+
+Why it came up again: after T-291 the buttons still looked hand-made (text glyphs not centred in the round
+buttons, counter and toolbar on slightly different lines, no hover or pressed state). That is a styling defect of
+our markup, not a sign that the approach is wrong, and it is fixed without a dependency (see below).
+
+Comparison for the decision (figures are approximate, from the libraries' documentation, not measured here; verify
+with `npm pack` and gzip before any swap):
+
+| Point | Keep custom (recommended) | Rebuild on PhotoSwipe 5 (or similar) |
+| --- | --- | --- |
+| Cost now | Done in this task, about 1 hour, no dependency | 2 to 4 days: wrapper, Czech labels, theming, re-test on real phones |
+| Bundle | about 4 KB gzip, album pages only | about 14 to 16 KB JS plus about 3 KB CSS, album pages only (3 to 4 times more) |
+| Accessibility | Native `<dialog>` (focus trap, inert page, Escape, focus return), named buttons, zoom buttons as the alternative to gestures (WCAG 2.5.7), axe 0 serious/critical | Good keyboard and ARIA, own focus handling (not `<dialog>`); labels and live regions must be re-verified in Czech |
+| Touch and zoom | Own gestures: double tap, pinch, pan, clamp, page-zoom safety net (T-291), tested through CDP touch events | Best in class (inertia, swipe to close); its gesture model would replace our T-291 protections and need re-testing on iOS |
+| Maintenance | About 600 lines we own, unit tests plus three scripted checks | Upstream maintained, but majors break the API and we still own the glue; a supply-chain dependency |
+| CSP | Bundled module, no inline code, no `eval` | Works from a bundled import; verify no inline styles are injected (`style-src`) |
+| Look | Fully tokens; one recipe for all buttons now | Themable, but its default icons, sizes and colours must be overridden to match the tokens |
+
+Behaviour of ours a library would not give for free and that would have to be rebuilt on its API:
+
+1. Staged loading: grid thumbnail shown instantly, fit tier swapped in, master requested once on first zoom, never
+   under Save-Data, nothing requested before opening (`npm run lightbox-network`).
+2. Native `<dialog>` semantics, with `inert` page and focus return to the opening thumbnail.
+3. Czech announcements (`Přiblížení 150 %`), the `aria-disabled` ends of the prev, next and zoom buttons.
+4. No-JS fallback: thumbnails are links to the 1600 JPEG and the script only upgrades them.
+5. T-291 protections: `touch-action: none` on the whole dialog, `gesturestart` cancelled, `pageZoomFrame` re-fit,
+   snap to fit, controls clear of safe-area insets.
+6. Button alternative to pinch, double tap, wheel and drag (zoom group), keyboard zoom and pan (`+`, `-`, `0`, arrows).
+
+Recommendation: **keep the custom lightbox**. A rebuild would trade about 4 KB for about 18 KB and still require
+re-implementing items 1 to 5. Reconsider only if the owner wants features we lack (swipe-to-dismiss animation,
+thumbnail strip, video) or the touch code keeps needing fixes on real devices. A rebuild is a new dependency and
+therefore a human decision (D-23); no other task depends on it.
+
+What changed for the look (T-292, `apps/web/src/pages/[category]/[album]/index.astro`, `Icon.astro`):
+
+- Close, previous, next, plus and minus are the shared `Icon` SVG (new names `close`, `plus`, `minus`; chevrons
+  reused), all drawn at one size (1.5 rem) with the same 1.5 stroke; no text glyphs. Only `1×` stays text.
+- One `.lb-btn` recipe: a 44 px square (`--target-min`), `display: inline-flex` with `align-items` and
+  `justify-content` centring, `box-sizing: border-box`; the old per-button type classes are gone.
+- Toolbar grid: the counter, the status line and the close button share the same top inset, the same 44 px height and
+  the same border and radius, so they sit on one centre line; prev and next are mirrored at the vertical middle and the
+  zoom group is centred at the bottom.
+- States: hover (only where hover exists) and pressed use `color-mix` of the overlay and on-overlay tokens, the
+  focus ring is the shared `--color-focus-on-dark` ring, disabled ends stay flat at 40 % opacity.
+- T-291 logic (touch-action, insets, page-zoom frame, snap to fit) is untouched.
+- `scripts/lightbox-layout.mjs` now measures the SVG box, so "glyph centred in its button" checks the real icon
+  (0.0 px offset at 360, 768 and 1280).
+
 ## Stuck after a pinch on a phone (T-291)
 
 Cause: `touch-action: none` was set on the stage only, and only when `data-zoom="on"`. A pinch that began on a

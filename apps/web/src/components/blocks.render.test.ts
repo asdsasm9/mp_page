@@ -1,6 +1,6 @@
-// Render tests for the shared building blocks (T-276): Icon, Kicker, Section, PageHead, Plate, Breadcrumb, Photo (crop),
+// Render tests for the shared building blocks (T-276): Icon, Kicker, Section, PageHead, Breadcrumb, Photo (crop),
 // CategoryCard and AlbumCard. They render each component with Astro's container and check markup, not looks.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import type { Snapshot, SnapshotPhoto } from '@mp/shared';
@@ -17,7 +17,6 @@ import Icon from './Icon.astro';
 import Kicker from './Kicker.astro';
 import PageHead from './PageHead.astro';
 import Photo from './Photo.astro';
-import Plate from './Plate.astro';
 import Section from './Section.astro';
 
 const IMG = 'https://img.mullnyphotos.cz';
@@ -178,12 +177,14 @@ describe('Breadcrumb (T-249 alignment kept)', () => {
   });
 });
 
-describe('Plate', () => {
-  it('wraps the slot and is matted by default, plain on request', async () => {
-    const matted = await render(Plate, {}, '<img alt="" src="x">');
-    expect(matted).toMatch(/<div class="plate" data-matted/);
-    expect(matted).toContain('<img alt="" src="x">');
-    expect(await render(Plate, { matted: false }, 'x')).not.toContain('data-matted');
+describe('About collage (T-295)', () => {
+  it('has no mat: no border, padding or shadow on the photos, Plate is gone', () => {
+    const src = readFileSync(new URL('./sections/About.astro', import.meta.url), 'utf8');
+    const style = /<style>([\s\S]*)<\/style>/.exec(src)?.[1] ?? '';
+    expect(src).not.toMatch(/Plate/);
+    expect(style).not.toMatch(/\b(border|box-shadow|padding)\s*:/);
+    expect(style).toMatch(/\.shot\b/);
+    expect(existsSync(new URL('./Plate.astro', import.meta.url))).toBe(false);
   });
 });
 
@@ -191,7 +192,7 @@ describe('no colour filter on photos, ever (WP-12 D-22)', () => {
   const srcDir = join(new URL('..', import.meta.url).pathname);
   const css = (rel: string): string => readFileSync(join(srcDir, rel), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const FILES = [
-    'components/Plate.astro',
+    'components/sections/About.astro',
     'components/Photo.astro',
     'components/CategoryCard.astro',
     'components/AlbumCard.astro',

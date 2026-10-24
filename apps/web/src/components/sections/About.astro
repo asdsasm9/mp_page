@@ -1,18 +1,17 @@
 ---
-// O mně on the home (WP-12 e): a collage of two photos (hands in wheat behind, the kiss on the forehead in front on a mat),
+// O mně on the home (WP-12 e): a collage of two photos (hands in wheat behind, the kiss on the forehead in front; both plain, no mat, border or shadow (T-295)),
 // the greeting text and a "Více o mně" link to the /o-mne/ page (T-293), which holds the long texts and the quote.
 // Both images are lazy (below the hero).
 import { Image } from 'astro:assets';
 import { HOME } from '../../content/texts';
 import Kicker from '../Kicker.astro';
-import Plate from '../Plate.astro';
 import hello from '../../assets/site/home/hello.jpg';
 import wedding from '../../assets/site/about/wedding.jpg';
 ---
 <section id="o-mne" class="about" aria-labelledby="o-mne-nadpis">
   <div class="inner">
-    <div class="plates">
-      <Plate matted={false} class="back">
+    <div class="overlap">
+      <div class="shot back">
         <Image
           src={hello}
           alt="Ruce novomanželů s prsteny v pšeničném poli"
@@ -22,8 +21,8 @@ import wedding from '../../assets/site/about/wedding.jpg';
           loading="lazy"
           decoding="async"
         />
-      </Plate>
-      <Plate class="front">
+      </div>
+      <div class="shot front">
         <Image
           src={wedding}
           alt="Ženich líbá nevěstu na čelo, nevěsta drží kytici z kapradí a trav"
@@ -33,7 +32,7 @@ import wedding from '../../assets/site/about/wedding.jpg';
           loading="lazy"
           decoding="async"
         />
-      </Plate>
+      </div>
     </div>
     <div class="text" lang="cs">
       <Kicker>O mně</Kicker>
@@ -63,8 +62,9 @@ import wedding from '../../assets/site/about/wedding.jpg';
     padding-inline: var(--layout-gutter);
   }
 
-  /* Back plate top-left, front plate overlapping at the bottom-right; the box keeps its own aspect ratio */
-  .plates {
+  /* Back photo top-left, front photo overlapping at the bottom-right; the box keeps its own aspect ratio.
+     No colour filter on photos, no radius. */
+  .overlap {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
     grid-template-rows: repeat(12, 1fr);
@@ -74,11 +74,22 @@ import wedding from '../../assets/site/about/wedding.jpg';
     justify-self: center;
   }
 
-  .plates :global(.back) {
+  .shot {
+    overflow: hidden;
+  }
+
+  .shot :global(img) {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .back {
     grid-area: 1 / 1 / 9 / 8;
   }
 
-  .plates :global(.front) {
+  .front {
     grid-area: 6 / 5 / 13 / 13;
     z-index: 1;
   }

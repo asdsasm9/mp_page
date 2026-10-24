@@ -24,6 +24,9 @@ export default defineConfig({
     // Budget (docs/ADMIN.md, WP5-29): initial JS must stay under 300 KB gzip (checked by `npm run admin-prod-check`).
     // The single entry chunk is about 520 kB raw, so Vite's default 500 kB raw warning is raised to 600 kB raw.
     chunkSizeWarningLimit: 600,
+    // Fonts stay separate hashed files: the CSP has font-src 'self' and no data:, so a woff2 must never be inlined into the CSS.
+    // (Vite's default would inline files under 4 kB; returning undefined keeps the default for everything else.)
+    assetsInlineLimit: (filePath: string) => (filePath.endsWith('.woff2') ? false : undefined),
   },
   test: {
     environment: 'jsdom',

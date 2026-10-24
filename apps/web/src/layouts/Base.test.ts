@@ -138,7 +138,7 @@ describe('Home page (built, shared build)', () => {
     expect(hero).toMatch(/<a class="btn"[^>]*href="#kontakt"[^>]*>Poptat termín<\/a>/);
   });
 
-  it('O mně has the corrected alt texts, lazy images, the details with the long text and the quote, and a link to #kontakt', () => {
+  it('O mně has the corrected alt texts, lazy images, the short hello, a "Více o mně" link to /o-mne/ and a link to #kontakt', () => {
     const about = section('id="o-mne"');
     expect(about).toContain('alt="Ruce novomanželů s prsteny v pšeničném poli"');
     expect(about).not.toContain('Fotografka Terezie Müllnerová');
@@ -146,9 +146,10 @@ describe('Home page (built, shared build)', () => {
     expect(imgs).toHaveLength(2);
     for (const t of imgs) expect(t).toContain('loading="lazy"');
     expect(about).toContain(HOME.hello.paragraphs[0]!);
-    expect(about).toMatch(/<details[^>]*class="more[^"]*"/);
-    expect(about).toContain(ABOUT.experience.body);
-    expect(about).toContain(HOME.quote);
+    expect(about).not.toContain('<details');
+    expect(about).not.toContain(ABOUT.experience.body);
+    expect(about).not.toContain(HOME.quote);
+    expect(about).toMatch(/<a class="btn"[^>]*href="\/o-mne\/"[^>]*>Více o mně<\/a>/);
     expect(about).toContain('href="#kontakt"');
   });
 
@@ -167,8 +168,8 @@ describe('Home page (built, shared build)', () => {
     expect(html).toMatch(/<meta property="og:image" content="https:\/\/www\.mullnyphotos\.cz\/[^"]+">/);
   });
 
-  it('emits Photographer and WebSite JSON-LD only, no Review', () => {
-    expect(jsonLdTypes().sort()).toEqual(['Person', 'Photographer', 'WebSite']);
+  it('emits Photographer and WebSite JSON-LD only (Person lives on /o-mne/), no Review', () => {
+    expect(jsonLdTypes().sort()).toEqual(['Photographer', 'WebSite']);
     expect(html).not.toMatch(/"@type":"(Review|AggregateRating)"/);
   });
 });
@@ -201,7 +202,18 @@ describe('Category pages (built, shared build)', () => {
     }
   });
 
-  it('shows the count with a plural, cover 480 and 960 srcset, first row eager, first card high priority, rest lazy', () => {
+  it('has no intro text under the title (T-317): the generated line stays in the meta description only', () => {
+    for (const c of fixture.categories) {
+      const page = categoryHtml[c.slug]!;
+      expect(page).not.toContain('class="intro"');
+      const desc = /<meta name="description" content="([^"]+)">/.exec(page)?.[1];
+      expect(desc, c.slug).toBeTruthy();
+      const body = page.slice(page.indexOf('<body'));
+      expect(body.replace(/<script[\s\S]*?<\/script>/g, '')).not.toContain('Prohlédněte si');
+    }
+  });
+
+  it('shows no count on the cards, cover 480 and 960 srcset, first row eager, first card high priority, rest lazy', () => {
     const page = categoryHtml['portrety']!;
     const imgs = imgTags(page).filter((t) => t.includes('/photos/'));
     expect(imgs).toHaveLength(6);
@@ -217,13 +229,16 @@ describe('Category pages (built, shared build)', () => {
     expect(page).toContain('960.webp 960w');
     // Album covers are cropped into the 4/5 box: sizes is the box width times the crop factor (T-276, F10).
     expect(page).toMatch(/sizes="\(min-width: 48rem\) calc\(26rem \* [\d.]+\), calc\(\(100vw - 3rem\) \* [\d.]+\)"/);
-    expect(page).toMatch(/\d+ fotografi(e|í)/);
+    // T-315: the cards show the title only, no "place · N fotografií" meta line.
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    expect(main).not.toMatch(/\d+ fotografi(e|í)/);
+    expect(main).not.toMatch(/ · /);
   });
 
   it('marks Portfolio in the header with aria-current=true (never page), and the header equals the home header', () => {
     for (const c of fixture.categories) {
       const page = categoryHtml[c.slug]!;
-      expect(currentLinks(page)).toEqual(['/#portfolio']);
+      expect(currentLinks(page)).toEqual(['/portfolio/']);
       expect(navLinks(page).filter((t) => /aria-current="true"/.test(t))).toHaveLength(1);
       expect(page).not.toMatch(/<a [^>]*class="t-nav"[^>]*aria-current="page"/);
       // Same header markup as on the home page; only data-over-hero and aria-current differ.
@@ -341,7 +356,7 @@ describe('Portfolio page (built, shared build)', () => {
 
   it('marks Portfolio as the current nav link', () => {
     const page = readFileSync(join(out, 'portfolio', 'index.html'), 'utf8');
-    expect(currentLinks(page)).toEqual(['/#portfolio']);
+    expect(currentLinks(page)).toEqual(['/portfolio/']);
   });
 });
 
@@ -351,9 +366,32 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
       .filter((f) => f.endsWith('.html'))
       .map((f): [string, string] => [f, readFileSync(join(out, f), 'utf8')]);
 
-  it('does not build /o-mne/ and /kontakt/ any more', () => {
-    expect(existsSync(join(out, 'o-mne'))).toBe(false);
+  it('builds /o-mne/ (T-293) but not /kontakt/', () => {
+    expect(existsSync(join(out, 'o-mne', 'index.html'))).toBe(true);
     expect(existsSync(join(out, 'kontakt'))).toBe(false);
+  });
+
+  it('/o-mne/ has one h1, the three texts and the quote in full, two lazy photos, Person + BreadcrumbList, the current nav marker', () => {
+    const page = readFileSync(join(out, 'o-mne', 'index.html'), 'utf8');
+    expect([...page.matchAll(/<h1[\s>]/g)]).toHaveLength(1);
+    expect(page).toMatch(/<h1[^>]*>O mně<\/h1>/);
+    for (const text of [ABOUT.me.body, ABOUT.experience.body, ABOUT.story.body, HOME.quote]) expect(page).toContain(text);
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    expect(main).not.toContain('<details');
+    const imgs = imgTags(main);
+    expect(imgs).toHaveLength(2);
+    for (const t of imgs) expect(t).toContain('loading="lazy"');
+    expect(page).not.toContain('fetchpriority="high"');
+    expect(main).toContain('href="/#kontakt"');
+    const types = [...page.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+      .map((m) => JSON.parse(m[1]!) as { '@type': string; url?: string })
+      .map((j) => j['@type'])
+      .sort();
+    expect(types).toEqual(['BreadcrumbList', 'Person']);
+    expect(page).toContain('"url":"https://www.mullnyphotos.cz/o-mne/"');
+    expect(page).toContain('<link rel="canonical" href="https://www.mullnyphotos.cz/o-mne/">');
+    expect(currentLinks(page)).toEqual(['/o-mne/']);
+    expect(navLinks(page).filter((t) => /aria-current="page"/.test(t))).toHaveLength(1);
   });
 
   it('no built page has a tel: link, a +420 number or a telephone property', () => {
@@ -379,6 +417,11 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
     expect(footer).toContain('href="mailto:mullnyphotos@gmail.com"');
     expect(footer).toMatch(/href="https:\/\/www\.instagram\.com\/[^"]*"[^>]*rel="noopener noreferrer"|rel="noopener noreferrer"[^>]*href="https:\/\/www\.instagram\.com\//);
     expect(footer).toMatch(/href="https:\/\/mywed\.com[^"]*"/);
+    const mywed = /<a\b[^>]*href="https:\/\/mywed\.com[^"]*"[^>]*>[\s\S]*?<\/a>/.exec(footer)?.[0] ?? '';
+    expect(mywed).toContain('aria-label="MyWed (otevře se v novém okně)"');
+    expect(mywed).toContain('viewBox="24 0 152 161"');
+    expect(mywed).toContain('fill="currentColor"');
+    expect(mywed).not.toContain('M19 14c1.49');
     expect(footer).toContain('href="/cookies/"');
     expect(footer).not.toMatch(/facebook/i);
     const nav = /<nav[^>]*aria-label="Kategorie"[^>]*>([\s\S]*?)<\/nav>/.exec(footer)?.[1] ?? '';
@@ -405,13 +448,15 @@ describe('Cookies page and 404 (built, shared build)', () => {
     expect(page).toContain('"@type":"BreadcrumbList"');
   });
 
-  it('/cookies/ implies no banner, claims nothing about analytics, and has [doplnit] markers and the slot', () => {
+  it('/cookies/ implies no banner, claims nothing about analytics, and shows the controller details without markers', () => {
     const page = cookies();
     const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
     // The shared build is token-less: no marker comment, no analytics section.
     expect(main).not.toMatch(/cookiebar|souhlas|analytic|google analytics|měření/i);
     // Name and address are required; IČO is optional and its line is omitted while unset (T-220).
-    expect((main.match(/\[doplnit\]/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(main).not.toContain('[doplnit]');
+    expect(main).toContain('Terezie Müllnerová');
+    expect(main).toContain('Spodní, 625 00 Brno');
     expect(main).not.toContain('IČO');
     expect(page).not.toContain('ANALYTICS_PARAGRAPH');
     expect(page).not.toContain('id="mereni"');
@@ -437,7 +482,7 @@ describe('Cookies page and 404 (built, shared build)', () => {
 });
 
 describe('Sitemap and robots (built, shared build)', () => {
-  it('sitemap.xml lists the 19 fixture URLs (1 + 1 + 3 + 13 + 1), without 404 and without /o-mne/ and /kontakt/, and sedlakovi has 44 images', () => {
+  it('sitemap.xml lists the 20 fixture URLs (1 + 1 + 3 + 13 + 2), with /o-mne/, without 404 and /kontakt/, and sedlakovi has 44 images', () => {
     const xml = readFileSync(join(out, 'sitemap.xml'), 'utf8');
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     const albums = fixture.categories.flatMap((c) => c.albums.map((a) => `/${c.slug}/${a.slug}/`));
@@ -446,9 +491,10 @@ describe('Sitemap and robots (built, shared build)', () => {
       '/portfolio/',
       ...fixture.categories.map((c) => `/${c.slug}/`),
       ...albums,
+      '/o-mne/',
       '/cookies/',
     ].map((p) => `https://www.mullnyphotos.cz${p}`);
-    expect(locs).toHaveLength(19);
+    expect(locs).toHaveLength(20);
     expect([...locs].sort()).toEqual([...expected].sort());
     expect(locs.filter((l) => /404/.test(l!))).toEqual([]);
     const sedlakovi = xml.slice(xml.indexOf('/svatby/sedlakovi/</loc>'));
@@ -522,12 +568,12 @@ describe('Base layout (built home page)', () => {
     expect(html).toContain('<main id="obsah"');
   });
 
-  it('has four header nav links (home anchors, Reference only with reviews) and marks the wordmark as the current page', () => {
-    expect(navLinks(html).map(hrefOf)).toEqual(['/#o-mne', '/#portfolio', '/#reference', '/#kontakt']);
+  it('has four header nav links (O mně is /o-mne/, the rest home anchors, Reference only with reviews) and marks the wordmark as the current page', () => {
+    expect(navLinks(html).map(hrefOf)).toEqual(['/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
     expect(html).toMatch(/class="wordmark t-wordmark" href="\/"[^>]*aria-current="page"/);
     // The drawer nav carries the same four links, and exactly one nav is exposed at any width.
     const drawer = /<nav aria-label="Hlavní navigace v menu"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/#o-mne', '/#portfolio', '/#reference', '/#kontakt']);
+    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
   });
 
   it('overlays the hero only on the home page (data-over-hero) and uses a native details drawer', () => {

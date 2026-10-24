@@ -1,20 +1,17 @@
 ---
-// O mně (WP-12 e): a collage of two photos (hands in wheat behind, the kiss on the forehead in front on a mat),
-// the greeting text, and a native <details> "Více o mně" with the rest of the old About page and the long quote,
-// so no real text is lost and no JavaScript is needed. Both images are lazy (below the hero).
+// O mně on the home (WP-12 e): a collage of two photos (hands in wheat behind, the kiss on the forehead in front; both plain, no mat, border or shadow (T-295)),
+// the greeting text and a "Více o mně" link to the /o-mne/ page (T-293), which holds the long texts and the quote.
+// Both images are lazy (below the hero).
 import { Image } from 'astro:assets';
-import { ABOUT, HOME } from '../../content/texts';
+import { HOME } from '../../content/texts';
 import Kicker from '../Kicker.astro';
-import Plate from '../Plate.astro';
 import hello from '../../assets/site/home/hello.jpg';
 import wedding from '../../assets/site/about/wedding.jpg';
-
-const more = [ABOUT.me, ABOUT.experience, ABOUT.story];
 ---
 <section id="o-mne" class="about" aria-labelledby="o-mne-nadpis">
   <div class="inner">
-    <div class="plates">
-      <Plate matted={false} class="back">
+    <div class="overlap">
+      <div class="shot back">
         <Image
           src={hello}
           alt="Ruce novomanželů s prsteny v pšeničném poli"
@@ -24,8 +21,8 @@ const more = [ABOUT.me, ABOUT.experience, ABOUT.story];
           loading="lazy"
           decoding="async"
         />
-      </Plate>
-      <Plate class="front">
+      </div>
+      <div class="shot front">
         <Image
           src={wedding}
           alt="Ženich líbá nevěstu na čelo, nevěsta drží kytici z kapradí a trav"
@@ -35,27 +32,16 @@ const more = [ABOUT.me, ABOUT.experience, ABOUT.story];
           loading="lazy"
           decoding="async"
         />
-      </Plate>
+      </div>
     </div>
     <div class="text" lang="cs">
       <Kicker>O mně</Kicker>
       <h2 id="o-mne-nadpis" class="t-title">{HOME.hello.title}</h2>
       {HOME.hello.paragraphs.map((p) => <p class="t-prose">{p}</p>)}
-      <details class="more">
-        <summary class="btn">Více o mně</summary>
-        <div class="more-body">
-          {
-            more.map((block) => (
-              <>
-                <h3>{block.title}</h3>
-                <p class="t-prose">{block.body}</p>
-              </>
-            ))
-          }
-          <blockquote class="t-prose">{HOME.quote}</blockquote>
-        </div>
-      </details>
-      <a class="btn-ghost" href="#kontakt">Napsat mi</a>
+      <div class="actions">
+        <a class="btn" href="/o-mne/">Více o mně</a>
+        <a class="btn-ghost" href="#kontakt">Napsat mi</a>
+      </div>
     </div>
   </div>
 </section>
@@ -76,8 +62,9 @@ const more = [ABOUT.me, ABOUT.experience, ABOUT.story];
     padding-inline: var(--layout-gutter);
   }
 
-  /* Back plate top-left, front plate overlapping at the bottom-right; the box keeps its own aspect ratio */
-  .plates {
+  /* Back photo top-left, front photo overlapping at the bottom-right; the box keeps its own aspect ratio.
+     No colour filter on photos, no radius. */
+  .overlap {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
     grid-template-rows: repeat(12, 1fr);
@@ -87,11 +74,22 @@ const more = [ABOUT.me, ABOUT.experience, ABOUT.story];
     justify-self: center;
   }
 
-  .plates :global(.back) {
+  .shot {
+    overflow: hidden;
+  }
+
+  .shot :global(img) {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .back {
     grid-area: 1 / 1 / 9 / 8;
   }
 
-  .plates :global(.front) {
+  .front {
     grid-area: 6 / 5 / 13 / 13;
     z-index: 1;
   }
@@ -106,32 +104,10 @@ const more = [ABOUT.me, ABOUT.experience, ABOUT.story];
     hyphens: auto;
   }
 
-  .more {
-    display: grid;
-    gap: var(--space-4);
-    inline-size: 100%;
-  }
-
-  .more summary {
-    justify-self: start;
-    list-style: none;
-  }
-
-  .more summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .more-body {
-    display: grid;
-    gap: var(--space-3);
-    padding-block-start: var(--space-4);
-  }
-
-  .more-body blockquote {
-    margin: 0;
-    padding-inline-start: var(--space-5);
-    border-inline-start: var(--border-width) solid var(--color-accent);
-    max-inline-size: var(--measure);
-    hyphens: auto;
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
   }
 </style>

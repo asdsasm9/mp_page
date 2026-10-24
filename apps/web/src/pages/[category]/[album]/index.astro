@@ -91,13 +91,13 @@ const { prev, next } = catalog.neighbours(album.slug);
     <p class="lb-status t-caption" data-lb="status" role="status" aria-live="polite"></p>
     <p class="lb-level" data-lb="level" role="status" aria-live="polite"></p>
     <div class="lb-zoom" data-lb="zoom" role="group" aria-label="Přiblížení" hidden>
-      <button type="button" class="lb-btn t-body" data-lb="zoom-out" aria-label="Oddálit">&minus;</button>
-      <button type="button" class="lb-btn t-body" data-lb="zoom-fit" aria-label="Přizpůsobit 1×">1&times;</button>
-      <button type="button" class="lb-btn t-body" data-lb="zoom-in" aria-label="Přiblížit">+</button>
+      <button type="button" class="lb-btn" data-lb="zoom-out" aria-label="Oddálit"><Icon name="minus" /></button>
+      <button type="button" class="lb-btn lb-btn-text t-body" data-lb="zoom-fit" aria-label="Přizpůsobit 1×">1&times;</button>
+      <button type="button" class="lb-btn" data-lb="zoom-in" aria-label="Přiblížit"><Icon name="plus" /></button>
     </div>
-    <button type="button" class="lb-btn t-h3 lb-close" data-lb="close" aria-label="Zavřít">&times;</button>
-    <button type="button" class="lb-btn t-h3 lb-prev" data-lb="prev" aria-label="Předchozí fotografie">&lsaquo;</button>
-    <button type="button" class="lb-btn t-h3 lb-next" data-lb="next" aria-label="Další fotografie">&rsaquo;</button>
+    <button type="button" class="lb-btn lb-close" data-lb="close" aria-label="Zavřít"><Icon name="close" /></button>
+    <button type="button" class="lb-btn lb-prev" data-lb="prev" aria-label="Předchozí fotografie"><Icon name="chevron-left" /></button>
+    <button type="button" class="lb-btn lb-next" data-lb="next" aria-label="Další fotografie"><Icon name="chevron-right" /></button>
   </dialog>
 </Base>
 
@@ -154,7 +154,7 @@ const { prev, next } = catalog.neighbours(album.slug);
   .lightbox {
     inline-size: 100%;
     max-inline-size: none;
-    block-size: 100dvh;
+    block-size: var(--lb-h, 100dvh);
     max-block-size: none;
     margin: 0;
     padding: 0;
@@ -162,6 +162,24 @@ const { prev, next } = catalog.neighbours(album.slug);
     background: var(--color-overlay);
     color: var(--color-on-overlay);
     z-index: var(--z-dialog);
+    /* The whole dialog (stage AND controls) refuses the browser's pinch zoom of the page and its panning: the
+       photo zoom is ours. A page pinch from a touch that began on a button or the counter used to zoom the page,
+       push the close button off screen and, because the stage then refused pinch-out, leave no way back (T-291). */
+    touch-action: none;
+  }
+
+  /* Safety net: if the page is zoomed anyway (iOS), lightbox.ts sets data-page-zoomed and these vars; the dialog
+     is re-fitted to the visible window (size of the layout viewport, moved to the visual viewport, scaled back to
+     1:1) so close, prev/next, counter and zoom buttons stay on screen, and the browser may pinch back out. */
+  .lightbox[data-page-zoomed] {
+    inline-size: var(--lb-w);
+    transform: translate(var(--lb-vx), var(--lb-vy)) scale(var(--lb-vs));
+    transform-origin: 0 0;
+    touch-action: pinch-zoom;
+  }
+
+  .lightbox[data-page-zoomed] .lb-stage {
+    touch-action: pinch-zoom;
   }
 
   /* Block, not grid: the absolutely positioned controls must be placed against the dialog's own box
@@ -181,12 +199,9 @@ const { prev, next } = catalog.neighbours(album.slug);
     grid-template: 100% / 100%;
     place-items: center;
     inline-size: 100%;
-    block-size: 100dvh;
+    block-size: var(--lb-h, 100dvh);
     overflow: hidden;
-  }
-
-  /* The script sets data-zoom="on" when the master gives enough headroom; then gestures belong to the page script. */
-  .lb-stage[data-zoom='on'] {
+    /* The stage is its own scroll container, so it needs the value itself (the dialog's does not reach it). */
     touch-action: none;
   }
 
@@ -213,8 +228,12 @@ const { prev, next } = catalog.neighbours(album.slug);
 
   .lb-status {
     position: absolute;
-    inset-block-start: var(--space-3);
+    inset-block-start: max(var(--space-3), env(safe-area-inset-top));
     inset-inline: var(--space-8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    block-size: var(--target-min);
     margin: 0;
     text-align: center;
   }
@@ -238,8 +257,9 @@ const { prev, next } = catalog.neighbours(album.slug);
   /* Zoom buttons: the button alternative to pinch, double tap, wheel and drag (WCAG 2.5.1, 2.5.7). */
   .lb-zoom {
     position: absolute;
-    inset-block-end: var(--space-3);
+    inset-block-end: max(var(--space-3), env(safe-area-inset-bottom));
     inset-inline-start: 50%;
+    z-index: 1;
     translate: -50% 0;
     display: flex;
     gap: var(--space-2);
@@ -252,19 +272,26 @@ const { prev, next } = catalog.neighbours(album.slug);
   /* Top row mirrors the close button: counter at the start, close at the end, both centred on the same line. */
   .count {
     position: absolute;
-    inset-block-start: var(--space-3);
-    inset-inline-start: var(--space-3);
+    inset-block-start: max(var(--space-3), env(safe-area-inset-top));
+    inset-inline-start: max(var(--space-3), env(safe-area-inset-left));
+    z-index: 1;
     display: inline-flex;
     align-items: center;
+    box-sizing: border-box;
     block-size: var(--target-min);
     margin: 0;
     padding-inline: var(--space-3);
+    border: var(--border-width) solid var(--color-on-overlay);
     border-radius: var(--radius-full);
     background: var(--color-overlay);
+    font-variant-numeric: tabular-nums;
   }
 
+  /* One button recipe for all five round buttons: a fixed square box and the SVG icon centred by flex. The
+     only text button, "1x", is centred by the same flex box (its type comes from the t-body class). */
   .lb-btn {
     position: absolute;
+    box-sizing: border-box;
     inline-size: var(--target-min);
     block-size: var(--target-min);
     display: inline-flex;
@@ -276,12 +303,34 @@ const { prev, next } = catalog.neighbours(album.slug);
     background: var(--color-overlay);
     color: var(--color-on-overlay);
     cursor: pointer;
+    transition: background-color var(--motion-fast) var(--motion-ease);
+  }
+
+  /* All icons share one size, so +, -, x and the chevrons have the same optical weight. */
+  .lb-btn :global(.icon) {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+  }
+
+  .lb-btn-text {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (hover: hover) {
+    .lb-btn:hover {
+      background: color-mix(in oklab, var(--color-overlay), var(--color-on-overlay) 18%);
+    }
+  }
+
+  .lb-btn:active {
+    background: color-mix(in oklab, var(--color-overlay), var(--color-on-overlay) 32%);
   }
 
   .lb-btn:disabled,
   .lb-btn[aria-disabled='true'] {
     opacity: 0.4;
     cursor: default;
+    background: var(--color-overlay);
   }
 
   .lb-btn:focus-visible {
@@ -289,9 +338,11 @@ const { prev, next } = catalog.neighbours(album.slug);
     outline-offset: var(--focus-offset);
   }
 
+  /* Controls sit outside the transformed images, above them, and clear of notches and home bars. */
   .lb-close {
-    inset-block-start: var(--space-3);
-    inset-inline-end: var(--space-3);
+    inset-block-start: max(var(--space-3), env(safe-area-inset-top));
+    inset-inline-end: max(var(--space-3), env(safe-area-inset-right));
+    z-index: 1;
   }
 
   .lb-prev,
@@ -300,12 +351,17 @@ const { prev, next } = catalog.neighbours(album.slug);
     translate: 0 -50%;
   }
 
+  .lb-prev,
+  .lb-next {
+    z-index: 1;
+  }
+
   .lb-prev {
-    inset-inline-start: var(--space-3);
+    inset-inline-start: max(var(--space-3), env(safe-area-inset-left));
   }
 
   .lb-next {
-    inset-inline-end: var(--space-3);
+    inset-inline-end: max(var(--space-3), env(safe-area-inset-right));
   }
 
   @media (prefers-reduced-motion: reduce) {

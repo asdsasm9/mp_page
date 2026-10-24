@@ -82,7 +82,7 @@ export const website = (): JsonLd => ({
   inLanguage: 'cs',
 });
 
-/** SEO.md 5.2, emitted on Home (T-288: the About page is now the `#o-mne` section). `imageUrl` is an absolute photo URL. */
+/** SEO.md 5.2, emitted on the About page /o-mne/ (T-293), not on Home. `imageUrl` is an absolute photo URL. */
 export function person(imageUrl: string): JsonLd {
   return {
     '@context': CONTEXT,
@@ -91,7 +91,7 @@ export function person(imageUrl: string): JsonLd {
     name: 'Terezie Müllnerová',
     jobTitle: 'Fotografka',
     worksFor: { '@id': BUSINESS_ID },
-    url: pageUrl('/#o-mne'),
+    url: pageUrl('/o-mne/'),
     image: imageUrl,
   };
 }

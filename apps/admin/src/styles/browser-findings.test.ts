@@ -39,8 +39,8 @@ describe('findings of the first real-browser run', () => {
     expect(css).toContain('.details[open] > summary::before');
   });
 
-  it('keeps the desktop top bar on one row (no gap between the links, tight link padding)', () => {
-    expect(css).toMatch(/\.desktop-nav \.nav-list\s*\{\s*gap: 0;/);
+  it('keeps the desktop top bar on one row (small gap between the links, tight link padding)', () => {
+    expect(css).toMatch(/\.desktop-nav \.nav-list\s*\{\s*gap: var\(--space-1\);/);
     expect(css).toMatch(/\.desktop-nav \.nav-link\s*\{\s*padding-inline: var\(--space-2\);/);
   });
 });

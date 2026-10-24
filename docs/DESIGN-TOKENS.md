@@ -35,7 +35,7 @@ The look since WP-12 (T-274) is "Classical": warm paper, ink, a gold accent used
 | `--color-accent` | `#b68235` | DECORATION ONLY: hairline under a card title, kicker rule, the skip link fill. Never text, never the only boundary of a control (3.07:1 on the page, 2.74:1 on the band) |
 | `--color-accent-strong` | `#a06f24` | Border of outlined buttons and the framed nav item (3:1 on page and band); source of the hover tint |
 | `--color-accent-text` | `#7d5411` | Accent-coloured text (hover state of a text button, small labels) |
-| `--color-accent-hover` | `#a06f24` | Hover colour for text and links. As a button FILL under dark text it gives only 3.8:1, so the admin has its own `--color-accent-fill-hover` |
+| `--color-accent-hover` | `#a06f24` | Hover colour for text and links. Not a button fill: the admin primary button is solid ink (`--color-primary-hover` / `--color-primary-active`, admin only) |
 | `--color-on-accent` | `#201f1d` | Text on an accent fill: ink, never white |
 | `--color-border` | `#d4d2cf` | Hairline divider (the text colour at 16% over the page); decorative only |
 | `--color-border-strong` | `#767676` | Boundary of any form control (needs 3:1) |
@@ -84,7 +84,8 @@ Accent rules: `--color-accent` is used for `border-color`, `text-decoration-colo
 | Space | `--space-1`, `--space-2`, `--space-3`, `--space-4`, `--space-5`, `--space-6`, `--space-7`, `--space-8` = 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4.5 rem |
 | Shape | `--radius-none` (0: images, cards and buttons), `--radius-sm`, `--radius-md`, `--radius-full` (lightbox round buttons, admin), `--border-width`, `--focus-width`, `--focus-offset`, `--bar-thickness` (2 px), `--shadow-sm`, `--shadow-md`, `--opacity-disabled` (0.45) |
 | Motion | `--motion-fast` 150 ms, `--motion-base` 250 ms, `--motion-drawer` 400 ms, `--motion-ease`; anything beyond a colour change, including smooth scrolling, is inside `prefers-reduced-motion: no-preference` |
-| Layout | `--layout-max` 110rem, `--layout-gutter`, `--header-height` 85 px, `--section-pad`, `--section-gap-lg`, `--section-gap`, `--heading-gap`, `--drawer-width`, `--target-min` (44 px), `--target-compact` (32 px) |
+| Layout | `--layout-max` 110rem, `--layout-gutter`, `--header-height` 68 px (T-316, was 85), `--section-pad` 52 to 88 px (T-316, was 64 to 110; the home hero is `max(26rem, 80svh)`), `--section-gap-lg`, `--section-gap`, `--heading-gap`, `--drawer-width`, `--target-min` (44 px), `--target-compact` (32 px) |
+| Overview cards (T-317) | `--card-title-gap` (= `--space-1`, image to its own title) and `--grid-row-gap` (= `--space-7`, between rows of category and album cards), so a title always reads as belonging to the image above it. Category and portfolio pages have no intro text under the title; the generated description is the meta description only |
 | Image shapes | `--ratio-category` 3 / 4, `--ratio-album` 4 / 5, `--cover-position` |
 | Stacking | `--z-header` 10, `--z-dialog` 20 (lightbox), `--z-drawer` 21 (inside the header), `--z-skip` 30 |
 
@@ -101,25 +102,29 @@ Accent rules: `--color-accent` is used for `border-color`, `text-decoration-colo
 
 One global scale in `tokens.css`. Headings are `--font-heading` (Cormorant Garamond), everything else `--font-body` (Lora). Only weight 400 of each is loaded, so `--weight-body` and `--weight-heading` are both 400 and `base.css` sets `font-synthesis: none`: no faux bold or italic anywhere, hierarchy comes from size, case, tracking and colour. Rules, all in `tokens.test.ts`: Cormorant is never set under 20 px (`--text-h3` is the smallest heading level, h4 is Lora); uppercase headings have leading of at least 1.12 (`--leading-caps`) because Czech carons and rings (ČŘŠŽĚŮ) would touch the line above at the design's 1.02; the label levels `--text-kicker` and `--text-nav` are at least 12 px; the four body levels stay in a narrow range (at most 0.7 rem between min and max) and the headline levels `display`, `title`, `h1`, `quote` scale on purpose.
 
+Ceilings (T-314): no size grows past the value it has at a 1440 px viewport, so 1920 and 2560 px render the same sizes as 1440 (a `tokens.test.ts` case evaluates every clamp at those widths). Maximums: display 4.5 rem (72 px), title 3.5 rem, h1 2.875 rem, h2 2 rem, h3 1.625 rem, quote 1.875 rem, lead 1.165 rem (18.6 px), body 1.018 rem (16.3 px), small 0.9375 rem, caption 0.862 rem, kicker and nav 0.81 rem, wordmark 1.3125 rem (T-316). Line length stays at `--measure` 70ch. The admin copy of the scale is kept identical.
+
 | Token | Class / element | 360 px | 1280 px | Line height | Use |
 |---|---|---|---|---|---|
-| `--text-display` | `.t-display` | 38 | 76.8 | `--leading-caps` 1.12 | home hero h1, uppercase |
+| `--text-display` | `.t-display` | 38 | 72 | `--leading-caps` 1.12 | home hero h1, uppercase |
 | `--text-title` | `.t-title` | 34 | 53.8 | `--leading-heading` 1.2 | statement titles (O mně, Kontakt) |
 | `--text-h1` | `h1`, `.t-h1` | 30 | 46 | 1.2, `.t-h1` 1.12 | page and section heads (`.t-h1`: uppercase, tracking `--tracking-h1`) |
 | `--text-h2` | `h2` | 24 | 28 | 1.2 | sub-heads |
 | `--text-h3` | `h3`, `.t-h3` | 22 | 24.6 | 1.2, `.t-h3` 1.12 | card titles (uppercase, tracking `--tracking-card`), lightbox arrows |
-| `--text-quote` | `.t-quote` | 24 | 40 | `--leading-quote` 1.35 | reference quote (Cormorant) |
+| `--text-quote` | `.t-quote` | 20 | 30 | `--leading-quote` 1.25 | reference quote (Cormorant) |
 | `--text-lead` | `h4`, `.t-lead` | 17 | 18.4 | `--leading-lead` 1.5 | intro paragraph |
 | `--text-body` | `body`, `.t-body` | 15 | 16.1 | `--leading-body` 1.6 | running text |
 | `--text-small` | `.t-small` | 14 | 14.9 | `--leading-ui` 1.5 | footer, breadcrumb, secondary links |
 | `--text-caption` | `.t-caption` | 13 | 13.8 | 1.5 | meta lines, counters |
 | `--text-kicker` | `.t-kicker` | 12 | 12.8 | 1.5 | uppercase label, tracking `--tracking-label` 0.2em |
 | `--text-nav` | `.btn`, `.btn-ghost`, `.t-nav` | 12 | 12.8 | 1.5 | nav and button labels, uppercase |
-| `--text-wordmark` | `.t-wordmark` | 20 | 26 | `--leading-caps` 1.12 | header wordmark, uppercase, tracking `--tracking-wordmark` |
+| `--text-wordmark` | `.t-wordmark` | 20 | 21 | `--leading-caps` 1.12 | header wordmark, uppercase, tracking `--tracking-wordmark` |
 
 Other type tokens: `--leading-prose` 1.8 (`.t-prose`), `--leading-none`, `--tracking-heading` 0.03em, `--tracking-h1` 0.06em, `--tracking-card` 0.04em, `--tracking-label` 0.2em, `--tracking-wordmark` 0.14em, `--measure` 70ch.
 
-The admin keeps its own denser scale (`--font-size-*`) and its own `--tracking-heading`; `apps/admin/src/styles/tokens.test.ts` compares only non-type tokens with the web, plus `--font-body`.
+Lining figures (T-312): Cormorant Garamond draws old-style figures by default (a "1" looks like a small capital I). `body` in `apps/web/src/styles/base.css` sets `font-variant-numeric: lining-nums`, which every heading, title and display rule inherits; Lora's figures are already lining, so body text is unchanged. The admin sets the same property on `h1, h2, h3`, `.brand` and the cover-picker legends.
+
+The admin uses the web type scale verbatim (WP-13: same `--text-*`, `--font-body` Lora, `--font-heading` Cormorant Garamond, weight 400; the old denser `--font-size-*` scale is gone). The only admin-only type tokens are `--font-ui` (system UI stack, for badges, counters, table heads and inputs), `--font-size-ui` (16 px inputs, so iOS does not zoom) and `--weight-ui-strong` (600). `apps/admin/src/styles/tokens.test.ts` compares every web token with the admin copy and lists these as the allowed extras.
 
 ## Fonts
 
@@ -130,4 +135,4 @@ The admin keeps its own denser scale (`--font-size-*`) and its own `--tracking-h
 
 Total 75,928 bytes (74.2 KB), well under the 120 KB hard cap; the gate budget is 4 files and 84 KB (`BUDGET` in `apps/web/src/lib/weight.ts`, docs/SEO.md section 9). All four are preloaded in `components/Fonts.astro`, served from our own origin, no font CDN. Weight 400 only (the design never uses 600). `font-display: swap` with two metric-matched local fallbacks declared in `fonts.css` (`Cormorant Fallback` from Times New Roman, size-adjust 97.1%; `Lora Fallback` from Georgia, size-adjust 104.6%; computed with fontTools from the average advance of a Czech sample sentence). `fonts.test.ts` parses the cmap of every WOFF2 (node:zlib Brotli, no dependency) and asserts every Czech letter and the typographic marks `„“–—·×…'` are present in the face that serves them; it also records, as a documented negative, that neither face has arrow glyphs (arrows are inline SVG).
 
-Licence: both families are SIL Open Font License 1.1 (Cormorant Garamond by Christian Thalmann / Catharsis Fonts, Lora by Cyreal), free for self-hosting and commercial use. The files are used unmodified (no subsetting beyond what the packages ship), so no reserved-font-name question arises. The same four faces are declared in `apps/admin/src/styles/fonts.css`; the admin UI still uses `--font-ui`, so no font file is fetched there until the admin restyle uses `--font-body`.
+Licence: both families are SIL Open Font License 1.1 (Cormorant Garamond by Christian Thalmann / Catharsis Fonts, Lora by Cyreal), free for self-hosting and commercial use. The files are used unmodified (no subsetting beyond what the packages ship), so no reserved-font-name question arises. The same four faces are declared in `apps/admin/src/styles/fonts.css` and imported by the admin (WP-13); the admin CSP carries `font-src 'self'` so the files load, and `npm run admin-prod-check` fails if any built CSS inlines a font as a `data:` URL.

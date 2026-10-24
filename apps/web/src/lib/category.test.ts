@@ -29,16 +29,11 @@ describe('category data', () => {
     expect(list.slice(FIRST_ROW).some((c) => c.eager || c.priority)).toBe(false);
   });
 
-  it('shows the cover and a Czech plural count', () => {
+  it('shows the cover and carries no count (T-315)', () => {
     const wedding = catalog.categoryBySlug.get('svatby')!.albums[0]!;
     const first = cards('svatby')[0]!;
     expect(first.photo.id).toBe(catalog.coverOf(wedding)!.id);
-    expect(first.countLabel).toMatch(new RegExp(`^${wedding.photos.length} fotografi(e|í)$`));
-    const one = categoryCards(catalog, {
-      ...catalog.categoryBySlug.get('svatby')!,
-      albums: [{ ...wedding, photos: wedding.photos.slice(0, 1) }],
-    });
-    expect(one[0]!.countLabel).toBe('1 fotografie');
+    expect(first).not.toHaveProperty('countLabel');
   });
 
   it('builds no page for a category without published albums (hidden categories are dropped from the snapshot)', () => {

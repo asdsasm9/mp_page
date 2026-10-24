@@ -1,0 +1,131 @@
+---
+// About (T-293, reverses D-22 item 1 for this page only): PageHead (breadcrumb, h1, hairline) with the first text as
+// the lead, the other two ABOUT texts, the long quote in full, two plain photos (no mat) and a closing link to the
+// home Kontakt section. JSON-LD: Person (worksFor #business) and BreadcrumbList. Both photos are lazy: the page has no hero.
+import { Image, getImage } from 'astro:assets';
+import PageHead from '../../components/PageHead.astro';
+import { ABOUT, HOME, NAV } from '../../content/texts';
+import Base from '../../layouts/Base.astro';
+import { SITE_ORIGIN, breadcrumbList, person } from '../../lib/jsonld';
+import { aboutMeta } from '../../lib/seo';
+import hello from '../../assets/site/home/hello.jpg';
+import wedding from '../../assets/site/about/wedding.jpg';
+
+const path = '/o-mne/';
+const meta = aboutMeta();
+const crumbs = [{ name: NAV.about, path }];
+
+const weddingAlt = 'Ženich líbá nevěstu na čelo, nevěsta drží kytici z kapradí a trav';
+const og = await getImage({ src: wedding, width: 1200, height: 630, format: 'jpg', quality: 70 });
+const ogImage = { url: `${SITE_ORIGIN}${og.src}`, width: 1200, height: 630, alt: weddingAlt };
+
+const more = [
+  { block: ABOUT.experience, id: 'zkusenosti' },
+  { block: ABOUT.story, id: 'pribeh' },
+];
+---
+<Base meta={meta} path={path} ogImage={ogImage} jsonLd={[person(ogImage.url), breadcrumbList(crumbs)]}>
+  <div class="page">
+    <PageHead crumbs={crumbs} title={NAV.about}>
+      <p class="t-lead" lang="cs">{ABOUT.me.body}</p>
+    </PageHead>
+
+    <div class="layout">
+      <div class="texts" lang="cs">
+        {
+          more.map(({ block, id }) => (
+            <section aria-labelledby={id}>
+              <h2 id={id} class="t-title">{block.title}</h2>
+              <p class="t-prose">{block.body}</p>
+            </section>
+          ))
+        }
+        <blockquote class="t-prose">{HOME.quote}</blockquote>
+        <p class="closing">
+          <a class="btn" href="/#kontakt">Napište mi</a>
+        </p>
+      </div>
+      <div class="photos">
+        <Image
+          src={hello}
+          alt="Ruce novomanželů s prsteny v pšeničném poli"
+          widths={[480, 960]}
+          sizes="(min-width: 48rem) 30rem, 100vw"
+          format="webp"
+          loading="lazy"
+          decoding="async"
+        />
+        <Image
+          src={wedding}
+          alt={weddingAlt}
+          widths={[480, 960]}
+          sizes="(min-width: 48rem) 30rem, 100vw"
+          format="webp"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .page {
+    display: grid;
+    gap: var(--section-gap);
+    max-inline-size: var(--layout-max);
+    margin-inline: auto;
+    padding: var(--space-4) var(--layout-gutter) var(--section-pad);
+  }
+
+  .layout {
+    display: grid;
+    gap: var(--section-gap);
+    align-items: start;
+  }
+
+  .texts {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .texts section {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .texts p,
+  .texts blockquote {
+    max-inline-size: var(--measure);
+    hyphens: auto;
+  }
+
+  .texts blockquote {
+    margin: 0;
+    padding-inline-start: var(--space-5);
+    border-inline-start: var(--border-width) solid var(--color-accent);
+  }
+
+  .closing {
+    margin: 0;
+  }
+
+  .photos {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .photos :global(img) {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    background: var(--color-placeholder);
+  }
+
+  @media (min-width: 48rem) {
+    .layout {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: var(--section-gap-lg);
+    }
+  }
+</style>

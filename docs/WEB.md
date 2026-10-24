@@ -6,10 +6,14 @@ Plan: WP-3 and WP-3b (image loading). Related: [SEO.md](SEO.md), [DESIGN-CHECK.m
 
 ## Structure (since WP-12)
 
-Home (`/`) is a one-pager with the sections Hero, O mně (`#o-mne`), Portfolio (category cards), Reference and Kontakt
-(`#kontakt`), then the footer (`src/components/sections/`). Further pages: `/portfolio/`, one page per category, one per
-album, `/cookies/` and the 404. There are no `/o-mne/` or `/kontakt/` pages any more (old URLs redirect to the home
-page). Look: [DESIGN-TOKENS.md](DESIGN-TOKENS.md) (Cormorant Garamond headings, Lora text, warm paper, gold stroke).
+Home (`/`) is a one-pager with the sections Hero, O mně (`#o-mne`: the short hello and a "Více o mně" link to `/o-mne/`),
+Portfolio (category cards), Reference and Kontakt (`#kontakt`), then the footer (`src/components/sections/`). Further
+pages: `/o-mne/` (the About page again since T-293, with the three texts, the full quote and two photos; the header item
+"O mně" links to it and is marked `aria-current="page"` there), `/portfolio/`, one page per category, one per album,
+`/cookies/` and the 404. The header item "Portfolio" links to `/portfolio/` from every page, also on the home (T-296);
+it is marked `aria-current="true"` on `/portfolio/`, category and album pages and never by the home scrollspy (the
+home Portfolio section keeps `id="portfolio"` and its "celé portfolio" link). There is no `/kontakt/` page (it redirects to the home section); `/about` and `#/about` redirect
+to `/o-mne/`. Look: [DESIGN-TOKENS.md](DESIGN-TOKENS.md) (Cormorant Garamond headings, Lora text, warm paper, gold stroke).
 `docs/DESIGN-CHECK.md` is the historical WP-3 baseline.
 
 ## Build modes
@@ -153,7 +157,7 @@ Cloudflare Web Analytics only (D-3 option C): no cookies, no banner, no Google, 
 3. Adam, after the first production deploy: the browser check (VERIFY row 10). View-source shows one beacon tag; the network panel shows
    only the two Cloudflare hosts; the Application tab shows no cookies and empty local and session storage after three pages; the dashboard
    shows the visit. If a cookie or storage entry appears: remove the variable, redeploy, tell the architect (option C premise broken).
-4. The photographer approves the Czech analytics paragraph and gives the controller details (H-7) that replace the `[doplnit]` lines.
+4. The photographer approves the Czech analytics paragraph and gives the controller details (H-7; filled in by T-313, house number still to VERIFY).
 5. Optional: read the dashboard monthly; no alerting by design.
 
 ## Photographer checklist: keyboard and phone
@@ -187,6 +191,12 @@ Placeholders ship until answered (none blocks the build; controller details bloc
   (`homeMeta` in `apps/web/src/lib/seo.ts`) target "fotograf Brno". The H1 is only the brand "Mullny Photos" and the tagline under it
   ("Focení svateb, portrétů a párových fotek", `SITE.description`) does not name Brno. Whether to put "Brno" into the visible H1 or tagline
   is a copy decision for the photographer (Q-6); the hero image alt text already says Brno.
+
+## Credits
+
+- The footer MyWed icon (T-294) is MyWed's official logo symbol (the hexagon mark, wordmark removed) from their logotypes page,
+  https://mywed.com/en/logotypes/. It is inlined in `apps/web/src/components/Icon.astro` (name `mywed`, single colour, `currentColor`)
+  and is used only to link to the photographer's MyWed profile, not as a badge or endorsement.
 
 ## Known limits
 

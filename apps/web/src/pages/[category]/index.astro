@@ -34,9 +34,7 @@ const crumbs = [{ name: category.name, path }];
   jsonLd={[categoryGallery(category, meta.description ?? '', env.imgBaseUrl), breadcrumbList(crumbs)]}
 >
   <div class="page">
-    <PageHead crumbs={crumbs} title={category.name} backHref="/portfolio/" backLabel="Všechna portfolia">
-      {meta.description && <p class="t-body">{meta.description}</p>}
-    </PageHead>
+    <PageHead crumbs={crumbs} title={category.name} backHref="/portfolio/" backLabel="Všechna portfolia" />
     <ul class="albums">
       {cards.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
     </ul>
@@ -60,7 +58,7 @@ const crumbs = [{ name: category.name, path }];
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(18.75rem, 100%), 1fr));
     align-items: start;
-    gap: var(--space-6);
+    gap: var(--grid-row-gap) var(--space-6);
     margin: 0;
     padding: 0;
     list-style: none;

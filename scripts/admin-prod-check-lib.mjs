@@ -44,6 +44,14 @@ export function judgeNoAnalytics(files) {
   return files.filter((f) => ANALYTICS_RE.test(f.text)).map((f) => `${f.file} references the Cloudflare analytics beacon`);
 }
 
+/** Fonts must be first-party files (CSP font-src 'self'): no data: font URL in built CSS/JS (WP-13). files: [{ file, text }]. */
+export const DATA_FONT_RE = /data:(?:font|application\/(?:font|x-font|vnd\.ms-fontobject))[^"')\s]*/i;
+/** Any data: URL inside an @font-face block (also data:application/octet-stream, data:;base64 and similar). */
+export const DATA_IN_FONT_FACE_RE = /@font-face\s*\{[^}]*url\(\s*["']?data:/i;
+export function judgeNoDataFonts(files) {
+  return files.filter((f) => DATA_FONT_RE.test(f.text) || DATA_IN_FONT_FACE_RE.test(f.text)).map((f) => `${f.file} inlines a font as a data: URL (blocked by font-src 'self')`);
+}
+
 /** The document's response headers: the CSP must be there and carry the hardening directives. */
 export function judgeDocumentHeaders(headers) {
   const bad = [];

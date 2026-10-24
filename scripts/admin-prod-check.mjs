@@ -14,7 +14,7 @@ import sharp from 'sharp';
 import { findChrome } from './design-check.mjs';
 import { SKIPPED_MESSAGE } from './design-check-lib.mjs';
 import { judgeConsole, judgeOrigins } from './admin-check-lib.mjs';
-import { gzipSize, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders, judgeIcons, judgeNoAnalytics } from './admin-prod-check-lib.mjs';
+import { gzipSize, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders, judgeIcons, judgeNoAnalytics, judgeNoDataFonts } from './admin-prod-check-lib.mjs';
 import { createDistServer, listen } from './serve-dist.mjs';
 
 const args = process.argv.slice(2);
@@ -153,7 +153,15 @@ failures.push(
   ),
 );
 failures.push(...judgeIcons(html, new Set(walk(site))));
+failures.push(
+  ...judgeNoDataFonts(
+    walk(site)
+      .filter((f) => /\.(js|css)$/.test(f))
+      .map((file) => ({ file, text: readFileSync(join(site, file), 'utf8') })),
+  ),
+);
 const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
+for (const f of walk(site).filter((x) => /\.woff2$/.test(x))) console.log(`  font     ${f.padEnd(34)} raw ${kb(statSync(join(site, f)).size).padStart(9)}`);
 console.log('bundle report (gzip is what the host sends):');
 for (const r of rows) console.log(`  ${r.initial ? 'initial' : 'lazy   '}  ${r.file.padEnd(34)} raw ${kb(r.raw).padStart(9)}  gzip ${kb(r.gzip).padStart(8)}`);
 console.log(`  entry chunk ${kb(bundle.totals.initialJsRaw)} raw / ${kb(bundle.totals.initialJsGzip)} gzip; all JS fetched at start-up (entry + real adapters) ${kb(bundle.totals.jsRaw)} raw / ${kb(bundle.totals.jsGzip)} gzip (limit 300 kB gzip); initial CSS ${kb(bundle.totals.cssRaw)} raw / ${kb(bundle.totals.cssGzip)} gzip`);

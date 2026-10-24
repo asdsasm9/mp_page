@@ -2,7 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { ICON_FILES, INITIAL_JS_GZIP_LIMIT, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders, judgeIcons, judgeNoAnalytics } from './admin-prod-check-lib.mjs';
+import { buildCsp } from '../apps/admin/headers.ts';
+import { ICON_FILES, INITIAL_JS_GZIP_LIMIT, initialAssets, judgeBundle, judgeCsp, judgeDocumentHeaders, judgeIcons, judgeNoAnalytics, judgeNoDataFonts } from './admin-prod-check-lib.mjs';
 
 describe('admin-prod-check judges', () => {
   it('finds the initial script, modulepreloads and stylesheet in index.html', () => {
@@ -41,6 +42,20 @@ describe('admin-prod-check judges', () => {
     expect(judgeDocumentHeaders({ ...good, 'x-robots-tag': '' })[0]).toMatch(/noindex/);
     const withGoogle = { ...good, 'content-security-policy': `${good['content-security-policy']}; connect-src https://accounts.google.com` };
     expect(judgeDocumentHeaders(withGoogle).join('\n')).toMatch(/must not mention google/);
+  });
+
+  it('accepts the real admin CSP with font-src self (WP-13) and rejects a wildcard font source', () => {
+    const { csp } = buildCsp({});
+    expect(csp).toContain("font-src 'self';");
+    expect(judgeDocumentHeaders({ 'content-security-policy': csp, 'x-robots-tag': 'noindex, nofollow' })).toEqual([]);
+    expect(judgeDocumentHeaders({ 'content-security-policy': `${csp}; font-src *`, 'x-robots-tag': 'noindex, nofollow' })[0]).toMatch(/wildcard/);
+  });
+
+  it('fails when built CSS inlines a font as a data: URL (WP-13)', () => {
+    expect(judgeNoDataFonts([{ file: 'a.css', text: "@font-face{src:url(/assets/x-abc.woff2) format('woff2')}" }, { file: 'b.css', text: 'x{background:url(data:image/svg+xml,y)}' }])).toEqual([]);
+    expect(judgeNoDataFonts([{ file: 'a.css', text: '@font-face{src:url(data:font/woff2;base64,AAAA)}' }])[0]).toMatch(/a\.css inlines a font/);
+    expect(judgeNoDataFonts([{ file: 'c.css', text: '@font-face{font-family:X;src:url("data:application/octet-stream;base64,AAAA") format("woff2")}' }])[0]).toMatch(/c\.css inlines a font/);
+    expect(judgeNoDataFonts([{ file: 'd.css', text: '@font-face{src:url(data:;base64,AAAA)}' }])[0]).toMatch(/d\.css inlines a font/);
   });
 
   it('fails when the admin dist carries the analytics beacon', () => {

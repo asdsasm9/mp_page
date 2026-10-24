@@ -12,7 +12,7 @@ Goal: rank for local searches in Brno and the South Moravian region, and look tr
 - Brand string: `Mullny Photos` (audit shows `MullnyPhotos` and `Mullny photos` both in use; use `Mullny Photos` everywhere; **Q-3** confirm the spelling).
 - Language: `<html lang="cs">`, `og:locale` `cs_CZ`. Single language, no hreflang.
 - `/portfolio/` is a real page (T-95, D-6): all categories plus a selection of up to 9 albums (first album per category first). There is no `/portfolio` -> `/` redirect; the legacy hash mapping `#/portfolio` -> `/portfolio/` belongs to T-65/T-66.
-- URL scheme (final slugs come from T-2): `/`, `/portfolio/`, `/svatby/`, `/portrety/`, `/parove-foceni/`, `/svatby/<album-slug>/`, `/cookies/`. "O mně" and "Kontakt" are sections of the home page (`/#o-mne`, `/#kontakt`), not pages; the old `/o-mne/` and `/kontakt/` URLs were removed (WP-12). Trailing slash, lowercase, ASCII, hyphens. Category slugs are editable in the admin, so the sitemap, canonicals and breadcrumbs are always derived from the stored slug, never hardcoded.
+- URL scheme (final slugs come from T-2): `/`, `/portfolio/`, `/svatby/`, `/portrety/`, `/parove-foceni/`, `/svatby/<album-slug>/`, `/o-mne/`, `/cookies/`. "Kontakt" is a section of the home page (`/#kontakt`), not a page; the old `/kontakt/` URL was removed (WP-12). `/o-mne/` is a real page again (T-293; WP-12 had folded it into Home). Trailing slash, lowercase, ASCII, hyphens. Category slugs are editable in the admin, so the sitemap, canonicals and breadcrumbs are always derived from the stored slug, never hardcoded.
 - Every page is real prerendered HTML containing its title, description, canonical, OG and JSON-LD in the served document (no client-side injection), so crawlers need no JavaScript.
 
 ## 2. Title and description patterns
@@ -32,7 +32,8 @@ Rules for all pages:
 | Album `/<kat>/<album>/` | `{album title}{ – {place}} – {category singular} \| Mullny Photos` (e.g. `Adam & Eliška – svatba \| Mullny Photos`) | The album's SEO text field if filled; otherwise `{Category singular} {album title}{ v místě {place}}. {n} fotografií z focení v Brně a okolí od fotografky Mullny Photos.` |
 | Portfolio `/portfolio/` (human decision D-6: a real page listing all categories and a selection of albums) | `Portfolio – svatby, portréty a páry v Brně \| Mullny Photos` | `Portfolio fotografky z Brna: ukázky svateb, portrétů a párového focení. Prohlédněte si všechny kategorie a výběr mých alb.` |
 | Cookies `/cookies/` | `Zásady cookies a ochrany soukromí \| Mullny Photos` | `Zásady používání cookies a ochrany osobních údajů na webu Mullny Photos. Zjistěte, jaké údaje web zpracovává a proč.` |
-| About and Contact | no page of their own: sections `#o-mne` and `#kontakt` of Home, covered by the Home title and description (`/o-mne/` and `/kontakt/` removed, WP-12) | n/a |
+| About | `O mně – fotografka Terezie Müllnerová, Brno` (`aboutMeta`, `/o-mne/`, T-293) | `Jsem Terezie Müllnerová, fotografka z Brna. Specializuji se na svatby, portréty a párové focení. Přečtěte si můj příběh a zkušenosti.` |
+| Contact | no page of its own: section `#kontakt` of Home, covered by the Home title and description (`/kontakt/` removed, WP-12) | n/a |
 | 404 | `Stránka nenalezena \| Mullny Photos` | none (noindex) |
 
 Keywords come from the services above: svatební fotograf Brno, portrétní focení Brno, rodinné focení Brno, těhotenské focení, párové focení, Jihomoravský kraj. They go into titles, H1s and body text naturally; no `meta keywords`.
@@ -43,7 +44,7 @@ Questions:
 - **Q-6**: Does she want to name her style ("přirozené", "reportážní") in the home and wedding descriptions, and in what words? The placeholder wording above was written by us, not by her.
 - **Q-7**: Opening hours are not needed; skip them unless she wants them listed.
 
-Headings: exactly one `<h1>` per page. Home: "Fotograf Brno" style line is the hero tagline (**Q-6**, her wording). Category: category name. Album: album title. "O mně" and "Kontakt" are `<h2>` sections of Home. Album pages carry a visible one-paragraph description when the SEO text exists (text on the page, not only in meta).
+Headings: exactly one `<h1>` per page. Home: "Fotograf Brno" style line is the hero tagline (**Q-6**, her wording). Category: category name. Album: album title. About: "O mně" (h1, via PageHead). "Kontakt" is an `<h2>` section of Home, and so is the short "O mně" hello. Album pages carry a visible one-paragraph description when the SEO text exists (text on the page, not only in meta).
 
 ## 3. Open Graph and Twitter
 
@@ -55,7 +56,7 @@ OG image choice (1200 x 630 px, JPEG, under 300 KB, generated at upload/build fr
 - Home: one chosen hero photo (**Q-8**: which photo, ideally one that works when cropped to 1.91:1). Fallback: the current `site/preview/preview.jpg` (2582 x 1723) cropped.
 - Category: the category's cover image (first photo of its first visible album, or the category cover if the admin sets one).
 - Album: the album's cover photo.
-- About and Contact have no page of their own, so no OG image of their own (**Q-9**: is she comfortable having her portrait used as a preview image or in `Person` markup?).
+- About (`/o-mne/`) uses the bundled wedding photo as its OG image; Contact has no page of its own, so no OG image (**Q-9**: is she comfortable having her portrait used as a preview image or in `Person` markup?).
 - 404 and any page without an image: the home OG image.
 - `og:image:alt`: the photo's alt text (section 8).
 - Never use a logo as the OG image (the old `preview/logo*.png` files are not used).
@@ -92,9 +93,9 @@ Optional, only when answered and shown on the page: `telephone` (**Q-2**), `pric
 
 Do not add `aggregateRating` or `Review` markup for the "RECENZE" texts: they are two quotes tied to albums, not verifiable third-party ratings, and self-serving review markup risks a Google manual action. Show them as plain text.
 
-### 5.2 Person on Home
+### 5.2 Person on the About page
 
-`Person` with `@id` `https://www.mullnyphotos.cz/#terezie`, `name` = `Terezie Müllnerová`, `jobTitle` = `Fotografka`, `worksFor` = `{ "@id": ".../#business" }`, `url` = `https://www.mullnyphotos.cz/#o-mne` (the O mně section of Home), `image` (portrait; **Q-9**). Required: `@type`, `name`. Only emit with her consent to be named (**Q-13**: public full name OK? It is already on the live site).
+`Person` with `@id` `https://www.mullnyphotos.cz/#terezie`, `name` = `Terezie Müllnerová`, `jobTitle` = `Fotografka`, `worksFor` = `{ "@id": ".../#business" }`, `url` = `https://www.mullnyphotos.cz/o-mne/` (emitted on that page together with BreadcrumbList, not on Home; T-293), `image` (portrait; **Q-9**). Required: `@type`, `name`. Only emit with her consent to be named (**Q-13**: public full name OK? It is already on the live site).
 
 ### 5.3 ImageGallery on album and category pages
 
@@ -132,7 +133,8 @@ The visible breadcrumb on album and category pages (a `<nav aria-label="Drobečk
 
 | Page | Types emitted |
 |---|---|
-| Home | Photographer (full), Person, WebSite |
+| Home | Photographer (full), WebSite |
+| About (`/o-mne/`) | Person, BreadcrumbList |
 | Category | ImageGallery, BreadcrumbList, Photographer (reference) |
 | Album | ImageGallery, BreadcrumbList, Photographer (reference) |
 | 404 | none |
@@ -142,7 +144,7 @@ Test: a unit test per type asserts its required properties exist and are non-emp
 ## 6. Sitemap and robots
 
 `/sitemap.xml` (generated at build, one file, well under the 50 000 URL / 50 MB limit):
-- Lists: home, three categories (only visible ones), the portfolio page, every published album, the cookies page. Excludes 404, hidden/unpublished, and redirect sources.
+- Lists: home, three categories (only visible ones), the portfolio page, every published album, `/o-mne/`, the cookies page. Excludes 404, hidden/unpublished, and redirect sources.
 - Each `<url>`: `<loc>` (canonical form), `<lastmod>` in W3C date format taken from the real last change of the content (album `updated_at`, photos changed, category edit; for fixed pages the build/commit date of that page's source, not "now" on every build). No `changefreq`/`priority` (ignored by Google).
 - Images: add the `image` extension (`xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"`) on album URLs with `<image:loc>` for each photo's 1600 px variant and `<image:caption>` from alt text; cap at 1000 images per URL (albums have at most about 45).
 - Regenerated on every publish (same deploy hook as the site rebuild).
@@ -221,7 +223,7 @@ Gate: `npm run design-check` (Lighthouse and axe per the visual-check skill) run
 
 - Each page: one title, one description, one canonical, one H1, OG and Twitter tags, JSON-LD per section 5, `lang="cs"`.
 - Internal links are real `<a href>` (the audit found buttons and `div onClick` navigation).
-- Navigation and footer link to home, the three categories and the Home sections O mně and Kontakt (anchors); album pages link back to their category and to the previous/next album in the category (crawl paths without JS).
+- Navigation and footer link to home, the three categories, the O mně page and the Home section Kontakt (anchor); album pages link back to their category and to the previous/next album in the category (crawl paths without JS).
 - Custom 404 page in Czech with links to home and categories (the old one was an English placeholder) and a real HTTP 404 status.
 - Redirects (T-2): 301 from old paths and from the apex to `www`; HTTP to HTTPS; one hop only.
 - HTTPS everywhere, HSTS via Cloudflare, no mixed content.

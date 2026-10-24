@@ -149,7 +149,8 @@ const { items, current, categoryNames = [], overHero = false } = Astro.props;
     text-decoration: none;
   }
 
-  nav a[aria-current='location'],
+  nav a[aria-current='page'],
+nav a[aria-current='location'],
   nav a[aria-current='true'] {
     text-decoration: underline;
     text-decoration-color: var(--color-accent-strong);

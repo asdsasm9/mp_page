@@ -54,6 +54,7 @@ describe('hosting files', () => {
       ]);
       expect(csp.get('img-src')).toEqual(["'self'", 'blob:', 'data:', 'https://img.example.test']);
       expect(csp.get('default-src')).toEqual(["'none'"]);
+      expect(csp.get('font-src')).toEqual(["'self'"]);
       expect(csp.get('script-src')).toEqual(["'self'"]);
       expect(csp.get('style-src')).toEqual(["'self'"]);
       expect(csp.get('frame-ancestors')).toEqual(["'none'"]);
@@ -64,6 +65,10 @@ describe('hosting files', () => {
       expect(csp).not.toMatch(/\*/);
       expect(csp).not.toMatch(/unsafe-/);
       expect(csp).not.toMatch(/\bhttps?:(?!\/\/)/); // no bare scheme source such as https:
+      // fonts: first-party only, never data: (the only data: source is img-src)
+      const fontSrc = directives(csp).get('font-src');
+      expect(fontSrc).toEqual(["'self'"]);
+      expect(fontSrc!.join(' ')).not.toMatch(/data:|\*|unsafe-|https?:/);
     });
 
     it('sets nosniff, no-referrer, noindex and no framing', () => {

@@ -52,6 +52,9 @@
     overflow-wrap: break-word;
     /* Only weight 400 is loaded: never let the browser fake bold or italic */
     font-synthesis: none;
+    /* Cormorant's default figures are old-style ("1" looks like a small capital I); inherited by every heading,
+       title and display rule. Lora's figures are already lining, so body text does not change. */
+    font-variant-numeric: lining-nums;
   }
 
   body > main {

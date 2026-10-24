@@ -30,8 +30,10 @@ describe('COOKIES analytics text', () => {
     for (const word of ['návštěvnost', 'oprávněný zájem', 'rychlost načtení']) expect(text).toContain(word);
   });
 
-  it('leaves the controller placeholder untouched', () => {
-    expect(COOKIES.controller.placeholder).toBe('[doplnit]');
+  it('has the controller name and address (H-7) and no placeholder', () => {
+    expect(COOKIES.controller.name).toBe('Terezie Müllnerová');
+    expect(COOKIES.controller.address).toBe('Spodní, 625 00 Brno');
+    expect(JSON.stringify(COOKIES.controller)).not.toContain('[doplnit]');
   });
 
   it('keeps IČO optional: unset by default, never the placeholder', () => {

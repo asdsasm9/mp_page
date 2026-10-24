@@ -6,6 +6,7 @@
  */
 import { close, focusIndex, hasNext, hasPrev, initial, keyAction, next, open, prev, type LightboxState } from './lightbox-state';
 import { createGestures } from './lightbox-pointer';
+import { pageZoomFrame } from './lightbox-viewport';
 import { createZoom, photoInfoOf, prefetchFit, type CreateImage } from './lightbox-zoom';
 
 const dialog = document.querySelector<HTMLDialogElement>('dialog[data-lightbox]');
@@ -43,6 +44,7 @@ if (dialog && thumbs.length && typeof dialog.showModal === 'function') {
     },
     pinchBegin: zoom.pinchBegin,
     pinchTo: zoom.pinchTo,
+    pinchEnd: zoom.pinchEnd,
     panByPx: zoom.panByPx,
     toggleAt: zoom.toggleAt,
     // While fingers are down the image follows them without the transform transition.
@@ -80,6 +82,7 @@ if (dialog && thumbs.length && typeof dialog.showModal === 'function') {
       state = open(initial(thumbs.length), i);
       dialog.showModal(); // first, so the stage can be measured by show()
       show(i);
+      fitToVisibleWindow();
     }),
   );
 
@@ -127,6 +130,33 @@ if (dialog && thumbs.length && typeof dialog.showModal === 'function') {
   window.addEventListener('resize', () => {
     if (dialog.open) zoom.refresh();
   });
+
+  // Page pinch zoom (browser level) must never hide the controls. touch-action: none keeps it from starting; if it
+  // happens anyway (iOS, a gesture that began outside the dialog) the dialog is re-fitted to the visible window
+  // and the browser is allowed to pinch back out (data-page-zoomed switches touch-action to pinch-zoom).
+  const vv = window.visualViewport;
+  const fitToVisibleWindow = (): void => {
+    const frame = dialog.open && vv ? pageZoomFrame(vv) : null;
+    dialog.toggleAttribute('data-page-zoomed', frame !== null);
+    const set = (name: string, value: string | null): void => {
+      if (value === null) dialog.style.removeProperty(name);
+      else dialog.style.setProperty(name, value);
+    };
+    set('--lb-w', frame && `${frame.width}px`);
+    set('--lb-h', frame && `${frame.height}px`);
+    set('--lb-vx', frame && `${frame.x}px`);
+    set('--lb-vy', frame && `${frame.y}px`);
+    set('--lb-vs', frame && String(frame.factor));
+  };
+  vv?.addEventListener('resize', fitToVisibleWindow);
+  vv?.addEventListener('scroll', fitToVisibleWindow);
+  dialog.addEventListener('toggle', fitToVisibleWindow);
+  // iOS Safari starts a page pinch with gesturestart; cancel it unless the page is already zoomed (then let it out).
+  const stopPageGesture = (event: Event): void => {
+    if (!dialog.hasAttribute('data-page-zoomed')) event.preventDefault();
+  };
+  dialog.addEventListener('gesturestart', stopPageGesture);
+  dialog.addEventListener('gesturechange', stopPageGesture);
   // A click on the backdrop lands on the dialog element itself.
   dialog.addEventListener('click', (event) => {
     if (event.target === dialog) dialog.close();
@@ -150,6 +180,7 @@ if (dialog && thumbs.length && typeof dialog.showModal === 'function') {
     state = close(state);
     zoom.close();
     gestures.reset();
+    fitToVisibleWindow();
     if (back !== null) thumbs[back]?.focus();
   });
 }

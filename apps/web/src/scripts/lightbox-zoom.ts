@@ -24,6 +24,7 @@ import {
   pinchMove,
   pinchStart,
   resetOnPhotoChange,
+  settleView,
   toggleDoubleTap,
   wheelFactor,
   zoomAt,
@@ -371,6 +372,15 @@ export function createZoom(parts: ZoomParts, options: ZoomOptions) {
       const start = pinch;
       if (!start) return;
       act((g) => pinchMove(start, toStage(a), toStage(b), g));
+    },
+    /** Pinch end: a scale within 5 % of fit snaps to exactly fit. */
+    pinchEnd(): void {
+      pinch = null;
+      if (view.scale > 1 && settleView(view) === identity) {
+        view = identity;
+        apply();
+        announce();
+      }
     },
     /** Drag pan by a client-pixel delta (does nothing at fit). */
     panByPx(dx: number, dy: number): void {

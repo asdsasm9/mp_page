@@ -7,17 +7,12 @@ import type { SnapshotPhoto } from '@mp/shared';
 import type { Review } from '../content/reviews';
 import type { Catalog } from './catalog';
 import { ogImage } from './images';
-import { plural, type PluralForms } from './plural';
-
-const ALBUMS: PluralForms = { one: 'album', few: 'alba', many: 'alb' };
 
 export interface HomeCategoryCard {
   slug: string;
   name: string;
   path: string;
   photo: SnapshotPhoto;
-  /** `3 alba`: the meta kicker of the category card (albums that have a published page). */
-  countLabel: string;
 }
 
 export interface HomeReview {
@@ -53,7 +48,6 @@ export function homeCategoryCards(catalog: Catalog): HomeCategoryCard[] {
       name: category.name,
       path: `/${category.slug}/`,
       photo,
-      countLabel: plural(category.albums.length, ALBUMS),
     });
   }
   return cards;

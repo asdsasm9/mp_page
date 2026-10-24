@@ -60,8 +60,14 @@ const hasAction = Boolean(actionHref && actionLabel);
   }
 
   .section[data-band='dark'] {
+    /* T-316: the Reference band is the compact one: a quarter less padding and a tighter head-to-content gap */
+    padding-block: calc(var(--section-pad) * 0.75);
     background: var(--band-dark-bg);
     color: var(--band-dark-text);
+  }
+
+  .section[data-band='dark'] .inner {
+    gap: var(--space-6);
   }
 
   .inner {

@@ -1,6 +1,6 @@
-// Render tests for the shared building blocks (T-276): Icon, Kicker, Section, PageHead, Plate, Breadcrumb, Photo (crop),
+// Render tests for the shared building blocks (T-276): Icon, Kicker, Section, PageHead, Breadcrumb, Photo (crop),
 // CategoryCard and AlbumCard. They render each component with Astro's container and check markup, not looks.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import type { Snapshot, SnapshotPhoto } from '@mp/shared';
@@ -17,7 +17,6 @@ import Icon from './Icon.astro';
 import Kicker from './Kicker.astro';
 import PageHead from './PageHead.astro';
 import Photo from './Photo.astro';
-import Plate from './Plate.astro';
 import Section from './Section.astro';
 
 const IMG = 'https://img.mullnyphotos.cz';
@@ -48,7 +47,6 @@ const albumData = (over: Partial<AlbumCardData> = {}): AlbumCardData => ({
   place: 'Brno',
   path: '/svatby/sedlakovi/',
   photo: landscape,
-  countLabel: '44 fotografií',
   eager: false,
   priority: false,
   ...over,
@@ -64,6 +62,19 @@ describe('Icon', () => {
       expect(html.match(/<path d="[^"]+"/g), name).toHaveLength(1);
       expect(html).not.toMatch(/<text|[←-↓]/);
     }
+  });
+});
+
+describe('Icon mywed', () => {
+  it('is the filled single-colour MyWed mark inheriting currentColor, decorative, with its own viewBox', async () => {
+    const html = await render(Icon, { name: 'mywed' });
+    expect(html).toMatch(/<svg[^>]*aria-hidden="true"/);
+    expect(html).toContain('focusable="false"');
+    expect(html).toContain('viewBox="24 0 152 161"');
+    expect(html).toContain('fill="currentColor"');
+    expect(html).not.toContain('stroke=');
+    expect(html.match(/<path d="[^"]+"/g)).toHaveLength(2);
+    expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b|<image|<text/);
   });
 });
 
@@ -165,12 +176,14 @@ describe('Breadcrumb (T-249 alignment kept)', () => {
   });
 });
 
-describe('Plate', () => {
-  it('wraps the slot and is matted by default, plain on request', async () => {
-    const matted = await render(Plate, {}, '<img alt="" src="x">');
-    expect(matted).toMatch(/<div class="plate" data-matted/);
-    expect(matted).toContain('<img alt="" src="x">');
-    expect(await render(Plate, { matted: false }, 'x')).not.toContain('data-matted');
+describe('About collage (T-295)', () => {
+  it('has no mat: no border, padding or shadow on the photos, Plate is gone', () => {
+    const src = readFileSync(new URL('./sections/About.astro', import.meta.url), 'utf8');
+    const style = /<style>([\s\S]*)<\/style>/.exec(src)?.[1] ?? '';
+    expect(src).not.toMatch(/Plate/);
+    expect(style).not.toMatch(/\b(border|box-shadow|padding)\s*:/);
+    expect(style).toMatch(/\.shot\b/);
+    expect(existsSync(new URL('./Plate.astro', import.meta.url))).toBe(false);
   });
 });
 
@@ -178,7 +191,7 @@ describe('no colour filter on photos, ever (WP-12 D-22)', () => {
   const srcDir = join(new URL('..', import.meta.url).pathname);
   const css = (rel: string): string => readFileSync(join(srcDir, rel), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const FILES = [
-    'components/Plate.astro',
+    'components/sections/About.astro',
     'components/Photo.astro',
     'components/CategoryCard.astro',
     'components/AlbumCard.astro',
@@ -263,23 +276,21 @@ describe('Photo crop', () => {
 });
 
 describe('CategoryCard', () => {
-  const props = { href: '/svatby/', title: 'Svatby', meta: '4 alba', photo: landscape, base: IMG };
+  const props = { href: '/svatby/', title: 'Svatby', photo: landscape, base: IMG };
 
-  it('is one list item with ONE link around cover, meta and name; the cover is decorative', async () => {
+  it('is one list item with ONE link around cover and name; the cover is decorative', async () => {
     const html = await render(CategoryCard, props);
     expect(html.match(/<a /g)).toHaveLength(1);
     expect(html).toMatch(/<li class="card">\s*<a href="\/svatby\/">/);
     expect(html).toMatch(/<\/a>\s*<\/li>/);
     expect(html).toMatch(/<img[^>]*\salt(?:="")?[\s>]/);
     expect(html).toContain('class="card-title t-h3">Svatby</span>');
-    expect(html).toContain('4 alba');
     expect(html).toMatch(/crop crop-category/);
   });
 
-  it('puts the meta kicker before the name and omits it without meta', async () => {
+  it('has no meta line, only the name (T-315)', async () => {
     const html = await render(CategoryCard, props);
-    expect(html.indexOf('4 alba')).toBeLessThan(html.indexOf('card-title'));
-    expect(await render(CategoryCard, { ...props, meta: undefined })).not.toContain('kicker');
+    expect(html).not.toMatch(/kicker|alb/);
   });
 
   it('loads lazily by default, eager and low for the first row, high for the priority card', async () => {
@@ -326,21 +337,13 @@ describe('category call to action labels (T-279)', () => {
 });
 
 describe('AlbumCard', () => {
-  it('shows place and the photo count with the Czech plural in the meta kicker and uses the 4/5 crop', async () => {
+  it('shows only the title (no place, no photo count) and uses the 4/5 crop', async () => {
     const html = await render(AlbumCard, { card: albumData(), base: IMG });
-    expect(html).toContain('Brno · 44 fotografií');
+    expect(html).not.toMatch(/fotografi|Brno|kicker| · /);
+    expect(html).toContain('class="card-title t-h3"');
     expect(html).toContain('crop crop-album');
     expect(html).toMatch(/<a href="\/svatby\/sedlakovi\/">/);
     expect(html.match(/<a /g)).toHaveLength(1);
-  });
-
-  it('meta lines for one and for a few photos, and without a place', async () => {
-    expect(await render(AlbumCard, { card: albumData({ countLabel: '1 fotografie' }), base: IMG })).toContain('Brno · 1 fotografie');
-    expect(await render(AlbumCard, { card: albumData({ place: null, countLabel: '3 fotografie' }), base: IMG })).toMatch(
-      />\s*3 fotografie\s*</,
-    );
-    const noPlace = await render(AlbumCard, { card: albumData({ place: null }), base: IMG });
-    expect(noPlace).not.toContain(' · ');
   });
 
   it('passes eager and priority through to the cover', async () => {

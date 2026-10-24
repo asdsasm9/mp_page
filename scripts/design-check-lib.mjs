@@ -22,6 +22,7 @@ export const ROUTES = [
   { path: '/svatby/', name: 'category' },
   { path: '/portfolio/', name: 'portfolio' },
   { path: '/svatby/sedlakovi/', name: 'album' },
+  { path: '/o-mne/', name: 'about' },
   // Album layout fixtures (T-216): 5, 9, 60 and 120 distinct photos; built in fixture mode only (pages/layout-check).
   { path: '/layout-check/5/', name: 'album-5' },
   { path: '/layout-check/9/', name: 'album-9' },

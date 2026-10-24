@@ -2,6 +2,7 @@ import './zodCsp';
 import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import './styles/fonts.css';
 import './styles/tokens.css';
 import './styles/app.css';
 import { loadPorts } from './adapters/select';

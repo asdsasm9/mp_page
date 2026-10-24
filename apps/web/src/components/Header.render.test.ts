@@ -33,10 +33,10 @@ describe('Header.astro', () => {
     expect(text.startsWith(NAV.wordmark)).toBe(true);
   });
 
-  it('lists the four items in both navs with anchor hrefs and a framed Kontakt', async () => {
+  it('lists the four items in both navs (O mně is the /o-mne/ page, the rest home anchors) and a framed Kontakt', async () => {
     const html = header(plain(await render('/')));
     const hrefs = [...html.matchAll(/<a [^>]*href="(\/[^"]*)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(['/', '/#o-mne', '/#portfolio', '/#reference', '/#kontakt', '/#o-mne', '/#portfolio', '/#reference', '/#kontakt']);
+    expect(hrefs).toEqual(['/', '/o-mne/', '/portfolio/', '/#reference', '/#kontakt', '/o-mne/', '/portfolio/', '/#reference', '/#kontakt']);
     expect(html.match(/data-framed/g)).toHaveLength(2);
   });
 
@@ -72,6 +72,14 @@ describe('Header.astro', () => {
     const home = header(plain(await render('/', true)));
     expect(home).not.toContain('aria-current="true"');
     expect(home).toContain('aria-current="page"'); // the wordmark only
+  });
+
+  it('marks O mně with aria-current="page" in both navs on /o-mne/ and nowhere else', async () => {
+    const html = header(plain(await render('/o-mne/')));
+    expect(html.match(/aria-current="page"/g)).toHaveLength(2);
+    expect(html).not.toContain('aria-current="true"');
+    for (const m of html.matchAll(/<a [^>]*aria-current="page"[^>]*>/g)) expect(m[0]).toContain('href="/o-mne/"');
+    expect(header(plain(await render('/cookies/')))).not.toContain('aria-current="page"');
   });
 
   it('puts no inline style, no href="#" and no click-only controls in the header', async () => {

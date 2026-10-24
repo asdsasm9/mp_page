@@ -2,6 +2,7 @@ import type { Snapshot, SnapshotAlbum, SnapshotCategory } from '@mp/shared';
 import { describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
 import {
+  aboutMeta,
   albumMeta,
   categoryMeta,
   checkMetas,
@@ -52,6 +53,15 @@ describe('golden strings from docs/SEO.md', () => {
     expect(withCount(1)).toMatch(/Prohlédněte si 1 svatbu\.$/);
     expect(withCount(5)).toMatch(/Prohlédněte si 5 svateb\.$/);
     expect(withCount(22)).toMatch(/Prohlédněte si 22 svateb\.$/);
+  });
+
+  it('About', () => {
+    expect(aboutMeta()).toMatchObject({
+      title: 'O mně – fotografka Terezie Müllnerová, Brno | Mullny Photos',
+      description:
+        'Jsem Terezie Müllnerová, fotografka z Brna. Specializuji se na svatby, portréty a párové focení. Přečtěte si můj příběh a zkušenosti.',
+      noindex: false,
+    });
   });
 
   it('Cookies', () => {
@@ -126,6 +136,7 @@ describe('albums', () => {
     const entries: Array<[string, ReturnType<typeof homeMeta>]> = [
       ['/', homeMeta()],
       ['/portfolio/', portfolioMeta()],
+      ['/o-mne/', aboutMeta()],
       ['/cookies/', cookiesMeta()],
       ['/404.html', notFoundMeta()],
     ];

@@ -31,11 +31,10 @@ describe('home data', () => {
     expect(cards[1]!.photo.id).toBe(catalog.coverOf(fixture.categories[1]!.albums[0]!)!.id);
   });
 
-  it('counts the albums of each category with the Czech plural (1 album, 2 to 4 alba, 5 alb)', () => {
+  it('category cards carry no album count (T-315)', () => {
     const cards = homeCategoryCards(buildCatalog(fixture));
-    expect(cards.map((c) => c.countLabel)).toEqual(['4 alba', '6 alb', '3 alba']);
-    const trimmed: Snapshot = { ...fixture, categories: fixture.categories.map((c) => ({ ...c, albums: c.albums.slice(0, 1) })) };
-    expect(homeCategoryCards(buildCatalog(trimmed)).map((c) => c.countLabel)).toEqual(['1 album', '1 album', '1 album']);
+    expect(cards).toHaveLength(3);
+    for (const c of cards) expect(c).not.toHaveProperty('countLabel');
   });
 
   it('a chosen small-master photo is served from its own tiers, never an assumed 1600', () => {

@@ -27,7 +27,6 @@ const cards: CategoryCard[] = layoutCheckPhotos(pool, count).map((photo, i) => (
   place: i % 2 === 0 ? 'Brno' : null,
   path: '/layout-check/',
   photo,
-  countLabel: `${5 + i} fotografií`,
   eager: i < FIRST_ROW,
   priority: i === 0,
 }));

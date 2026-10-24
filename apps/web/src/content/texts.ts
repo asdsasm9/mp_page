@@ -110,7 +110,7 @@ export const NOT_FOUND = {
 
 export const UOOU_URL = 'https://uoou.gov.cz';
 
-/** Wording is ours (docs/ANALYTICS-CONSENT.md section 4, reduced to option C / D-3 and WP-3); open `[doplnit]` items are in docs/TEXTS-REVIEW.md. */
+/** Wording is ours (docs/ANALYTICS-CONSENT.md section 4, reduced to option C / D-3 and WP-3); open items are in docs/TEXTS-REVIEW.md. */
 export const COOKIES = {
   title: 'Zásady cookies a ochrany soukromí',
   intro: 'Tato stránka vysvětluje, jaké údaje tento web zpracovává a komu je můžete nahlásit nebo se na ně zeptat.',
@@ -123,7 +123,9 @@ export const COOKIES = {
     /** Optional (T-220): a private person without IČO leaves it null and the line is omitted. Name, address and e-mail suffice. */
     companyId: null as string | null,
     mailLabel: 'E-mail',
-    placeholder: '[doplnit]',
+    /** H-7 (Adam, 2026-10-24). The house number was not given; see VERIFY in docs/TEXTS-REVIEW.md. */
+    name: 'Terezie Müllnerová',
+    address: 'Spodní, 625 00 Brno',
   },
   storage: {
     title: 'Co web ukládá',

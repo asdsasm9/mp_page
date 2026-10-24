@@ -99,10 +99,18 @@ describe('home data', () => {
     }
   });
 
-  it('keeps a review whose album is gone from the snapshot, without a category name', () => {
+  it('keeps a review whose album is gone from the snapshot, without a category name and without a photo', () => {
     const out = homeReviews(buildCatalog(without('anez')), REVIEWS);
     expect(out.map((r) => r.review.albumId)).toEqual(['pati', 'anez']);
     expect(out[1]!.categoryName).toBeNull();
+    expect(out[1]!.photo).toBeNull();
+  });
+
+  it('T-333: the author portrait is the cover of the review album', () => {
+    const catalog = buildCatalog(fixture);
+    for (const r of homeReviews(catalog, REVIEWS)) {
+      expect(r.photo).toEqual(catalog.coverOf(catalog.albumBySlug.get(r.review.albumId)!.album));
+    }
   });
 
   it('shows no reviews when there are none', () => {

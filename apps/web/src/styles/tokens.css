@@ -133,6 +133,8 @@
     --target-compact: 2rem; /* quiet links (breadcrumb, footer): above the 24 px WCAG 2.2 minimum */
     --ratio-category: 3 / 4; /* category card covers */
     --ratio-album: 4 / 5; /* album card covers */
+    --profile-size: 12rem; /* T-333/T-335: review author portrait from 48rem; the sizes string in lib/images.ts says the same */
+    --profile-size-compact: 6rem; /* phones */
     --cover-position: center 30%; /* keeps heads of portrait people photos in the crop */
     --section-gap: var(--space-6); /* between page sections */
     --heading-gap: var(--space-4); /* heading to its text */

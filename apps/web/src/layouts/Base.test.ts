@@ -106,7 +106,7 @@ describe('Home page (built, shared build)', () => {
     for (const tag of imgs) expect(tag).toMatch(EMPTY_ALT);
   });
 
-  it('shows the full review text (no details, no "Celá recenze"), no photos, in the dark band', () => {
+  it('shows the full review text (no details, no "Celá recenze"), one lazy author portrait per review (T-333), in the dark band', () => {
     const reviews = section('id="reference"').replace(/\sdata-astro-cid-[a-z0-9]+(="")?/g, '');
     expect(reviews).toContain('data-band="dark"');
     expect(reviews).toContain('Reference');
@@ -116,7 +116,12 @@ describe('Home page (built, shared build)', () => {
     }
     expect(reviews).not.toContain('<details');
     expect(reviews).not.toContain('Celá recenze');
-    expect(imgTags(reviews)).toHaveLength(0);
+    const imgs = imgTags(reviews);
+    expect(imgs).toHaveLength(REVIEWS.length);
+    REVIEWS.forEach((r, i) => {
+      expect(imgs[i]).toContain(`alt="${r.name}, klientka"`);
+      expect(imgs[i]).toContain('loading="lazy"');
+    });
   });
 
   it('orders the sections uvod, o-mne, portfolio, reference, kontakt, with no quote section and no collage', () => {

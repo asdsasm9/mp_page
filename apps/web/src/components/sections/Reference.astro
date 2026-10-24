@@ -4,23 +4,28 @@
 // hidden; with it the slides share one grid cell (the band is as tall as the tallest slide, nothing shifts) and
 // scripts/reference-carousel.ts moves the active marker. No autoplay. The slide shows the full review text (T-320).
 // Zero reviews renders nothing; one review renders no arrows and no counter.
+// T-333 (D-25): the author's portrait (the review album's cover) sits to the right of the text from 48rem, below it on
+// phones; it is after the text in the DOM and lives inside the slide, so it changes with the slide. No cover, no photo, no gap.
 import type { HomeReview } from '../../lib/home';
 import Icon from '../Icon.astro';
+import Photo from '../Photo.astro';
 import Section from '../Section.astro';
 
 interface Props {
   reviews: readonly HomeReview[];
+  /** Image base URL, e.g. env.imgBaseUrl. */
+  base: string;
 }
 
-const { reviews } = Astro.props;
+const { reviews, base } = Astro.props;
 const total = reviews.length;
 ---
 {
   total > 0 && (
-    <Section id="reference" class="fill" title="Reference" band="dark">
+    <Section id="reference" class="fill fill-tall"title="Reference" band="dark">
       <div class="carousel" data-carousel role="region" aria-roledescription="carousel" aria-label="Recenze klientů">
         <div class="viewport" data-viewport>
-          {reviews.map(({ review, categoryName }, i) => (
+          {reviews.map(({ review, categoryName, photo }, i) => (
             <div
               class="slide"
               data-slide
@@ -29,11 +34,16 @@ const total = reviews.length;
               aria-roledescription="slide"
               aria-label={`${i + 1} z ${total}`}
             >
-              <figure>
+              <figure class:list={{ 'has-photo': photo }}>
                 <blockquote class="t-quote">
                   <p>{review.text}</p>
                 </blockquote>
                 <figcaption class="t-kicker">{categoryName ? `${review.name} · ${categoryName}` : review.name}</figcaption>
+                {photo && (
+                  <div class="portrait">
+                    <Photo photo={photo} base={base} alt={`${review.name}, klientka`} crop="profile" />
+                  </div>
+                )}
               </figure>
             </div>
           ))}
@@ -88,9 +98,75 @@ const total = reviews.length;
     color: var(--band-dark-muted);
   }
 
+  .portrait {
+    inline-size: var(--profile-size-compact);
+  }
+
+  /* Phones: text block, caption and portrait stacked, each centred as a block (quote lines stay left-aligned) */
+  .slide figure.has-photo {
+    justify-items: center;
+  }
+
+  .slide figure.has-photo blockquote,
+  .slide figure.has-photo figcaption {
+    justify-self: center;
+    max-inline-size: 36rem;
+  }
+
+  .slide figure.has-photo figcaption {
+    text-align: center;
+  }
+
+  .slide figure.has-photo .portrait {
+    margin-block-start: var(--space-3);
+  }
+
+  /* Two columns (T-335): portrait left, text right (the DOM keeps the text first), centred together as one group,
+     vertically centred against each other */
+  @media (min-width: 48rem) {
+    .slide figure.has-photo {
+      grid-template-columns: auto minmax(0, 36rem);
+      grid-template-areas:
+        'portrait quote'
+        'portrait caption';
+      justify-content: center;
+      align-content: center;
+      align-items: center;
+      column-gap: var(--space-6);
+    }
+
+    .slide figure.has-photo .portrait {
+      margin-block-start: 0;
+    }
+
+    .slide figure.has-photo blockquote {
+      grid-area: quote;
+      align-self: end;
+    }
+
+    .slide figure.has-photo figcaption {
+      grid-area: caption;
+      align-self: start;
+      justify-self: start;
+      text-align: start;
+      max-inline-size: none;
+    }
+
+    .slide figure.has-photo blockquote {
+      justify-self: stretch;
+      max-inline-size: none;
+    }
+
+    .portrait {
+      grid-area: portrait;
+      inline-size: var(--profile-size);
+    }
+  }
+
   .controls {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--space-4);
   }
 

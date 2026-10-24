@@ -161,6 +161,12 @@ describe('coverSizes (crop-aware sizes, WP-12 F10)', () => {
     );
     expect(cropSizes('album', 1067, 1600)).toBe(ALBUM); // a portrait photo fills the 4 / 5 box with no extra width
   });
+
+  it('T-333/T-335 profile crop: 12rem from 48rem, 6rem on phones, times the landscape crop factor of the square box', () => {
+    expect(cropSizes('profile', 1000, 1000)).toBe('(min-width: 48rem) 12rem, 6rem');
+    expect(cropSizes('profile', 1600, 1067)).toBe('(min-width: 48rem) calc(12rem * 1.5), calc(6rem * 1.5)');
+    expect(cropSizes('profile', 1067, 1600)).toBe('(min-width: 48rem) 12rem, 6rem');
+  });
 });
 
 describe('master and lightboxSet', () => {

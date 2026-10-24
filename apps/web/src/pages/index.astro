@@ -81,9 +81,7 @@ const ogImage = chosenHero
     )
   }
 
-  <!-- T-330: Reference and Kontakt are one window-tall block; both keep their ids and bands -->
-  <div class="home-end fill-tall" data-home-end>
-    <Reference reviews={reviews} />
-    <Contact />
-  </div>
+  <!-- T-335: Reference is window-tall on its own (fill-tall in the component); Kontakt keeps its content height -->
+  <Reference reviews={reviews} base={env.imgBaseUrl} />
+  <Contact />
 </Base>

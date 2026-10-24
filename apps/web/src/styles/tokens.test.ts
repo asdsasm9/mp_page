@@ -255,17 +255,18 @@ describe('design tokens', () => {
     expect(block).not.toBeNull();
     expect(block![1]).toMatch(/\.fill-tall \{[^}]*min-block-size: calc\(100vh - var\(--header-height\)\);[^}]*min-block-size: var\(--section-min-block\);/);
     expect(block![1]).toMatch(/\.fill \{[^}]*justify-content: center/);
-    expect(block![1]).toMatch(/\.home-end > \.fill \{[^}]*flex: 1 1 auto/);
+    expect(block![1]).not.toContain('.home-end');
     expect(block![1]).not.toMatch(/(?<!min-)block-size:|animation|transition/);
   });
 
-  it('the home page marks O mně, Portfolio and the Reference + Kontakt wrapper as window-tall', () => {
+  it('the home page marks O mně, Portfolio and Reference as window-tall; Kontakt keeps its content height (T-335)', () => {
     const page = readFileSync(join(srcDir, 'pages', 'index.astro'), 'utf8');
     expect(page).toMatch(/id="portfolio" class="fill fill-tall"/);
-    expect(page).toMatch(/<div class="home-end fill-tall" data-home-end>\s*<Reference[^>]*\/>\s*<Contact \/>\s*<\/div>/);
+    expect(page).not.toContain('home-end');
+    expect(page).toMatch(/<Reference[^>]*\/>\s*<Contact \/>/);
     expect(readFileSync(join(srcDir, 'components', 'sections', 'About.astro'), 'utf8')).toContain('class="about fill fill-tall"');
-    expect(readFileSync(join(srcDir, 'components', 'sections', 'Contact.astro'), 'utf8')).toContain('id="kontakt" class="contact fill"');
-    expect(readFileSync(join(srcDir, 'components', 'sections', 'Reference.astro'), 'utf8')).toContain('id="reference" class="fill"');
+    expect(readFileSync(join(srcDir, 'components', 'sections', 'Contact.astro'), 'utf8')).toContain('id="kontakt" class="contact"');
+    expect(readFileSync(join(srcDir, 'components', 'sections', 'Reference.astro'), 'utf8')).toContain('id="reference" class="fill fill-tall"');
   });
 
   it('the contrast helper turns red for a failing colour', () => {

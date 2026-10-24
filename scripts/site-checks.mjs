@@ -161,8 +161,11 @@ export function checkHeavyImages(page) {
 export function jsonLdMatrix(page) {
   if (is404(page)) return { required: [], allowed: [] };
   const route = routeOf(page.path);
-  // About and Contact are home sections (the /o-mne/ and /kontakt/ pages are gone), so the home also carries the Person entity.
-  if (route === '/') return { required: ['Photographer', 'WebSite'], allowed: ['Photographer', 'WebSite', 'Person'] };
+  // Contact is a home section (no /kontakt/ page); the Person entity lives on the About page /o-mne/ (T-293), not on the home.
+  if (route === '/') return { required: ['Photographer', 'WebSite'], allowed: ['Photographer', 'WebSite'] };
+  if (route === '/o-mne/') {
+    return { required: ['Person', 'BreadcrumbList'], allowed: ['Person', 'BreadcrumbList', 'Photographer'] };
+  }
   if (route === '/portfolio/' || route === '/cookies/') return { required: ['BreadcrumbList'], allowed: ['BreadcrumbList'] };
   return {
     required: ['ImageGallery', 'BreadcrumbList'],
@@ -280,7 +283,7 @@ export function checkSitemapCanonical(pages, sitemapXml, redirectsText = '') {
   if (!sitemapXml) return ['sitemap.xml is missing'];
   const locs = sitemapLocs(sitemapXml);
   if (new Set(locs).size !== locs.length) p.push('sitemap has duplicate <loc> entries');
-  // A page whose route is an exact redirect source is redirect-only (e.g. /o-mne/, /kontakt/ since T-288): not in the sitemap.
+  // A page whose route is an exact redirect source is redirect-only (e.g. /kontakt/ since T-288): not in the sitemap.
   const { exact } = redirectSources(redirectsText);
   const canon = new Set();
   for (const page of pages) {

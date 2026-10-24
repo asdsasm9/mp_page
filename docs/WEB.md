@@ -6,10 +6,12 @@ Plan: WP-3 and WP-3b (image loading). Related: [SEO.md](SEO.md), [DESIGN-CHECK.m
 
 ## Structure (since WP-12)
 
-Home (`/`) is a one-pager with the sections Hero, O mně (`#o-mne`), Portfolio (category cards), Reference and Kontakt
-(`#kontakt`), then the footer (`src/components/sections/`). Further pages: `/portfolio/`, one page per category, one per
-album, `/cookies/` and the 404. There are no `/o-mne/` or `/kontakt/` pages any more (old URLs redirect to the home
-page). Look: [DESIGN-TOKENS.md](DESIGN-TOKENS.md) (Cormorant Garamond headings, Lora text, warm paper, gold stroke).
+Home (`/`) is a one-pager with the sections Hero, O mně (`#o-mne`: the short hello and a "Více o mně" link to `/o-mne/`),
+Portfolio (category cards), Reference and Kontakt (`#kontakt`), then the footer (`src/components/sections/`). Further
+pages: `/o-mne/` (the About page again since T-293, with the three texts, the full quote and two photos; the header item
+"O mně" links to it and is marked `aria-current="page"` there), `/portfolio/`, one page per category, one per album,
+`/cookies/` and the 404. There is no `/kontakt/` page (it redirects to the home section); `/about` and `#/about` redirect
+to `/o-mne/`. Look: [DESIGN-TOKENS.md](DESIGN-TOKENS.md) (Cormorant Garamond headings, Lora text, warm paper, gold stroke).
 `docs/DESIGN-CHECK.md` is the historical WP-3 baseline.
 
 ## Build modes

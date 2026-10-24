@@ -125,8 +125,9 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['--out'])).toThrow(/missing/);
   });
   it('selects routes', () => {
-    expect(selectRoutes(null)).toHaveLength(18);
-    expect(selectRoutes(null).map((r) => r.path)).not.toEqual(expect.arrayContaining(['/o-mne/']));
+    expect(selectRoutes(null)).toHaveLength(19);
+    expect(selectRoutes(null).map((r) => r.path)).toContain('/o-mne/');
+    expect(selectRoutes(['/o-mne/'])[0].name).toBe('about');
     expect(selectRoutes(null).map((r) => r.path)).not.toEqual(expect.arrayContaining(['/kontakt/']));
     expect(selectRoutes(['/portfolio/'])[0].name).toBe('portfolio');
     expect(selectRoutes(['/cookies/'])[0].name).toBe('cookies');

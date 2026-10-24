@@ -14,7 +14,7 @@ const TABLE: Array<[string, string]> = [
   ['#/weddings/suranovi', '/svatby/suranovi/'],
   ['#/portraits', '/portrety/'],
   ['#/couples', '/parove-foceni/'],
-  ['#/about', '/#o-mne'],
+  ['#/about', '/o-mne/'],
   ['#/contact', '/#kontakt'],
   ['#/weddings/unknown-id', '/svatby/'],
   ['#/nonsense', '/'],
@@ -74,7 +74,7 @@ describe('hash-redirect', () => {
 
   it('only ever redirects to a path from the fixed tables', () => {
     for (const hash of ['#/constructor', '#/weddings/<script>', '#/portraits/%2e%2e', '#/couples/a/b']) {
-      expect(run(hash)[0], hash).toMatch(/^\/(?:(?:svatby|portrety|parove-foceni|portfolio)\/|#o-mne|#kontakt)?$/);
+      expect(run(hash)[0], hash).toMatch(/^\/(?:(?:svatby|portrety|parove-foceni|portfolio|o-mne)\/|#kontakt)?$/);
     }
   });
 

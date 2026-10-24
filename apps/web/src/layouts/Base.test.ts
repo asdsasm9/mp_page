@@ -138,7 +138,7 @@ describe('Home page (built, shared build)', () => {
     expect(hero).toMatch(/<a class="btn"[^>]*href="#kontakt"[^>]*>Poptat termín<\/a>/);
   });
 
-  it('O mně has the corrected alt texts, lazy images, the details with the long text and the quote, and a link to #kontakt', () => {
+  it('O mně has the corrected alt texts, lazy images, the short hello, a "Více o mně" link to /o-mne/ and a link to #kontakt', () => {
     const about = section('id="o-mne"');
     expect(about).toContain('alt="Ruce novomanželů s prsteny v pšeničném poli"');
     expect(about).not.toContain('Fotografka Terezie Müllnerová');
@@ -146,9 +146,10 @@ describe('Home page (built, shared build)', () => {
     expect(imgs).toHaveLength(2);
     for (const t of imgs) expect(t).toContain('loading="lazy"');
     expect(about).toContain(HOME.hello.paragraphs[0]!);
-    expect(about).toMatch(/<details[^>]*class="more[^"]*"/);
-    expect(about).toContain(ABOUT.experience.body);
-    expect(about).toContain(HOME.quote);
+    expect(about).not.toContain('<details');
+    expect(about).not.toContain(ABOUT.experience.body);
+    expect(about).not.toContain(HOME.quote);
+    expect(about).toMatch(/<a class="btn"[^>]*href="\/o-mne\/"[^>]*>Více o mně<\/a>/);
     expect(about).toContain('href="#kontakt"');
   });
 
@@ -167,8 +168,8 @@ describe('Home page (built, shared build)', () => {
     expect(html).toMatch(/<meta property="og:image" content="https:\/\/www\.mullnyphotos\.cz\/[^"]+">/);
   });
 
-  it('emits Photographer and WebSite JSON-LD only, no Review', () => {
-    expect(jsonLdTypes().sort()).toEqual(['Person', 'Photographer', 'WebSite']);
+  it('emits Photographer and WebSite JSON-LD only (Person lives on /o-mne/), no Review', () => {
+    expect(jsonLdTypes().sort()).toEqual(['Photographer', 'WebSite']);
     expect(html).not.toMatch(/"@type":"(Review|AggregateRating)"/);
   });
 });
@@ -351,9 +352,32 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
       .filter((f) => f.endsWith('.html'))
       .map((f): [string, string] => [f, readFileSync(join(out, f), 'utf8')]);
 
-  it('does not build /o-mne/ and /kontakt/ any more', () => {
-    expect(existsSync(join(out, 'o-mne'))).toBe(false);
+  it('builds /o-mne/ (T-293) but not /kontakt/', () => {
+    expect(existsSync(join(out, 'o-mne', 'index.html'))).toBe(true);
     expect(existsSync(join(out, 'kontakt'))).toBe(false);
+  });
+
+  it('/o-mne/ has one h1, the three texts and the quote in full, two lazy photos, Person + BreadcrumbList, the current nav marker', () => {
+    const page = readFileSync(join(out, 'o-mne', 'index.html'), 'utf8');
+    expect([...page.matchAll(/<h1[\s>]/g)]).toHaveLength(1);
+    expect(page).toMatch(/<h1[^>]*>O mně<\/h1>/);
+    for (const text of [ABOUT.me.body, ABOUT.experience.body, ABOUT.story.body, HOME.quote]) expect(page).toContain(text);
+    const main = page.slice(page.indexOf('<main'), page.indexOf('</main>'));
+    expect(main).not.toContain('<details');
+    const imgs = imgTags(main);
+    expect(imgs).toHaveLength(2);
+    for (const t of imgs) expect(t).toContain('loading="lazy"');
+    expect(page).not.toContain('fetchpriority="high"');
+    expect(main).toContain('href="/#kontakt"');
+    const types = [...page.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+      .map((m) => JSON.parse(m[1]!) as { '@type': string; url?: string })
+      .map((j) => j['@type'])
+      .sort();
+    expect(types).toEqual(['BreadcrumbList', 'Person']);
+    expect(page).toContain('"url":"https://www.mullnyphotos.cz/o-mne/"');
+    expect(page).toContain('<link rel="canonical" href="https://www.mullnyphotos.cz/o-mne/">');
+    expect(currentLinks(page)).toEqual(['/o-mne/']);
+    expect(navLinks(page).filter((t) => /aria-current="page"/.test(t))).toHaveLength(1);
   });
 
   it('no built page has a tel: link, a +420 number or a telephone property', () => {
@@ -437,7 +461,7 @@ describe('Cookies page and 404 (built, shared build)', () => {
 });
 
 describe('Sitemap and robots (built, shared build)', () => {
-  it('sitemap.xml lists the 19 fixture URLs (1 + 1 + 3 + 13 + 1), without 404 and without /o-mne/ and /kontakt/, and sedlakovi has 44 images', () => {
+  it('sitemap.xml lists the 20 fixture URLs (1 + 1 + 3 + 13 + 2), with /o-mne/, without 404 and /kontakt/, and sedlakovi has 44 images', () => {
     const xml = readFileSync(join(out, 'sitemap.xml'), 'utf8');
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     const albums = fixture.categories.flatMap((c) => c.albums.map((a) => `/${c.slug}/${a.slug}/`));
@@ -446,9 +470,10 @@ describe('Sitemap and robots (built, shared build)', () => {
       '/portfolio/',
       ...fixture.categories.map((c) => `/${c.slug}/`),
       ...albums,
+      '/o-mne/',
       '/cookies/',
     ].map((p) => `https://www.mullnyphotos.cz${p}`);
-    expect(locs).toHaveLength(19);
+    expect(locs).toHaveLength(20);
     expect([...locs].sort()).toEqual([...expected].sort());
     expect(locs.filter((l) => /404/.test(l!))).toEqual([]);
     const sedlakovi = xml.slice(xml.indexOf('/svatby/sedlakovi/</loc>'));
@@ -522,12 +547,12 @@ describe('Base layout (built home page)', () => {
     expect(html).toContain('<main id="obsah"');
   });
 
-  it('has four header nav links (home anchors, Reference only with reviews) and marks the wordmark as the current page', () => {
-    expect(navLinks(html).map(hrefOf)).toEqual(['/#o-mne', '/#portfolio', '/#reference', '/#kontakt']);
+  it('has four header nav links (O mně is /o-mne/, the rest home anchors, Reference only with reviews) and marks the wordmark as the current page', () => {
+    expect(navLinks(html).map(hrefOf)).toEqual(['/o-mne/', '/#portfolio', '/#reference', '/#kontakt']);
     expect(html).toMatch(/class="wordmark t-wordmark" href="\/"[^>]*aria-current="page"/);
     // The drawer nav carries the same four links, and exactly one nav is exposed at any width.
     const drawer = /<nav aria-label="Hlavní navigace v menu"[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/#o-mne', '/#portfolio', '/#reference', '/#kontakt']);
+    expect([...drawer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['/o-mne/', '/#portfolio', '/#reference', '/#kontakt']);
   });
 
   it('overlays the hero only on the home page (data-over-hero) and uses a native details drawer', () => {

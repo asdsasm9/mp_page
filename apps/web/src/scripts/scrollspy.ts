@@ -3,6 +3,8 @@
  * marked. An IntersectionObserver watches a band just below the header; the section in that band gets
  * `aria-current="location"` on its header links (desktop nav and drawer copy). The hero (`uvod`) is watched
  * too, so the marker clears while it is in view. Only the fixed list of ids below is ever read.
+ * `o-mne` is the short hello section of the home: it stays in the list so the marker clears there, but the
+ * "O mně" nav item links to the /o-mne/ page (data-nav-anchor="about") and is never marked here.
  */
 import { applyEntries, pickCurrent } from './scrollspy-state';
 

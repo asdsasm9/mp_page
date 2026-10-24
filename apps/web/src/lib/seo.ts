@@ -61,6 +61,12 @@ export const homeMeta = (): PageMeta =>
     'Svatební, portrétní a párový fotograf z Brna. Přirozené fotografie plné emocí, focení v Brně a Jihomoravském kraji. Napište mi o termínu.',
   );
 
+export const aboutMeta = (): PageMeta =>
+  meta(
+    'O mně – fotografka Terezie Müllnerová, Brno',
+    'Jsem Terezie Müllnerová, fotografka z Brna. Specializuji se na svatby, portréty a párové focení. Přečtěte si můj příběh a zkušenosti.',
+  );
+
 /** Q-6 placeholder wording; the real /portfolio/ page (decision D-6) lists all categories and a selection of albums. */
 export const portfolioMeta = (): PageMeta =>
   meta(

@@ -9,9 +9,9 @@ const marked = (current: string): string[] =>
   items.filter((i) => navCurrent(current, i) !== undefined).map((i) => i.anchor);
 
 describe('buildNav', () => {
-  it('lists O mně, Portfolio, Reference and a framed Kontakt, all as home anchors', () => {
+  it('lists O mně (the /o-mne/ page), Portfolio, Reference and a framed Kontakt (home anchors)', () => {
     expect(items.map((i) => [i.label, i.href, i.anchor, Boolean(i.framed)])).toEqual([
-      ['O mně', '/#o-mne', 'o-mne', false],
+      ['O mně', '/o-mne/', 'about', false],
       ['Portfolio', '/#portfolio', 'portfolio', false],
       ['Reference', '/#reference', 'reference', false],
       ['Kontakt', '/#kontakt', 'kontakt', true],
@@ -19,7 +19,7 @@ describe('buildNav', () => {
   });
 
   it('leaves Reference out when there are no reviews', () => {
-    expect(buildNav(NAV, false).map((i) => i.anchor)).toEqual(['o-mne', 'portfolio', 'kontakt']);
+    expect(buildNav(NAV, false).map((i) => i.anchor)).toEqual(['about', 'portfolio', 'kontakt']);
   });
 
   it('keeps Reference for exactly one review', () => {
@@ -43,12 +43,18 @@ describe('aria-current in the header nav', () => {
     }
   });
 
-  it('marks nothing on cookies, 404 and the removed pages', () => {
+  it('marks O mně with "page" on /o-mne/ and nothing else there', () => {
+    expect(marked('/o-mne/')).toEqual(['about']);
+    expect(navCurrent('/o-mne/', items[0]!)).toBe('page');
+    expect(isPortfolioPage('/o-mne/')).toBe(false);
+  });
+
+  it('marks nothing on cookies and 404', () => {
     for (const path of ['/cookies/', '/404/']) expect(marked(path), path).toEqual([]);
     expect(isPortfolioPage('/cookies/')).toBe(false);
   });
 
-  it('never uses "page" on a nav item', () => {
+  it('uses "page" only for O mně on /o-mne/', () => {
     for (const path of ['/', '/portfolio/', '/svatby/', '/svatby/sedlakovi/', '/cookies/']) {
       for (const item of items) expect(navCurrent(path, item)).not.toBe('page');
     }

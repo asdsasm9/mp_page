@@ -1,15 +1,13 @@
 ---
-// O mně (WP-12 e): a collage of two photos (hands in wheat behind, the kiss on the forehead in front on a mat),
-// the greeting text, and a native <details> "Více o mně" with the rest of the old About page and the long quote,
-// so no real text is lost and no JavaScript is needed. Both images are lazy (below the hero).
+// O mně on the home (WP-12 e): a collage of two photos (hands in wheat behind, the kiss on the forehead in front on a mat),
+// the greeting text and a "Více o mně" link to the /o-mne/ page (T-293), which holds the long texts and the quote.
+// Both images are lazy (below the hero).
 import { Image } from 'astro:assets';
-import { ABOUT, HOME } from '../../content/texts';
+import { HOME } from '../../content/texts';
 import Kicker from '../Kicker.astro';
 import Plate from '../Plate.astro';
 import hello from '../../assets/site/home/hello.jpg';
 import wedding from '../../assets/site/about/wedding.jpg';
-
-const more = [ABOUT.me, ABOUT.experience, ABOUT.story];
 ---
 <section id="o-mne" class="about" aria-labelledby="o-mne-nadpis">
   <div class="inner">
@@ -41,21 +39,10 @@ const more = [ABOUT.me, ABOUT.experience, ABOUT.story];
       <Kicker>O mně</Kicker>
       <h2 id="o-mne-nadpis" class="t-title">{HOME.hello.title}</h2>
       {HOME.hello.paragraphs.map((p) => <p class="t-prose">{p}</p>)}
-      <details class="more">
-        <summary class="btn">Více o mně</summary>
-        <div class="more-body">
-          {
-            more.map((block) => (
-              <>
-                <h3>{block.title}</h3>
-                <p class="t-prose">{block.body}</p>
-              </>
-            ))
-          }
-          <blockquote class="t-prose">{HOME.quote}</blockquote>
-        </div>
-      </details>
-      <a class="btn-ghost" href="#kontakt">Napsat mi</a>
+      <div class="actions">
+        <a class="btn" href="/o-mne/">Více o mně</a>
+        <a class="btn-ghost" href="#kontakt">Napsat mi</a>
+      </div>
     </div>
   </div>
 </section>
@@ -106,32 +93,10 @@ const more = [ABOUT.me, ABOUT.experience, ABOUT.story];
     hyphens: auto;
   }
 
-  .more {
-    display: grid;
-    gap: var(--space-4);
-    inline-size: 100%;
-  }
-
-  .more summary {
-    justify-self: start;
-    list-style: none;
-  }
-
-  .more summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .more-body {
-    display: grid;
-    gap: var(--space-3);
-    padding-block-start: var(--space-4);
-  }
-
-  .more-body blockquote {
-    margin: 0;
-    padding-inline-start: var(--space-5);
-    border-inline-start: var(--border-width) solid var(--color-accent);
-    max-inline-size: var(--measure);
-    hyphens: auto;
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
   }
 </style>

@@ -16,10 +16,10 @@ describe('buildLlmsTxt', () => {
     for (const c of fixture.categories) expect(text).toContain(`(https://www.mullnyphotos.cz/${c.slug}/)`);
   });
 
-  it('lists the About and Contact sections of the home page, not the removed pages', () => {
-    expect(text).toContain('(https://www.mullnyphotos.cz/#o-mne)');
+  it('lists the About page and the Contact section of the home page, not a /kontakt/ page', () => {
+    expect(text).toContain('[O mně](https://www.mullnyphotos.cz/o-mne/)');
     expect(text).toContain('(https://www.mullnyphotos.cz/#kontakt)');
-    expect(text).not.toContain('/o-mne/');
+    expect(text).not.toContain('#o-mne');
     expect(text).not.toContain('/kontakt/');
   });
 

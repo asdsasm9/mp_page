@@ -166,13 +166,16 @@ describe('json-ld', () => {
     expect(checkJsonLd(p('404.html', ld(crumbs)))).toEqual(['JSON-LD type BreadcrumbList not expected on this page']);
     expect(checkJsonLd(p('cookies/index.html', ld({ '@type': 'ImageGallery' }), ld(crumbs))).join()).toMatch(/ImageGallery not expected/);
   });
-  it('home may carry Person but still rejects other types', () => {
+  it('home carries Photographer and WebSite; Person is not expected there and other types are rejected', () => {
     const base = [ld({ '@type': 'Photographer' }), ld({ '@type': 'WebSite' })];
-    expect(checkJsonLd(p('index.html', ...base, ld({ '@type': 'Person' })))).toEqual([]);
+    expect(checkJsonLd(p('index.html', ...base))).toEqual([]);
+    expect(checkJsonLd(p('index.html', ...base, ld({ '@type': 'Person' }))).join()).toMatch(/Person not expected/);
     expect(checkJsonLd(p('index.html', ...base, ld({ '@type': 'ImageGallery' }))).join()).toMatch(/ImageGallery not expected/);
   });
-  it('the removed /o-mne/ and /kontakt/ pages have no special rule any more (a Person there is unexpected)', () => {
-    expect(checkJsonLd(p('o-mne/index.html', ld({ '@type': 'Person' }), ld(crumbs))).join()).toMatch(/Person not expected/);
+  it('/o-mne/ needs Person and BreadcrumbList (T-293); /kontakt/ has no rule (no such page)', () => {
+    expect(checkJsonLd(p('o-mne/index.html', ld({ '@type': 'Person' }), ld(crumbs)))).toEqual([]);
+    expect(checkJsonLd(p('o-mne/index.html', ld(crumbs))).join()).toMatch(/Person missing/);
+    expect(checkJsonLd(p('o-mne/index.html', ld({ '@type': 'Person' }), ld(crumbs), ld({ '@type': 'ImageGallery' }))).join()).toMatch(/ImageGallery not expected/);
     expect(checkJsonLd(p('kontakt/index.html', ld({ '@type': 'Photographer' }), ld(crumbs))).join()).toMatch(/ImageGallery missing/);
   });
 });

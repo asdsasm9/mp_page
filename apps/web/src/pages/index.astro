@@ -1,5 +1,5 @@
 ---
-// Home one-pager (WP-12 e): hero (the LCP image), O mně, Portfolio, Reference (if any reviews), Kontakt.
+// Home one-pager (WP-12 e): hero (the LCP image), O mně (short hello, links to /o-mne/), Portfolio, Reference (if any reviews), Kontakt.
 // Anchors: uvod, o-mne, portfolio, reference, kontakt. Only the hero image is eager with fetchpriority="high".
 import { Image, getImage } from 'astro:assets';
 import CategoryCard from '../components/CategoryCard.astro';
@@ -16,7 +16,7 @@ import { getCatalog } from '../lib/catalog';
 import { readRawEnv, resolveEnv } from '../lib/env';
 import { HASH_REDIRECT_SCRIPT } from '../lib/hash-redirect';
 import { homeCategoryCards, homeHero, homeReviews } from '../lib/home';
-import { SITE_ORIGIN, person, photographerFull, website } from '../lib/jsonld';
+import { SITE_ORIGIN, photographerFull, website } from '../lib/jsonld';
 import { homeMeta } from '../lib/seo';
 import hero from '../assets/site/home/main.jpg';
 
@@ -43,7 +43,7 @@ const ogImage = chosenHero
       alt: heroAlt,
     }));
 ---
-<Base meta={meta} path="/" ogImage={ogImage} heroHeader jsonLd={[photographerFull(ogImage.url), website(), person(ogImage.url)]}>
+<Base meta={meta} path="/" ogImage={ogImage} heroHeader jsonLd={[photographerFull(ogImage.url), website()]}>
   <!-- Must be inline to run before first paint; T-67's CSP gets its sha256 from the postbuild. -->
   <script is:inline slot="head" set:html={HASH_REDIRECT_SCRIPT} />
   <Hero categoryNames={catalog.categories.map((c) => c.name)}>

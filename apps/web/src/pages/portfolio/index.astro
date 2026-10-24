@@ -35,7 +35,7 @@ const crumbs = [{ name: 'Portfolio', path }];
     <PageHead crumbs={crumbs} title="Portfolio" />
 
     <section aria-labelledby="kategorie">
-      <h2 id="kategorie" class="t-title">Kategorie</h2>
+      <h2 id="kategorie">Kategorie</h2>
       <CategoryGrid>
         {
           categories.map((card, i) => (
@@ -55,7 +55,7 @@ const crumbs = [{ name: 'Portfolio', path }];
     {
       albums.length > 0 && (
         <section aria-labelledby="alba">
-          <h2 id="alba" class="t-title">Výběr z alb</h2>
+          <h2 id="alba">Výběr z alb</h2>
           <ul class="albums">
             {albums.map((card) => <AlbumCard card={card} base={env.imgBaseUrl} />)}
           </ul>

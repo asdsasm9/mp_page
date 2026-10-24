@@ -161,6 +161,24 @@ describe('design tokens', () => {
     expect(bound('--text-body')[1]).toBeLessThanOrEqual(1.125);
   });
 
+  it('the default h2 is smaller than the page h1: at most 70% at the cap, never above it at the floor (T-323)', () => {
+    const [h1Min, h1Max] = bound('--text-h1');
+    const [h2Min, h2Max] = bound('--text-h2');
+    expect(h2Max).toBeLessThanOrEqual(h1Max * 0.7 + 0.01);
+    expect(h2Min).toBeLessThan(h1Min);
+  });
+
+  it('pages with a PageHead h1 never set an h2 in a headline class, so every h2 stays the sub-head size (T-323)', () => {
+    const pages = walk(join(srcDir, 'pages')).filter((f) => f.endsWith('.astro'));
+    const withHead = pages.filter((f) => readFileSync(f, 'utf8').includes('<PageHead'));
+    expect(withHead.length).toBeGreaterThan(0);
+    for (const f of withHead) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/<h2\b[^>]*>/g)) {
+        expect(m[0], f).not.toMatch(/\bt-(title|display|h1)\b/);
+      }
+    }
+  });
+
   it('the card grid column gap is 48 to 64px, at least 1.5 times the former 32px (T-321)', () => {
     const rem = Number(/^([\d.]+)rem$/.exec(tokens['--grid-col-gap']!)?.[1]);
     expect(rem * 16).toBeGreaterThanOrEqual(48);

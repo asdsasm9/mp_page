@@ -1,7 +1,7 @@
 ---
 // Home hero (WP-12 e): the LCP image fills the box (`image` slot: the admin-chosen photo or the bundled main.jpg),
 // a scrim from transparent to 70% ink under the text, the kicker (category names), the single h1 and one button.
-// The header overlays the top of the hero (out of flow), so nothing shifts. The box is min-height only, never a fixed height.
+// The header overlays the top of the hero (out of flow), so nothing shifts. The box is exactly the window height (T-326: 100vh, 100svh, 100dvh), so no part of the next section peeks in.
 import { SITE } from '../../content/texts';
 import Kicker from '../Kicker.astro';
 
@@ -29,7 +29,10 @@ const { categoryNames } = Astro.props;
     position: relative;
     display: grid;
     align-content: end;
-    min-block-size: max(26rem, 80svh);
+    /* Exactly the window: vh first for old browsers, svh where known, dvh so a moving mobile address bar leaves no gap */
+    block-size: 100vh;
+    block-size: 100svh;
+    block-size: 100dvh;
     background: var(--color-placeholder);
     color: var(--color-on-overlay);
     isolation: isolate;
@@ -89,6 +92,7 @@ const { categoryNames } = Astro.props;
   @media print {
     .hero {
       display: block;
+      block-size: auto;
       min-block-size: 0;
       background: none;
     }

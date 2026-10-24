@@ -6,7 +6,7 @@ Plan: WP-3 and WP-3b (image loading). Related: [SEO.md](SEO.md), [DESIGN-CHECK.m
 
 ## Structure (since WP-12)
 
-Home (`/`) is a one-pager with the sections Hero, O mně (`#o-mne`: the short hello and a "Více o mně" link to `/o-mne/`),
+Home (`/`) is a one-pager with the sections Hero (T-326: exactly the window tall, `block-size` `100vh` then `100svh` then `100dvh`, starting at the very top under the overlaying header; no minimum floor, the text block sits at the bottom and fits down to 320x480 and 640x360; image `object-fit: cover` with `--hero-position: center 40%`), O mně (`#o-mne`: the short hello and a "Více o mně" link to `/o-mne/`),
 Portfolio (category cards), Reference and Kontakt (`#kontakt`), then the footer (`src/components/sections/`). Further
 pages: `/o-mne/` (the About page again since T-293, with the three texts, the full quote and two photos, rebuilt in T-319 as four bands ground / surface / dark / ground: PageHead with the lead, "Mé zkušenosti" and "Můj příběh" as `h2.t-h3` beside the two photos (first photo level with the first sub-head from 48rem, photos after the first text on phones, natural aspect ratio), the quote as `.t-quote` in `<Section band="dark" size="h3">`, and the "Napište mi" button; two font families, the type tokens only; the header item
 "O mně" links to it and is marked `aria-current="page"` there), `/portfolio/`, one page per category, one per album,

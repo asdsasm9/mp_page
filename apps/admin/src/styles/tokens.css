@@ -84,6 +84,8 @@
     --space-6: 2rem;
     --space-7: 3rem;
     --space-8: 4.5rem;
+    --card-title-gap: var(--space-1);
+    --grid-row-gap: var(--space-7);
 
     /* Radius, borders, shadow */
     --radius-none: 0;

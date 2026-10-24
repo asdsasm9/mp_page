@@ -88,6 +88,11 @@
     --space-7: 3rem;
     --space-8: 4.5rem;
 
+    /* Overview cards (T-317): the title hugs its own image; rows are far apart so a title never reads as the
+       caption of the image below it. */
+    --card-title-gap: var(--space-1);
+    --grid-row-gap: var(--space-7);
+
     /* Radius, borders, shadow. Images, cards and buttons have no radius in this design (--radius-none);
        --radius-md and --radius-full stay for the lightbox round buttons and the admin. */
     --radius-none: 0;

@@ -202,6 +202,17 @@ describe('Category pages (built, shared build)', () => {
     }
   });
 
+  it('has no intro text under the title (T-317): the generated line stays in the meta description only', () => {
+    for (const c of fixture.categories) {
+      const page = categoryHtml[c.slug]!;
+      expect(page).not.toContain('class="intro"');
+      const desc = /<meta name="description" content="([^"]+)">/.exec(page)?.[1];
+      expect(desc, c.slug).toBeTruthy();
+      const body = page.slice(page.indexOf('<body'));
+      expect(body.replace(/<script[\s\S]*?<\/script>/g, '')).not.toContain('Prohlédněte si');
+    }
+  });
+
   it('shows no count on the cards, cover 480 and 960 srcset, first row eager, first card high priority, rest lazy', () => {
     const page = categoryHtml['portrety']!;
     const imgs = imgTags(page).filter((t) => t.includes('/photos/'));

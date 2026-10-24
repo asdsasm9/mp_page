@@ -85,6 +85,7 @@ Accent rules: `--color-accent` is used for `border-color`, `text-decoration-colo
 | Shape | `--radius-none` (0: images, cards and buttons), `--radius-sm`, `--radius-md`, `--radius-full` (lightbox round buttons, admin), `--border-width`, `--focus-width`, `--focus-offset`, `--bar-thickness` (2 px), `--shadow-sm`, `--shadow-md`, `--opacity-disabled` (0.45) |
 | Motion | `--motion-fast` 150 ms, `--motion-base` 250 ms, `--motion-drawer` 400 ms, `--motion-ease`; anything beyond a colour change, including smooth scrolling, is inside `prefers-reduced-motion: no-preference` |
 | Layout | `--layout-max` 110rem, `--layout-gutter`, `--header-height` 68 px (T-316, was 85), `--section-pad` 52 to 88 px (T-316, was 64 to 110; the home hero is `max(26rem, 80svh)`), `--section-gap-lg`, `--section-gap`, `--heading-gap`, `--drawer-width`, `--target-min` (44 px), `--target-compact` (32 px) |
+| Overview cards (T-317) | `--card-title-gap` (= `--space-1`, image to its own title) and `--grid-row-gap` (= `--space-7`, between rows of category and album cards), so a title always reads as belonging to the image above it. Category and portfolio pages have no intro text under the title; the generated description is the meta description only |
 | Image shapes | `--ratio-category` 3 / 4, `--ratio-album` 4 / 5, `--cover-position` |
 | Stacking | `--z-header` 10, `--z-dialog` 20 (lightbox), `--z-drawer` 21 (inside the header), `--z-skip` 30 |
 

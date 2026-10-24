@@ -295,6 +295,13 @@ describe('WP-13 T-305..T-308: screen polish', () => {
     expect(narrow).not.toContain('box-shadow');
   });
 
+  it('T-309: native radios and checkboxes use the ink token, not the browser blue; no leftover legacy tokens', () => {
+    expect(ruleOf("input[type='radio'],\n  input[type='checkbox']")).toContain('accent-color: var(--color-text)');
+    expect(css).not.toContain('--color-accent-fill-hover');
+    expect(css).not.toMatch(/--font-size-(?!ui\b)/);
+    expect(css).not.toMatch(/font-weight:\s*700/);
+  });
+
   it('T-308: the pager uses the shared disabled rule, not opacity', () => {
     expect(css).not.toMatch(/opacity:\s*0?\.\d/);
     expect(ruleOf(".button[aria-disabled='true']")).toContain('color: var(--color-text-muted)');

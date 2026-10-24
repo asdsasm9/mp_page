@@ -67,6 +67,12 @@
     color: inherit;
   }
 
+  /* Native radios and checkboxes would render in the browser's default blue: use the ink token (T-309). */
+  input[type='radio'],
+  input[type='checkbox'] {
+    accent-color: var(--color-text);
+  }
+
   :focus-visible {
     outline: var(--focus-width) solid var(--color-focus);
     outline-offset: var(--focus-offset);

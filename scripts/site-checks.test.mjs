@@ -8,6 +8,7 @@ import {
   checkHead,
   checkHeavyImages,
   checkImages,
+  checkEmailProtection,
   checkInternalLinks,
   checkJsonLd,
   checkLayoutCheckAbsent,
@@ -54,7 +55,7 @@ const goodSite = (over = {}) => {
     page('index.html', { extra: ld({ '@type': 'Photographer' }) + ld({ '@type': 'WebSite' }), body: '<a href="/svatby/">s</a><a href="/old">o</a>' }),
     page('svatby/index.html', {
       extra: ld({ '@type': 'ImageGallery' }) + ld(crumbs),
-      body: '<img src="/a.jpg" alt="Svatba, fotografie 1" width="10" height="20"><img src="/b.jpg" alt="" width="1" height="1"><a href="/svatby/x/">x</a><a href="mailto:a@b.cz">m</a><a href="https://x.cz/">e</a><a href="#top">t</a><a href="/favicon.ico">f</a>',
+      body: '<img src="/a.jpg" alt="Svatba, fotografie 1" width="10" height="20"><img src="/b.jpg" alt="" width="1" height="1"><a href="/svatby/x/">x</a><!--email_off--><a href="mailto:a@b.cz">m</a><!--/email_off--><a href="https://x.cz/">e</a><a href="#top">t</a><a href="/favicon.ico">f</a>',
     }),
     page('svatby/x/index.html', { extra: ld({ '@type': 'ImageGallery' }) + ld(crumbs) }),
     notFound,
@@ -80,6 +81,24 @@ describe('good fixture', () => {
   });
   it('routeOf maps files to URLs', () => {
     expect([routeOf('index.html'), routeOf('a/b/index.html'), routeOf('404.html')]).toEqual(['/', '/a/b/', '/404/']);
+  });
+});
+
+describe('email protection (T-332)', () => {
+  const p = (body) => ({ path: 'index.html', html: `<body>${body}</body>` });
+  it('passes a wrapped mailto link', () =>
+    expect(checkEmailProtection(p('<!--email_off--><a class="x" href="mailto:a@b.cz">a@b.cz</a><!--/email_off-->'))).toEqual([]));
+  it('fails a bare mailto link', () => expect(checkEmailProtection(p('<a href="mailto:a@b.cz">m</a>')).join()).toMatch(/1 mailto/));
+  it('fails when only one of two links is wrapped', () =>
+    expect(
+      checkEmailProtection(p('<!--email_off--><a href="mailto:a@b.cz">m</a><!--/email_off--><a href="mailto:a@b.cz">n</a>')).join(),
+    ).toMatch(/1 mailto/));
+  it('fails the rewritten Cloudflare URL', () =>
+    expect(checkEmailProtection(p('<a href="/cdn-cgi/l/email-protection#abc">m</a>')).join()).toMatch(/email-protection/));
+  it('goes red through runSiteChecks', () => {
+    const site = goodSite();
+    site.pages[0].html = site.pages[0].html.replace('<a href="/svatby/">', '<a href="mailto:a@b.cz">m</a><a href="/svatby/">');
+    expect(run(site).errors.join()).toMatch(/email-protection/);
   });
 });
 

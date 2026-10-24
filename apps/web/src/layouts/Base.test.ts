@@ -172,6 +172,8 @@ describe('Home page (built, shared build)', () => {
     expect(button).not.toMatch(/\s(target|onclick|download)=/);
     expect(contact).toMatch(/<a class="mail-text"[^>]*href="mailto:mullnyphotos@gmail\.com"[^>]*>mullnyphotos@gmail\.com<\/a>/);
     expect(contact).toContain('(mullnyphotos@gmail.com)');
+    // T-332: both mailto links are wrapped so Cloudflare e-mail obfuscation leaves them alone.
+    expect(contact.match(/<!--email_off--><a [^>]*href="mailto:[^>]*>[\s\S]*?<\/a><!--\/email_off-->/g)).toHaveLength(2);
     // No script in the page body intercepts clicks on the contact link.
     expect(contact).not.toMatch(/<script|onclick=/);
   });
@@ -478,6 +480,7 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
     expect(footer).toContain('© Mullny Photos');
     expect(footer).toContain('Fotím v Jihomoravském kraji');
     expect(footer).toContain('href="mailto:mullnyphotos@gmail.com"');
+    expect(footer).toMatch(/<!--email_off--><a [^>]*href="mailto:[^>]*>[\s\S]*?<\/a><!--\/email_off-->/);
     expect(footer).toMatch(/href="https:\/\/www\.instagram\.com\/[^"]*"[^>]*rel="noopener noreferrer"|rel="noopener noreferrer"[^>]*href="https:\/\/www\.instagram\.com\//);
     expect(footer).toMatch(/href="https:\/\/mywed\.com[^"]*"/);
     const mywed = /<a\b[^>]*href="https:\/\/mywed\.com[^"]*"[^>]*>[\s\S]*?<\/a>/.exec(footer)?.[0] ?? '';

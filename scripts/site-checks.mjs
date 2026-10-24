@@ -317,6 +317,20 @@ export function checkLayoutCheckAbsent(site) {
   return [];
 }
 
+/**
+ * T-332: Cloudflare Email Address Obfuscation rewrites `mailto:` links to an empty `/cdn-cgi/l/email-protection` page
+ * when its script does not run. Every mailto link must sit inside `<!--email_off-->...<!--/email_off-->`, and no built
+ * page may contain the rewritten URL.
+ */
+export function checkEmailProtection(page) {
+  const p = [];
+  if (page.html.includes('/cdn-cgi/l/email-protection')) p.push('contains /cdn-cgi/l/email-protection');
+  const outside = page.html.replace(/<!--\s*email_off\s*-->[\s\S]*?<!--\s*\/email_off\s*-->/gi, '');
+  const bare = (outside.match(/<a\b[^>]*\shref\s*=\s*["']?mailto:/gi) ?? []).length;
+  if (bare > 0) p.push(`${bare} mailto link(s) not wrapped in <!--email_off-->...<!--/email_off-->`);
+  return p;
+}
+
 /** Runs everything. `errors` fail the check, `warnings` are printed only. */
 export function runSiteChecks(site) {
   const errors = [];
@@ -330,6 +344,7 @@ export function runSiteChecks(site) {
     add('heavy-images', checkHeavyImages(page), `${where(page)} `);
     add('json-ld', checkJsonLd(page), `${where(page)} `);
     add('robots', checkRobots(page, site.siteEnv), `${where(page)} `);
+    add('email-protection', checkEmailProtection(page), `${where(page)} `);
   }
   add('unique', checkUnique(site.pages));
   add('links', checkInternalLinks(site.pages, site));

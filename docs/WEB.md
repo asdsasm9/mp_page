@@ -143,6 +143,8 @@ Dashboard-only settings (T-322, human step H-21, VERIFY row 61). Nothing in the 
 | Rules > Redirect Rules: apex `mullnyphotos.cz` to `https://www.mullnyphotos.cz` (301, keep path and query) | Present | Today both hosts serve the page; the canonical host is `www` (SEO.md section 1) and a share of the apex URL would split previews and counts |
 | Caching > Purge Everything | After every change above | Cached pages keep the old rewritten mailto link until purged |
 
+E-mail links in code (T-332): the built HTML always has the plain `mailto:mullnyphotos@gmail.com` href; the empty page came only from Cloudflare rewriting it at the edge. Every mailto link is therefore wrapped in `<!--email_off-->...<!--/email_off-->` (Contact.astro, Footer.astro, cookies page), the marker Cloudflare documents for leaving a region untouched, so the link works even with obfuscation on (the H-21 setting stays OFF as defence in depth). Astro keeps these comments in the output. The `page-checks` gate (`checkEmailProtection` in `scripts/site-checks.mjs`) fails when a built page has a mailto link outside the markers or any `/cdn-cgi/l/email-protection` string. A new template that renders the address must keep the markers.
+
 The pages carry `og:image`, `og:image:secure_url`, `og:image:type` (`image/jpeg`), `og:image:width`, `og:image:height` and `og:image:alt` on every page that has a picture (`Base.astro`; `OgImage.type` in `apps/web/src/lib/images.ts`), and the picture URL is always absolute https.
 
 Link-preview test procedure, after the settings above and a deploy:

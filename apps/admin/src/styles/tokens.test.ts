@@ -18,17 +18,12 @@ const admin = tokens(read('./tokens.css'));
 describe('token parity with apps/web', () => {
   it('reads a real token set from both files', () => {
     expect(web.size).toBeGreaterThan(40);
-    const shared = [...web.keys()].filter((name) => !/^--(text|leading|weight|tracking)-|^--font-heading$/.test(name));
-    expect(shared.length).toBeGreaterThan(60);
-    expect(admin.size).toBeGreaterThanOrEqual(shared.length);
+    expect(web.size).toBeGreaterThan(80);
+    expect(admin.size).toBeGreaterThanOrEqual(web.size);
   });
 
-  // T-252 / WP-12: the public site owns its own type scale (--text-*, --leading-*, --weight-*, --tracking-*,
-  // --font-heading). The admin keeps its denser legacy scale (--font-size-*, --line-height-*) and its own
-  // --tracking-heading, so type tokens are not compared. --font-body IS compared (same Lora stack).
-  const isWebType = (name: string) => /^--(text|leading|weight|tracking)-|^--font-heading$/.test(name);
-
-  it.each([...web.entries()].filter(([name]) => !isWebType(name)))('%s has the web value', (name, value) => {
+  // WP-13: the admin uses the public site's type scale verbatim, so every web token (type included) is compared.
+  it.each([...web.entries()])('%s has the web value', (name, value) => {
     expect(admin.get(name)).toBe(value);
   });
 
@@ -36,10 +31,13 @@ describe('token parity with apps/web', () => {
     const extras = [...admin.keys()].filter((k) => !web.has(k)).sort();
     expect(extras).toEqual([
       '--bottom-nav-height', '--color-accent-fill-hover', '--color-danger-active', '--color-danger-disabled', '--color-danger-hover', '--color-on-danger',
-      '--cover-size', '--font-size-0', '--font-size-1', '--font-size-2', '--font-size-3', '--font-size-4', '--font-size-5',
-      '--font-size-small', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke',
-      '--line-height-body', '--line-height-heading',
+      '--cover-size', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke', '--weight-ui-strong',
     ]);
+  });
+
+  it('has dropped the legacy admin type scale', () => {
+    expect([...admin.keys()].filter((k) => /^--(font-size-(\d|small)|line-height-)/.test(k))).toEqual([]);
+    expect(read('./app.css')).not.toMatch(/--font-size-(\d|small)\b|--line-height-/);
   });
 });
 

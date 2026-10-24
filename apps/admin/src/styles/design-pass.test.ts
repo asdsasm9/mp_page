@@ -26,10 +26,35 @@ describe('design pass: token-only CSS', () => {
   });
 });
 
+const ruleOfAny = (selector: string) => {
+  const esc = selector.replace(/[.[\]()'=>:]/g, '\\$&');
+  return [...css.matchAll(new RegExp(`\\n  ${esc} \\{[^}]*\\}`, 'g'))].map((m) => m[0]).join('\n');
+};
+
 describe('design pass: type hierarchy and rhythm', () => {
-  it('sets h1 to font-size-2 and gives h2 its own smaller rule', () => {
-    expect(css).toMatch(/\n\s*h1\s*\{[^}]*font-size: var\(--font-size-2\)/);
-    expect(css).toMatch(/\n\s*h2\s*\{[^}]*font-size: var\(--font-size-1\)/);
+  it('sets h1 to text-h2 and gives h2 and h3 the smaller text-h3, all in Cormorant (WP-13)', () => {
+    expect(css).toMatch(/\n\s*h1\s*\{[^}]*font-size: var\(--text-h2\)/);
+    expect(css).toMatch(/\n\s*h2,\s*h3\s*\{[^}]*font-size: var\(--text-h3\)/);
+    expect(css).toMatch(/\n\s*h1,\s*h2,\s*h3\s*\{[^}]*font-family: var\(--font-heading\)/);
+  });
+
+  it('sets the body in Lora 400 with no synthesized weight, and keeps inputs at 1rem', () => {
+    const body = css.match(/\n\s*body\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(body).toContain('font-family: var(--font-body)');
+    expect(body).toContain('font-size: var(--text-body)');
+    expect(body).toContain('font-synthesis: none');
+    expect(css.match(/\n\s*input \{[^}]*\}/)?.[0] ?? '').toContain('font-size: var(--font-size-ui)');
+  });
+
+  it('has no 700 or 600 literal weights: tiny labels use the --font-ui 600 token', () => {
+    expect(css).not.toMatch(/font-weight:\s*(?:[1-9]00|bold|bolder)\b/);
+    expect(ruleOfAny('.badge')).toContain('font-family: var(--font-ui)');
+    expect(ruleOfAny('.badge')).toContain('font-weight: var(--weight-ui-strong)');
+    expect(ruleOfAny('.data-table thead th')).toContain('font-family: var(--font-ui)');
+  });
+
+  it('uses the public scale and leading tokens only', () => {
+    expect(css).not.toMatch(/--font-size-(?:\d|small)\b|--line-height-/);
   });
 
   it('separates sections with a space-6 top margin on page h2', () => {
@@ -51,7 +76,7 @@ describe('design pass: surfaces and tables', () => {
   it('quiets the table header and highlights hovered body rows', () => {
     const head = ruleOf('.data-table thead th');
     expect(head).toContain('color: var(--color-text-muted)');
-    expect(head).toContain('font-size: var(--font-size-small)');
+    expect(head).toContain('font-size: var(--text-caption)');
     expect(ruleOf('.data-table tbody tr:hover')).toContain('background: var(--color-surface)');
   });
 

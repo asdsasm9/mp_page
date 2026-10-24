@@ -38,20 +38,29 @@
   body {
     background: var(--color-bg);
     color: var(--color-text);
-    font-family: var(--font-ui);
-    font-size: var(--font-size-ui);
-    line-height: var(--line-height-body);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    font-weight: var(--weight-body);
+    line-height: var(--leading-body);
+    /* Lora and Cormorant exist in 400 only: never fake a bold or italic (WP-13) */
+    font-synthesis: none;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: var(--weight-heading);
+    line-height: var(--leading-heading);
   }
 
   h1 {
-    font-size: var(--font-size-2);
-    line-height: var(--line-height-heading);
-    letter-spacing: var(--tracking-heading);
+    font-size: var(--text-h2);
   }
 
-  h2 {
-    font-size: var(--font-size-1);
-    line-height: var(--line-height-heading);
+  h2,
+  h3 {
+    font-size: var(--text-h3);
   }
 
   a {
@@ -107,7 +116,9 @@
   }
 
   .brand {
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-size: var(--text-h3);
+    line-height: var(--leading-heading);
     text-decoration: none;
     min-block-size: var(--target-min);
     display: inline-flex;
@@ -127,6 +138,7 @@
     min-block-size: var(--target-min);
     min-inline-size: var(--target-min);
     padding-inline: var(--space-4);
+    font-size: var(--text-small);
     border-radius: var(--radius-md);
     border-block-end: var(--bar-thickness) solid transparent;
     text-decoration: none;
@@ -138,7 +150,7 @@
 
   .nav-link[aria-current='page'] {
     border-block-end-color: var(--color-border-strong);
-    font-weight: 700;
+    color: var(--color-text);
   }
 
   .shell-main,
@@ -338,6 +350,7 @@
     min-block-size: var(--target-min);
     padding-inline: var(--space-3);
     font: inherit;
+    font-size: var(--font-size-ui);
     color: var(--color-text);
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border-strong);
@@ -360,7 +373,7 @@
   .field-hint {
     margin-block-start: var(--space-1);
     color: var(--color-text-muted);
-    font-size: var(--font-size-small);
+    font-size: var(--text-caption);
   }
 
   .button {
@@ -388,7 +401,6 @@
   }
 
   .button-primary {
-    font-weight: 700;
     color: var(--color-on-accent);
     background: var(--color-accent);
     border-color: var(--color-border-strong);
@@ -482,7 +494,8 @@
     align-content: center;
     min-inline-size: 10rem;
     text-decoration: none;
-    font-size: var(--font-size-small);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
   }
 
   .storage-large {
@@ -514,7 +527,8 @@
 
   .storage-percent {
     color: var(--color-text-muted);
-    font-size: var(--font-size-small);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
   }
 
   .storage-meter {
@@ -582,7 +596,7 @@
 
   .pending-label {
     margin-inline-start: var(--space-2);
-    font-size: var(--font-size-small);
+    font-size: var(--text-caption);
   }
 
   .bottom-nav .pending-label {
@@ -613,6 +627,7 @@
   textarea {
     padding: var(--space-2) var(--space-3);
     font: inherit;
+    font-size: var(--font-size-ui);
     color: var(--color-text);
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border-strong);
@@ -635,7 +650,7 @@
 
   .required {
     color: var(--color-text-muted);
-    font-size: var(--font-size-small);
+    font-size: var(--text-caption);
   }
 
   .page-header {
@@ -668,7 +683,6 @@
   }
 
   .button-danger {
-    font-weight: 700;
     color: var(--color-on-danger);
     background: var(--color-danger);
     border-color: var(--color-danger);
@@ -833,13 +847,13 @@
   }
 
   .row-title {
-    font-weight: 700;
     overflow-wrap: anywhere;
   }
 
   .row-meta {
     color: var(--color-text-muted);
-    font-size: var(--font-size-small);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
     font-variant-numeric: tabular-nums;
   }
 
@@ -854,15 +868,16 @@
     display: inline-flex;
     align-items: center;
     padding: var(--space-1) var(--space-3);
-    font-size: var(--font-size-small);
-    border: var(--border-width) solid var(--color-border-strong);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-ui-strong);
+border: var(--border-width) solid var(--color-border-strong);
     border-radius: var(--radius-full);
   }
 
   .badge[data-state='published'],
   .badge[data-state='visible'] {
     background: var(--color-surface);
-    font-weight: 700;
   }
 
   .badge[data-state='hidden'] {
@@ -920,6 +935,7 @@
     min-block-size: var(--target-min);
     padding-inline: var(--space-3);
     font: inherit;
+    font-size: var(--font-size-ui);
     color: var(--color-text);
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border-strong);
@@ -933,7 +949,7 @@
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: var(--font-size-small);
+    font-size: var(--text-small);
   }
 
   .breadcrumb li + li::before {
@@ -958,6 +974,7 @@
     display: inline-flex;
     align-items: center;
     min-block-size: var(--target-min);
+    min-inline-size: var(--target-min);
     overflow-wrap: anywhere;
   }
 
@@ -1001,8 +1018,8 @@
   .inline-title input {
     flex: 1;
     min-inline-size: 0;
-    font-size: var(--font-size-1);
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-size: var(--text-h3);
   }
 
   .inline-title h1 {
@@ -1016,7 +1033,7 @@
   .save-status {
     min-block-size: 1lh;
     color: var(--color-text-muted);
-    font-size: var(--font-size-small);
+    font-size: var(--text-caption);
   }
 
   .panel {
@@ -1131,8 +1148,10 @@
 
   .photo-badge {
     padding: var(--space-1) var(--space-3);
-    font-size: var(--font-size-small);
-    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-ui-strong);
+color: var(--color-text);
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border-strong);
     border-radius: var(--radius-full);
@@ -1150,8 +1169,10 @@
     align-items: center;
     gap: var(--space-1);
     padding: var(--space-1) var(--space-3);
-    font-size: var(--font-size-small);
-    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-ui-strong);
+color: var(--color-text);
     background: var(--color-surface-raised);
     border: var(--border-width) solid var(--color-border-strong);
     border-radius: var(--radius-full);
@@ -1161,12 +1182,10 @@
   .quality-badge[data-verdict='low'] {
     color: var(--color-danger);
     border-color: var(--color-danger);
-    font-weight: 700;
   }
 
   .quality-badge[data-verdict='missing'] {
     border-style: dashed;
-    font-weight: 700;
   }
 
   .photo-badges {
@@ -1230,7 +1249,10 @@
   }
 
   .replace-facts h3 {
-    font-size: var(--font-size-ui);
+    font-family: var(--font-ui);
+    font-size: var(--text-small);
+    font-weight: var(--weight-ui-strong);
+    line-height: var(--leading-ui);
     margin-block-end: var(--space-2);
   }
 
@@ -1307,7 +1329,8 @@
   }
 
   .selection-count {
-    font-weight: 700;
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-strong);
     margin-inline-end: auto;
   }
 
@@ -1494,7 +1517,7 @@
   }
 
   .upload-drawer-head h2 {
-    font-size: var(--font-size-0);
+    font-size: var(--text-h3);
   }
 
   .upload-queue > * + *,
@@ -1504,7 +1527,6 @@
 
   .upload-summary-text {
     font-variant-numeric: tabular-nums;
-    font-weight: 700;
   }
 
   .upload-progress {
@@ -1557,13 +1579,13 @@
 
   .upload-name {
     overflow-wrap: anywhere;
-    font-weight: 700;
   }
 
   .upload-meta,
   .upload-step {
     color: var(--color-text-muted);
-    font-size: var(--font-size-small);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
   }
 
   .upload-step.field-error {
@@ -1575,11 +1597,12 @@
     padding-inline-start: var(--space-2);
     border-inline-start: calc(var(--border-width) * 3) solid var(--color-text);
     color: var(--color-text);
-    font-size: var(--font-size-small);
+    font-size: var(--text-small);
   }
 
   .upload-flag {
-    font-weight: 700;
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-strong);
   }
 
   .upload-row[data-refused] {
@@ -1654,7 +1677,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    font-weight: 700;
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-strong);
     color: var(--color-text);
   }
 
@@ -1663,8 +1687,9 @@
   }
 
   .publish-card[data-state='pending'] .publish-status {
-    font-size: var(--font-size-1);
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-size: var(--text-h3);
+    line-height: var(--leading-heading);
   }
 
   .publish-live:empty {
@@ -1689,7 +1714,8 @@
   }
 
   .publish-history-status {
-    font-weight: 700;
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-strong);
   }
 
   .publish-history-row[data-status='failed'] .publish-history-status {
@@ -1708,7 +1734,7 @@
   }
 
   .changes-group > h3 {
-    font-size: var(--font-size-0);
+    font-size: var(--text-h3);
     padding-block-end: var(--space-1);
     border-block-end: var(--border-width) solid var(--color-border-strong);
   }
@@ -1718,7 +1744,8 @@
   }
 
   .changes-album > h4 {
-    font-size: var(--font-size-0);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-body);
     color: var(--color-text-muted);
   }
 
@@ -1739,7 +1766,7 @@
   }
 
   .changes-name {
-    font-weight: 700;
+    color: var(--color-text);
   }
 
   .changes-kind {
@@ -1753,12 +1780,14 @@
   }
 
   .changes-line[data-kind='deleted'] .changes-kind {
-    font-weight: 700;
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-strong);
     color: var(--color-danger);
   }
 
   .changes-more {
-    font-weight: 700;
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-strong);
   }
 
   /* Storage screen (WP5-26): breakdown table and reconcile report. */
@@ -1778,8 +1807,9 @@
 
   .data-table thead th {
     color: var(--color-text-muted);
-    font-size: var(--font-size-small);
-    font-weight: 600;
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-ui-strong);
   }
 
   .data-table tbody tr:hover {
@@ -1798,7 +1828,8 @@
 
   .data-table tfoot th,
   .data-table tfoot td {
-    font-weight: 700;
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-strong);
     border-block-end: 0;
   }
 
@@ -1899,7 +1930,8 @@
 
   .photo-parts-dims {
     color: var(--color-text-muted);
-    font-size: var(--font-size-small);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
   }
 
   .photo-pager {
@@ -1950,7 +1982,7 @@
     }
 
     .photo-list-table th[scope='row'] {
-      font-weight: 700;
+      color: var(--color-text);
     }
 
     .photo-list-table td {
@@ -1963,7 +1995,8 @@
     .photo-list-table td::before {
       content: attr(data-label);
       color: var(--color-text-muted);
-      font-size: var(--font-size-small);
+      font-family: var(--font-ui);
+      font-size: var(--text-caption);
     }
 
     .photo-list-table td:last-child {
@@ -2003,11 +2036,11 @@
   }
 
   .category-cover-info h2 {
-    font-size: var(--font-size-1);
+    font-size: var(--text-h3);
   }
 
   .category-cover-value {
-    font-weight: 700;
+    color: var(--color-text);
     overflow-wrap: anywhere;
   }
 
@@ -2036,7 +2069,6 @@
 
   .photo-badge-category {
     max-inline-size: 100%;
-    font-weight: 700;
     overflow-wrap: anywhere;
   }
 
@@ -2057,7 +2089,9 @@
 
   .cover-picker-albums legend,
   .cover-picker-photos legend {
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-size: var(--text-h3);
+    line-height: var(--leading-heading);
   }
 
   .cover-picker-photos {
@@ -2162,7 +2196,7 @@
   }
 
   .hero-preview h3 {
-    font-size: var(--font-size-0);
+    font-size: var(--text-h3);
   }
 
   .hero-preview-frames {

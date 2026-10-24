@@ -1,9 +1,7 @@
 /*
- * Admin design tokens. Every non-type token of apps/web/src/styles/tokens.css is repeated here with the same
- * value (tokens.test.ts fails on drift; no cross-app import, so the two apps stay independently
- * buildable). Type tokens (--text-*, --leading-*, --weight-*, --tracking-*, --font-heading) are the public
- * site's own; the admin keeps its denser scale below, but shares --font-body. Tokens that exist only in the
- * admin are listed at the end.
+ * Admin design tokens. Every token of apps/web/src/styles/tokens.css, type included, is repeated here with the
+ * same value (tokens.test.ts fails on drift; no cross-app import, so the two apps stay independently
+ * buildable). Tokens that exist only in the admin are listed at the end.
  * Components use only var(--...); no raw colour or size outside this file.
  */
 @layer reset, tokens, base, components, utilities;
@@ -42,18 +40,39 @@
     --band-dark-muted: #bab6b6;
     --band-dark-accent: #e1ad66;
 
-    /* Type: Lora (self-hosted 400, fonts.css) then a serif fallback stack. The admin UI uses --font-ui below. */
+    /* Type (WP-13): the public site's scale, verbatim. Cormorant Garamond (headings) and Lora (body) are
+       self-hosted in weight 400 only, so every weight token is 400 and app.css sets font-synthesis: none
+       (no faux bold). Cormorant is never set under 1.25rem. Tiny labels use --font-ui below. */
     --font-body: 'Lora', 'Lora Fallback', Georgia, 'Times New Roman', serif;
-    --font-size-0: clamp(1.0625rem, 1.02rem + 0.2vw, 1.1875rem);
-    --font-size-1: clamp(1.1875rem, 1.12rem + 0.3vw, 1.375rem);
-    --font-size-2: clamp(1.375rem, 1.25rem + 0.6vw, 1.75rem);
-    --font-size-3: clamp(1.5rem, 1.35rem + 0.7vw, 1.875rem);
-    --font-size-4: clamp(1.875rem, 1.6rem + 1.3vw, 2.5rem); /* page h1 */
-    --font-size-5: clamp(2.25rem, 1.8rem + 2.4vw, 3.5rem); /* home hero h1 only */
-    --font-size-small: 0.9375rem;
-    --line-height-body: 1.6;
-    --line-height-heading: 1.2;
-    --tracking-heading: 0.01em;
+    --font-heading: 'Cormorant Garamond', 'Cormorant Fallback', 'Times New Roman', Georgia, serif;
+    --weight-body: 400;
+    --weight-heading: 400;
+    --text-display: clamp(2.375rem, 6vw, 5.25rem); /* home hero h1 only, uppercase */
+    --text-title: clamp(2.125rem, 4.2vw, 3.5rem); /* statement titles (O mně, Kontakt) */
+    --text-h1: clamp(1.875rem, 3.6vw, 2.875rem); /* page and section heads, uppercase */
+    --text-h2: clamp(1.5rem, 1.2rem + 1vw, 2rem); /* sub-heads */
+    --text-h3: clamp(1.375rem, 1.2rem + 0.5vw, 1.625rem); /* card titles, uppercase */
+    --text-quote: clamp(1.5rem, 3.2vw, 2.5rem); /* reference quote */
+    --text-lead: clamp(1.0625rem, 1.03rem + 0.15vw, 1.1875rem); /* intro paragraph */
+    --text-body: clamp(0.9375rem, 0.91rem + 0.12vw, 1.0625rem); /* running text */
+    --text-small: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem); /* footer, breadcrumb, secondary links */
+    --text-caption: clamp(0.8125rem, 0.79rem + 0.08vw, 0.875rem); /* meta lines, captions, counters */
+    --text-kicker: clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem); /* uppercase label, never under 12 px */
+    --text-nav: clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem); /* nav and buttons, uppercase */
+    --text-wordmark: clamp(1.25rem, 5vw, 1.625rem); /* header wordmark, uppercase Cormorant (20 to 26 px) */
+    --leading-body: 1.6;
+    --leading-prose: 1.8; /* running text */
+    --leading-lead: 1.5;
+    --leading-heading: 1.2;
+    --leading-caps: 1.12; /* uppercase headings: Czech carons and rings need room (WP-12 j6) */
+    --leading-quote: 1.35;
+    --leading-ui: 1.5;
+    --leading-none: 1;
+    --tracking-heading: 0.03em;
+    --tracking-h1: 0.06em;
+    --tracking-card: 0.04em;
+    --tracking-label: 0.2em;
+    --tracking-wordmark: 0.14em;
     --measure: 70ch;
 
     /* Space: 4 px base (0.25rem steps) */
@@ -107,7 +126,8 @@
 
     /* Admin only */
     --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --font-size-ui: 1rem;
+    --font-size-ui: 1rem; /* inputs: 16 px keeps iOS from zooming on focus */
+    --weight-ui-strong: 600; /* real system-font weight for tiny labels (badges, counters, table heads) */
     --bottom-nav-height: 3.5rem;
     --cover-size: 6rem;
     --icon-size: 1.25rem;

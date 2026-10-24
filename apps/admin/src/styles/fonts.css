@@ -5,7 +5,7 @@
  * `font-src 'self'` (WP-13, D-24): Chrome checks the CSP of every @font-face url() when the rule is parsed.
  * The woff2 files must stay separate hashed assets, never data: URLs (vite.config.ts assetsInlineLimit;
  * `npm run admin-prod-check` fails on a data: font). A face is fetched only when text uses it (unicode-range).
- * Until the type migration (T-301) the UI still uses --font-ui (system-ui), so no face is requested yet.
+ * Since T-301 headings use Cormorant and the body Lora; only tiny labels keep --font-ui (system-ui).
  */
 @font-face {
   font-family: 'Cormorant Garamond';

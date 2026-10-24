@@ -31,7 +31,9 @@ describe('design-check regressions', () => {
     expect(footer).toMatch(/aria-label=\{`Instagram [^`]*otevře se v novém okně\)`\}/);
     expect(footer).toContain('aria-label="MyWed (otevře se v novém okně)"');
     expect(footer).toMatch(/aria-label=\{`E-mail \$\{MAIL_ADDRESS\}`\}/);
-    expect(footer.match(/<svg [^>]*aria-hidden="true"/g)).toHaveLength(3);
+    // Instagram and e-mail are inline SVGs; MyWed is the shared Icon (official symbol, T-294), not a heart.
+    expect(footer.match(/<svg [^>]*aria-hidden="true"/g)).toHaveLength(2);
+    expect(footer).toContain('<Icon name="mywed" />');
     expect(footer).not.toMatch(/facebook/i);
     expect(footer).toMatch(/\.icon-link \{[^}]*inline-size: var\(--target-min\);[^}]*block-size: var\(--target-min\)/s);
     expect(footer).toMatch(/a \{[^}]*text-decoration: none/s);

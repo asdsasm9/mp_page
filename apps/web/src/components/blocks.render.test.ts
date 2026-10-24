@@ -67,6 +67,19 @@ describe('Icon', () => {
   });
 });
 
+describe('Icon mywed', () => {
+  it('is the filled single-colour MyWed mark inheriting currentColor, decorative, with its own viewBox', async () => {
+    const html = await render(Icon, { name: 'mywed' });
+    expect(html).toMatch(/<svg[^>]*aria-hidden="true"/);
+    expect(html).toContain('focusable="false"');
+    expect(html).toContain('viewBox="24 0 152 161"');
+    expect(html).toContain('fill="currentColor"');
+    expect(html).not.toContain('stroke=');
+    expect(html.match(/<path d="[^"]+"/g)).toHaveLength(2);
+    expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b|<image|<text/);
+  });
+});
+
 describe('Kicker', () => {
   it('renders a paragraph by default and a span on request, with the text in the slot', async () => {
     expect(await render(Kicker, {}, 'O mně')).toMatch(/<p class="kicker t-kicker[^"]*"[^>]*>\s*O mně\s*<\/p>/);

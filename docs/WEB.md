@@ -190,6 +190,12 @@ Placeholders ship until answered (none blocks the build; controller details bloc
   ("Focení svateb, portrétů a párových fotek", `SITE.description`) does not name Brno. Whether to put "Brno" into the visible H1 or tagline
   is a copy decision for the photographer (Q-6); the hero image alt text already says Brno.
 
+## Credits
+
+- The footer MyWed icon (T-294) is MyWed's official logo symbol (the hexagon mark, wordmark removed) from their logotypes page,
+  https://mywed.com/en/logotypes/. It is inlined in `apps/web/src/components/Icon.astro` (name `mywed`, single colour, `currentColor`)
+  and is used only to link to the photographer's MyWed profile, not as a badge or endorsement.
+
 ## Known limits
 
 - Lighthouse numbers vary by 100 to 300 ms between sessions; `/svatby/` LCP passes by only 22 ms (DESIGN-CHECK.md).

@@ -403,6 +403,11 @@ describe('Removed pages, footer and site-wide guards (built, shared build, T-281
     expect(footer).toContain('href="mailto:mullnyphotos@gmail.com"');
     expect(footer).toMatch(/href="https:\/\/www\.instagram\.com\/[^"]*"[^>]*rel="noopener noreferrer"|rel="noopener noreferrer"[^>]*href="https:\/\/www\.instagram\.com\//);
     expect(footer).toMatch(/href="https:\/\/mywed\.com[^"]*"/);
+    const mywed = /<a\b[^>]*href="https:\/\/mywed\.com[^"]*"[^>]*>[\s\S]*?<\/a>/.exec(footer)?.[0] ?? '';
+    expect(mywed).toContain('aria-label="MyWed (otevře se v novém okně)"');
+    expect(mywed).toContain('viewBox="24 0 152 161"');
+    expect(mywed).toContain('fill="currentColor"');
+    expect(mywed).not.toContain('M19 14c1.49');
     expect(footer).toContain('href="/cookies/"');
     expect(footer).not.toMatch(/facebook/i);
     const nav = /<nav[^>]*aria-label="Kategorie"[^>]*>([\s\S]*?)<\/nav>/.exec(footer)?.[1] ?? '';

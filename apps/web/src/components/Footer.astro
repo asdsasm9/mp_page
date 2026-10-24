@@ -2,6 +2,7 @@
 // Footer (WP-12 e): hairline on top, copyright and tagline, icon links (Instagram, MyWed, e-mail; no other
 // network is rendered because no URL exists), the category names as links and the legal link (T-253). In flow, never fixed (T-226).
 import { FOOTER, INSTAGRAM_HANDLE, INSTAGRAM_URL, MAIL_ADDRESS, MAIL_URL, MYWED_URL } from '../content/texts';
+import Icon from './Icon.astro';
 
 interface Props {
   categories: ReadonlyArray<{ name: string; slug: string }>;
@@ -27,9 +28,7 @@ const { categories } = Astro.props;
       </li>
       <li>
         <a class="icon-link" href={MYWED_URL} target="_blank" rel="noopener noreferrer" aria-label="MyWed (otevře se v novém okně)">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-          </svg>
+          <Icon name="mywed" />
         </a>
       </li>
       <li>

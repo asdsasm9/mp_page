@@ -329,6 +329,39 @@
   }
 }
 
+/* Window-tall home blocks (T-330): O mně, Portfolio and the Reference + Kontakt wrapper (.home-end) are at least the
+   window below the sticky header, so one block fills the window after an anchor jump. Content is centred vertically in
+   the block, the band stays full width, a taller content only makes the block grow (min only, nothing clipped).
+   Not on phones (below 48rem) and not on short landscape windows (max-height 32rem). Pure layout, no animation. */
+@layer base {
+  @media (min-width: 48rem) and (min-height: 32.01rem) {
+    .fill-tall {
+      min-block-size: calc(100vh - var(--header-height));
+      min-block-size: var(--section-min-block);
+    }
+
+    .fill {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .fill > .inner {
+      inline-size: 100%;
+    }
+
+    .home-end {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Reference and Kontakt split the free space of the block about evenly, each at least its own content */
+    .home-end > .fill {
+      flex: 1 1 auto;
+    }
+  }
+}
+
 /* Motion: everything beyond a colour change is allowed only when the visitor has not asked for less */
 @layer base {
   @media (prefers-reduced-motion: no-preference) {

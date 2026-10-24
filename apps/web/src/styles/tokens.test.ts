@@ -89,7 +89,7 @@ describe('design tokens', () => {
       '--space-1', '--space-2', '--space-3', '--space-4', '--space-5', '--space-6', '--space-7',
       '--space-8', '--radius-none', '--radius-md', '--radius-full', '--shadow-sm', '--shadow-md',
       '--motion-fast', '--motion-base', '--motion-drawer', '--motion-ease', '--layout-max', '--layout-gutter',
-      '--header-height', '--section-pad', '--section-gap-lg', '--drawer-width', '--target-min', '--ratio-category',
+      '--header-height', '--section-pad', '--section-min-block', '--section-gap-lg', '--drawer-width', '--target-min', '--ratio-category',
       '--ratio-album', '--focus-width', '--focus-offset', '--bar-thickness', '--border-width',
       '--z-header', '--z-dialog', '--z-drawer', '--z-skip',
     ];
@@ -246,6 +246,26 @@ describe('design tokens', () => {
     expect(tokens['--header-height']).toBe('4.25rem');
     expect(tokens['--section-pad']).toBe('clamp(3.25rem, 7.2vw, 5.5rem)');
     expect(tokens['--radius-none']).toBe('0');
+  });
+
+  it('window-tall home blocks (T-330): one token, one rule, 48rem up, not on short landscape windows', () => {
+    expect(tokens['--section-min-block']).toBe('calc(100dvh - var(--header-height))');
+    const base = readFileSync(join(here, 'base.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const block = /@media \(min-width: 48rem\) and \(min-height: 32\.01rem\) \{([\s\S]*?)\n  \}\n\}/.exec(base);
+    expect(block).not.toBeNull();
+    expect(block![1]).toMatch(/\.fill-tall \{[^}]*min-block-size: calc\(100vh - var\(--header-height\)\);[^}]*min-block-size: var\(--section-min-block\);/);
+    expect(block![1]).toMatch(/\.fill \{[^}]*justify-content: center/);
+    expect(block![1]).toMatch(/\.home-end > \.fill \{[^}]*flex: 1 1 auto/);
+    expect(block![1]).not.toMatch(/(?<!min-)block-size:|animation|transition/);
+  });
+
+  it('the home page marks O mně, Portfolio and the Reference + Kontakt wrapper as window-tall', () => {
+    const page = readFileSync(join(srcDir, 'pages', 'index.astro'), 'utf8');
+    expect(page).toMatch(/id="portfolio" class="fill fill-tall"/);
+    expect(page).toMatch(/<div class="home-end fill-tall" data-home-end>\s*<Reference[^>]*\/>\s*<Contact \/>\s*<\/div>/);
+    expect(readFileSync(join(srcDir, 'components', 'sections', 'About.astro'), 'utf8')).toContain('class="about fill fill-tall"');
+    expect(readFileSync(join(srcDir, 'components', 'sections', 'Contact.astro'), 'utf8')).toContain('id="kontakt" class="contact fill"');
+    expect(readFileSync(join(srcDir, 'components', 'sections', 'Reference.astro'), 'utf8')).toContain('id="reference" class="fill"');
   });
 
   it('the contrast helper turns red for a failing colour', () => {

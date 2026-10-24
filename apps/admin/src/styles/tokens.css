@@ -117,6 +117,7 @@
     --header-height: 4.25rem; /* sticky top bar on one row; scroll-padding-block-start keeps focus clear of it */
     --header-height-wrapped: 8rem; /* phone top bar: brand and sign-out, then storage and queue on a second row */
     --section-pad: clamp(3.25rem, 7.2vw, 5.5rem);
+    --section-min-block: calc(100dvh - var(--header-height)); /* T-330: window below the sticky header; base.css .fill-tall, 48rem up only */
     --section-gap-lg: clamp(3rem, 6vw, 5rem);
     --drawer-width: min(21.25rem, 86vw);
     --target-min: 2.75rem;

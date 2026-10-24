@@ -71,7 +71,7 @@ const ogImage = chosenHero
 
   {
     cards.length > 0 && (
-      <Section id="portfolio" title="Portfolio" actionHref="/portfolio/" actionLabel="Celé portfolio">
+      <Section id="portfolio" class="fill fill-tall" title="Portfolio" actionHref="/portfolio/" actionLabel="Celé portfolio">
         <CategoryGrid>
           {cards.map((card) => (
             <CategoryCard href={card.path} title={card.name} photo={card.photo} base={env.imgBaseUrl} />
@@ -81,7 +81,9 @@ const ogImage = chosenHero
     )
   }
 
-  <Reference reviews={reviews} />
-
-  <Contact />
+  <!-- T-330: Reference and Kontakt are one window-tall block; both keep their ids and bands -->
+  <div class="home-end fill-tall" data-home-end>
+    <Reference reviews={reviews} />
+    <Contact />
+  </div>
 </Base>

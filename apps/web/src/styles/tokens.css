@@ -126,6 +126,7 @@
     --layout-gutter: clamp(1.5rem, 4vw, 6rem);
     --header-height: 4.25rem; /* sticky header, 68 px (T-316); html scroll-padding-block-start is the only anchor offset */
     --section-pad: clamp(3.25rem, 7.2vw, 5.5rem); /* 52 to 88 px (T-316) */
+    --section-min-block: calc(100dvh - var(--header-height)); /* T-330: window below the sticky header; base.css .fill-tall, 48rem up only */
     --section-gap-lg: clamp(3rem, 6vw, 5rem);
     --drawer-width: min(21.25rem, 86vw);
     --target-min: 2.75rem;

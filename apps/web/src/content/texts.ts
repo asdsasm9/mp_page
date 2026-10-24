@@ -96,7 +96,6 @@ export const CONTACT = {
   },
   instagram: {
     title: 'INSTAGRAM',
-    body: 'Neváhejte se podívat i na můj Instagram. Pravidelně na něj přidávám nové příspěvky a novinky. Najdete tam i moje fotografie, které na stránce nejsou. Například fotografie přírody nebo zvířat. Pokud by vás něco zaujalo, můžete mě přes něj kontaktovat.',
     buttonLabel: INSTAGRAM_HANDLE,
     buttonHref: INSTAGRAM_URL,
   },

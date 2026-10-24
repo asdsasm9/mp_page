@@ -22,8 +22,8 @@ export const REVIEWS: readonly Review[] = [
   {
     albumId: 'anez',
     name: 'Anež',
-    text: 'Spolupráce s Terkou byla úžasná. Od začátku do konce byli velmi profesionální, kreativní a velmi rychlá v odpovědích. Fotografie jsou úžasné, s krásnými barvami a úžasnými detaily. Terka mi pomohla uvolnit se před kamerou a výsledné fotografie jsou prostě fantastické. Určitě doporučuji pro vaši další focení',
+    text: 'Spolupráce s Terkou byla úžasná. Od začátku do konce byla velmi profesionální, kreativní a velmi rychlá v odpovědích. Fotografie jsou úžasné, s krásnými barvami a úžasnými detaily. Terka mi pomohla uvolnit se před kamerou a výsledné fotografie jsou prostě fantastické. Určitě doporučuji pro vaši další focení',
     short:
-      'Spolupráce s Terkou byla úžasná. Od začátku do konce byli velmi profesionální, kreativní a velmi rychlá v odpovědích. Fotografie jsou úžasné, s krásnými barvami a úžasnými detaily.',
+      'Spolupráce s Terkou byla úžasná. Od začátku do konce byla velmi profesionální, kreativní a velmi rychlá v odpovědích. Fotografie jsou úžasné, s krásnými barvami a úžasnými detaily.',
   },
 ];

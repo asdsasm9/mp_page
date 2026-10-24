@@ -164,6 +164,29 @@ describe('Home page (built, shared build)', () => {
     expect(contact).not.toMatch(/<form[\s>]|href="tel:/);
   });
 
+  it('Kontakt drops the Instagram paragraph, shows the address as a plain mailto text link, and the button is a bare mailto (T-318)', () => {
+    const contact = section('id="kontakt"');
+    expect(contact).not.toContain('Neváhejte se podívat');
+    const button = /<a class="btn"[^>]*>/.exec(contact)?.[0] ?? '';
+    expect(button).toMatch(/\shref="mailto:mullnyphotos@gmail\.com"/);
+    expect(button).not.toMatch(/\s(target|onclick|download)=/);
+    expect(contact).toMatch(/<a class="mail-text"[^>]*href="mailto:mullnyphotos@gmail\.com"[^>]*>mullnyphotos@gmail\.com<\/a>/);
+    expect(contact).toContain('(mullnyphotos@gmail.com)');
+    // No script in the page body intercepts clicks on the contact link.
+    expect(contact).not.toMatch(/<script|onclick=/);
+  });
+
+  it('O mně photos keep their native aspect ratio (no square crop) (T-318)', () => {
+    const about = section('id="o-mne"');
+    for (const t of imgTags(about)) {
+      expect(t).toMatch(/width="\d+"/);
+      expect(t).toMatch(/height="\d+"/);
+    }
+    const front = /<div class="shot front[^"]*"[^>]*>\s*(<img[^>]*>)/.exec(about)?.[1] ?? '';
+    const [w, h] = [/width="(\d+)"/.exec(front)?.[1], /height="(\d+)"/.exec(front)?.[1]].map(Number);
+    expect(h! / w!).toBeGreaterThan(1.05);
+  });
+
   it('passes an absolute og:image', () => {
     expect(html).toMatch(/<meta property="og:image" content="https:\/\/www\.mullnyphotos\.cz\/[^"]+">/);
   });

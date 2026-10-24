@@ -18,6 +18,7 @@ const links = [
     </div>
     <div class="actions">
       <a class="btn" href={MAIL_URL}>Napsat e-mail <span class="visually-hidden">({MAIL_ADDRESS})</span></a>
+      <p class="address">nebo na adresu <a class="mail-text" href={MAIL_URL}>{MAIL_ADDRESS}</a></p>
       <ul>
         {
           links.map((l) => (
@@ -29,7 +30,6 @@ const links = [
           ))
         }
       </ul>
-      <p class="t-small">{CONTACT.instagram.body}</p>
     </div>
   </div>
 </section>
@@ -40,9 +40,10 @@ const links = [
     background: var(--color-surface);
   }
 
+  /* One centred column: the text, then the contact links centred under it (T-318). */
   .inner {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(18.75rem, 100%), 1fr));
+    justify-items: center;
     gap: var(--section-gap-lg);
     max-inline-size: var(--layout-max);
     margin-inline: auto;
@@ -53,19 +54,35 @@ const links = [
   .actions {
     display: grid;
     align-content: start;
-    justify-items: start;
+    justify-items: center;
     gap: var(--space-4);
+    text-align: center;
   }
 
   .actions ul {
-    display: grid;
-    gap: var(--space-1);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2) var(--space-4);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .actions p {
+  .address {
+    margin: 0;
     color: var(--color-text-muted);
+    overflow-wrap: anywhere;
+  }
+
+  .mail-text {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    user-select: all;
+  }
+
+  .mail-text:hover {
+    text-decoration-thickness: 0.125em;
   }
 </style>

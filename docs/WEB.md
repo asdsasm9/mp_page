@@ -215,8 +215,9 @@ Placeholders ship until answered (none blocks the build; controller details bloc
   Default: the site publishes no prices and `apps/web/src/lib/jsonld.ts` emits no `priceRange` (checked 2026-10-21; the word appears only
   in a comment). Whether regular paid work needs a trade licence (živnost) before prices are published is a question for a Czech tax
   adviser or the finanční úřad; the project does not decide it. Prices can be added later by a small change in the texts and in `jsonld.ts`.
-- Home SEO check (T-211, 2026-10-21): the title ("Fotograf Brno: svatby, portréty, páry | Mullny Photos") and the description
-  (`homeMeta` in `apps/web/src/lib/seo.ts`) target "fotograf Brno". The H1 is only the brand "Mullny Photos" and the tagline under it
+- Home SEO check (T-211, 2026-10-21): the title ("Fotografka Brno: svatby, portréty, páry | Mullny Photos", T-339) and the description
+  (`homeMeta` in `apps/web/src/lib/seo.ts`, mentions both "fotografa" and "fotografku") target "fotografka Brno".
+  T-339 kept `MYWED_TITLE` ("Svatební fotograf ...") untouched: it mirrors the external MyWed page title. The H1 is only the brand "Mullny Photos" and the tagline under it
   ("Focení svateb, portrétů a párových fotek", `SITE.description`) does not name Brno. Whether to put "Brno" into the visible H1 or tagline
   is a copy decision for the photographer (Q-6); the hero image alt text already says Brno.
 

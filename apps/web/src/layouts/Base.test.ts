@@ -84,7 +84,8 @@ describe('Home page (built, shared build)', () => {
     expect(tag).toContain('loading="eager"');
     expect(tag).toContain(`${id}/1600.jpg`);
     for (const v of photo.variants.webp) expect(hero).toContain(`${id}/${v.tier}.webp ${v.w}w`);
-    expect(hero).toContain('sizes="100vw"');
+    // T-338: the hero is cover-fitted to the window, so sizes is max(100vw, window height x the photo's aspect ratio)
+    expect(hero).toMatch(/sizes="max\(100vw, calc\(100svh \* [\d.]+\)\)"/);
     expect(hero).not.toContain('/_astro/main.'); // the bundled fallback is not rendered
     expect(html).toMatch(new RegExp(`<meta property="og:image" content="https://www\\.mullnyphotos\\.cz/[^"]*${id}/og\\.jpg">`));
   });

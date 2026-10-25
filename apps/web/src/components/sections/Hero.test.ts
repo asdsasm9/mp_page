@@ -35,4 +35,20 @@ describe('Hero height', () => {
     expect(screen).toMatch(/object-fit:\s*cover/);
     expect(screen).toContain('object-position: var(--hero-position)');
   });
+
+  it('T-338: the img fills the box and out-ranks Photo.astro `.photo img { block-size: auto }`', () => {
+    expect(screen).toMatch(/\.media :global\(picture\.photo img\)/);
+    expect(screen).toMatch(/\.media :global\(picture\)\s*\{[^}]*display:\s*block[^}]*block-size:\s*100%/);
+    const rule = screen.slice(screen.indexOf('.media :global(img)'), screen.indexOf('/* Reads as'));
+    expect(rule).toMatch(/inline-size:\s*100%/);
+    expect(rule).toMatch(/block-size:\s*100%/);
+    expect(rule).not.toMatch(/block-size:\s*auto|aspect-ratio|height:\s*auto/);
+  });
+
+  it('T-338: the home page passes a hero `sizes` built from the photo aspect ratio', () => {
+    const page = readFileSync(join(here, '../../pages/index.astro'), 'utf8');
+    expect(page).toContain('heroSizes(chosenHero.photo.variants.jpeg.w, chosenHero.photo.variants.jpeg.h)');
+    expect(page).toContain('heroSizes(hero.width, hero.height)');
+    expect(page).not.toContain('context="hero"');
+  });
 });

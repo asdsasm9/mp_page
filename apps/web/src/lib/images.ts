@@ -84,6 +84,18 @@ export function sizesFor(context: SizesContext): string {
 }
 
 /**
+ * `sizes` of the full-window hero photo (T-338). The hero is `object-fit: cover` in a 100svh x 100vw box, so the
+ * displayed image is as wide as the larger of the viewport width and (window height x photo aspect ratio): a 3:2
+ * photo on a 390x844 portrait phone must be 844 x 1.5 = 1266 CSS px wide to fill the height sharply (3800 device
+ * px at dpr 3), not the 390 px that `100vw` says. The browser still only picks from the tiers that exist.
+ */
+export function heroSizes(photoWidth: number, photoHeight: number): string {
+  if (!(photoWidth > 0) || !(photoHeight > 0)) return SIZES.hero;
+  const ratio = Math.round((photoWidth / photoHeight) * 1000) / 1000;
+  return `max(100vw, calc(100svh * ${ratio}))`;
+}
+
+/**
  * Cropped covers (WP-12 F10). A card cover is `object-fit: cover` in a fixed box (category 3/4, album 4/5), so a
  * 3:2 landscape photo must be about twice the box width to fill the box height sharply. The box-width `sizes`
  * strings above would deliver half the sharpness, so every length is multiplied by the crop factor.

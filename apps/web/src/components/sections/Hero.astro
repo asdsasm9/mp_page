@@ -45,12 +45,17 @@ const { categoryNames } = Astro.props;
     z-index: -1;
   }
 
-  /* The image (bundled <img> or the Photo <picture>) is cropped to the box, never stretched */
+  /* The image (bundled <img> or the Photo <picture>) is cropped to the box, never stretched.
+     Photo's scoped rule `.photo[cid] img[cid] { block-size: auto }` has specificity (0,3,1); `picture.photo img` below
+     is (0,3,2) and wins whatever the CSS order (T-338: before, Photo's rule won and a landscape photo covered only
+     the top part of a portrait phone, the rest was the placeholder colour). */
   .media :global(picture) {
+    display: block;
     block-size: 100%;
   }
 
-  .media :global(img) {
+  .media :global(img),
+  .media :global(picture.photo img) {
     inline-size: 100%;
     block-size: 100%;
     object-fit: cover;
@@ -107,7 +112,8 @@ const { categoryNames } = Astro.props;
       block-size: auto;
     }
 
-    .media :global(img) {
+    .media :global(img),
+    .media :global(picture.photo img) {
       block-size: 90mm;
     }
 

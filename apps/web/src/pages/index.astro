@@ -16,6 +16,7 @@ import { getCatalog } from '../lib/catalog';
 import { readRawEnv, resolveEnv } from '../lib/env';
 import { HASH_REDIRECT_SCRIPT } from '../lib/hash-redirect';
 import { homeCategoryCards, homeHero, homeReviews } from '../lib/home';
+import { heroSizes } from '../lib/images';
 import { SITE_ORIGIN, photographerFull, website } from '../lib/jsonld';
 import { homeMeta } from '../lib/seo';
 import hero from '../assets/site/home/main.jpg';
@@ -50,14 +51,21 @@ const ogImage = chosenHero
   <Hero categoryNames={catalog.categories.map((c) => c.name)}>
     {
       chosenHero ? (
-        <Photo slot="image" photo={chosenHero.photo} base={env.imgBaseUrl} alt={chosenHero.alt} context="hero" priority />
+        <Photo
+          slot="image"
+          photo={chosenHero.photo}
+          base={env.imgBaseUrl}
+          alt={chosenHero.alt}
+          sizes={heroSizes(chosenHero.photo.variants.jpeg.w, chosenHero.photo.variants.jpeg.h)}
+          priority
+        />
       ) : (
         <Image
           slot="image"
           src={hero}
           alt={heroAlt}
           widths={[480, 960, 1600]}
-          sizes="100vw"
+          sizes={heroSizes(hero.width, hero.height)}
           format="webp"
           loading="eager"
           decoding="async"

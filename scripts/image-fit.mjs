@@ -43,7 +43,9 @@ async function measurePage() {
     // Only the new crop markup (Photo crop="category|album" puts class `crop` on the img): legacy markup is measured
     // by its box width as before. Same formula as coverRenderedWidth in image-fit-lib.mjs (this runs in the page).
     // The LCP cover (fetchpriority high) deliberately uses box-width `sizes` (WP-12 decision 13), so it is judged by box width too.
-    const cover = i.classList.contains('crop') && i.getAttribute('fetchpriority') !== 'high' &&getComputedStyle(i).objectFit === 'cover' && i.naturalHeight > 0;
+    // The home hero (#uvod, T-338) is the exception to the LCP rule: it is cover-fitted into a window-tall box, so on a
+    // portrait phone its picture is much wider than the box and `sizes` (heroSizes) is built for exactly that width.
+    const cover = (i.classList.contains('crop') ? i.getAttribute('fetchpriority') !== 'high' : i.closest('#uvod') !== null) && getComputedStyle(i).objectFit === 'cover' && i.naturalHeight > 0;
     const renderedWidth = cover ? Math.max(rect.width, (rect.height * i.naturalWidth) / i.naturalHeight) : rect.width;
     photos.push({ naturalWidth: fileWidth, renderedWidth, srcset, src: i.currentSrc });
   }

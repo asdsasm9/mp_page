@@ -57,7 +57,7 @@ All from the repository root, one at a time (see the note on concurrent builds b
 |---|---|
 | `npm install` | Install dependencies (Node 22, see `.nvmrc`). |
 | `npm run dev-images` | Generate dev images for fixture mode into `apps/web/public/_dev-img/` (gitignored). See below. |
-| `npm run build -w apps/web` | `astro build` then `scripts/postbuild.ts`, which writes `dist/_redirects`, `dist/_headers`, `dist/_publish.json`. |
+| `npm run build -w apps/web` | `astro build` then `scripts/postbuild.ts`, which writes `dist/_redirects`, `dist/_headers`, `dist/_publish.json`. The home page `og:image` may be on the site origin (redirect target is its path) or on the image host from `PUBLIC_IMG_BASE_URL` (in production `img.mullnyphotos.cz`; target is the full URL, no file check, no network); any other host fails the build (`ogImagePathOf`, T-337). |
 | `npm run dev -w apps/web` | Astro dev server for editing. |
 | `npm run check:site` | Build in the current mode, then `scripts/site-checks.mjs` (`page-checks` and `budget`) over `dist`. |
 | `npm run gates` | Repository gates (secrets, env example, dist checks, migrations lint and so on). `-- --strict` also fails on PENDING. |

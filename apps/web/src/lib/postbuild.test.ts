@@ -66,6 +66,22 @@ describe('og image', () => {
     expect(ogImagePathOf(HOME)).toBe('/_astro/main.abc.jpg');
   });
 
+  const IMG = 'https://img.mullnyphotos.cz';
+  const imgOg = `<meta property="og:image" content="${IMG}/photos/240c863d/og.jpg">`;
+
+  it('accepts an image on the configured image host and returns its full URL', () => {
+    expect(ogImagePathOf(imgOg, IMG)).toBe(`${IMG}/photos/240c863d/og.jpg`);
+  });
+
+  it('rejects an image-host image when no image host is configured, and a foreign host even with one', () => {
+    expect(() => ogImagePathOf(imgOg)).toThrow(PostbuildError);
+    expect(() => ogImagePathOf('<meta property="og:image" content="https://evil.example/a.jpg">', IMG)).toThrow(PostbuildError);
+  });
+
+  it('still returns the path of a same-origin image when an image host is configured', () => {
+    expect(ogImagePathOf(HOME, IMG)).toBe('/_astro/main.abc.jpg');
+  });
+
   it('throws when missing or on a foreign host', () => {
     expect(() => ogImagePathOf('<html></html>')).toThrow(PostbuildError);
     expect(() => ogImagePathOf('<meta property="og:image" content="https://evil.example/a.jpg">')).toThrow(PostbuildError);

@@ -32,7 +32,7 @@ async function main(): Promise<void> {
 
   // In fixture mode the image base is site-relative, so its origin is the site's own.
   const imgOrigin = new URL(env.imgBaseUrl, SITE_ORIGIN).origin;
-  const redirects = buildRedirects({ imgOrigin, data: snapshot.redirects, ogImagePath: ogImagePathOf(home.html) });
+  const redirects = buildRedirects({ imgOrigin, data: snapshot.redirects, ogImagePath: ogImagePathOf(home.html, imgOrigin) });
   const headers = buildHeaders({ noindex: env.noindex, adminOrigin: env.adminOrigin, analytics: env.analyticsToken !== null, imgOrigin, scriptHashes: collectScriptHashes(pages) });
   const publish = buildPublishJson(snapshot, env, new Date());
 

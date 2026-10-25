@@ -173,8 +173,12 @@ export function checkAnalyticsOutput({ pages, headersText, token, scripts = [] }
   return errors;
 }
 
-/** Path (no origin) of the `og:image` of a built page; throws when absent or on a foreign host. */
-export function ogImagePathOf(html: string): string {
+/**
+ * Redirect target for the `og:image` of a built page; throws when absent or on a foreign host. A site-origin image
+ * gives its path; an image on the configured image host (`imgOrigin`, where production photos live) gives the full
+ * URL, which the redirects check accepts as an image-host target. No file check, so the build needs no network.
+ */
+export function ogImagePathOf(html: string, imgOrigin?: string): string {
   const tag = /<meta\b[^>]*\bproperty=["']og:image["'][^>]*>/i.exec(html)?.[0];
   const content = tag ? /\bcontent=["']([^"']+)["']/i.exec(tag)?.[1] : undefined;
   if (!content) throw new PostbuildError('the built home page has no og:image');
@@ -185,6 +189,7 @@ export function ogImagePathOf(html: string): string {
   } catch {
     throw new PostbuildError(`og:image "${content}" is not a URL`);
   }
-  if (url.origin !== SITE_ORIGIN) throw new PostbuildError(`og:image "${content}" is not on ${SITE_ORIGIN}`);
-  return url.pathname;
+  if (url.origin === SITE_ORIGIN) return url.pathname;
+  if (imgOrigin && url.origin === new URL(imgOrigin, SITE_ORIGIN).origin) return url.href;
+  throw new PostbuildError(`og:image "${content}" is not on ${SITE_ORIGIN}${imgOrigin ? ` or the image host ${imgOrigin}` : ''}`);
 }

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { Snapshot, SnapshotPhoto } from '@mp/shared';
 import { describe, expect, it } from 'vitest';
 import fixtureJson from '../../../../packages/shared/fixtures/snapshot.fixture.json';
-import { coverSizes, cropFactor, cropSizes, loadingAttrs, ogImage, photoSources, sizesFor } from './images';
+import { coverSizes, cropFactor, cropSizes, heroSizes, loadingAttrs, ogImage, photoSources, sizesFor } from './images';
 
 const IMG = 'https://img.mullnyphotos.cz';
 const ID = '00000000-0000-4000-8000-000000000001';
@@ -109,6 +109,19 @@ describe('sizesFor', () => {
     expect(sizesFor('card')).toBe('(min-width: 48rem) min((100vw - 7rem) / 3, 33rem), calc(100vw - 3rem)');
     expect(sizesFor('grid')).toBe('(min-width: 64rem) min(33vw, 24.5rem), (min-width: 40rem) 50vw, calc(100vw - 3rem)');
     expect(sizesFor('hero')).toBe('100vw');
+  });
+});
+
+describe('heroSizes (T-338)', () => {
+  it('is the larger of the viewport width and window height x aspect ratio', () => {
+    expect(heroSizes(3000, 2000)).toBe('max(100vw, calc(100svh * 1.5))');
+    expect(heroSizes(3200, 1800)).toBe('max(100vw, calc(100svh * 1.778))');
+    expect(heroSizes(1351, 2025)).toBe('max(100vw, calc(100svh * 0.667))');
+  });
+
+  it('falls back to 100vw without usable dimensions and never uses px', () => {
+    expect(heroSizes(0, 0)).toBe('100vw');
+    expect(heroSizes(3000, 2000)).not.toMatch(/px/);
   });
 });
 

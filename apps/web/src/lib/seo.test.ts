@@ -19,19 +19,19 @@ const [weddings, portraits, couples] = fixture.categories as [SnapshotCategory, 
 describe('golden strings from docs/SEO.md', () => {
   it('Home', () => {
     expect(homeMeta()).toEqual({
-      title: 'Fotograf Brno: svatby, portréty, páry | Mullny Photos',
-      ogTitle: 'Fotograf Brno: svatby, portréty, páry',
+      title: 'Fotografka Brno: svatby, portréty, páry | Mullny Photos',
+      ogTitle: 'Fotografka Brno: svatby, portréty, páry',
       description:
-        'Svatební, portrétní a párový fotograf z Brna. Přirozené fotografie plné emocí, focení v Brně a Jihomoravském kraji. Napište mi o termínu.',
+        'Hledáte fotografa nebo fotografku v Brně? Svatební, portrétní a párové focení, přirozené fotografie plné emocí. Napište mi o termínu.',
       noindex: false,
     });
-    expect(homeMeta().title).toHaveLength(53);
+    expect(homeMeta().title).toHaveLength(55);
   });
 
   it('three categories, weddings with the plural count', () => {
     expect(weddings.albums).toHaveLength(4);
     expect(categoryMeta(weddings)).toMatchObject({
-      title: 'Svatební fotograf Brno – svatby | Mullny Photos',
+      title: 'Svatební fotografka Brno – svatby | Mullny Photos',
       description:
         'Ukázky svatebních fotografií z Brna a okolí. Reportážní focení svatebního dne od příprav po první tanec. Prohlédněte si 4 svatby.',
     });

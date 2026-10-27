@@ -25,8 +25,8 @@ Rules for all pages:
 
 | Page type | Title pattern | Description pattern |
 |---|---|---|
-| Home `/` | `Fotograf Brno: svatby, portréty, páry \| Mullny Photos` (53) | `Svatební, portrétní a párový fotograf z Brna. Přirozené fotografie plné emocí, focení v Brně a Jihomoravském kraji. Napište mi o termínu.` (about 138) |
-| Category `/svatby/` | `Svatební fotograf Brno – svatby \| Mullny Photos` | `Ukázky svatebních fotografií z Brna a okolí. Reportážní focení svatebního dne od příprav po první tanec. Prohlédněte si {count} svateb.` |
+| Home `/` | `Fotografka Brno: svatby, portréty, páry \| Mullny Photos` (55) | `Hledáte fotografa nebo fotografku v Brně? Svatební, portrétní a párové focení, přirozené fotografie plné emocí. Napište mi o termínu.` (about 134) |
+| Category `/svatby/` | `Svatební fotografka Brno – svatby \| Mullny Photos` | `Ukázky svatebních fotografií z Brna a okolí. Reportážní focení svatebního dne od příprav po první tanec. Prohlédněte si {count} svateb.` |
 | Category `/portrety/` | `Portrétní focení Brno – portréty a rodiny \| Mullny Photos` | `Portréty, rodinné a těhotenské focení v Brně, ve studiu nebo u vás doma. Prohlédněte si ukázky mých fotografií.` |
 | Category `/parove-foceni/` | `Párové focení Brno – fotky pro páry \| Mullny Photos` | `Párové a zásnubní focení v Brně a okolí. Uvolněné fotografie, které vás vystihují. Prohlédněte si ukázky.` |
 | Album `/<kat>/<album>/` | `{album title}{ – {place}} – {category singular} \| Mullny Photos` (e.g. `Adam & Eliška – svatba \| Mullny Photos`) | The album's SEO text field if filled; otherwise `{Category singular} {album title}{ v místě {place}}. {n} fotografií z focení v Brně a okolí od fotografky Mullny Photos.` |
@@ -36,10 +36,10 @@ Rules for all pages:
 | Contact | no page of its own: section `#kontakt` of Home, covered by the Home title and description (`/kontakt/` removed, WP-12) | n/a |
 | 404 | `Stránka nenalezena \| Mullny Photos` | none (noindex) |
 
-Keywords come from the services above: svatební fotograf Brno, portrétní focení Brno, rodinné focení Brno, těhotenské focení, párové focení, Jihomoravský kraj. They go into titles, H1s and body text naturally; no `meta keywords`.
+Keywords come from the services above: svatební fotografka Brno (T-339, Adam 2026-10-25: titles and H1s say "fotografka"; meta descriptions mention both "fotograf" and "fotografka" so searches for either match), portrétní focení Brno, rodinné focení Brno, těhotenské focení, párové focení, Jihomoravský kraj. They go into titles, H1s and body text naturally; no `meta keywords`.
 
 Questions:
-- **Q-4**: Does she say "fotograf" or "fotografka" about herself, and which of these does she want to be found by: svatební fotograf(ka), rodinné focení, těhotenské focení, focení v ateliéru / doma? Patterns above use "fotograf" in titles (the search term people type) and "fotografka" in prose.
+- **Q-4**: Does she say "fotograf" or "fotografka" about herself, and which of these does she want to be found by: svatební fotograf(ka), rodinné focení, těhotenské focení, focení v ateliéru / doma? ANSWERED (T-339, Adam 2026-10-25): titles and H1s use "fotografka"; the home meta description also mentions "fotografa" so both searches match.
 - **Q-5**: Are weddings abroad or outside South Moravia accepted? If yes, "Brno a okolí" in descriptions may be widened to "celá ČR".
 - **Q-6**: Does she want to name her style ("přirozené", "reportážní") in the home and wedding descriptions, and in what words? The placeholder wording above was written by us, not by her.
 - **Q-7**: Opening hours are not needed; skip them unless she wants them listed.

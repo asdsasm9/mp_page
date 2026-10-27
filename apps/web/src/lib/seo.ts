@@ -57,8 +57,8 @@ export function fitAlbumTitle(title: string, place: string | null, categorySingu
 
 export const homeMeta = (): PageMeta =>
   meta(
-    'Fotograf Brno: svatby, portréty, páry',
-    'Svatební, portrétní a párový fotograf z Brna. Přirozené fotografie plné emocí, focení v Brně a Jihomoravském kraji. Napište mi o termínu.',
+    'Fotografka Brno: svatby, portréty, páry',
+    'Hledáte fotografa nebo fotografku v Brně? Svatební, portrétní a párové focení, přirozené fotografie plné emocí. Napište mi o termínu.',
   );
 
 export const aboutMeta = (): PageMeta =>
@@ -97,7 +97,7 @@ const WEDDINGS: PluralForms = { one: 'svatbu', few: 'svatby', many: 'svateb' };
 
 const CATEGORY_PATTERNS: Readonly<Record<string, CategoryPattern>> = {
   svatby: {
-    title: 'Svatební fotograf Brno – svatby',
+    title: 'Svatební fotografka Brno – svatby',
     description: (count) =>
       `Ukázky svatebních fotografií z Brna a okolí. Reportážní focení svatebního dne od příprav po první tanec. Prohlédněte si ${plural(count, WEDDINGS)}.`,
     singular: 'svatba',

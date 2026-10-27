@@ -1,6 +1,6 @@
 # Findability in search and by AI assistants (T-217)
 
-Date: 2026-10-21. Goal: be found for "fotograf Brno" (and "svatební fotograf Brno", "portrétní focení Brno") in Google and other search engines, and be readable by AI assistants and their crawlers. Builds on `docs/SEO.md` (titles, canonical, JSON-LD, sitemap, alt rules), which stays the spec.
+Date: 2026-10-21. Goal: be found for "fotografka Brno" and "fotograf Brno" (and "svatební fotografka Brno", "svatební fotograf Brno", "portrétní focení Brno") in Google and other search engines, and be readable by AI assistants and their crawlers. Builds on `docs/SEO.md` (titles, canonical, JSON-LD, sitemap, alt rules), which stays the spec.
 
 ## Honest note
 
@@ -26,7 +26,7 @@ Nobody can guarantee that ChatGPT, Claude, Perplexity, Gemini or any other assis
 
 ## Proposed wording for Brno in the visible text (needs her approval, Q-6)
 
-Not applied. The home hero shows the H1 "Mullny Photos" and the tagline `SITE.description` = "Focení svateb, portrétů a párových fotek". That string is also the manifest description and is pinned by `apps/web/src/content/texts.test.ts` and `apps/web/public/manifest.webmanifest`, and the tagline is the photographer's own copy, so it was not changed. The `<title>` and meta description of Home already say "Fotograf Brno", and the "hello" text already says "fotografka z Brna", so the visible page does name Brno.
+Not applied. The home hero shows the H1 "Mullny Photos" and the tagline `SITE.description` = "Focení svateb, portrétů a párových fotek". That string is also the manifest description and is pinned by `apps/web/src/content/texts.test.ts` and `apps/web/public/manifest.webmanifest`, and the tagline is the photographer's own copy, so it was not changed. The `<title>` and meta description of Home already say "Fotografka Brno" (T-339), and the "hello" text already says "fotografka z Brna", so the visible page does name Brno.
 
 Proposal, to apply only after she agrees (each is a one-line change and easy to revert):
 

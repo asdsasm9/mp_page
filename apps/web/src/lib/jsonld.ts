@@ -135,8 +135,13 @@ function imageObject(photo: SnapshotPhoto, imgBase: string, name: string): JsonL
     width: photo.variants.jpeg.w,
     height: photo.variants.jpeg.h,
     name,
-    creator: photographerRef(),
+    // Google's image metadata wants an inline Person/Organization, not a bare @id reference.
+    creator: { '@type': 'Person', name: 'Terezie Müllnerová', url: pageUrl('/o-mne/') },
+    creditText: BRAND,
+    copyrightNotice: `© ${new Date().getFullYear()} ${BRAND}`,
     copyrightHolder: { '@type': 'Organization', name: BRAND },
+    license: `${SITE_ORIGIN}/#kontakt`,
+    acquireLicensePage: `${SITE_ORIGIN}/#kontakt`,
   };
   const caption = photo.caption?.trim();
   if (caption) out.caption = caption;

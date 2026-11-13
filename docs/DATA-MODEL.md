@@ -141,6 +141,7 @@ All functions are `security definer` (except the immutable helper `variants_byte
 | is_admin | no | yes |
 | keepalive | yes | yes |
 | log_change | no | no |
+| ping | yes | yes |
 | record_publish | no | yes |
 | record_slug_redirect | no | no |
 | register_photo | no | yes |
@@ -164,6 +165,7 @@ Functions raise an exception whose message equals the code. `NOT_ADMIN` uses SQL
 | `request_publish()` | `{log_id, pending_seen}`; one request per 60 s | NOT_ADMIN, PUBLISH_TOO_SOON |
 | `record_publish(p_log_id, p_status, p_pending_seen, p_albums, p_photos, p_bytes, p_error)` | `{ok, pending_changes}`; on `ok` subtracts only what was seen | NOT_ADMIN, CONFLICT, INVALID_STATUS |
 | `keepalive()` | `{ok:true}`; writes at most once per 60 s | none |
+| `ping()` | text `ok`; touches no table; called every 3 days by the GitHub keepalive workflow ([KEEPALIVE.md](KEEPALIVE.md)) | none |
 
 Shared code list (`ApiErrorCode`): NOT_ADMIN, STORAGE_FULL, FILE_TOO_LARGE, BATCH_TOO_LARGE, PUBLISH_TOO_SOON,
 BYTES_MISMATCH, ALBUM_NOT_FOUND, KEY_MISMATCH, CONFLICT. KEY_MISMATCH is reserved for the Worker (the database

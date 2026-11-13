@@ -126,7 +126,7 @@ export async function functionPrivilegeMatrix(db: PGlite): Promise<FunctionMatri
 }
 
 /** Functions anon may execute. */
-export const ANON_FUNCTION_ALLOWLIST = ['keepalive'];
+export const ANON_FUNCTION_ALLOWLIST = ['keepalive', 'ping'];
 
 /**
  * Catalog lint over the public schema. Returns human-readable findings; empty means clean.

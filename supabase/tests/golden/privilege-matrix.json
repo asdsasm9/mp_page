@@ -69,6 +69,7 @@
     "is_admin": { "anon": false, "authenticated": true },
     "keepalive": { "anon": true, "authenticated": true },
     "log_change": { "anon": false, "authenticated": false },
+    "ping": { "anon": true, "authenticated": true },
     "record_publish": { "anon": false, "authenticated": true },
     "record_slug_redirect": { "anon": false, "authenticated": false },
     "register_photo": { "anon": false, "authenticated": true },

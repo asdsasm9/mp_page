@@ -88,7 +88,7 @@
       "reservation_ttl_min": 60
     },
     "photoWriteFunctions": ["register_photo", "delete_photos"],
-    "anonExecute": ["keepalive"],
+    "anonExecute": ["keepalive", "ping"],
     "functions": {
       "set_updated_at": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
       "bump_pending": { "revokeFrom": ["public", "anon", "authenticated"], "grantTo": [] },
@@ -111,7 +111,8 @@
       "delete_photos": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
       "request_publish": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
       "record_publish": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
-      "keepalive": { "revokeFrom": ["public"], "grantTo": ["anon", "authenticated"] }
+      "keepalive": { "revokeFrom": ["public"], "grantTo": ["anon", "authenticated"] },
+      "ping": { "revokeFrom": ["public"], "grantTo": ["anon", "authenticated"] }
     },
     "requiredFiles": [
       "supabase/tests/lint.test.ts",

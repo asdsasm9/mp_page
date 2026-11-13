@@ -61,13 +61,13 @@ describe('catalog lint over the public schema', () => {
     }
   });
 
-  it('anon holds no table privilege and executes only keepalive', async () => {
+  it('anon holds no table privilege and executes only keepalive and ping', async () => {
     const tables = await tablePrivilegeMatrix(db);
     for (const [t, roles] of Object.entries(tables)) {
       expect(roles.anon, `anon on ${t}`).toEqual({ select: 'none', insert: 'none', update: 'none', delete: 'none' });
     }
     const anonFns = (await publicFunctions(db)).filter((f) => f.anonExecute).map((f) => f.name);
-    expect(anonFns).toEqual(['keepalive']);
+    expect(anonFns).toEqual(['keepalive', 'ping']);
   });
 
   it('every security definer function has an empty search_path and no PUBLIC execute', async () => {

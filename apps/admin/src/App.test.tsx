@@ -58,11 +58,11 @@ describe('routes', () => {
     expect(screen.getByRole('link', { name: cs.notFound.back }).getAttribute('href')).toBe('/');
   });
 
-  it('phone bottom nav has Kategorie, Nahrávání, Zveřejnit', async () => {
+  it('phone bottom nav has Kategorie, Nahrávání, Úvod, Instagram, Zveřejnit', async () => {
     await renderAt('/');
     const nav = screen.getByRole('navigation', { name: cs.nav.bottom });
     const labels = Array.from(nav.querySelectorAll('a')).map((a) => a.textContent);
-    expect(labels).toEqual([cs.nav.categories, cs.nav.upload, cs.nav.homePageShort, cs.nav.publish]);
+    expect(labels).toEqual([cs.nav.categories, cs.nav.upload, cs.nav.homePageShort, cs.nav.instagram, cs.nav.publish]);
   });
 
   it('marks the current page in the navigation', async () => {

@@ -70,6 +70,7 @@ export const cs = {
     homePage: 'Úvodní stránka',
     /** Short label of the phone bottom navigation (four columns at 360 px). */
     homePageShort: 'Úvod',
+    instagram: 'Instagram',
   },
   routes: {
     login: { title: 'Přihlášení' },
@@ -81,6 +82,7 @@ export const cs = {
     homePage: { title: 'Úvodní stránka' },
     storage: { title: glossary.storage },
     upload: { title: glossary.uploading },
+    instagram: { title: 'Plán Instagramu' },
   },
   /** Login screen (Google card) and the expiry modal (WP-09 section 5). */
   login: {
@@ -613,6 +615,27 @@ export const cs = {
     tooLarge: 'Soubor je příliš velký (nad 50 MB). Zmenšete ho a zkuste to znovu.',
     tooManyPixels: 'Fotka má příliš mnoho pixelů (nad 64 MP; na telefonu nad 40 MP).',
     corrupt: 'Tuto fotku se nepodařilo načíst.',
+  },
+  /** Instagram planner grid (WP-14, plan section 7). {n}, {photos}, {date} are filled in by the component. */
+  instagram: {
+    loadFailed: 'Plán Instagramu se nepodařilo načíst.',
+    newPost: 'Nový příspěvek',
+    gridLabel: 'Mřížka Instagramu',
+    legendLabel: 'Legenda mřížky',
+    legendDashed: 'Čárkovaně: ještě nezveřejněno',
+    planned: 'Naplánované',
+    posted: 'Zveřejněné',
+    statusDraft: 'Koncept',
+    statusPlanned: 'Naplánováno',
+    postedOn: 'Zveřejněno {date}',
+    nextUp: 'Další na řadě',
+    postName: 'Příspěvek {n}',
+    carousel: 'Karusel, {photos}',
+    noPhotos: 'Příspěvek bez fotek',
+    photoDeleted: 'Fotka byla smazána',
+    brokenNotice: 'Některé příspěvky nemají žádné fotky. Otevřete je a vyberte nějaké, než je naplánujete.',
+    emptyTitle: 'Tady si naplánujete mřížku Instagramu.',
+    emptySteps: ['Vyberte fotky z alb', 'Seřaďte příspěvky v mřížce', 'Zveřejněte ho v Instagramu a označte'],
   },
   placeholder: {
     body: 'Tato obrazovka se připravuje.',

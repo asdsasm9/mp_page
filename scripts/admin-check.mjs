@@ -710,6 +710,30 @@ async function runProfile(browser, profile) {
       await checkpoint(ctx, 'upload page', { shot: false });
     });
 
+    // ---- Instagram planning grid (WP-14): nav item (phone: the fifth bottom-nav item must fit its column), 3 columns, 44 px handles
+    await step('instagram grid', async () => {
+      await spaGo(page, '/');
+      if (ctx.profile.phone) {
+        const fit = await page.evaluate(() => [...document.querySelectorAll('.bottom-nav .nav-link')].map((a) => ({ t: a.textContent.trim(), over: a.scrollWidth - a.clientWidth })));
+        const bad = fit.filter((f) => f.over > 0);
+        if (fit.length !== 5 || bad.length) throw new Error(`bottom nav: ${fit.length} items, text cut off in ${JSON.stringify(bad)}`);
+      }
+      await clickBy(ctx, 'a', /^Instagram$/);
+      await page.waitForFunction(() => location.pathname === '/instagram' && document.querySelectorAll('.ig-tile').length >= 9, { timeout: 10000 });
+      await sleep(300);
+      const g = await page.evaluate(() => {
+        const tiles = [...document.querySelectorAll('.ig-tile')];
+        const cols = new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().left))).size;
+        const t0 = tiles[0].getBoundingClientRect();
+        const handle = document.querySelector('.ig-tile .photo-handle').getBoundingClientRect();
+        return { cols, ratio: t0.height / t0.width, handleW: handle.width, handleH: handle.height };
+      });
+      if (g.cols !== 3) throw new Error(`grid has ${g.cols} columns, expected 3`);
+      if (Math.abs(g.ratio - 4 / 3) > 0.02) throw new Error(`tile ratio ${g.ratio.toFixed(3)}, expected 1.333`);
+      if (g.handleW < 43.5 || g.handleH < 43.5) throw new Error(`handle ${g.handleW}x${g.handleH}, expected at least 44`);
+      await checkpoint(ctx, 'instagram grid', { shot: true });
+    });
+
     // ---- photo quality verdicts (T-260): the seeded album with low, good, missing-720 and portrait examples
     let qualityIds = null;
     await step('quality verdicts', async () => {
@@ -816,7 +840,7 @@ async function runProfile(browser, profile) {
     if (profile.phone) {
       await step('320 px sweep', async () => {
         await page.setViewport({ width: 320, height: 700, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
-        for (const [name, path] of [['categories', '/'], ['category', urls.category], ['album', urls.album], ['photo', urls.photo], ['publish', '/zverejnit'], ['storage', '/ulozeni'], ['upload', '/nahravani']]) {
+        for (const [name, path] of [['categories', '/'], ['category', urls.category], ['album', urls.album], ['photo', urls.photo], ['publish', '/zverejnit'], ['storage', '/ulozeni'], ['upload', '/nahravani'], ['instagram', '/instagram']]) {
           await spaGo(page, path);
           await sleep(500);
           await checkpoint(ctx, `${name} at 320`, { shot: name === 'album', targets: false, width: 320 });

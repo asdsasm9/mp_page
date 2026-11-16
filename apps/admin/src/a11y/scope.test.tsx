@@ -17,6 +17,7 @@ describe('goal 20: no page-text editor', () => {
         '/',
         '/alba/:id',
         '/alba/:id/foto/:photoId',
+        '/instagram', // WP-14: the Instagram planning grid, not a page-text editor
         '/kategorie/:id',
         '/nahravani',
         '/prihlaseni',
@@ -47,7 +48,7 @@ describe('goal 20: no page-text editor', () => {
       .filter(([key]) => key !== 'homePage') // T-286: the hero photo setting, not a page-text editor
       .map(([, r]) => r.title);
     expect(titles.filter((t) => /text|stránk|obsah/i.test(t))).toEqual([]);
-    expect(Object.keys(cs.routes).sort()).toEqual(['album', 'categories', 'category', 'homePage', 'login', 'photo', 'publish', 'storage', 'upload']);
+    expect(Object.keys(cs.routes).sort()).toEqual(['album', 'categories', 'category', 'homePage', 'instagram', 'login', 'photo', 'publish', 'storage', 'upload']);
   });
 
   it('an unknown address such as /texty is a plain "not found"', async () => {

@@ -12,6 +12,10 @@ import {
   CATEGORY_NAME_MAX,
   CATEGORY_SEO_DESCRIPTION_MAX,
   CATEGORY_SEO_TITLE_MAX,
+  IG_CAPTION_MAX,
+  IG_HASHTAGS_MAX,
+  IG_PHOTOS_MAX,
+  IG_STATUSES,
 } from '@mp/shared';
 import { describe, expect, it } from 'vitest';
 
@@ -26,6 +30,31 @@ function sqlMax(constraint: string): number {
   if (!m) throw new Error(`constraint ${constraint} not found`);
   return Number(m[1]);
 }
+
+const igSql = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'supabase/migrations/20261116100000_ig_planner.sql'),
+  'utf8',
+);
+
+describe('Instagram planner constants equal the SQL check constraints', () => {
+  const igMax = (constraint: string) => {
+    const m = new RegExp(`constraint ${constraint} check \\(char_length\\(\\w+\\) <= (\\d+)\\)`).exec(igSql);
+    if (!m) throw new Error(`constraint ${constraint} not found`);
+    return Number(m[1]);
+  };
+
+  it('caption and hashtags', () => {
+    expect(igMax('ig_posts_caption_length')).toBe(IG_CAPTION_MAX);
+    expect(igMax('ig_posts_hashtags_length')).toBe(IG_HASHTAGS_MAX);
+  });
+
+  it('photos per post and statuses', () => {
+    expect(igSql).toContain(`check (sort between 1 and ${IG_PHOTOS_MAX})`);
+    const m = /constraint ig_posts_status check \(status in \(([^)]*)\)\)/.exec(igSql);
+    expect(m).not.toBeNull();
+    expect(m![1]!.split(',').map((s) => s.trim().replace(/'/g, ''))).toEqual([...IG_STATUSES]);
+  });
+});
 
 describe('field length constants equal the SQL check constraints', () => {
   it.each([

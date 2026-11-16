@@ -43,7 +43,7 @@ describe('docs/DATA-MODEL.md', () => {
   });
 
   it('lists every RPC with its error codes, and every shared error code', () => {
-    for (const rpc of ['is_admin', 'storage_usage', 'reserve_uploads', 'register_photo', 'delete_photos', 'request_publish', 'record_publish', 'keepalive']) {
+    for (const rpc of ['is_admin', 'storage_usage', 'reserve_uploads', 'register_photo', 'delete_photos', 'request_publish', 'record_publish', 'keepalive', 'ig_set_post_photos']) {
       expect(doc, rpc).toContain(`\`${rpc}(`);
     }
     for (const code of API_ERROR_CODES) expect(doc, code).toContain(code);

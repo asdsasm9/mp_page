@@ -74,7 +74,7 @@
     { "name": "admin components", "globs": ["apps/admin/src/components/*.test.tsx", "apps/admin/src/screens/*.test.tsx"] }
   ],
   "dataModel": {
-    "tables": ["admin_emails", "categories", "albums", "photos", "url_history", "app_config", "site_state", "publish_log", "upload_reservations", "keepalive", "change_log", "site_settings"],
+    "tables": ["admin_emails", "categories", "albums", "photos", "url_history", "app_config", "site_state", "publish_log", "upload_reservations", "keepalive", "change_log", "site_settings", "ig_posts", "ig_post_photos"],
     "columns": {
       "categories": ["id", "slug", "name", "description", "seo_title", "seo_description", "sort", "visible"],
       "albums": ["id", "category_id", "slug", "title", "place", "shot_on", "description", "seo_title", "seo_description", "cover_photo_id", "sort", "published", "legacy_id"],
@@ -112,6 +112,7 @@
       "request_publish": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
       "record_publish": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
       "keepalive": { "revokeFrom": ["public"], "grantTo": ["anon", "authenticated"] },
+      "ig_set_post_photos": { "revokeFrom": ["public", "anon"], "grantTo": ["authenticated"] },
       "ping": { "revokeFrom": ["public"], "grantTo": ["anon", "authenticated"] }
     },
     "requiredFiles": [

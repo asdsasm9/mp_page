@@ -775,8 +775,27 @@ async function runProfile(browser, profile) {
       if (layout.dateWidth > layout.formWidth * 0.6 && ctx.profile.width >= 1024) throw new Error(`planned date field is too wide: ${JSON.stringify(layout)}`);
       await checkpoint(ctx, 'instagram editor', { shot: true });
 
-      // The mark-posted dialog: date field with today's date and the hint for old posts.
-      await clickBy(ctx, 'button', /^Označit jako zveřejněné$/);
+      // T-352/T-353: the actions are an icon row in the sticky top bar, the status is one segmented control, and the
+      // old separate "Označit jako zveřejněné" section is gone. Every bar button and option is at least 44 px.
+      const bar = await page.evaluate(() => {
+        const el = document.querySelector('.post-bar');
+        const names = [...(el?.querySelectorAll('button') ?? [])].map((b) => (b.getAttribute('aria-label') || b.textContent || '').trim());
+        const sizes = [...(el?.querySelectorAll('button') ?? []), ...document.querySelectorAll('.segmented-option')].map((e) => e.getBoundingClientRect()).filter((r) => r.width < 43.5 || r.height < 43.5);
+        return {
+          sticky: el ? getComputedStyle(el).position : null,
+          names,
+          small: sizes.length,
+          options: [...document.querySelectorAll('.segmented-option')].map((l) => (l.textContent ?? '').trim()),
+          oldSection: Boolean(document.querySelector('.post-posted')),
+        };
+      });
+      if (bar.sticky !== 'sticky') throw new Error(`editor top bar is not sticky: ${JSON.stringify(bar)}`);
+      for (const name of ['Zkopírovat popisek', 'Stáhnout fotky', 'Smazat příspěvek']) if (!bar.names.includes(name)) throw new Error(`top bar misses "${name}": ${JSON.stringify(bar)}`);
+      if (bar.small > 0) throw new Error(`top bar or status options under 44 px: ${JSON.stringify(bar)}`);
+      if (bar.options.join('|') !== 'Koncept|Naplánováno|Zveřejněno' || bar.oldSection) throw new Error(`status control is wrong: ${JSON.stringify(bar)}`);
+
+      // Choosing Zveřejněno opens the date dialog: date field with today's date and the hint for old posts.
+      await clickBy(ctx, 'label', /^Zveřejněno$/);
       await page.waitForFunction(() => document.querySelector('dialog:modal input[type=date]')?.value?.length === 10, { timeout: 10000 });
       await waitText(page, /starší příspěvky, které už na Instagramu jsou/);
       await checkpoint(ctx, 'instagram mark posted dialog', { shot: true });

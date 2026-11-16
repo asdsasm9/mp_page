@@ -1,8 +1,10 @@
 /**
  * Instagram post editor (`/instagram/novy` and `/instagram/:id`, WP-14): photos (1 to 10, ordered), caption and
- * hashtags with live counters, optional planned date, status draft or planned, an explicit "Uložit" (no autosave),
- * "Označit jako zveřejněné" with a date (also for old posts), "Vrátit zpět na naplánované" and a confirmed delete.
- * A post without photos (all deleted from the albums) is a draft with a notice; planning or marking it is refused.
+ * hashtags with live counters, optional planned date, an explicit "Uložit" (no autosave). Status is one segmented
+ * control: Koncept, Naplánováno, Zveřejněno. Zveřejněno asks for a date (also for old posts) and needs a saved,
+ * unchanged post; leaving it asks a short confirm and unmarks (T-353). Share, copy, download and delete are icons in
+ * the sticky top bar (T-352). A post without photos (all deleted from the albums) is a draft with a notice; planning
+ * or marking it is refused.
  */
 import {
   IG_CAPTION_MAX,
@@ -18,6 +20,7 @@ import {
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Breadcrumb } from '../components/Breadcrumb';
+import { ActionButton } from '../components/IconButton';
 import { Field } from '../components/Field';
 import { LoadFailure } from '../components/LoadFailure';
 import { Notice } from '../components/Notice';
@@ -42,7 +45,7 @@ import { cs } from '../i18n/cs';
 import { fill, formatPragueDateTime } from '../i18n/format';
 import { errorMessage } from '../i18n/messages';
 import { useImageBase } from '../ports-context';
-import { DeletePostDialog, MarkPostedDialog } from './PostDialogs';
+import { DeletePostDialog, MarkPostedDialog, UnmarkPostedDialog } from './PostDialogs';
 import { PostPhotoPicker } from './PostPhotoPicker';
 
 const t = cs.instagram.editor;
@@ -67,7 +70,14 @@ function draftOf(post: IgPost | null): Draft {
   };
 }
 
-const sameList = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((id, i) => id === b[i]);
+type StatusChoice = 'draft' | 'planned' | 'posted';
+const STATUS_LABEL: Record<StatusChoice, string> = {
+  draft: cs.instagram.statusDraft,
+  planned: cs.instagram.statusPlanned,
+  posted: cs.instagram.statusPosted,
+};
+
+const sameList =(a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((id, i) => id === b[i]);
 
 function postedDay(post: IgPost): string {
   return formatPragueDateTime(post.posted_at ?? '').replace(/\s\d{2}:\d{2}$/, '');
@@ -90,7 +100,10 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
 
   const saved = draftOf(post);
   const [draft, setDraft] = useState<Draft>(saved);
-  const [dialog, setDialog] = useState<'photos' | 'mark' | 'delete' | null>(null);
+  const [dialog, setDialog] = useState<'photos' | 'mark' | 'unmark' | 'delete' | null>(null);
+  const [unmarkTarget, setUnmarkTarget] = useState<'draft' | 'planned'>('planned');
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const statusHintId = useId();
   const [problems, setProblems] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<unknown>(null);
@@ -100,7 +113,8 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
     draft.caption !== saved.caption ||
     draft.hashtags !== saved.hashtags ||
     draft.plannedOn !== saved.plannedOn ||
-    draft.status !== saved.status ||
+    // A posted post has no draft or planned choice; its status is changed only through the confirmed unmark.
+    (!isPosted && draft.status !== saved.status) ||
     !sameList(draft.photoIds, saved.photoIds);
 
   const captionLen = captionLength(draft.caption);
@@ -167,16 +181,38 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
     setDialog(null);
   }
 
-  async function undo() {
+  /** Koncept or Naplánováno on a posted post: back to planned (last in the block), then to draft when asked. */
+  async function undo(target: 'draft' | 'planned') {
     if (!post) return;
     setFailure(null);
     try {
-      await unmark.mutateAsync({ id: post.id, options: expectUpdatedAt(post) });
+      const back = await unmark.mutateAsync({ id: post.id, options: expectUpdatedAt(post) });
+      if (target === 'draft') await update.mutateAsync({ id: post.id, patch: { status: 'draft' }, options: expectUpdatedAt(back) });
+      setDraft((now) => ({ ...now, status: target }));
       toast.show(t.unmarkedToast);
     } catch (error) {
+      // A conflict or a failed second call is shown in the editor, where "Načíst znovu" lives.
       setFailure(error);
     }
+    setDialog(null);
   }
+
+  function chooseStatus(status: StatusChoice) {
+    if (status === 'posted') {
+      if (!isPosted) setDialog('mark');
+    } else if (isPosted) {
+      setUnmarkTarget(status);
+      setDialog('unmark');
+    } else {
+      set('status', status);
+    }
+  }
+
+  const noPhotos = post !== null && post.photos.length === 0;
+  const postedLocked = !isPosted && (post === null || dirty || noPhotos);
+  const postedHint = isPosted ? null : post === null ? t.postedAfterSave : dirty ? t.saveFirst : noPhotos ? t.needPhoto : null;
+  const statusDisabled = (status: StatusChoice) =>
+    status === 'posted' ? !isPosted && (!canMutate || postedLocked) : isPosted && (!canMutate || (status === 'planned' && noPhotos));
 
   async function erase() {
     if (!post) return;
@@ -189,6 +225,12 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
     <div className="page post-editor">
       <Breadcrumb items={[{ label: cs.routes.instagram.title, to: '/instagram' }, { label: title }]} />
       <h1>{title}</h1>
+      {post === null ? null : (
+        <div className="post-bar" role="group" aria-label={t.actionsLabel}>
+          <div ref={setSlot} className="post-bar-slot" />
+          <ActionButton icon="trash" label={t.deleteButton} variant="danger" disabled={!canMutate} onClick={() => setDialog('delete')} />
+        </div>
+      )}
       {post !== null && post.photos.length === 0 && !isPosted ? (
         <Notice variant="info" as="div">
           <p>{t.noPhotosNotice}</p>
@@ -201,17 +243,21 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
         <Notice>{errorMessage(failure)}</Notice>
       )}
 
+      {post === null || post.photos.length === 0 ? null : (
+        <SharePanel key={post.photos.map((p) => `${p.sort}:${p.photo_id}`).join(',')} post={post} dirty={dirty} actionsSlot={slot} />
+      )}
+
       <form className="form post-form" noValidate onSubmit={(event) => void save(event)}>
         <div className="post-photos">
-          <p className="page-note" role="status" aria-live="polite">
-            {fill(t.selectedCount, { n: draft.photoIds.length, max: IG_PHOTOS_MAX })}
-          </p>
-          {draft.photoIds.length === 0 && post === null ? <p className="page-note">{t.needPhoto}</p> : null}
-          <div>
+          <div className="post-photos-head">
+            <p className="page-note" role="status" aria-live="polite">
+              {fill(t.selectedCount, { n: draft.photoIds.length, max: IG_PHOTOS_MAX })}
+            </p>
             <button ref={choosePhotosRef} type="button" className="button" disabled={!canMutate} onClick={() => setDialog('photos')}>
               {draft.photoIds.length === 0 ? t.choosePhotos : t.changePhotos}
             </button>
           </div>
+          {draft.photoIds.length === 0 && post === null ? <p className="page-note">{t.needPhoto}</p> : null}
           {draft.photoIds.length > 0 ? (
             <>
               <p className="field-hint">{t.stripHint}</p>
@@ -253,8 +299,27 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
             </span>
           }
         />
-        {isPosted ? null : (
-          <>
+        <div className="post-meta">
+          <fieldset className="post-status" aria-describedby={postedHint === null ? undefined : statusHintId}>
+            <legend>{t.status}</legend>
+            <div className="segmented">
+              {(['draft', 'planned', 'posted'] as const).map((status) => (
+                <label key={status} className="segmented-option">
+                  <input
+                    type="radio"
+                    name="post-status"
+                    className="visually-hidden"
+                    value={status}
+                    checked={(isPosted ? 'posted' : draft.status) === status}
+                    disabled={statusDisabled(status)}
+                    onChange={() => chooseStatus(status)}
+                  />
+                  <span>{STATUS_LABEL[status]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {isPosted ? null : (
             <Field
               label={t.plannedOn}
               type="date"
@@ -262,22 +327,13 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
               value={draft.plannedOn}
               onChange={(value) => set('plannedOn', value)}
             />
-            <fieldset className="post-status">
-              <legend>{t.status}</legend>
-              {(['draft', 'planned'] as const).map((status) => (
-                <label key={status} className="picker-option">
-                  <input
-                    type="radio"
-                    name="post-status"
-                    value={status}
-                    checked={draft.status === status}
-                    onChange={() => set('status', status)}
-                  />
-                  <span>{status === 'draft' ? cs.instagram.statusDraft : cs.instagram.statusPlanned}</span>
-                </label>
-              ))}
-            </fieldset>
-          </>
+          )}
+        </div>
+        {isPosted && post !== null ? <p className="field-hint">{fill(t.postedLine, { date: postedDay(post) })}</p> : null}
+        {postedHint === null ? null : (
+          <p id={statusHintId} className="field-hint">
+            {postedHint}
+          </p>
         )}
 
         {problems.length === 0 ? null : (
@@ -301,53 +357,6 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
         </div>
       </form>
 
-      {post === null ? null : (
-        <SharePanel key={post.photos.map((p) => `${p.sort}:${p.photo_id}`).join(',')} post={post} dirty={dirty} />
-      )}
-
-      {post === null ? null : (
-        <section className="post-posted" aria-labelledby="post-posted-heading">
-          <h2 id="post-posted-heading">{cs.instagram.posted}</h2>
-          {isPosted ? (
-            <>
-              <p>{fill(t.postedLine, { date: postedDay(post) })}</p>
-              <div>
-                <button type="button" className="button" disabled={!canMutate} onClick={() => void undo()}>
-                  {t.unmark}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <button
-                  type="button"
-                  className="button"
-                  disabled={!canMutate || dirty || post.photos.length === 0}
-                  aria-describedby={dirty ? 'post-save-first' : undefined}
-                  onClick={() => setDialog('mark')}
-                >
-                  {t.markPosted}
-                </button>
-              </div>
-              {dirty ? (
-                <p id="post-save-first" className="field-hint">
-                  {t.saveFirst}
-                </p>
-              ) : null}
-            </>
-          )}
-        </section>
-      )}
-
-      {post === null ? null : (
-        <div className="post-delete">
-          <button type="button" className="button button-danger" disabled={!canMutate} onClick={() => setDialog('delete')}>
-            {t.deleteButton}
-          </button>
-        </div>
-      )}
-
       {dialog === 'photos' ? (
         <PostPhotoPicker
           selected={draft.photoIds}
@@ -359,6 +368,9 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
         />
       ) : null}
       {dialog === 'mark' ? <MarkPostedDialog onClose={() => setDialog(null)} onConfirm={mark} /> : null}
+      {dialog === 'unmark' ? (
+        <UnmarkPostedDialog target={unmarkTarget} onClose={() => setDialog(null)} onConfirm={() => undo(unmarkTarget)} />
+      ) : null}
       {dialog === 'delete' ? <DeletePostDialog onClose={() => setDialog(null)} onConfirm={erase} /> : null}
     </div>
   );

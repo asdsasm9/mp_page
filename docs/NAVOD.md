@@ -175,15 +175,15 @@ Ve správě je v nabídce „Instagram“. Je to jen plánovač: s Instagramem s
 
 **Sdílet z telefonu do Instagramu**
 
-1. Na telefonu otevři příspěvek a počkej, až je u tlačítka „Sdílet do Instagramu“ hotovo („Fotky jsou připravené“). Když se fotky nenačetly, klepni na „Připravit fotky“.
+1. Na telefonu otevři příspěvek. Nahoře je řádek ikon (sdílet, zkopírovat popisek, stáhnout fotky, smazat), který zůstane vidět i při posouvání; na telefonu mají jen ikony, na větší obrazovce i nápis. Počkej, až je u ikony „Sdílet do Instagramu“ hotovo („Fotky jsou připravené“). Když se fotky nenačetly, klepni na „Připravit fotky“.
 2. Nejdřív klepni na „Zkopírovat popisek“. Instagram text ze sdílení nepřevezme, popisek vložíš sama.
 3. Klepni na „Sdílet do Instagramu“ a v nabídce telefonu vyber Instagram a nový příspěvek. Fotky přijdou ve stejném pořadí jako ve správě.
 4. V Instagramu do pole popisku podrž prst a vlož zkopírovaný text. Zveřejni příspěvek.
 5. Když se tlačítko „Sdílet do Instagramu“ nezobrazí nebo sdílení selže, klepni na „Stáhnout fotky“ a nahraj je v Instagramu ručně z galerie telefonu.
 
-**Označit jako zveřejněné.** Po zveřejnění na Instagramu otevři příspěvek v plánovači, klikni na „Označit jako zveřejněné“ a potvrď datum (předvyplněné je dnešní, jde změnit). Příspěvek přeskočí mezi zveřejněné. Když ses spletla, použij „Vrátit zpět na naplánované“.
+**Označit jako zveřejněné.** Po zveřejnění na Instagramu otevři příspěvek v plánovači (nejdřív ulož změny), v části „Stav“ vyber „Zveřejněno“ a potvrď datum (předvyplněné je dnešní, jde změnit). Příspěvek přeskočí mezi zveřejněné. Když ses spletla, vyber v části „Stav“ znovu „Naplánováno“ nebo „Koncept“ a potvrď to; příspěvek se vrátí na konec naplánovaných.
 
-**Starší příspěvky.** Tak můžeš do mřížky přidat i příspěvky, které už na Instagramu jsou: vytvoř příspěvek ze stejných fotek, napiš popisek a hned klikni na „Označit jako zveřejněné“ se skutečným datem. Mřížka se tak podobá profilu.
+**Starší příspěvky.** Tak můžeš do mřížky přidat i příspěvky, které už na Instagramu jsou: vytvoř příspěvek ze stejných fotek, napiš popisek, ulož ho a pak v části „Stav“ vyber „Zveřejněno“ se skutečným datem. Mřížka se tak podobá profilu.
 
 **Pozor.**
 

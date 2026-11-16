@@ -2434,14 +2434,167 @@
 
   /* Post editor (WP-14): sections stacked, photo strip rows with a 3:4 thumbnail, the picker's order number. */
   .post-editor > * + * {
-    margin-block-start: var(--space-4);
+    margin-block-start: var(--space-3);
+  }
+
+  /*
+   * T-352: share, copy, download and delete sit in an icon row that sticks under the app header, so they stay in
+   * reach while the caption is edited. The offset is the header's height (one row from 80rem, wrapped below).
+   */
+  .post-bar {
+    position: sticky;
+    inset-block-start: var(--header-height-wrapped);
+    z-index: var(--z-header);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    padding-block: var(--space-2);
+    background: var(--color-bg);
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  @media (min-width: 80rem) {
+    .post-bar {
+      inset-block-start: var(--header-height);
+    }
+  }
+
+  /* Focused fields must land below the app header and this bar (WCAG 2.4.11). */
+  html:has(.post-bar) {
+    scroll-padding-block-start: calc(var(--header-height-wrapped) + var(--target-min) + var(--space-4));
+  }
+
+  @media (min-width: 80rem) {
+    html:has(.post-bar) {
+      scroll-padding-block-start: calc(var(--header-height) + var(--target-min) + var(--space-4));
+    }
+  }
+
+  .post-bar-slot {
+    display: contents;
+  }
+
+  .button-action {
+    gap: var(--space-2);
+    padding-inline: 0;
+    inline-size: var(--target-min);
+  }
+
+  /* Wide screens show the text beside the icon; the name is the same text on every width. */
+  @media (min-width: 48rem) {
+    .button-action {
+      inline-size: auto;
+      padding-inline: var(--space-3);
+    }
+
+    .button-action .action-label {
+      position: static;
+      inline-size: auto;
+      block-size: auto;
+      overflow: visible;
+      clip-path: none;
+    }
+  }
+
+  .button-action-danger {
+    margin-inline-start: auto;
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+  }
+
+  .button-action-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  }
+
+  .button-action-danger:disabled {
+    color: var(--color-text-muted);
+    border-color: var(--color-border-strong);
+  }
+
+  .post-photos-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  /* Status as one segmented control (T-353): three radios share a single outline, the chosen one is filled. */
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-3) var(--space-5);
+  }
+
+  .post-status {
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .post-status legend {
+    padding: 0;
+    margin-block-end: var(--space-1);
+    font-size: var(--text-small);
+  }
+
+  .segmented {
+    display: inline-flex;
+    flex-wrap: wrap;
+    border: var(--border-width) solid var(--color-accent-strong);
+  }
+
+  .segmented-option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--target-min);
+    min-inline-size: var(--target-min);
+    padding-inline: var(--space-3);
+    font-size: var(--text-small);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .segmented-option + .segmented-option {
+    border-inline-start: var(--border-width) solid var(--color-accent-strong);
+  }
+
+  .segmented-option:hover:not(:has(input:disabled)) {
+    background: color-mix(in srgb, var(--color-accent-strong) 12%, transparent);
+  }
+
+  .segmented-option:has(input:checked) {
+    color: var(--color-on-overlay);
+    background: var(--color-text);
+  }
+
+  .segmented-option:has(input:focus-visible) {
+    outline: var(--focus-width) solid var(--color-focus);
+    outline-offset: var(--focus-offset);
+  }
+
+  /* Disabled: muted text on the neutral surface, never faded. */
+  .segmented-option:has(input:disabled) {
+    cursor: not-allowed;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+  }
+
+  .segmented-option:has(input:disabled:checked) {
+    color: var(--color-on-overlay);
+    background: var(--color-text-muted);
   }
 
   /* Two columns from 64rem (photos left, caption to status right); one column below, photos first. */
   .post-form,
   .post-fields {
     display: grid;
-    gap: var(--space-4);
+    gap: var(--space-3);
     align-content: start;
   }
 
@@ -2464,14 +2617,12 @@
   }
 
   .post-photos,
-  .post-posted,
   .post-share {
     display: grid;
-    gap: var(--space-3);
+    gap: var(--space-2);
   }
 
   .post-photos > *,
-  .post-posted > *,
   .post-share > * {
     margin: 0;
   }
@@ -2479,14 +2630,7 @@
   .post-share-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
-  }
-
-  .post-status {
-    margin: 0;
-    padding: var(--space-2) var(--space-3);
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-none);
+    gap: var(--space-2);
   }
 
   .post-strip-item {

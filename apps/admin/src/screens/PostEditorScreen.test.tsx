@@ -37,6 +37,7 @@ function mount(world: FakeWorld, path: string) {
 
 const heading = (name: string) => screen.findByRole('heading', { level: 1, name });
 const field = (label: string) => screen.getByLabelText(label) as HTMLTextAreaElement | HTMLInputElement;
+const statusRadio = (label: string) => screen.getByRole('radio', { name: label }) as HTMLInputElement;
 
 async function openPicker(user: ReturnType<typeof userEvent.setup>) {
   const button = screen.getByRole('button', { name: new RegExp(`^(${t.choosePhotos}|${t.changePhotos})$`) });
@@ -220,10 +221,12 @@ describe('post editor: existing post', () => {
     expect(field(t.hashtagsLabel).value).toBe('#svatba #fotografka #brno');
     expect(field(t.plannedOn).value).toBe('2026-11-20');
     expect((screen.getByLabelText(cs.instagram.statusPlanned) as HTMLInputElement).checked).toBe(true);
-    // Unsaved changes: marking as posted waits for the save.
+    // Unsaved changes: choosing Zveřejněno waits for the save, and says why.
+    expect(statusRadio(cs.instagram.statusPosted).disabled).toBe(false);
     await user.type(field(t.captionLabel), '!');
     expect(screen.getByText(t.saveFirst)).toBeTruthy();
-    expect((screen.getByRole('button', { name: t.markPosted }) as HTMLButtonElement).disabled).toBe(true);
+    expect(statusRadio(cs.instagram.statusPosted).disabled).toBe(true);
+    expect(statusRadio(cs.instagram.statusPosted).closest('fieldset')!.getAttribute('aria-describedby')).toBeTruthy();
     await user.click(screen.getByLabelText(cs.instagram.statusDraft));
     await keyboardDrag(user, `${cs.reorder.handle}: Fotka 1`, 1);
     await user.click(screen.getByRole('button', { name: t.save }));
@@ -257,7 +260,8 @@ describe('post editor: existing post', () => {
     expect(await screen.findByText(t.noPhotosNotice)).toBeTruthy();
     expect(screen.getByText(t.photoRemoved)).toBeTruthy();
     expect((screen.getByLabelText(cs.instagram.statusDraft) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByRole('button', { name: t.markPosted }) as HTMLButtonElement).disabled).toBe(true);
+    expect(statusRadio(cs.instagram.statusPosted).disabled).toBe(true);
+    expect(screen.getByText(t.needPhoto, { selector: '.field-hint' })).toBeTruthy();
     const user = userEvent.setup();
     await user.click(screen.getByLabelText(cs.instagram.statusPlanned));
     await user.click(screen.getByRole('button', { name: t.save }));
@@ -322,15 +326,45 @@ describe('post editor: existing post', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: t.choosePhotos })));
   });
 
+  it('has one status control with Koncept, Naplánováno and Zveřejněno, and no separate posted section', async () => {
+    const world = seeded();
+    const post = await byCaption(world, 'Portrét v ateliéru');
+    const { container } = mount(world, `/instagram/${post.id}`);
+    await heading(t.editTitle);
+    await waitFor(() => expect(statusRadio(cs.instagram.statusPosted).disabled).toBe(false));
+    const group = screen.getByRole('group', { name: t.status });
+    expect(within(group).getAllByRole('radio').map((r) => (r as HTMLInputElement).labels![0]!.textContent)).toEqual([
+      cs.instagram.statusDraft,
+      cs.instagram.statusPlanned,
+      cs.instagram.statusPosted,
+    ]);
+    expect(screen.queryByRole('button', { name: /Označit jako zveřejněné|Vrátit zpět/ })).toBeNull();
+    expect(container.querySelector('.post-posted')).toBeNull();
+  });
+
+  it('keeps the actions in the top bar with names, and the textarea fallback in the body', async () => {
+    const world = seeded();
+    const post = await byCaption(world, 'Portrét v ateliéru');
+    const { container } = mount(world, `/instagram/${post.id}`);
+    await heading(t.editTitle);
+    const bar = container.querySelector('.post-bar') as HTMLElement;
+    const names = cs.instagram.share;
+    for (const name of [names.copy, names.download, t.deleteButton]) {
+      const button = await within(bar).findByRole('button', { name });
+      expect(button.querySelector('svg[aria-hidden="true"]')).toBeTruthy();
+    }
+    expect(container.querySelector('.post-share .post-share-actions')).toBeNull();
+    expect(container.querySelector('.post-share')!.contains(bar)).toBe(false);
+  });
+
   it('marks a post as posted on a chosen date, then returns it to planned', async () => {
     const world = seeded();
     const post = await byCaption(world, 'Portrét v ateliéru');
     mount(world, `/instagram/${post.id}`);
     await heading(t.editTitle);
     const user = userEvent.setup();
-    await waitFor(() => expect(screen.getByRole('button', { name: t.markPosted })).toBeTruthy());
-    await waitFor(() => expect((screen.getByRole('button', { name: t.markPosted }) as HTMLButtonElement).disabled).toBe(false));
-    await user.click(screen.getByRole('button', { name: t.markPosted }));
+    await waitFor(() => expect(statusRadio(cs.instagram.statusPosted).disabled).toBe(false));
+    await user.click(statusRadio(cs.instagram.statusPosted));
     const dialog = await screen.findByRole('dialog', { name: cs.instagram.markDialog.title });
     expect(within(dialog).getByText(cs.instagram.markDialog.hint)).toBeTruthy();
     const date = within(dialog).getByLabelText(new RegExp(cs.instagram.markDialog.dateLabel)) as HTMLInputElement;
@@ -346,11 +380,57 @@ describe('post editor: existing post', () => {
     expect(posted.status).toBe('posted');
     expect(posted.posted_at).toMatch(/^2026-10-01T/);
     expect(await screen.findByText('Zveřejněno 1. 10. 2026')).toBeTruthy();
-    expect(screen.queryByLabelText(cs.instagram.statusDraft)).toBeNull();
-    await user.click(screen.getByRole('button', { name: t.unmark }));
+    expect(statusRadio(cs.instagram.statusPosted).checked).toBe(true);
+    expect(screen.queryByLabelText(t.plannedOn)).toBeNull();
+    // Leaving Zveřejněno asks first; cancelling changes nothing.
+    await user.click(statusRadio(cs.instagram.statusPlanned));
+    const confirm = await screen.findByRole('dialog', { name: cs.instagram.unmarkDialog.title });
+    await user.click(within(confirm).getByRole('button', { name: cs.glossary.cancel }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect((await byCaption(world, 'Portrét v ateliéru')).status).toBe('posted');
+    expect(statusRadio(cs.instagram.statusPosted).checked).toBe(true);
+    // Naplánováno: back in the plan, last in the planned block, the form is clean.
+    await user.click(statusRadio(cs.instagram.statusPlanned));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: cs.instagram.unmarkDialog.confirm }));
     await waitFor(async () => expect((await byCaption(world, 'Portrét v ateliéru')).status).toBe('planned'));
-    expect((await byCaption(world, 'Portrét v ateliéru')).posted_at).toBeNull();
-    expect(await screen.findByRole('button', { name: t.markPosted })).toBeTruthy();
+    const back = await byCaption(world, 'Portrét v ateliéru');
+    expect(back.posted_at).toBeNull();
+    const others = (await posts(world)).filter((p) => p.id !== back.id && p.status !== 'posted');
+    expect(back.sort).toBeGreaterThan(Math.max(...others.map((p) => p.sort)));
+    await waitFor(() => expect(statusRadio(cs.instagram.statusPlanned).checked).toBe(true));
+    expect(statusRadio(cs.instagram.statusPosted).disabled).toBe(false);
+    expect(screen.queryByText(t.saveFirst)).toBeNull();
+  });
+
+  it('Koncept on a posted post unmarks it and then saves it as a draft', async () => {
+    const world = seeded();
+    const post = (await posts(world)).find((p) => p.status === 'posted')!;
+    mount(world, `/instagram/${post.id}`);
+    await heading(t.editTitle);
+    const user = userEvent.setup();
+    await waitFor(() => expect(statusRadio(cs.instagram.statusPosted).checked).toBe(true));
+    await user.click(statusRadio(cs.instagram.statusDraft));
+    const dialog = await screen.findByRole('dialog', { name: cs.instagram.unmarkDialog.title });
+    expect(within(dialog).getByText(cs.instagram.unmarkDialog.bodyDraft)).toBeTruthy();
+    await user.click(within(dialog).getByRole('button', { name: cs.instagram.unmarkDialog.confirm }));
+    await waitFor(async () => expect((await posts(world)).find((p) => p.id === post.id)!.status).toBe('draft'));
+    expect((await posts(world)).find((p) => p.id === post.id)!.posted_at).toBeNull();
+    await waitFor(() => expect(statusRadio(cs.instagram.statusDraft).checked).toBe(true));
+    expect(screen.queryByText(t.saveFirst)).toBeNull();
+  });
+
+  it('a conflict while unmarking shows the stale notice and leaves the post posted', async () => {
+    const world = seeded();
+    const post = (await posts(world)).find((p) => p.status === 'posted')!;
+    mount(world, `/instagram/${post.id}`);
+    await heading(t.editTitle);
+    const user = userEvent.setup();
+    await waitFor(() => expect(statusRadio(cs.instagram.statusPosted).checked).toBe(true));
+    await world.ports.planner.updatePost(post.id, { caption: 'Změna z jiného zařízení' });
+    await user.click(statusRadio(cs.instagram.statusPlanned));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: cs.instagram.unmarkDialog.confirm }));
+    expect((await screen.findByRole('alert')).textContent).toContain(cs.data.staleSentenceBy.post);
+    expect((await posts(world)).find((p) => p.id === post.id)!.status).toBe('posted');
   });
 
   it('deletes only after a confirmation and leaves the photos in the albums', async () => {
@@ -410,8 +490,9 @@ describe('post editor: existing post', () => {
     mount(world, `/instagram/${post.id}`);
     await heading(t.editTitle);
     await waitFor(() => expect(field(t.captionLabel).value).toBe('Portrét v ateliéru'));
+    await waitFor(() => expect(statusRadio(cs.instagram.statusPosted).disabled).toBe(false));
     expect(await seriousViolations()).toEqual([]);
-    await user.click(screen.getByRole('button', { name: t.markPosted }));
+    await user.click(statusRadio(cs.instagram.statusPosted));
     await screen.findByRole('dialog', { name: cs.instagram.markDialog.title });
     expect(await seriousViolations()).toEqual([]);
     await user.keyboard('{Escape}');

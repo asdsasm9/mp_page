@@ -6,9 +6,11 @@
  */
 import { postedText, type IgPost } from '@mp/shared';
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { cs } from '../i18n/cs';
 import { useImageBase, useShareDeps } from '../ports-context';
 import { fetchShareFiles, probeFile } from '../share/shareFiles';
+import { ActionButton } from './IconButton';
 import { Notice } from './Notice';
 import { useToast } from './Toast';
 
@@ -21,7 +23,11 @@ export function carouselIds(post: Pick<IgPost, 'photos'>): string[] {
   return [...post.photos].sort((a, b) => a.sort - b.sort).map((p) => p.photo_id);
 }
 
-export function SharePanel({ post, dirty }: { post: IgPost; dirty: boolean }) {
+/**
+ * `actionsSlot`: undefined = the buttons sit inside the panel; an element = they are portalled there (the editor's
+ * sticky top bar); null = that element is not mounted yet, so nothing is shown for a moment.
+ */
+export function SharePanel({ post, dirty, actionsSlot }: { post: IgPost; dirty: boolean; actionsSlot?: HTMLElement | null }) {
   const deps = useShareDeps();
   const imgBase = useImageBase();
   const toast = useToast();
@@ -107,33 +113,28 @@ export function SharePanel({ post, dirty }: { post: IgPost; dirty: boolean }) {
     for (const file of ready) deps.download(file);
   }
 
+  const actions = (
+    <>
+      {canShareFiles && prep === 'ready' ? (
+        <ActionButton icon="share" label={t.share} variant="primary" onClick={() => void share()} />
+      ) : null}
+      {canShareFiles && prep === 'idle' ? <ActionButton icon="refresh" label={t.prepare} onClick={() => void prepare()} /> : null}
+      <ActionButton icon="copy" label={t.copy} onClick={() => void copy()} />
+      <ActionButton icon="download" label={t.download} disabled={prep === 'preparing'} onClick={() => void download()} />
+    </>
+  );
+
   return (
-    <section className="post-share" aria-labelledby="post-share-heading">
-      <h2 id="post-share-heading">{t.heading}</h2>
+    <section className="post-share">
       {ids.length === 0 ? (
         <p className="page-note">{t.noPhotos}</p>
       ) : (
         <>
+          {/* The buttons go into the editor's sticky top bar when it hands over a slot; alone they sit here. */}
+          {actionsSlot === undefined ? <div className="post-share-actions">{actions}</div> : null}
+          {actionsSlot ? createPortal(actions, actionsSlot) : null}
           <p className="field-hint">{t.tip}</p>
           {dirty ? <p className="field-hint">{t.unsaved}</p> : null}
-          <div className="post-share-actions">
-            {canShareFiles && prep === 'ready' ? (
-              <button type="button" className="button button-primary" onClick={() => void share()}>
-                {t.share}
-              </button>
-            ) : null}
-            {canShareFiles && prep === 'idle' ? (
-              <button type="button" className="button" onClick={() => void prepare()}>
-                {t.prepare}
-              </button>
-            ) : null}
-            <button type="button" className="button" onClick={() => void copy()}>
-              {t.copy}
-            </button>
-            <button type="button" className="button" disabled={prep === 'preparing'} onClick={() => void download()}>
-              {t.download}
-            </button>
-          </div>
           <p className="page-note" role="status" aria-live="polite">
             {info}
           </p>

@@ -163,6 +163,42 @@ Auth (EU region) stores them in its `auth.users` and `auth.identities` tables; t
 too. Nothing else is requested, and Google never passes the Google password. The public site and its visitors are not
 involved. People outside the two addresses leave data only in the short fallback window of V-4, if it is needed.
 
+## Instagram planner (WP-14)
+
+A planning grid for Instagram posts. Nothing here talks to Instagram or Meta: the photographer plans in the admin and
+posts by hand from her phone.
+
+- **Ordering.** The grid reads like the Instagram profile (row-major, three columns, 3:4 tiles, centre crop). Planned and
+  draft posts come first, by `sort` ascending; posted posts follow, by `posted_at` newest first. A new post gets
+  `sort = min(sort) - 10`, so it lands at the top. Dragging (or the keyboard reorder, like the other lists) reorders only
+  the planned and draft block and saves one PATCH per changed row. Marking a post as posted keeps its `sort`, sets
+  `posted_at` (date asked, default today, stored at noon local time) and moves it into the posted block; "Vrátit zpět na
+  naplánované" clears `posted_at`, sets `status = 'planned'` and `sort = max(planned sort) + 10`.
+- **"Další na řadě".** The next post to publish is the last tile of the planned block, the one next to the posted
+  posts, because the profile shows the newest post top left and the grid is filled from the top. The grid marks that tile
+  "Další na řadě". Dashed outline plus a text badge ("Koncept", "Naplánováno") separate unpublished tiles from posted ones;
+  colour is never the only signal.
+- **Not site changes, not published.** `ig_posts` and `ig_post_photos` have no `bump_pending` or `log_change` trigger. Planner writes
+  never raise "Nezveřejněné změny", never appear in "Zobrazit změny" and are never part of the published snapshot or the
+  publish service. The two tables are admin-only behind RLS (`is_admin()`), with no anon access. Captions can name
+  clients, so they stay in Supabase and are not logged. Deleting a post never deletes a photo.
+- **Photos of unpublished albums.** A post may use photos from albums that are not published. Those photo files are
+  already reachable by their unguessable (UUID) image URLs, as described in NAVOD.md section 7; the planner adds no new
+  exposure, and the share step only fetches those same URLs. Do not treat an unpublished album as private.
+- **Photo deleted or replaced.** The photo drops out of every post (cascade); the remaining photos keep their order. A
+  planned post left without photos becomes a draft with the notice "Příspěvek nemá žádné fotky"; a posted one stays
+  posted and shows "Fotka byla smazána". There is no automatic swap for a replaced photo.
+- **Two-call save.** Saving a post is two calls: first the post fields (`ig_posts`), then the photo set through the RPC
+  `ig_set_post_photos` (atomic replace of 1 to 10 photos). When creating, a failed photo call makes the adapter delete the
+  new post; when editing, the draft stays on screen for a retry. Every update checks `updated_at`; a conflict shows
+  "Načíst znovu".
+- **Share flow (phone).** Open a saved post: the 1600 px JPEGs are fetched when the page opens (`foto-1.jpg`, `foto-2.jpg`,
+  ... in carousel order), so the tap on "Sdílet do Instagramu" can call `navigator.share({ files })` at once and keep the
+  user activation. The button appears only where `navigator.canShare` accepts files. Instagram ignores shared text, so
+  "Zkopírovat popisek" copies caption, blank line and hashtags first; she pastes it in Instagram. "Stáhnout fotky" is the
+  fallback (also on desktop). Needs the image origin in the admin `connect-src` and the R2 GET/HEAD CORS rule
+  (docs/DEPLOY-API.md section 6.1). Real-phone checks: docs/VERIFY.md rows 62 to 67.
+
 ## Using it: short guide for the photographer (Czech)
 
 Podrobný návod krok za krokem je v [NAVOD.md](NAVOD.md).
@@ -184,6 +220,8 @@ ho máš. Na sdíleném počítači se odhlas i z Googlu.
   Tlačítko „Zobrazit změny“ otevře seznam těch úprav (kategorie, album, fotka, název a co se stalo: přidáno, upraveno, smazáno, změněno pořadí).
 - **Úložiště**: ukazuje, kolik místa zbývá. Při varování zbývá málo, při plném úložišti se nahrávání zastaví. Tlačítko
   „Zkontrolovat úložiště“ najde zbytky po přerušeném nahrávání a po potvrzení je smaže.
+- **Instagram**: plán mřížky příspěvků (část 8 v NAVOD.md). Příspěvky se neukládají jako změny webu a nezveřejňují se;
+  „Zveřejnit web“ s nimi nesouvisí.
 - Texty stránek (Domů, O mně, Kontakt) se tady nemění; ty upravuje správce webu.
 - Něco nejde? Poznamenej si, co jsi dělala a co se zobrazilo, a napiš správci webu.
 

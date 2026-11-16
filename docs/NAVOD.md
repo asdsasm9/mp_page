@@ -158,6 +158,39 @@ Fotky klientů jsou osobní údaje. Chovej se k nim podle toho.
 - „Smazat fotku“ odstraní fotku z úložiště správy a nikde jinde už její kopie v záloze není, protože se nic nezálohuje. Je to nevratné. Kopie, které máš na vlastních zařízeních nebo které jsi někomu poslala, ale zůstávají. Když klient žádá o úplné odstranění, smaž i je.
 - Do popisků a alt textů nepiš příjmení, adresy ani jiné osobní údaje, které klient nechce mít na webu.
 
+## 8. Instagram: plán mřížky a sdílení z telefonu
+
+Ve správě je v nabídce „Instagram“. Je to jen plánovač: s Instagramem se nijak nepropojuje a nic za tebe nezveřejní. Příspěvky tady **nejsou součástí webu**: „Zveřejnit web“ s nimi nesouvisí a „Nezveřejněné změny“ se kvůli nim neukáže.
+
+**Naplánovat příspěvek**
+
+1. Otevři „Instagram“ a klikni na „Nový příspěvek“.
+2. „Vybrat fotky“: vyber album a v něm 1 až 10 fotek. Víc fotek je karusel. Můžeš přepnout do jiného alba a výběr zůstane.
+3. Fotky v příspěvku seřaď přetažením za úchyt.
+4. Napiš „Popisek“ (nejvíc 2 200 znaků) a „Hashtagy“ (nejvíc 30). Pod polem vidíš počítadlo.
+5. Zvol „Stav“: „Koncept“ (ještě to rozpracovávám) nebo „Naplánováno“. Datum je nepovinné.
+6. Klikni na „Uložit“. Nic se neukládá samo.
+
+**Seřadit mřížku.** Mřížka vypadá jako tvůj profil na Instagramu, nahoře vlevo je nejnovější příspěvek. Čárkované dlaždice s nápisem „Koncept“ nebo „Naplánováno“ ještě nejsou na Instagramu, pevné dlaždice v části „Zveřejněné“ už ano. Naplánované příspěvky přetahuj za úchyt, nebo z klávesnice úchyt zvedni mezerníkem a posuň šipkami. Nový příspěvek se přidá úplně nahoru. Jako další zveřejni ten, který má nápis „Další na řadě“: je to poslední naplánovaná dlaždice, hned vedle zveřejněných.
+
+**Sdílet z telefonu do Instagramu**
+
+1. Na telefonu otevři příspěvek a počkej, až je u tlačítka „Sdílet do Instagramu“ hotovo („Fotky jsou připravené“). Když se fotky nenačetly, klepni na „Připravit fotky“.
+2. Nejdřív klepni na „Zkopírovat popisek“. Instagram text ze sdílení nepřevezme, popisek vložíš sama.
+3. Klepni na „Sdílet do Instagramu“ a v nabídce telefonu vyber Instagram a nový příspěvek. Fotky přijdou ve stejném pořadí jako ve správě.
+4. V Instagramu do pole popisku podrž prst a vlož zkopírovaný text. Zveřejni příspěvek.
+5. Když se tlačítko „Sdílet do Instagramu“ nezobrazí nebo sdílení selže, klepni na „Stáhnout fotky“ a nahraj je v Instagramu ručně z galerie telefonu.
+
+**Označit jako zveřejněné.** Po zveřejnění na Instagramu otevři příspěvek v plánovači, klikni na „Označit jako zveřejněné“ a potvrď datum (předvyplněné je dnešní, jde změnit). Příspěvek přeskočí mezi zveřejněné. Když ses spletla, použij „Vrátit zpět na naplánované“.
+
+**Starší příspěvky.** Tak můžeš do mřížky přidat i příspěvky, které už na Instagramu jsou: vytvoř příspěvek ze stejných fotek, napiš popisek a hned klikni na „Označit jako zveřejněné“ se skutečným datem. Mřížka se tak podobá profilu.
+
+**Pozor.**
+
+- Smazání příspěvku („Smazat příspěvek“) smaže jen plán. Fotky v albech zůstanou. Naopak když smažeš nebo nahradíš fotku v albu, zmizí i z příspěvků. Příspěvek bez fotek je jen „Koncept“ s upozorněním „Příspěvek bez fotek“.
+- Fotky nezveřejněného alba může použít i plánovač. Platí ale to, co v části 7: kdo zná přímý odkaz na obrázek, může ho otevřít.
+- Když se ukáže „Změny se nepodařilo uložit.“, napsaný text zůstal na obrazovce. Zkontroluj internet a ulož znovu.
+
 ## Zvládla jsem sama
 
 Zkoušku dělej na zkušebním albu. Odškrtni, co ti šlo bez cizí pomoci. U kroku, kde ses zasekla, si napiš poznámku.
@@ -172,5 +205,7 @@ Zkoušku dělej na zkušebním albu. Odškrtni, co ti šlo bez cizí pomoci. U k
 - [ ] 8. Našla jsem album na veřejném webu a zkontrolovala ho.
 - [ ] 9. Zkušební album jsem skryla přes „Skrýt album“ a po dalším „Zveřejnit web“ zmizelo z webu.
 - [ ] 10. Poradila jsem si s chybou nebo upozorněním podle části 6 a vím, komu napsat.
+- [ ] 11. Naplánovala jsem příspěvek na Instagram, seřadila mřížku a ze svého telefonu ho nasdílela do Instagramu s vloženým popiskem.
+- [ ] 12. Označila jsem příspěvek jako zveřejněný.
 
 Krátký přehled správy najdeš také v [ADMIN.md](ADMIN.md#using-it-short-guide-for-the-photographer-czech).

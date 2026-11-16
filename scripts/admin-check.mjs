@@ -756,7 +756,8 @@ async function runProfile(browser, profile) {
           counts: [...document.querySelectorAll('.ig-counts li')].map((li) => li.textContent.replace(/\s+/g, ' ').trim()),
           bio: getComputedStyle(document.querySelector('.ig-bio')).whiteSpace,
           linkIsAnchor: Boolean(document.querySelector('.ig-profile-link')?.closest('a')) || Boolean(document.querySelector('.ig-profile a')),
-          vishidden: document.querySelectorAll('.ig-actions[aria-hidden="true"], .ig-tabs[aria-hidden="true"]').length,
+          vishidden: document.querySelectorAll('.ig-actions .ig-fake-button[aria-hidden="true"], .ig-tabs[aria-hidden="true"]').length,
+          editButtons: [...document.querySelectorAll('.ig-actions button')].map((b) => b.textContent.trim()),
           checked: document.querySelector('input[name="ig-filter"]:checked')?.value,
           pressed: toggle.getAttribute('aria-pressed'),
         };
@@ -771,9 +772,69 @@ async function runProfile(browser, profile) {
       if (g.counts.length !== 3 || !/^9 příspěvků$/.test(g.counts[0]) || !/^12,3\s?tis\. sledujících$/.test(g.counts[1]) || !/^87 sleduje$/.test(g.counts[2])) throw new Error(`counts ${JSON.stringify(g.counts)}`);
       if (g.bio !== 'pre-line') throw new Error(`bio white-space is ${g.bio}`);
       if (g.linkIsAnchor) throw new Error('the profile link must be plain text, not an anchor');
-      if (g.vishidden !== 2) throw new Error('the decorative buttons and tabs must be aria-hidden');
+      if (g.vishidden !== 3) throw new Error(`the decorative archive and share shapes and the tab row must be aria-hidden (${g.vishidden} of 3)`);
+      if (g.editButtons.join('|') !== 'Upravit profil') throw new Error(`the profile header must have exactly one working button "Upravit profil": ${JSON.stringify(g.editButtons)}`);
       if (g.checked !== 'all' || g.pressed !== 'false') throw new Error(`filter ${g.checked}, toggle pressed ${g.pressed}`);
+      // T-365: from 64rem (1024 px) the frame is one phone-width column (26rem = 416 px) centred in the page with a border, the
+      // controls (filter, "Řadit příspěvky", "Nový příspěvek") share its width and left edge; below that everything is full width.
+      const f = await page.evaluate(() => {
+        const frame = document.querySelector('.ig-frame');
+        const controls = document.querySelector('.ig-controls');
+        const parent = frame.parentElement.getBoundingClientRect();
+        const fr = frame.getBoundingClientRect();
+        const cr = controls.getBoundingClientRect();
+        const newPost = document.querySelector('.ig-controls a.ig-new')?.getBoundingClientRect();
+        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+        const tile = document.querySelector('.ig-tile').getBoundingClientRect();
+        return {
+          frameW: fr.width,
+          frameCentre: fr.left + fr.width / 2,
+          pageCentre: parent.left + parent.width / 2,
+          parentW: parent.width,
+          controlsLeft: cr.left,
+          controlsW: cr.width,
+          frameLeft: fr.left,
+          border: parseFloat(getComputedStyle(frame).borderTopWidth),
+          radius: getComputedStyle(frame).borderTopLeftRadius,
+          newPostRight: newPost ? newPost.right : null,
+          frameRight: fr.right,
+          rem,
+          tileW: tile.width,
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+        };
+      });
+      if (f.overflow > 0) throw new Error(`the Instagram page overflows horizontally by ${f.overflow} px`);
+      if (ctx.profile.width >= 1024) {
+        if (Math.abs(f.frameW - 26 * f.rem) > 1) throw new Error(`frame is ${f.frameW}px wide at ${ctx.profile.width}px, expected 26rem (${26 * f.rem}px)`);
+        if (Math.abs(f.frameCentre - f.pageCentre) > 1.5) throw new Error(`frame is not centred: its centre ${f.frameCentre}, the page centre ${f.pageCentre}`);
+        if (f.border < 1 || f.radius === '0px') throw new Error(`frame has no border or radius: ${JSON.stringify(f)}`);
+        if (Math.abs(f.controlsLeft - f.frameLeft) > 1 || Math.abs(f.controlsW - f.frameW) > 1) throw new Error(`controls are not aligned with the frame: ${JSON.stringify(f)}`);
+        if (f.newPostRight === null || f.newPostRight > f.frameRight + 1) throw new Error('"Nový příspěvek" is not inside the frame width above it');
+        if (f.tileW > 150) throw new Error(`grid tile is ${f.tileW}px wide in the frame, expected about 138`);
+      } else {
+        if (Math.abs(f.frameW - f.parentW) > 1 || f.border !== 0) throw new Error(`below 1024 px the frame must be full width and borderless: ${JSON.stringify(f)}`);
+      }
       await checkpoint(ctx, 'instagram grid', { shot: true });
+
+      // T-364: "Upravit profil" opens the dialog; an invalid link is refused with the Czech message, then the save shows
+      // the new values in the header, and focus is back on the button.
+      await clickBy(ctx, 'button.ig-edit', /^Upravit profil$/);
+      await fieldByLabel(page, /^Uživatelské jméno/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal h2')?.textContent === 'Upravit profil', { timeout: 5000 });
+      await imagesLoaded(page);
+      await checkpoint(ctx, 'instagram profile dialog', { shot: true });
+      await typeInto(ctx, await fieldByLabel(page, /^Odkaz/), 'bez-schematu');
+      await clickBy(ctx, 'button', /^Uložit$/);
+      await waitText(page, /Odkaz musí začínat „http:\/\/“ nebo „https:\/\/“/);
+      await checkpoint(ctx, 'instagram profile dialog error', { shot: ctx.profile.phone });
+      await typeInto(ctx, await fieldByLabel(page, /^Odkaz/), 'https://example.test/mullny');
+      await typeInto(ctx, await fieldByLabel(page, /^Sledující/), '2500');
+      await clickBy(ctx, 'button', /^Uložit$/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal') === null && /2 500 sledujících/.test(document.querySelector('.ig-counts')?.textContent.replace(/\s+/g, ' ') ?? ''), { timeout: 10000 });
+      const back = await page.evaluate(() => document.activeElement?.textContent?.trim());
+      if (back !== 'Upravit profil') throw new Error(`focus after the profile dialog is on "${back}", expected the "Upravit profil" button`);
+      const stored = await world(page, '(w) => w.ports.planner.getProfile().then((p) => p.followers_count)');
+      if (stored !== 2500) throw new Error(`the profile followers are ${stored}, expected 2500`);
 
       // Filter: Zveřejněné shows 4 posted tiles, counts follow, the URL keeps the choice, sorting is disabled with its note.
       await page.evaluate(() => document.querySelector('input[name="ig-filter"][value="posted"]').closest('label').scrollIntoView({ block: 'center' }));

@@ -185,7 +185,22 @@ posts by hand from her phone.
   link as plain text, decorative buttons and tab row that are `aria-hidden`), then the grid with a thin gap
   (`--ig-grid-gap`) and no tile borders. The post count is derived from the posts shown. The profile loads on its own
   (`useIgProfile`): when that fails the defaults and the notice "Profil se nepodařilo načíst. Zobrazuje se výchozí
-  vzhled." appear and the grid never waits. The "Upravit profil" button and dialog come with T-364.
+  vzhled." appear and the grid never waits.
+- **Edit profile dialog (T-364, `screens/ProfileDialog.tsx`).** "Upravit profil" is the one working button of the header
+  (disabled while offline and while the profile failed to load; the archive and share shapes stay decorative). The dialog
+  has Profilová fotka (circle preview, "Vybrat fotku" opens the album-then-photo `PostPhotoPicker` with `max={1}`: native
+  radios, a new pick replaces the old one, optional `title`/`hint`; "Odebrat fotku" clears), Uživatelské jméno, Jméno, Popis
+  (counter n / 150, line breaks allowed), Odkaz (plain text, never a link), Sledující, Sleduje. Explicit "Uložit"; the
+  values are checked with the shared `IgProfileRowSchema` (same limits as the table) and shown as Czech messages next to the
+  field, focus goes to the first invalid field. The save sends the `updated_at` the form was based on: after a conflict the
+  stale notice "Profil byl mezitím změněn jinde. Načtěte ho znovu." offers "Načíst znovu", which loads the row and restarts the
+  form from it (a background refetch never replaces the base). Focus returns to "Upravit profil" on close.
+- **Desktop frame (T-365).** From 64 rem the profile frame (header, tab row, grid) is a column of `--ig-frame-max`
+  (26 rem), centred, with the token border and `--radius-sm`; the filter, "Řadit příspěvky" and "Nový příspěvek" sit above it
+  with the same width and left edge ("Nový příspěvek" moved from the page header into that row). Below 64 rem everything is
+  full width. A grid tile is then about 138 x 184 px, so its `sizes` is `(min-width: 64rem) 276px` (`IG_FRAME_TILE_WIDTH`,
+  tested against the token): 480 at 1x, 720 at 2x, 960 at 3x. Choosing "Zveřejněné" switches the sort mode off. A source
+  test (`no-instagram-host.test.ts`) keeps "instagram.com" out of `apps/admin/src` except i18n help text and out of every href.
 - **Filter and sort mode.** `ProfileFilter` is a native radio group "Zobrazit" (Vše, Zveřejněné, Naplánované, each with
   its count), kept in the URL as `?zobrazit=vse|zverejnene|naplanovane` (unknown = Vše) with a polite live region
   "Zobrazeno n příspěvků" and a text when a filter is empty. The default view is a pure preview: no dashed outline, badge,

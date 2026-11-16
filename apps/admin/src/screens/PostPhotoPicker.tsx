@@ -19,11 +19,16 @@ interface Props {
   selected: readonly string[];
   onConfirm: (photoIds: string[]) => void;
   onClose: () => void;
+  /** Most photos that can be chosen (default IG_PHOTOS_MAX). 1 = single choice (the profile photo): native radios, a new pick replaces the old one. */
+  max?: number;
+  title?: string;
+  hint?: string;
 }
 
 const p = cs.instagram.picker;
 
-export function PostPhotoPicker({ selected, onConfirm, onClose }: Props) {
+export function PostPhotoPicker({ selected, onConfirm, onClose, max = IG_PHOTOS_MAX, title = p.title, hint = p.hint }: Props) {
+  const single = max === 1;
   const imgBase = useImageBase();
   const categories = useCategories();
   const albums = useAlbums();
@@ -48,10 +53,11 @@ export function PostPhotoPicker({ selected, onConfirm, onClose }: Props) {
   const albumCount = groups.reduce((sum, group) => sum + group.albums.length, 0);
   const photos = usePhotos(currentAlbum);
   const rows = photos.data ?? [];
-  const full = chosen.length >= IG_PHOTOS_MAX;
+  const full = !single && chosen.length >= max;
 
   function toggle(id: string) {
-    setChosen((now) => (now.includes(id) ? now.filter((x) => x !== id) : now.length >= IG_PHOTOS_MAX ? now : [...now, id]));
+    if (single) setChosen([id]);
+    else setChosen((now) => (now.includes(id) ? now.filter((x) => x !== id) : now.length >= max ? now : [...now, id]));
   }
 
   let grid;
@@ -75,7 +81,8 @@ export function PostPhotoPicker({ selected, onConfirm, onClose }: Props) {
           return (
             <label key={photo.id} className="cover-tile">
               <input
-                type="checkbox"
+                type={single ? 'radio' : 'checkbox'}
+                name={single ? 'post-photo-single' : undefined}
                 className="visually-hidden"
                 value={photo.id}
                 checked={order > 0}
@@ -87,7 +94,13 @@ export function PostPhotoPicker({ selected, onConfirm, onClose }: Props) {
               ) : (
                 <span>{name}</span>
               )}
-              {order > 0 ? (
+              {order > 0 && single ? (
+                <span className="cover-tile-mark" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" width="16" height="16" focusable="false">
+                    <path d="M2.5 8.5 L6.5 12 L13.5 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              ) : order > 0 ? (
                 <>
                   <span className="cover-tile-mark ig-pick-order" aria-hidden="true">
                     {order}
@@ -103,9 +116,9 @@ export function PostPhotoPicker({ selected, onConfirm, onClose }: Props) {
   }
 
   return (
-    <Modal title={p.title} onClose={onClose}>
+    <Modal title={title} onClose={onClose}>
       <div className="cover-picker">
-        <p>{p.hint}</p>
+        <p>{hint}</p>
         {albumCount === 0 ? (
           <p className="page-note">{categories.isSuccess && albums.isSuccess ? p.noAlbums : cs.data.loading}</p>
         ) : (
@@ -130,10 +143,12 @@ export function PostPhotoPicker({ selected, onConfirm, onClose }: Props) {
             {grid}
           </fieldset>
         )}
-        <p className="page-note" role="status" aria-live="polite">
-          {fill(cs.instagram.editor.selectedCount, { n: chosen.length, max: IG_PHOTOS_MAX })}
-          {full ? ` ${fill(p.limitReached, { max: IG_PHOTOS_MAX })}` : ''}
-        </p>
+        {single ? null : (
+          <p className="page-note" role="status" aria-live="polite">
+            {fill(cs.instagram.editor.selectedCount, { n: chosen.length, max })}
+            {full ? ` ${fill(p.limitReached, { max })}` : ''}
+          </p>
+        )}
         <DialogActions busy={false} onClose={onClose}>
           <DialogButton kind="primary" busy={false} disabled={chosen.length === 0} onClick={() => onConfirm(chosen)}>
             {p.confirm}

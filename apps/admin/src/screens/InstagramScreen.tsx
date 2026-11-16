@@ -43,6 +43,11 @@ export function InstagramScreen() {
   const sortDisabled = filter === 'posted';
   const sorting = sortOn && !sortDisabled;
   const emptyText = EMPTY_TEXT[filter];
+  // Choosing "Zveřejněné" switches the sort mode off for good: coming back to "Vše" or "Naplánované" starts as a pure preview.
+  const changeFilter = (next: IgFilter) => {
+    if (next === 'posted') setSortOn(false);
+    setFilter(next);
+  };
 
   let body;
   if (posts.isError) {
@@ -69,7 +74,7 @@ export function InstagramScreen() {
         {broken ? <Notice variant="info">{cs.instagram.brokenNotice}</Notice> : null}
         {profile.isError ? <Notice variant="info">{cs.instagram.profile.loadFailed}</Notice> : null}
         <div className="ig-controls">
-          <ProfileFilter value={filter} onChange={setFilter} counts={counts} />
+          <ProfileFilter value={filter} onChange={changeFilter} counts={counts} />
           <button
             type="button"
             className="button ig-sort-toggle"
@@ -80,6 +85,9 @@ export function InstagramScreen() {
           >
             {cs.instagram.sort.toggle}
           </button>
+          <Link to="/instagram/novy" className="button button-primary ig-new">
+            {cs.instagram.newPost}
+          </Link>
           {sortDisabled ? (
             <p id={noteId} className="field-hint ig-sort-note">
               {cs.instagram.sort.postedNote}
@@ -106,11 +114,6 @@ export function InstagramScreen() {
     <div className="page">
       <div className="page-header">
         <h1>{cs.routes.instagram.title}</h1>
-        {rows.length > 0 ? (
-          <Link to="/instagram/novy" className="button button-primary">
-            {cs.instagram.newPost}
-          </Link>
-        ) : null}
       </div>
       {body}
     </div>

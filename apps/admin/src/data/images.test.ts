@@ -1,6 +1,7 @@
 /** Which WebP tier each place of the Instagram planner requests (T-351), and the srcset helpers behind it. */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { COVER_ASPECT, PHOTO_IMG, coverWidth, fallbackTo480OnError, photoImgProps, photoWebpSrcSet, photoWebpUrl } from './images';
+import { COVER_ASPECT, IG_FRAME_TILE_HEIGHT, IG_FRAME_TILE_WIDTH, PHOTO_IMG,coverWidth, fallbackTo480OnError, photoImgProps, photoWebpSrcSet, photoWebpUrl } from './images';
 
 const BASE = 'https://img.example.test';
 const ID = '123e4567-e89b-42d3-a456-426614174000';
@@ -37,14 +38,31 @@ describe('photo image helpers', () => {
     }
   });
 
-  it('grid tile keeps 480 as src and offers 720 and 960 for a 3:4 tile that is 360 px wide at 1280', () => {
+  it('grid tile keeps 480 as src and offers 720 and 960 for a 3:4 tile that is about 138 px wide in the 26 rem frame at 1280', () => {
     const props = photoImgProps(BASE, ID, 'grid')!;
     expect(props.src).toBe(photoWebpUrl(BASE, ID, 480));
     expect(props.srcSet).toBe(photoWebpSrcSet(BASE, ID, [480, 720, 960]));
-    expect(chosenTier('grid', 1, true)).toBe(720);
-    expect(chosenTier('grid', 2, true)).toBe(960);
+    expect(props.sizes).toMatch(/^\(min-width: 64rem\) 276px,/);
+    expect(chosenTier('grid', 1, true)).toBe(480);
+    expect(chosenTier('grid', 2, true)).toBe(720);
+    expect(chosenTier('grid', 3, true)).toBe(960);
     expect(chosenTier('grid', 2, false)).toBe(480);
     expect(chosenTier('grid', 3, false)).toBe(720);
+  });
+
+  it('the wide grid size covers the real tile of the frame token (--ig-frame-max, minus the border, in thirds, 3:4)', () => {
+    const tokens = readFileSync(`${import.meta.dirname}/../styles/tokens.css`, 'utf8');
+    const rem = Number(/--ig-frame-max:\s*([\d.]+)rem/.exec(tokens)![1]);
+    const gap = Number(/--ig-grid-gap:\s*([\d.]+)rem/.exec(tokens)![1]) * 16;
+    const tileWidth = (rem * 16 - 2 - 2 * gap) / 3;
+    expect(tileWidth).toBeLessThanOrEqual(IG_FRAME_TILE_WIDTH);
+    expect(tileWidth).toBeGreaterThan(IG_FRAME_TILE_WIDTH - 2);
+    expect(IG_FRAME_TILE_HEIGHT).toBe(Math.ceil((IG_FRAME_TILE_WIDTH * 4) / 3));
+    const need = coverWidth(tileWidth, (tileWidth * 4) / 3);
+    const wide = Number(/^\(min-width: 64rem\) (\d+)px/.exec(PHOTO_IMG.grid.sizes)![1]);
+    expect(wide).toBeGreaterThanOrEqual(need);
+    // 2x screens still get a file that is at least as wide as the cover-cropped tile in device pixels.
+    expect(chosenTier('grid', 2, true)).toBeGreaterThanOrEqual(need * 2);
   });
 
   it('picks 720 on a 1x or 2x strip and 960 at 3x', () => {

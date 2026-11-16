@@ -2425,10 +2425,45 @@
     margin: 0;
   }
 
+  .ig-new {
+    margin-inline-start: auto;
+  }
+
   .ig-frame {
     display: grid;
     gap: var(--space-4);
     align-content: start;
+  }
+
+  /*
+   * Desktop frame (T-365): from 64rem the profile (header, tab row, grid) is one phone-width column in the middle of the
+   * page, drawn with a token border and radius, and the controls above it share its width and left edge. Below 64rem
+   * both are full width, as before.
+   */
+  @media (min-width: 64rem) {
+    .ig-frame,
+    .ig-controls {
+      inline-size: 100%;
+      max-inline-size: var(--ig-frame-max);
+      margin-inline: auto;
+      box-sizing: border-box;
+    }
+
+    .ig-frame {
+      gap: 0;
+      overflow: clip;
+      background: var(--color-surface-raised);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--radius-sm);
+    }
+
+    .ig-frame .ig-profile {
+      padding: var(--space-4) var(--space-4) 0;
+    }
+
+    .ig-frame .ig-tabs {
+      margin-inline: calc(-1 * var(--space-4));
+    }
   }
 
   .ig-filter-empty {
@@ -2536,7 +2571,7 @@
     flex: 1;
     align-items: center;
     justify-content: center;
-    min-block-size: var(--target-compact);
+    min-block-size: var(--target-min);
     padding-inline: var(--space-3);
     font-weight: var(--weight-ui-strong);
     background: var(--color-surface);
@@ -2545,6 +2580,57 @@
 
   .ig-fake-icon {
     flex: none;
+  }
+
+  /* The one working button of the row: the same size as the decorative ones, with the stroke of every secondary button. */
+  .ig-edit {
+    flex: 1;
+    font-weight: var(--weight-ui-strong);
+  }
+
+  /* "Upravit profil" dialog (T-364): circle preview with its buttons, the two counts side by side. */
+  .ig-avatar-field {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+
+  .ig-avatar-field legend {
+    grid-column: 1 / -1;
+    padding: 0;
+    font-weight: var(--weight-ui-strong);
+  }
+
+  .ig-avatar-field .field-hint {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .ig-avatar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .ig-count-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+
+  /* An input has a minimum width of its own; without this the second count pokes out of the dialog. */
+  .ig-count-fields .field {
+    grid-template-columns: minmax(0, 1fr);
+    min-inline-size: 0;
+  }
+
+  .ig-count-fields input {
+    min-inline-size: 0;
   }
 
   .ig-tabs {

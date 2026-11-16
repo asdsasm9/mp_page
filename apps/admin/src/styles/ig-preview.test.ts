@@ -21,6 +21,17 @@ describe('Instagram preview styles', () => {
     expect(igRules).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|\d\s*px\b/);
   });
 
+  it('narrows the profile frame and the controls above it to the token width from 64rem, with token border and radius, full width below', () => {
+    const wide = igRules.match(/@media \(min-width: 64rem\) \{([\s\S]*?)\n  \}\n/)?.[1] ?? '';
+    expect(wide).not.toBe('');
+    expect(wide).toMatch(/\.ig-frame,\s*\.ig-controls \{[^}]*max-inline-size: var\(--ig-frame-max\)[^}]*margin-inline: auto/);
+    expect(wide).toMatch(/\.ig-frame \{[^}]*border: var\(--border-width\) solid var\(--color-border\)[^}]*border-radius: var\(--radius-sm\)/);
+    // Nothing narrows the frame outside that media query, and the width is a rem token, not a raw value.
+    expect(igRules.replace(wide, '')).not.toMatch(/\.ig-frame[^{]*\{[^}]*(max-inline-size|inline-size)/);
+    expect(read('./tokens.css')).toMatch(/--ig-frame-max:\s*26rem/);
+    expect(wide).not.toMatch(/\d\s*px\b/);
+  });
+
   it('draws the carousel mark as a plain icon: no background, border or radius', () => {
     const rule = igRules.match(/\.ig-carousel \{[^}]*\}/)?.[0] ?? '';
     expect(rule).not.toBe('');

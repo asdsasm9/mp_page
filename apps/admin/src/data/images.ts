@@ -24,7 +24,11 @@ export function coverWidth(boxWidth: number, boxHeight: number): number {
   return Math.ceil(Math.max(boxWidth, boxHeight * COVER_ASPECT));
 }
 
-type Place = { tiers: readonly WebpTier[]; sizes: string };
+/** A grid tile in the desktop profile frame: 26 rem (416 px) less the 1 px frame border, in thirds, 3:4 (rounded up). */
+export const IG_FRAME_TILE_WIDTH = 138;
+export const IG_FRAME_TILE_HEIGHT = 184;
+
+type Place ={ tiers: readonly WebpTier[]; sizes: string };
 
 /**
  * Where each place shows photos: the tiers offered to the browser (the first one is the `src` fallback) and the `sizes`
@@ -38,10 +42,13 @@ export const PHOTO_IMG = {
   picker: { tiers: [720, 960], sizes: `(min-width: 40rem) ${coverWidth(165, 165) * 2}px, ${coverWidth(150, 150) * 2}px` },
   /** Profile avatar (WP-15): a round 5 rem (80 px) centre crop; the 480 file is the fallback and the sharp 2x/3x source. */
   avatar: { tiers: [480, 720], sizes: `${coverWidth(88, 88) * 3}px` },
-  /** Instagram grid tile: 3:4, one third of the page (about 360 x 480 px at 1280, about 110 x 147 px on a phone). */
+  /**
+   * Instagram grid tile: 3:4, one third of the profile frame. From 64rem the frame is --ig-frame-max (26rem = 416 px),
+   * so a tile is about 138 x 184 px (T-365); below that it is one third of the page (about 110 x 147 px on a phone).
+   */
   grid: {
     tiers: [480, 720, 960],
-    sizes: `(min-width: 64rem) ${coverWidth(360, 480)}px, (min-width: 40rem) ${coverWidth(230, 307)}px, ${coverWidth(110, 147)}px`,
+    sizes: `(min-width: 64rem) ${coverWidth(IG_FRAME_TILE_WIDTH, IG_FRAME_TILE_HEIGHT)}px,(min-width: 40rem) ${coverWidth(230, 307)}px, ${coverWidth(110, 147)}px`,
   },
 } as const satisfies Record<string, Place>;
 

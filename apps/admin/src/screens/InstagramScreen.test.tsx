@@ -66,7 +66,7 @@ describe('Instagram grid screen', () => {
     const img = tiles(list)[0]!.querySelector('img')!;
     expect(img.getAttribute('src')).toMatch(/^https:\/\/img\.example\.test\/photos\/[0-9a-f-]+\/480\.webp$/);
     expect(img.getAttribute('srcset')).toMatch(/\/480\.webp 480w, .*\/720\.webp 720w, .*\/960\.webp 960w$/);
-    expect(img.getAttribute('sizes')).toMatch(/^\(min-width: 64rem\) 720px,/);
+    expect(img.getAttribute('sizes')).toMatch(/^\(min-width: 64rem\) 276px,/);
     expect(img.getAttribute('alt')).toBe('');
   });
 
@@ -283,7 +283,7 @@ describe('Instagram profile header', () => {
     const link = frame.querySelector<HTMLElement>('.ig-profile-link')!;
     expect(link.textContent).toBe('https://example.test/odkaz');
     expect(link.closest('a')).toBeNull();
-    expect(frame.querySelector('.ig-profile a, .ig-profile button, .ig-profile [href]')).toBeNull();
+    expect(frame.querySelector('.ig-profile a, .ig-profile [href]')).toBeNull();
     const img = frame.querySelector<HTMLImageElement>('.ig-avatar')!;
     expect(img.getAttribute('alt')).toBe('');
     expect(img.getAttribute('src')).toMatch(/^https:\/\/img\.example\.test\/photos\/[0-9a-f-]+\/480\.webp$/);
@@ -291,13 +291,14 @@ describe('Instagram profile header', () => {
     expect(frame.querySelector('.ig-avatar-initials')).toBeNull();
   });
 
-  it('keeps the decorative buttons and tab row out of the accessibility tree and has no working button yet', async () => {
+  it('keeps the decorative archive and share shapes and the tab row out of the accessibility tree; "Upravit profil" is the only button', async () => {
     mount(seeded());
     await grid();
     const frame = screen.getByRole('region', { name: cs.instagram.profile.label });
-    for (const el of frame.querySelectorAll('.ig-actions, .ig-tabs')) expect(el.getAttribute('aria-hidden')).toBe('true');
+    for (const el of frame.querySelectorAll('.ig-fake-button, .ig-tabs')) expect(el.getAttribute('aria-hidden')).toBe('true');
     expect(within(frame).queryByRole('button', { name: cs.instagram.profile.archive })).toBeNull();
-    expect(frame.querySelector('.ig-profile button, .ig-profile a')).toBeNull();
+    expect(within(frame).getAllByRole('button').map((b) => b.textContent)).toEqual([cs.instagram.profile.edit]);
+    expect(frame.querySelector('.ig-profile a')).toBeNull();
   });
 
   it('falls back to the defaults with a notice when the profile cannot load, and the grid does not wait for it', async () => {
@@ -391,6 +392,35 @@ describe('Instagram filter', () => {
     await user.click(radio('Naplánované'));
     expect((sortToggle() as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByText(cs.instagram.sort.postedNote)).toBeNull();
+  });
+
+  it('resets the sort mode when the filter becomes "Zveřejněné": back on "Naplánované" or "Vše" it starts as a pure preview', async () => {
+    mount(seeded());
+    const user = userEvent.setup();
+    const list = await startSorting(user);
+    expect(sortToggle().getAttribute('aria-pressed')).toBe('true');
+    await user.click(radio('Zveřejněné'));
+    await user.click(radio('Naplánované'));
+    expect(sortToggle().getAttribute('aria-pressed')).toBe('false');
+    expect(within(list).queryAllByRole('button')).toHaveLength(0);
+    expect(screen.queryByText(cs.instagram.nextUp)).toBeNull();
+    // Switching between the two sortable filters keeps a mode the person turned on.
+    await user.click(sortToggle());
+    await user.click(radio('Vše'));
+    expect(sortToggle().getAttribute('aria-pressed')).toBe('true');
+    await user.click(radio('Zveřejněné'));
+    await user.click(radio('Vše'));
+    expect(sortToggle().getAttribute('aria-pressed')).toBe('false');
+    expect(within(list).queryAllByRole('button')).toHaveLength(0);
+  });
+
+  it('puts "Nový příspěvek" with the filter above the frame, not in the page header', async () => {
+    mount(seeded());
+    await grid();
+    const link = screen.getByRole('link', { name: cs.instagram.newPost });
+    expect(link.closest('.ig-controls')).toBeTruthy();
+    expect(link.closest('.page-header')).toBeNull();
+    expect(link.closest('.ig-frame')).toBeNull();
   });
 
   it('shows a text when nothing is posted or nothing is planned', async () => {

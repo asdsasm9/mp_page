@@ -17,6 +17,8 @@ export interface FieldProps {
   onElement?: (element: HTMLInputElement | HTMLTextAreaElement | null) => void;
   autofocus?: boolean;
   autoCapitalize?: string;
+  /** Keyboard hint on phones (numbers, a link). */
+  inputMode?: 'numeric' | 'url';
   type?: 'text' | 'date';
   /** Size the control to its content instead of the full column (a date). */
   compact?: boolean;
@@ -39,6 +41,7 @@ export function Field({
   onElement,
   autofocus,
   autoCapitalize,
+  inputMode,
   type = 'text',
   compact,
   onBlur,
@@ -82,6 +85,7 @@ export function Field({
           ref={setElement}
           type={type}
           autoCapitalize={autoCapitalize}
+          inputMode={inputMode}
           spellCheck={false}
           onKeyDown={onKeyDown}
           onChange={(event) => onChange(event.target.value)}

@@ -315,6 +315,10 @@ async function runProfile(browser, profile) {
     if (r.status() >= 400) messages.push({ type: 'error', text: `HTTP ${r.status()} ${r.url()}` });
   });
   await page.evaluateOnNewDocument(() => {
+    // T-346: this fake build has no image origin in its CSP (connect-src 'none'), so the share step must not auto-fetch
+    // the JPEGs here. File sharing is reported as unavailable (the desktop case); the fetch and blob download under the
+    // real CSP are covered by admin-prod-check, the share paths by SharePanel.test.tsx.
+    Navigator.prototype.canShare = () => false;
     window.__ls = [];
     window.__lcp = 0;
     try {
@@ -742,6 +746,9 @@ async function runProfile(browser, profile) {
       await waitText(page, /\d+ \/ 30 hashtagů/);
       await page.waitForFunction(() => document.querySelectorAll('.post-strip-item').length === 3, { timeout: 10000 });
       await sleep(300);
+      // T-346: the share panel of a saved post with photos (copy and download everywhere; the share button only where files can be shared).
+      await waitText(page, /Zkopírovat popisek/);
+      await waitText(page, /Stáhnout fotky/);
       await checkpoint(ctx, 'instagram editor', { shot: true });
 
       // The mark-posted dialog: date field with today's date and the hint for old posts.

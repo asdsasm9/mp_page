@@ -2438,14 +2438,22 @@
   }
 
   .post-photos,
-  .post-posted {
+  .post-posted,
+  .post-share {
     display: grid;
     gap: var(--space-3);
   }
 
   .post-photos > *,
-  .post-posted > * {
+  .post-posted > *,
+  .post-share > * {
     margin: 0;
+  }
+
+  .post-share-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
   }
 
   .post-status {

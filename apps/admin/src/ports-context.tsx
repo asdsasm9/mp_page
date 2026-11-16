@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { Ports } from './ports';
+import { realShareDeps, type ShareDeps } from './share/shareDeps';
 
 const PortsContext = createContext<Ports | null>(null);
 
@@ -22,6 +23,17 @@ export function SiteUrlProvider({ url, children }: { url: string; children: Reac
 
 export function useSiteUrl(): string {
   return useContext(SiteUrlContext);
+}
+
+const ShareDepsContext = createContext<ShareDeps>(realShareDeps);
+
+/** Browser calls for sharing a post by hand (T-346); tests inject fakes, the app uses the real ones. */
+export function ShareDepsProvider({ deps, children }: { deps: ShareDeps; children: ReactNode }) {
+  return <ShareDepsContext.Provider value={deps}>{children}</ShareDepsContext.Provider>;
+}
+
+export function useShareDeps(): ShareDeps {
+  return useContext(ShareDepsContext);
 }
 
 const ImageBaseContext = createContext('');

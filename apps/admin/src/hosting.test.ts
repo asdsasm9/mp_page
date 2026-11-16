@@ -51,6 +51,8 @@ describe('hosting files', () => {
         'https://api.example.test',
         'https://www.example.test',
         'https://bucket.r2.example.test',
+        // T-346: the image origin, so the share step can fetch the 1600 JPEGs (no new host).
+        'https://img.example.test',
       ]);
       expect(csp.get('img-src')).toEqual(["'self'", 'blob:', 'data:', 'https://img.example.test']);
       expect(csp.get('default-src')).toEqual(["'none'"]);

@@ -24,6 +24,7 @@ import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/Page';
 import { PageLoading } from '../components/PageLoading';
 import { PostPhotoStrip } from '../components/PostPhotoStrip';
+import { SharePanel } from '../components/SharePanel';
 import { StaleNotice } from '../components/StaleNotice';
 import { useToast } from '../components/Toast';
 import { expectUpdatedAt, isStale } from '../data/concurrency';
@@ -297,6 +298,10 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
           </button>
         </div>
       </form>
+
+      {post === null ? null : (
+        <SharePanel key={post.photos.map((p) => `${p.sort}:${p.photo_id}`).join(',')} post={post} dirty={dirty} />
+      )}
 
       {post === null ? null : (
         <section className="post-posted" aria-labelledby="post-posted-heading">

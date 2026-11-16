@@ -1,9 +1,10 @@
 /**
- * One tile of the Instagram planning grid (WP-14): the first photo of the post as a WebP (srcset of 480, 720 and 960 px,
- * URLs from the shared key helper), cropped from the centre to 3:4. Planned and draft posts have a dashed outline and a text badge (colour
- * and line style are never the only signal); posted posts are solid. A carousel carries an icon and the photo count;
- * the link's accessible name is built from the visible text plus the hidden post name. Posts without photos show an
- * empty tile with a notice instead of an image. Open posts can be dragged by the 44 px handle; posted ones cannot.
+ * One tile of the Instagram planning grid (WP-14, WP-15): the first photo of the post as a WebP (srcset of 480, 720 and
+ * 960 px, URLs from the shared key helper), cropped from the centre to 3:4. By default a tile is a pure preview: no
+ * outline, no badge, no handle. Only while "Řadit příspěvky" is on, open posts show a text chip ("Koncept" or
+ * "Naplánováno", "Další na řadě") and can be dragged by the 44 px handle. A carousel carries a plain icon (the photo count
+ * stays in the accessible name); the link's accessible name is built from the visible text plus the hidden post name.
+ * Posts without photos show an empty tile with a notice instead of an image.
  */
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -25,6 +26,8 @@ export interface PostTileProps {
   imgBase: string;
   /** The next post to publish ("Další na řadě"). */
   isNext: boolean;
+  /** "Řadit příspěvky" is on: open tiles show the status chip and "Další na řadě" (and, sortable, the handle). */
+  sorting: boolean;
 }
 
 function reducedMotion(): boolean {
@@ -48,7 +51,7 @@ function firstPhotoId(post: IgPost): string | null {
   return best ? best.photo_id : null;
 }
 
-function TileLink({ post, position, imgBase, isNext }: PostTileProps) {
+function TileLink({ post, position, imgBase, isNext, sorting }: PostTileProps) {
   const status = effectiveStatus(post);
   const photoId = firstPhotoId(post);
   const img = photoId ? photoImgProps(imgBase, photoId, 'grid') : null;
@@ -76,30 +79,29 @@ function TileLink({ post, position, imgBase, isNext }: PostTileProps) {
       <span className="visually-hidden">{name}</span>
       {count > 1 ? (
         <span className="ig-carousel">
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-            <rect x="5" y="2" width="9" height="9" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M3 5v8h8" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+            <rect x="8" y="3" width="13" height="13" rx="2" fill="currentColor" />
+            <path d="M5 8v10a2 2 0 0 0 2 2h10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <span aria-hidden="true">{count}</span>
           <span className="visually-hidden">{fill(cs.instagram.carousel, { photos: formatCount(count, cs.units.photo) })}</span>
         </span>
       ) : null}
-      <span className="ig-badges">
-        {status === 'posted' ? (
-          <span className="visually-hidden">{fill(cs.instagram.postedOn, { date: formatPragueDateTime(post.posted_at ?? '').replace(/\s\d{2}:\d{2}$/, '') })}</span>
-        ) : (
-          <span className="ig-badge">{status === 'planned' ? cs.instagram.statusPlanned : cs.instagram.statusDraft}</span>
-        )}
-        {isNext ? <span className="ig-badge ig-badge-next">{cs.instagram.nextUp}</span> : null}
-      </span>
+      {status === 'posted' ? (
+        <span className="visually-hidden">{fill(cs.instagram.postedOn, { date: formatPragueDateTime(post.posted_at ?? '').replace(/\s\d{2}:\d{2}$/, '') })}</span>
+      ) : sorting ? (
+        <span className="ig-chips">
+          <span className="ig-chip">{status === 'planned' ? cs.instagram.statusPlanned : cs.instagram.statusDraft}</span>
+          {isNext ? <span className="ig-chip ig-chip-next">{cs.instagram.nextUp}</span> : null}
+        </span>
+      ) : null}
     </Link>
   );
 }
 
-/** A posted tile: fixed place at the end of the grid, no handle. */
+/** A tile without handle: a posted one (fixed place at the end of the grid) or any tile while "Řadit" is off. */
 export function PostTile(props: PostTileProps) {
   return (
-    <li className="ig-tile" data-ig-id={props.post.id} data-status="posted">
+    <li className="ig-tile" data-ig-id={props.post.id} data-status={effectiveStatus(props.post)}>
       <TileLink {...props} />
     </li>
   );

@@ -31,7 +31,7 @@ facts and human steps: [VERIFY.md](VERIFY.md). Page texts (Home, About, Contact)
 | `/alba/:id/foto/:photoId` | Photo detail (alt text, caption) |
 | `/zverejnit` | Publish the site |
 | `/ulozeni` | Storage and reconcile |
-| `/instagram` | Instagram planning grid (WP-14): three-column grid of planned, draft and posted posts, drag to reorder; a tile opens the editor |
+| `/instagram` | Instagram planning grid (WP-14): profile preview (WP-15): profile header, filter Vše / Zveřejněné / Naplánované, three-column grid; "Řadit příspěvky" turns on drag to reorder; a tile opens the editor |
 | `/instagram/novy` | New Instagram post (WP-14, T-345): pick 1 to 10 photos (album chosen in a native "Album" select grouped by category, selection kept across albums, order numbers; strip and picker thumbnails use the 720/960 px WebP by `srcset`, the grid tile 480/720/960, see `data/images.ts` `PHOTO_IMG`), caption n / 2200 and hashtags n / 30 with live counters, optional planned date, status draft or planned, explicit "Uložit" |
 | `/instagram/:id` | Edit a post: same form (T-349: no section heading above the photos; two columns from 64 rem, photos on the left and caption, hashtags, status as one segmented radio control and compact date on the right, one column below). Status (T-353) is one control, Koncept, Naplánováno, Zveřejněno: Zveřejněno asks for the date in a dialog (default today, no future dates; also for old posts already on Instagram) and needs a saved post without unsaved changes and with photos (a hint says why it is disabled); Koncept or Naplánováno on a posted post asks a short confirm and unmarks it (see the planner rules). A post without photos is a draft with a notice; planning or marking it is refused. Actions (T-352) are an icon row in a sticky bar under the app header (44 px targets, the label is visible from 48 rem and always the accessible name, delete included, with confirmation); the status text, notices and the copy fallback text area stay in the body. For a saved post with photos the bar holds (T-346): "Sdílet do Instagramu" only where the browser can share image files (the 1600 JPEGs are fetched when the page opens, as `foto-1.jpg` ..., so the tap shares at once; "Připravit fotky" retries a failed fetch), "Zkopírovat popisek" (caption, blank line, hashtags; a read-only selected text area when the clipboard refuses) and "Stáhnout fotky" (blob download, also on desktop). The share fetch needs the image origin in `connect-src` and R2 CORS that allows GET/HEAD for the admin origin (already the case, no new rule; docs/DEPLOY-API.md section 6.1); the browser calls sit behind the `ShareDeps` seam (`share/shareDeps.ts`, `ShareDepsProvider`). Saving text and photos is two calls (post fields, then the photo set); a failed second call keeps the draft on screen for a retry. After a "changed elsewhere" conflict, "Načíst znovu" drops the draft and shows the fresh post |
 | `/nahravani` | Upload page (the queue also shows as a panel; no header link since T-246, phones keep the bottom-nav entry) |
@@ -176,9 +176,23 @@ posts by hand from her phone.
   Koncept or Naplánováno on a posted post (after a short confirm) clears `posted_at`, sets `status = 'planned'` and
   `sort = max(planned sort) + 10`; for Koncept the editor then saves `status = 'draft'` in a second call.
 - **"Další na řadě".** The next post to publish is the last tile of the planned block, the one next to the posted
-  posts, because the profile shows the newest post top left and the grid is filled from the top. The grid marks that tile
-  "Další na řadě". Dashed outline plus a text badge ("Koncept", "Naplánováno") separate unpublished tiles from posted ones;
+  posts, because the profile shows the newest post top left and the grid is filled from the top. While "Řadit příspěvky"
+  is on, the grid marks that tile "Další na řadě" and every open tile carries a text chip ("Koncept", "Naplánováno");
   colour is never the only signal.
+- **Profile preview (WP-15, T-361 to T-363).** The page is a preview of the Instagram profile (region "Náhled profilu"):
+  `ProfileHeader` (round centre-cropped avatar from the 480/720 WebP tiers or initials, username as h2, counts as a list
+  with the words příspěvků, sledujících, sleduje through `formatProfileCount`, name, bio with line breaks as React text,
+  link as plain text, decorative buttons and tab row that are `aria-hidden`), then the grid with a thin gap
+  (`--ig-grid-gap`) and no tile borders. The post count is derived from the posts shown. The profile loads on its own
+  (`useIgProfile`): when that fails the defaults and the notice "Profil se nepodařilo načíst. Zobrazuje se výchozí
+  vzhled." appear and the grid never waits. The "Upravit profil" button and dialog come with T-364.
+- **Filter and sort mode.** `ProfileFilter` is a native radio group "Zobrazit" (Vše, Zveřejněné, Naplánované, each with
+  its count), kept in the URL as `?zobrazit=vse|zverejnene|naplanovane` (unknown = Vše) with a polite live region
+  "Zobrazeno n příspěvků" and a text when a filter is empty. The default view is a pure preview: no dashed outline, badge,
+  handle or legend, a tile opens the post. The toggle button "Řadit příspěvky" (`aria-pressed`, default off) shows the 44 px
+  handles, the chips and "Další na řadě" and enables drag and keyboard reordering exactly as before; it is disabled under
+  Zveřejněné with the note "Zveřejněné se neřadí, jsou podle data.". A carousel is a plain icon top right, its photo
+  count stays in the accessible name. `scripts/admin-check.mjs` covers the header, the filter and both toggle states.
 - **Not site changes, not published.** `ig_posts` and `ig_post_photos` have no `bump_pending` or `log_change` trigger. Planner writes
   never raise "Nezveřejněné změny", never appear in "Zobrazit změny" and are never part of the published snapshot or the
   publish service. The two tables are admin-only behind RLS (`is_admin()`), with no anon access. Captions can name

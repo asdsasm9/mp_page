@@ -36,6 +36,8 @@ export const PHOTO_IMG = {
   strip: { tiers: [720, 960], sizes: `${coverWidth(72, 96) * 2}px` },
   /** Picker tile: square, two columns in a phone dialog (about 150 px) and three on a wide one (about 165 px). */
   picker: { tiers: [720, 960], sizes: `(min-width: 40rem) ${coverWidth(165, 165) * 2}px, ${coverWidth(150, 150) * 2}px` },
+  /** Profile avatar (WP-15): a round 5 rem (80 px) centre crop; the 480 file is the fallback and the sharp 2x/3x source. */
+  avatar: { tiers: [480, 720], sizes: `${coverWidth(88, 88) * 3}px` },
   /** Instagram grid tile: 3:4, one third of the page (about 360 x 480 px at 1280, about 110 x 147 px on a phone). */
   grid: {
     tiers: [480, 720, 960],

@@ -722,20 +722,98 @@ async function runProfile(browser, profile) {
         const bad = fit.filter((f) => f.over > 0);
         if (fit.length !== 5 || bad.length) throw new Error(`bottom nav: ${fit.length} items, text cut off in ${JSON.stringify(bad)}`);
       }
+      // The typed profile (WP-15): name, bio with a line break, link text, counts and an avatar photo.
+      await world(
+        page,
+        '(w) => w.ports.planner.updateProfile({ username: "mullny.photos", display_name: "Mullny Photos", bio: "Svatební a portrétní fotograf\\nBrno a okolí", link: "https://example.test/mullny", followers_count: 12345, following_count: 87, avatar_photo_id: w.snapshot().photos[0].id })',
+      );
       await clickBy(ctx, 'a', /^Instagram$/);
-      await page.waitForFunction(() => location.pathname === '/instagram' && document.querySelectorAll('.ig-tile').length >= 9, { timeout: 10000 });
+      await page.waitForFunction(() => location.pathname === '/instagram' && document.querySelectorAll('.ig-tile').length >= 9 && document.querySelector('.ig-username'), { timeout: 10000 });
       await sleep(300);
+      // T-361/T-362/T-363: the default view is a pure preview (no handle, chip, "Další na řadě", outline); profile header with
+      // round avatar, h2 username, counts with words; filter "Vše" chosen; "Řadit příspěvky" off.
       const g = await page.evaluate(() => {
         const tiles = [...document.querySelectorAll('.ig-tile')];
         const cols = new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().left))).size;
         const t0 = tiles[0].getBoundingClientRect();
-        const handle = document.querySelector('.ig-tile .photo-handle').getBoundingClientRect();
-        return { cols, ratio: t0.height / t0.width, handleW: handle.width, handleH: handle.height };
+        const t1 = tiles[1].getBoundingClientRect();
+        const gap = Math.round(t1.left - t0.right);
+        const avatar = document.querySelector('.ig-avatar').getBoundingClientRect();
+        const avatarRadius = getComputedStyle(document.querySelector('.ig-avatar')).borderTopLeftRadius;
+        const toggle = document.querySelector('.ig-sort-toggle');
+        return {
+          cols,
+          gap,
+          ratio: t0.height / t0.width,
+          handles: document.querySelectorAll('.photo-handle').length,
+          chips: document.querySelectorAll('.ig-chip, .ig-badge, .ig-legend').length,
+          outlined: tiles.filter((t) => getComputedStyle(t).outlineStyle !== 'none').length,
+          avatarW: avatar.width,
+          avatarH: avatar.height,
+          avatarRadius,
+          avatarImg: document.querySelector('img.ig-avatar')?.getAttribute('srcset') ?? '',
+          h2: document.querySelector('.ig-frame h2.ig-username')?.textContent,
+          counts: [...document.querySelectorAll('.ig-counts li')].map((li) => li.textContent.replace(/\s+/g, ' ').trim()),
+          bio: getComputedStyle(document.querySelector('.ig-bio')).whiteSpace,
+          linkIsAnchor: Boolean(document.querySelector('.ig-profile-link')?.closest('a')) || Boolean(document.querySelector('.ig-profile a')),
+          vishidden: document.querySelectorAll('.ig-actions[aria-hidden="true"], .ig-tabs[aria-hidden="true"]').length,
+          checked: document.querySelector('input[name="ig-filter"]:checked')?.value,
+          pressed: toggle.getAttribute('aria-pressed'),
+        };
       });
       if (g.cols !== 3) throw new Error(`grid has ${g.cols} columns, expected 3`);
+      if (g.gap < 1 || g.gap > 4) throw new Error(`tile gap ${g.gap}px, expected a thin 1 to 4 px`);
       if (Math.abs(g.ratio - 4 / 3) > 0.02) throw new Error(`tile ratio ${g.ratio.toFixed(3)}, expected 1.333`);
-      if (g.handleW < 43.5 || g.handleH < 43.5) throw new Error(`handle ${g.handleW}x${g.handleH}, expected at least 44`);
+      if (g.handles !== 0 || g.chips !== 0 || g.outlined !== 0) throw new Error(`default view must be a pure preview: ${JSON.stringify(g)}`);
+      if (Math.abs(g.avatarW - g.avatarH) > 0.5 || g.avatarW < 60 || !/^\d+(\.\d+)?px$/.test(g.avatarRadius) || parseFloat(g.avatarRadius) < g.avatarW / 2) throw new Error(`avatar is not a round circle: ${JSON.stringify(g)}`);
+      if (!/\/480\.webp 480w/.test(g.avatarImg)) throw new Error(`avatar has no 480 px srcset: ${g.avatarImg}`);
+      if (g.h2 !== 'mullny.photos') throw new Error(`profile username h2 is "${g.h2}"`);
+      if (g.counts.length !== 3 || !/^9 příspěvků$/.test(g.counts[0]) || !/^12,3\s?tis\. sledujících$/.test(g.counts[1]) || !/^87 sleduje$/.test(g.counts[2])) throw new Error(`counts ${JSON.stringify(g.counts)}`);
+      if (g.bio !== 'pre-line') throw new Error(`bio white-space is ${g.bio}`);
+      if (g.linkIsAnchor) throw new Error('the profile link must be plain text, not an anchor');
+      if (g.vishidden !== 2) throw new Error('the decorative buttons and tabs must be aria-hidden');
+      if (g.checked !== 'all' || g.pressed !== 'false') throw new Error(`filter ${g.checked}, toggle pressed ${g.pressed}`);
       await checkpoint(ctx, 'instagram grid', { shot: true });
+
+      // Filter: Zveřejněné shows 4 posted tiles, counts follow, the URL keeps the choice, sorting is disabled with its note.
+      await page.evaluate(() => document.querySelector('input[name="ig-filter"][value="posted"]').closest('label').scrollIntoView({ block: 'center' }));
+      const filterLabel = async (value) => page.evaluateHandle((v) => document.querySelector(`input[name="ig-filter"][value="${v}"]`).closest('label'), value);
+      await press(ctx, (await filterLabel('posted')).asElement());
+      await page.waitForFunction(() => document.querySelectorAll('.ig-tile').length === 4 && location.search === '?zobrazit=zverejnene', { timeout: 5000 });
+      const posted = await page.evaluate(() => ({
+        counts: document.querySelector('.ig-counts li').textContent.replace(/\s+/g, ' ').trim(),
+        live: [...document.querySelectorAll('[role="status"]')].map((e) => e.textContent).filter((t) => /^Zobrazeno/.test(t)),
+        disabled: document.querySelector('.ig-sort-toggle').disabled,
+        note: Boolean(document.querySelector('.ig-sort-note')),
+        handles: document.querySelectorAll('.photo-handle').length,
+      }));
+      if (posted.counts !== '4 příspěvků' || posted.live[0] !== 'Zobrazeno 4 příspěvků' || !posted.disabled || !posted.note || posted.handles !== 0) throw new Error(`filter Zveřejněné: ${JSON.stringify(posted)}`);
+      await checkpoint(ctx, 'instagram filter posted', { shot: ctx.profile.phone });
+      await press(ctx, (await filterLabel('planned')).asElement());
+      await page.waitForFunction(() => document.querySelectorAll('.ig-tile').length === 5 && location.search === '?zobrazit=naplanovane', { timeout: 5000 });
+      await press(ctx, (await filterLabel('all')).asElement());
+      await page.waitForFunction(() => document.querySelectorAll('.ig-tile').length === 9 && location.search === '', { timeout: 5000 });
+
+      // "Řadit příspěvky" on: 44 px handles, status chips and exactly one "Další na řadě"; off again: all gone.
+      await clickBy(ctx, 'button.ig-sort-toggle', /Řadit příspěvky/);
+      await page.waitForFunction(() => document.querySelectorAll('.photo-handle').length === 5, { timeout: 5000 });
+      const s = await page.evaluate(() => {
+        const handle = document.querySelector('.ig-tile .photo-handle').getBoundingClientRect();
+        return {
+          handleW: handle.width,
+          handleH: handle.height,
+          chips: document.querySelectorAll('.ig-chip').length,
+          next: document.querySelectorAll('.ig-chip-next').length,
+          pressed: document.querySelector('.ig-sort-toggle').getAttribute('aria-pressed'),
+          carouselText: [...document.querySelectorAll('.ig-carousel')].map((c) => c.textContent.trim()).join('|'),
+        };
+      });
+      if (s.handleW < 43.5 || s.handleH < 43.5) throw new Error(`handle ${s.handleW}x${s.handleH}, expected at least 44`);
+      if (s.chips !== 6 || s.next !== 1 || s.pressed !== 'true') throw new Error(`sort mode: ${JSON.stringify(s)}`);
+      if (!s.carouselText.split('|').every((t) => /^Karusel, \d+ fot/.test(t))) throw new Error(`carousel mark text: ${s.carouselText}`);
+      await checkpoint(ctx, 'instagram sorting', { shot: true });
+      await clickBy(ctx, 'button.ig-sort-toggle', /Řadit příspěvky/);
+      await page.waitForFunction(() => document.querySelectorAll('.photo-handle, .ig-chip').length === 0, { timeout: 5000 });
     });
 
     // ---- Instagram post editor (WP-14, T-345): open from the grid, mark-posted dialog, live counters, picker, 44 px targets

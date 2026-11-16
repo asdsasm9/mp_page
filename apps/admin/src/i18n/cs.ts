@@ -622,10 +622,31 @@ export const cs = {
     loadFailed: 'Plán Instagramu se nepodařilo načíst.',
     newPost: 'Nový příspěvek',
     gridLabel: 'Mřížka Instagramu',
-    legendLabel: 'Legenda mřížky',
-    legendDashed: 'Čárkovaně: ještě nezveřejněno',
-    planned: 'Naplánované',
-    posted: 'Zveřejněné',
+    /** Profile preview above the grid (WP-15): the frame, the typed counts and the decorative buttons. */
+    profile: {
+      label: 'Náhled profilu',
+      countsLabel: 'Počty',
+      posts: 'příspěvků',
+      followers: 'sledujících',
+      following: 'sleduje',
+      archive: 'Zobrazit archiv',
+      loadFailed: 'Profil se nepodařilo načíst. Zobrazuje se výchozí vzhled.',
+    },
+    /** Filter above the preview (WP-15): which posts the grid shows. */
+    filter: {
+      legend: 'Zobrazit',
+      all: 'Vše',
+      posted: 'Zveřejněné',
+      planned: 'Naplánované',
+      shown: 'Zobrazeno {n} příspěvků',
+      emptyPosted: 'Žádné zveřejněné příspěvky.',
+      emptyPlanned: 'Nic není naplánováno.',
+    },
+    /** "Řadit příspěvky" toggle: handles, chips and "Další na řadě" show only while it is on. */
+    sort: {
+      toggle: 'Řadit příspěvky',
+      postedNote: 'Zveřejněné se neřadí, jsou podle data.',
+    },
     statusDraft: 'Koncept',
     statusPlanned: 'Naplánováno',
     statusPosted: 'Zveřejněno',

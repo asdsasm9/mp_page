@@ -1,5 +1,5 @@
 /**
- * Instagram planning grid (WP-14): three columns, tiles 3:4 with a centre crop, profile order (open posts by sort,
+ * Instagram planning grid (WP-14, WP-15): three columns, tiles 3:4 with a centre crop, profile order (open posts by sort,
  * then posted by date). Only planned and draft posts are sortable: the SortableContext holds their ids, posted tiles
  * stay behind them. Same sensors as SortableList (mouse 5 px, touch hold 250 ms, keyboard), rectSortingStrategy.
  * A drop is planned by planDragEnd (minimal `{ id, sort }` updates), shown at once and saved through
@@ -34,9 +34,11 @@ interface Props {
   /** Posts in profile order (as listPosts returns them). */
   posts: readonly IgPost[];
   imgBase: string;
+  /** "Řadit příspěvky" is on: handles, status chips and "Další na řadě" show and open tiles can be dragged. */
+  sorting: boolean;
 }
 
-export function PlannerGrid({ posts, imgBase }: Props) {
+export function PlannerGrid({ posts, imgBase, sorting }: Props) {
   const toast = useToast();
   const canMutate = useCanMutate();
   const queryClient = useQueryClient();
@@ -116,9 +118,11 @@ export function PlannerGrid({ posts, imgBase }: Props) {
 
   return (
     <div className="sortable">
-      <p id={hintId} className="field-hint">
-        {cs.reorder.listHint}
-      </p>
+      {sorting ? (
+        <p id={hintId} className="field-hint">
+          {cs.reorder.listHint}
+        </p>
+      ) : null}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -138,19 +142,24 @@ export function PlannerGrid({ posts, imgBase }: Props) {
         accessibility={{ announcements: silent, screenReaderInstructions: { draggable: cs.reorder.instructions } }}
       >
         <SortableContext items={open.map((p) => p.id)} strategy={rectSortingStrategy}>
-          <ul className="ig-grid" aria-label={cs.instagram.gridLabel} aria-describedby={hintId} aria-busy={busy}>
-            {open.map((post) => (
-              <SortablePostTile
-                key={post.id}
-                post={post}
-                position={positionOf(post.id)}
-                imgBase={imgBase}
-                isNext={post.id === nextId}
-                disabled={disabled}
-              />
-            ))}
+          <ul className="ig-grid" aria-label={cs.instagram.gridLabel} aria-describedby={sorting ? hintId : undefined} aria-busy={busy}>
+            {open.map((post) =>
+              sorting ? (
+                <SortablePostTile
+                  key={post.id}
+                  post={post}
+                  position={positionOf(post.id)}
+                  imgBase={imgBase}
+                  isNext={post.id === nextId}
+                  sorting
+                  disabled={disabled}
+                />
+              ) : (
+                <PostTile key={post.id} post={post} position={positionOf(post.id)} imgBase={imgBase} isNext={false} sorting={false} />
+              ),
+            )}
             {posted.map((post) => (
-              <PostTile key={post.id} post={post} position={positionOf(post.id)} imgBase={imgBase} isNext={false} />
+              <PostTile key={post.id} post={post} position={positionOf(post.id)} imgBase={imgBase} isNext={false} sorting={sorting} />
             ))}
           </ul>
         </SortableContext>

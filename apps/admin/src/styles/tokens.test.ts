@@ -32,7 +32,8 @@ describe('token parity with apps/web', () => {
     expect(extras).toEqual([
       '--bottom-nav-height', '--color-danger-active', '--color-danger-disabled', '--color-danger-hover', '--color-on-danger',
       '--color-primary-active', '--color-primary-hover',
-      '--cover-size', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke', '--weight-ui-strong',
+      '--cover-size', '--font-size-ui', '--font-ui', '--header-height-wrapped', '--icon-size', '--icon-stroke', '--ig-avatar-size', '--ig-grid-gap',
+      '--weight-ui-strong',
     ]);
   });
 

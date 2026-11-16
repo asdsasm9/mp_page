@@ -1,20 +1,48 @@
-/** Instagram planning grid screen (`/instagram`, WP-14): legend, grid of posts, empty state with three steps. */
+/**
+ * Instagram profile preview (`/instagram`, WP-14 and WP-15): the filter and the "Řadit příspěvky" toggle above a
+ * profile frame (header with the typed profile, then the grid of posts), empty state with three steps. The profile is
+ * loaded on its own: when that fails the preview shows the defaults and a notice, and the posts never wait for it.
+ */
+import { filterPosts, type IgFilter } from '@mp/shared';
+import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LoadFailure } from '../components/LoadFailure';
 import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/Page';
 import { PageLoading } from '../components/PageLoading';
 import { PlannerGrid } from '../components/PlannerGrid';
-import { useIgPosts } from '../data/planner';
+import { ProfileFilter, useIgFilter } from '../components/ProfileFilter';
+import { ProfileHeader } from '../components/ProfileHeader';
+import { useIgPosts, useIgProfile } from '../data/planner';
 import { cs } from '../i18n/cs';
 import { useImageBase } from '../ports-context';
+
+const EMPTY_TEXT: Record<IgFilter, string | null> = {
+  all: null,
+  posted: cs.instagram.filter.emptyPosted,
+  planned: cs.instagram.filter.emptyPlanned,
+};
 
 export function InstagramScreen() {
   useDocumentTitle(cs.routes.instagram.title);
   const posts = useIgPosts();
+  const profile = useIgProfile();
   const imgBase = useImageBase();
+  const [filter, setFilter] = useIgFilter();
+  const [sortOn, setSortOn] = useState(false);
+  const noteId = useId();
   const rows = posts.data ?? [];
   const broken = rows.some((p) => p.status !== 'posted' && p.photos.length === 0);
+  const shown = filterPosts(rows, filter);
+  const counts: Record<IgFilter, number> = {
+    all: rows.length,
+    posted: filterPosts(rows, 'posted').length,
+    planned: filterPosts(rows, 'planned').length,
+  };
+  // Posted posts are ordered by date, so there is nothing to sort under "Zveřejněné".
+  const sortDisabled = filter === 'posted';
+  const sorting = sortOn && !sortDisabled;
+  const emptyText = EMPTY_TEXT[filter];
 
   let body;
   if (posts.isError) {
@@ -39,18 +67,37 @@ export function InstagramScreen() {
     body = (
       <>
         {broken ? <Notice variant="info">{cs.instagram.brokenNotice}</Notice> : null}
-        <ul className="ig-legend" aria-label={cs.instagram.legendLabel}>
-          <li>
-            <span className="ig-swatch ig-swatch-open" aria-hidden="true" />
-            {cs.instagram.planned}
-          </li>
-          <li>
-            <span className="ig-swatch" aria-hidden="true" />
-            {cs.instagram.posted}
-          </li>
-          <li className="ig-legend-note">{cs.instagram.legendDashed}</li>
-        </ul>
-        <PlannerGrid posts={rows} imgBase={imgBase} />
+        {profile.isError ? <Notice variant="info">{cs.instagram.profile.loadFailed}</Notice> : null}
+        <div className="ig-controls">
+          <ProfileFilter value={filter} onChange={setFilter} counts={counts} />
+          <button
+            type="button"
+            className="button ig-sort-toggle"
+            aria-pressed={sorting}
+            aria-describedby={sortDisabled ? noteId : undefined}
+            disabled={sortDisabled}
+            onClick={() => setSortOn((on) => !on)}
+          >
+            {cs.instagram.sort.toggle}
+          </button>
+          {sortDisabled ? (
+            <p id={noteId} className="field-hint ig-sort-note">
+              {cs.instagram.sort.postedNote}
+            </p>
+          ) : null}
+        </div>
+        <section className="ig-frame" aria-label={cs.instagram.profile.label}>
+          {profile.isError || profile.data ? (
+            <ProfileHeader profile={profile.data ?? null} postCount={shown.length} imgBase={imgBase} />
+          ) : (
+            <div className="ig-profile ig-profile-pending" aria-busy="true" />
+          )}
+          {emptyText && shown.length === 0 ? (
+            <p className="ig-filter-empty">{emptyText}</p>
+          ) : (
+            <PlannerGrid posts={shown} imgBase={imgBase} sorting={sorting} />
+          )}
+        </section>
       </>
     );
   }

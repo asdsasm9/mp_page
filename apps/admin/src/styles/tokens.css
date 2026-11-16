@@ -140,6 +140,8 @@
     --weight-ui-strong: 600; /* real system-font weight for tiny labels (badges, counters, table heads) */
     --bottom-nav-height: 3.5rem;
     --cover-size: 6rem;
+    --ig-grid-gap: 0.125rem; /* WP-15: the thin gap between profile tiles (Instagram shows 1 to 2 px) */
+    --ig-avatar-size: 5rem; /* WP-15: profile avatar circle (Instagram phone: about 77 px) */
     --icon-size: 1.25rem;
     --icon-stroke: 2;
     /* Solid ink primary buttons: hover and pressed fills, light text (--color-on-overlay) >= 4.5:1 on each */

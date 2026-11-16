@@ -2291,12 +2291,12 @@
   }
 }
 
-/* Instagram planning grid (WP-14): three columns of 3:4 tiles, dashed outline + text badge for unpublished posts. */
+/* Instagram preview (WP-14, WP-15): three columns of 3:4 tiles with a thin gap and no tile borders; chips and handles only in sort mode. */
 @layer components {
   .ig-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-1);
+    gap: var(--ig-grid-gap);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -2309,11 +2309,6 @@
     background: var(--color-placeholder);
     user-select: none;
     -webkit-touch-callout: none;
-  }
-
-  .ig-tile:not([data-status='posted']) {
-    outline: var(--bar-thickness) dashed var(--color-text);
-    outline-offset: calc(-1 * var(--bar-thickness));
   }
 
   .ig-tile.is-dragging {
@@ -2353,19 +2348,12 @@
     inset-block-start: var(--space-1);
     inset-inline-end: var(--space-1);
     display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-1) var(--space-2);
-    font-family: var(--font-ui);
-    font-size: var(--text-caption);
-    font-weight: var(--weight-ui-strong);
-    color: var(--color-text);
-    background: var(--color-surface-raised);
-    border: var(--border-width) solid var(--color-border-strong);
-    border-radius: var(--radius-full);
+    color: var(--color-on-overlay);
+    filter: drop-shadow(0 0 var(--space-1) var(--color-overlay));
+    pointer-events: none;
   }
 
-  .ig-badges {
+  .ig-chips {
     position: absolute;
     inset-block-end: var(--space-1);
     inset-inline: var(--space-1);
@@ -2376,10 +2364,9 @@
     pointer-events: none;
   }
 
-  .ig-badge {
+  .ig-chip {
     max-inline-size: 100%;
-    overflow-wrap: anywhere;
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-1);
     font-family: var(--font-ui);
     font-size: var(--text-caption);
     font-weight: var(--weight-ui-strong);
@@ -2390,41 +2377,194 @@
     border-radius: var(--radius-full);
   }
 
-  .ig-badge-next {
+  .ig-chip-next {
     color: var(--color-on-overlay);
     background: var(--color-text);
     border-color: var(--color-text);
   }
 
-  .ig-legend {
+  /* Filter, sort toggle and note above the profile frame; the frame is a phone-width column from 64rem (T-365). */
+  .ig-controls {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2) var(--space-4);
+  }
+
+  .ig-filter {
+    min-inline-size: 0;
+    margin: 0;
     padding: 0;
-    list-style: none;
-    font-size: var(--text-caption);
+    border: 0;
   }
 
-  .ig-legend li {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
+  .ig-filter .segmented-option {
+    padding-inline: var(--space-2);
   }
 
-  .ig-legend-note {
+  .ig-filter-count {
+    margin-inline-start: var(--space-2);
+    font-variant-numeric: tabular-nums;
+    color: inherit;
+  }
+
+  .ig-filter-check {
+    margin-inline-end: var(--space-1);
+  }
+
+  .ig-sort-toggle[aria-pressed='true'] {
+    color: var(--color-on-overlay);
+    background: var(--color-text);
+  }
+
+  .ig-sort-toggle[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+
+  .ig-sort-note {
+    margin: 0;
+  }
+
+  .ig-frame {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+  }
+
+  .ig-filter-empty {
+    margin: 0;
+    padding: var(--space-6) var(--space-4);
+    text-align: center;
     color: var(--color-text-muted);
   }
 
-  .ig-swatch {
-    inline-size: var(--space-4);
-    block-size: var(--space-5);
-    background: var(--color-placeholder);
-    border: var(--bar-thickness) solid var(--color-border-strong);
+  /* Profile header: username, avatar with the three counts, name, bio, link, decorative buttons and tabs. */
+  .ig-profile {
+    display: grid;
+    gap: var(--space-2);
+    font-family: var(--font-ui);
+    font-size: var(--text-small);
+    line-height: var(--leading-ui);
   }
 
-  .ig-swatch-open {
-    border: var(--bar-thickness) dashed var(--color-text);
+  .ig-profile > * {
+    margin: 0;
+  }
+
+  .ig-profile-pending {
+    min-block-size: calc(var(--ig-avatar-size) + var(--space-8));
+  }
+
+  .ig-username {
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    font-weight: var(--weight-ui-strong);
+    letter-spacing: normal;
+    text-transform: none;
+    overflow-wrap: anywhere;
+  }
+
+  .ig-profile-top {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+  }
+
+  .ig-avatar {
+    flex: none;
+    inline-size: var(--ig-avatar-size);
+    block-size: var(--ig-avatar-size);
+    object-fit: cover;
+    object-position: center;
+    border-radius: var(--radius-full);
+    background: var(--color-placeholder);
+  }
+
+  .ig-avatar-initials {
+    display: grid;
+    place-items: center;
+    font-size: var(--text-h3);
+    font-weight: var(--weight-ui-strong);
+    color: var(--color-text);
+  }
+
+  .ig-counts {
+    flex: 1;
+    display: flex;
+    justify-content: space-around;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+  }
+
+  .ig-counts li {
+    display: grid;
+    min-inline-size: 0;
+    font-size: var(--text-caption);
+  }
+
+  .ig-counts strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-ui-strong);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ig-name {
+    font-weight: var(--weight-ui-strong);
+    overflow-wrap: anywhere;
+  }
+
+  .ig-bio {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+
+  .ig-profile-link {
+    color: var(--color-accent-text);
+    overflow-wrap: anywhere;
+  }
+
+  .ig-actions {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .ig-fake-button {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--target-compact);
+    padding-inline: var(--space-3);
+    font-weight: var(--weight-ui-strong);
+    background: var(--color-surface);
+    border-radius: var(--radius-none);
+  }
+
+  .ig-fake-icon {
+    flex: none;
+  }
+
+  .ig-tabs {
+    display: flex;
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  .ig-tab {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--target-min);
+    color: var(--color-text-muted);
+    border-block-end: var(--bar-thickness) solid transparent;
+  }
+
+  .ig-tab-active {
+    color: var(--color-text);
+    border-block-end-color: var(--color-text);
   }
 
   .ig-steps {
@@ -2564,7 +2704,7 @@
     border-inline-start: var(--border-width) solid var(--color-accent-strong);
   }
 
-  .segmented-option:hover:not(:has(input:disabled)) {
+  .segmented-option:hover:not(:has(input:disabled, input:checked)) {
     background: color-mix(in srgb, var(--color-accent-strong) 12%, transparent);
   }
 

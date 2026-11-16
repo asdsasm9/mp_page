@@ -31,7 +31,9 @@ facts and human steps: [VERIFY.md](VERIFY.md). Page texts (Home, About, Contact)
 | `/alba/:id/foto/:photoId` | Photo detail (alt text, caption) |
 | `/zverejnit` | Publish the site |
 | `/ulozeni` | Storage and reconcile |
-| `/instagram` | Instagram planning grid (WP-14): three-column grid of planned, draft and posted posts, drag to reorder; the editor routes `/instagram/novy` and `/instagram/:id` follow in the second half of T-345 |
+| `/instagram` | Instagram planning grid (WP-14): three-column grid of planned, draft and posted posts, drag to reorder; a tile opens the editor |
+| `/instagram/novy` | New Instagram post (WP-14, T-345): pick 1 to 10 photos (album first, selection kept across albums), caption n / 2200 and hashtags n / 30 with live counters, optional planned date, status draft or planned, explicit "Uložit" |
+| `/instagram/:id` | Edit a post: same form, "Označit jako zveřejněné" (date, default today; also for old posts already on Instagram), "Vrátit zpět na naplánované", delete with confirmation. A post without photos is a draft with a notice; planning or marking it is refused. No sharing, copying or download yet (T-346). Saving text and photos is two calls (post fields, then the photo set); a failed second call keeps the draft on screen for a retry. After a "changed elsewhere" conflict, "Načíst znovu" drops the draft and shows the fresh post |
 | `/nahravani` | Upload page (the queue also shows as a panel; no header link since T-246, phones keep the bottom-nav entry) |
 | `/uvodni-stranka` | "Úvodní stránka" (T-286): choose the home hero photo (picker, "Zrušit výběr", desktop and phone crops, "Nízké rozlišení pro velkou fotku" under `HERO_MIN_MASTER_WIDTH` = 2400 px master width). Header and phone bottom nav link to it |
 | `*` | 404 |

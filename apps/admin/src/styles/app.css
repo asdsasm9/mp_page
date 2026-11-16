@@ -700,6 +700,10 @@
     gap: var(--space-3);
   }
 
+  .page-header a.button {
+    text-decoration: none;
+  }
+
   .empty-state {
     display: grid;
     justify-items: start;
@@ -2373,6 +2377,8 @@
   }
 
   .ig-badge {
+    max-inline-size: 100%;
+    overflow-wrap: anywhere;
     padding: var(--space-1) var(--space-2);
     font-family: var(--font-ui);
     font-size: var(--text-caption);
@@ -2400,10 +2406,6 @@
     font-size: var(--text-caption);
   }
 
-  .page-header a.button {
-    text-decoration: none;
-  }
-
   .ig-legend li {
     display: inline-flex;
     align-items: center;
@@ -2428,5 +2430,64 @@
   .ig-steps {
     margin: 0;
     padding-inline-start: var(--space-5);
+  }
+
+  /* Post editor (WP-14): sections stacked, photo strip rows with a 3:4 thumbnail, the picker's order number. */
+  .post-editor > * + * {
+    margin-block-start: var(--space-4);
+  }
+
+  .post-photos,
+  .post-posted {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .post-photos > *,
+  .post-posted > * {
+    margin: 0;
+  }
+
+  .post-status {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-none);
+  }
+
+  .post-strip-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .post-strip-img {
+    flex: none;
+    inline-size: var(--space-8);
+    block-size: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    background: var(--color-placeholder);
+  }
+
+  .post-strip-number {
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-strong);
+  }
+
+  .ig-pick-order {
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-ui-strong);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cover-tile:has(input:disabled) {
+    cursor: not-allowed;
+    border-style: dashed;
+  }
+
+  .cover-tile:has(input:disabled) img {
+    filter: grayscale(1);
   }
 }

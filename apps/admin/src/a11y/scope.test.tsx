@@ -18,6 +18,8 @@ describe('goal 20: no page-text editor', () => {
         '/alba/:id',
         '/alba/:id/foto/:photoId',
         '/instagram', // WP-14: the Instagram planning grid, not a page-text editor
+        '/instagram/:id', // WP-14: the post editor (caption and hashtags of a planned Instagram post, not page texts)
+        '/instagram/novy', // WP-14: a new post
         '/kategorie/:id',
         '/nahravani',
         '/prihlaseni',

@@ -734,6 +734,63 @@ async function runProfile(browser, profile) {
       await checkpoint(ctx, 'instagram grid', { shot: true });
     });
 
+    // ---- Instagram post editor (WP-14, T-345): open from the grid, mark-posted dialog, live counters, picker, 44 px targets
+    await step('instagram editor', async () => {
+      await clickBy(ctx, 'a.ig-link', /Svatba na zámku/);
+      await page.waitForFunction(() => /^\/instagram\/(?!novy)[0-9a-f-]+$/.test(location.pathname) && document.querySelectorAll('.post-editor textarea').length === 2, { timeout: 10000 });
+      await waitText(page, /\d+ \/ 2200 znaků/);
+      await waitText(page, /\d+ \/ 30 hashtagů/);
+      await page.waitForFunction(() => document.querySelectorAll('.post-strip-item').length === 3, { timeout: 10000 });
+      await sleep(300);
+      await checkpoint(ctx, 'instagram editor', { shot: true });
+
+      // The mark-posted dialog: date field with today's date and the hint for old posts.
+      await clickBy(ctx, 'button', /^Označit jako zveřejněné$/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal input[type=date]')?.value?.length === 10, { timeout: 10000 });
+      await waitText(page, /starší příspěvky, které už na Instagramu jsou/);
+      await checkpoint(ctx, 'instagram mark posted dialog', { shot: true });
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.querySelector('dialog:modal'), { timeout: 10000 });
+
+      // Counters follow the typing.
+      const caption = await fieldByLabel(page, /^Popisek$/);
+      await typeInto(ctx, caption, 'Test 😀');
+      await waitText(page, /6 \/ 2200 znaků/);
+      const tags = await fieldByLabel(page, /^Hashtagy$/);
+      await typeInto(ctx, tags, '#jedna #dva #tri');
+      await waitText(page, /3 \/ 30 hashtagů/);
+
+      // The picker: album first, then photos with order numbers.
+      await clickBy(ctx, 'button', /^Změnit výběr fotek$/);
+      await page.waitForFunction(() => document.querySelectorAll('dialog:modal .cover-tile input[type=checkbox]').length > 0, { timeout: 10000 });
+      await imagesLoaded(page);
+      await page.evaluate(() => {
+        const free = [...document.querySelectorAll('dialog:modal .cover-tile')].find((l) => !l.querySelector('input').checked && !l.querySelector('input').disabled);
+        free?.click();
+      });
+      await waitText(page, /Vybráno 4 z 10/);
+      await page.waitForFunction(() => document.querySelectorAll('dialog:modal .ig-pick-order').length >= 1, { timeout: 10000 });
+      await sleep(300);
+      await checkpoint(ctx, 'instagram photo picker', { shot: true });
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.querySelector('dialog:modal'), { timeout: 10000 });
+
+      // Every button and field of the editor is at least 44 px high.
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll('.post-editor button, .post-editor textarea, .post-editor input:not([type=radio]):not(.visually-hidden)')]
+          .filter((e) => e.getClientRects().length > 0)
+          .map((e) => ({ t: (e.getAttribute('aria-label') || e.textContent || e.tagName).trim().slice(0, 24), w: e.getBoundingClientRect().width, h: e.getBoundingClientRect().height }))
+          .filter((e) => e.h < 43.5 || e.w < 43.5),
+      );
+      if (small.length) throw new Error(`editor targets under 44 px: ${JSON.stringify(small)}`);
+
+      // A new post: empty, no photos yet.
+      await spaGo(page, '/instagram/novy');
+      await page.waitForFunction(() => document.querySelectorAll('.post-editor textarea').length === 2 && document.querySelectorAll('.post-strip-item').length === 0, { timeout: 10000 });
+      await waitText(page, /0 \/ 2200 znaků/);
+      await checkpoint(ctx, 'instagram new post', { shot: true });
+    });
+
     // ---- photo quality verdicts (T-260): the seeded album with low, good, missing-720 and portrait examples
     let qualityIds = null;
     await step('quality verdicts', async () => {

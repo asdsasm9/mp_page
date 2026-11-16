@@ -10,6 +10,7 @@ import { CategoryScreen } from './screens/CategoryScreen';
 import { HomePageScreen } from './screens/HomePageScreen';
 import { InstagramScreen } from './screens/InstagramScreen';
 import { PhotoDetailScreen } from './screens/PhotoDetailScreen';
+import { PostEditorScreen } from './screens/PostEditorScreen';
 import { PublishScreen } from './screens/PublishScreen';
 import { StorageScreen } from './screens/StorageScreen';
 import { UploadScreen } from './screens/UploadScreen';
@@ -45,6 +46,8 @@ export function App() {
           <Route path="/ulozeni" element={<StorageScreen />} />
           <Route path="/nahravani" element={<UploadScreen />} />
           <Route path="/instagram" element={<InstagramScreen />} />
+          <Route path="/instagram/novy" element={<PostEditorScreen />} />
+          <Route path="/instagram/:id" element={<PostEditorScreen />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Route>

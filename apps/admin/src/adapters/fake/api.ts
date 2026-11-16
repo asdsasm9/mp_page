@@ -303,6 +303,8 @@ export function createFakeApi(core: Core): ApiPort {
         state.photos.delete(id);
         // ig_post_photos.photo_id is "on delete cascade": the photo leaves every Instagram post.
         state.igPostPhotos = state.igPostPhotos.filter((l) => l.photo_id !== id);
+        // ig_profile.avatar_photo_id is "on delete set null": only the avatar is cleared, the profile stays.
+        if (state.igProfile.avatar_photo_id === id) state.igProfile.avatar_photo_id = null;
         core.bump();
         logChange(core, 'photos', { op: 'delete', before: gone });
         deleted++;

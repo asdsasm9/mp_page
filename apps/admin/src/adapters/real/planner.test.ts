@@ -172,6 +172,92 @@ describe('real planner', () => {
     expect(path(del.calls[0]!.url)).toBe(`/rest/v1/ig_posts?id=eq.${ID}`);
   });
 
+  describe('profile (ig_profile)', () => {
+    const PHOTO = 'dddddddd-0000-4000-8000-0000000000c1';
+    const profile = (over: Record<string, unknown> = {}) => ({
+      id: true,
+      username: 'mullnyphotos',
+      display_name: 'Mullny Photos',
+      bio: '',
+      link: '',
+      followers_count: 0,
+      following_count: 0,
+      avatar_photo_id: null,
+      updated_at: AT,
+      ...over,
+    });
+
+    it('getProfile selects one row under the user JWT only and parses it', async () => {
+      const { fetch, calls } = stubFetch({ json: [profile()] });
+      const result = await planner(fetch).getProfile();
+      expect(calls).toHaveLength(1);
+      expect(calls[0]!.method).toBe('GET');
+      expect(path(calls[0]!.url)).toBe('/rest/v1/ig_profile?select=*&limit=1');
+      expect(Object.keys(calls[0]!.headers).sort()).toEqual(['accept', 'apikey', 'authorization']);
+      expect(calls[0]!.headers.authorization).toBe('Bearer token-for-tests');
+      expect(result).toEqual(profile());
+    });
+
+    it('getProfile: a body that does not match is INTERNAL, an empty table is NOT_FOUND, errors map', async () => {
+      await expect(planner(stubFetch({ json: [profile({ followers_count: -1 })] }).fetch).getProfile()).rejects.toMatchObject({ code: 'INTERNAL' });
+      await expect(planner(stubFetch({ json: [profile({ id: false })] }).fetch).getProfile()).rejects.toMatchObject({ code: 'INTERNAL' });
+      await expect(planner(stubFetch({ json: [] }).fetch).getProfile()).rejects.toMatchObject({ code: 'NOT_FOUND' });
+      await expect(planner(stubFetch({ status: 401, json: {} }).fetch).getProfile()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+      await expect(planner(stubFetch({ status: 403, json: { code: '42501' } }).fetch).getProfile()).rejects.toMatchObject({ code: 'NOT_ADMIN' });
+      await expect(planner(stubFetch(new Error('offline')).fetch).getProfile()).rejects.toBeInstanceOf(NetworkError);
+    });
+
+    it('updateProfile PATCHes id=eq.true with the updated_at precondition and only the patch as body', async () => {
+      const { fetch, calls } = stubFetch({ json: [profile({ bio: 'Nový', updated_at: '2026-11-16T11:00:00.000000+00:00' })] });
+      const result = await planner(fetch).updateProfile({ bio: 'Nový', avatar_photo_id: PHOTO }, { expectedUpdatedAt: AT });
+      expect(calls).toHaveLength(1);
+      expect(calls[0]!.method).toBe('PATCH');
+      expect(path(calls[0]!.url)).toBe(`/rest/v1/ig_profile?id=eq.true&updated_at=eq.${AT}`);
+      expect(calls[0]!.body).toEqual({ bio: 'Nový', avatar_photo_id: PHOTO });
+      expect(calls[0]!.headers.prefer).toBe('return=representation');
+      expect(Object.keys(calls[0]!.headers).sort()).toEqual(['accept', 'apikey', 'authorization', 'content-type', 'prefer']);
+      expect(calls[0]!.headers.authorization).toBe('Bearer token-for-tests');
+      expect(result.bio).toBe('Nový');
+    });
+
+    it('updateProfile without a precondition sends only id=eq.true', async () => {
+      const { fetch, calls } = stubFetch({ json: [profile()] });
+      await planner(fetch).updateProfile({ followers_count: 5 });
+      expect(path(calls[0]!.url)).toBe('/rest/v1/ig_profile?id=eq.true');
+    });
+
+    it('updateProfile: no matching row is STALE (precondition) and the answer is zod-parsed', async () => {
+      await expect(planner(stubFetch({ json: [] }).fetch).updateProfile({ bio: 'x' }, { expectedUpdatedAt: AT })).rejects.toMatchObject({ code: 'STALE' });
+      await expect(planner(stubFetch({ json: [profile({ username: 'bad name' })] }).fetch).updateProfile({ bio: 'x' })).rejects.toMatchObject({ code: 'INTERNAL' });
+    });
+
+    it('updateProfile maps errors: 23503 (missing avatar photo) and check violations to INVALID, 42501 and 401', async () => {
+      const fail = (status: number, json: unknown) => planner(stubFetch({ status, json }).fetch).updateProfile({ avatar_photo_id: PHOTO }, { expectedUpdatedAt: AT });
+      await expect(fail(409, { code: '23503', message: 'violates foreign key' })).rejects.toMatchObject({ name: CatalogError.name, code: 'INVALID' });
+      await expect(fail(400, { code: '23514', message: 'check violation' })).rejects.toMatchObject({ code: 'INVALID' });
+      await expect(fail(403, { code: '42501', message: 'denied' })).rejects.toMatchObject({ name: ApiError.name, code: 'NOT_ADMIN' });
+      await expect(fail(401, {})).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+      await expect(fail(503, {})).rejects.toMatchObject({ code: 'UPSTREAM_ERROR' });
+      await expect(planner(stubFetch(new Error('offline')).fetch).updateProfile({ bio: 'x' })).rejects.toBeInstanceOf(NetworkError);
+    });
+
+    it('sends nothing without a session', async () => {
+      const { fetch, calls } = stubFetch();
+      const p = createRealPlanner(createRest({ baseUrl: BASE, anonKey: 'a', getToken: async () => null, fetch }));
+      await expect(p.getProfile()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+      await expect(p.updateProfile({ bio: 'x' })).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+      expect(calls).toHaveLength(0);
+    });
+
+    it('uses only the anon key and the user token, and no other endpoint than ig_profile', async () => {
+      const { fetch, calls } = stubFetch({ json: [profile()] });
+      await planner(fetch).getProfile();
+      await planner(fetch).updateProfile({ bio: 'x' });
+      expect(calls.every((c) => c.url.startsWith(`${BASE}/rest/v1/ig_profile?`))).toBe(true);
+      expect(calls.every((c) => c.headers.apikey === 'anon-for-tests' && c.headers.authorization === 'Bearer token-for-tests')).toBe(true);
+    });
+  });
+
   it('sends nothing without a session', async () => {
     const { fetch, calls } = stubFetch();
     const p = createRealPlanner(createRest({ baseUrl: BASE, anonKey: 'a', getToken: async () => null, fetch }));

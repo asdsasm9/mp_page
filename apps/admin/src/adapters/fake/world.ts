@@ -5,7 +5,7 @@
  *
  * Failure injection for tests and the browser checks: failNext, dropNetwork, expireSession, slowPut.
  */
-import { DEFAULT_LIMITS, type ChangeLogRow, type Limits, type SiteSettingsRow, type Snapshot } from '@mp/shared';
+import { DEFAULT_LIMITS, defaultIgProfile, type ChangeLogRow, type Limits, type SiteSettingsRow, type Snapshot } from '@mp/shared';
 import { sortedChangeLog } from './changes';
 import type { Clock, Ids, Ports } from '../../ports';
 import { createFakeApi } from './api';
@@ -92,6 +92,7 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
     photos: new Map(),
     igPosts: new Map(),
     igPostPhotos: [],
+    igProfile: { ...defaultIgProfile, updated_at: new Date(clock.now()).toISOString() },
     reservations: new Map(),
     objects: new Map(),
     grants: new Map(),

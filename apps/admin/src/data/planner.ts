@@ -5,7 +5,12 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../auth/session';
-import { NetworkError, type IgPostInput, type IgPostPatch, type PlannerPort, type UpdateOptions } from '../ports';
+import {
+  NetworkError,
+  type IgPostInput,
+  type IgPostPatch,
+  type IgProfilePatch,
+  type PlannerPort, type UpdateOptions } from '../ports';
 import { usePorts } from '../ports-context';
 import { isOnline } from './health';
 
@@ -14,7 +19,19 @@ const ALL = ['planner'] as const;
 export const plannerKeys = {
   all: ALL,
   posts: () => [...ALL, 'posts'] as const,
+  profile: () => [...ALL, 'profile'] as const,
 };
+
+/** Separate from the posts so a failing profile (e.g. migration not applied yet) never blocks the grid. */
+export function useIgProfile() {
+  const { planner } = usePorts();
+  const { status, runAuthed } = useSession();
+  return useQuery({
+    queryKey: plannerKeys.profile(),
+    queryFn: () => runAuthed(() => planner.getProfile()),
+    enabled: status === 'ready',
+  });
+}
 
 export function useIgPosts() {
   const { planner } = usePorts();
@@ -53,4 +70,6 @@ export const useMarkIgPostPosted = () =>
   );
 export const useUnmarkIgPostPosted = () =>
   usePlannerMutation((p, v: { id: string; options?: UpdateOptions }) => p.unmarkPosted(v.id, v.options));
+export const useUpdateIgProfile = () =>
+  usePlannerMutation((p, v: { patch: IgProfilePatch; options?: UpdateOptions }) => p.updateProfile(v.patch, v.options));
 export const useDeleteIgPost = () => usePlannerMutation((p, id: string) => p.deletePost(id));

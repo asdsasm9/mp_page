@@ -5,6 +5,7 @@ import type {
   ChangeLogRow,
   IgPostPhotoRow,
   IgPostRow,
+  IgProfileRow,
   Limits,
   PhotoRow,
   PublishLogRow,
@@ -77,6 +78,8 @@ export interface State {
   /** Instagram planner tables (WP-14). Not tracked: no pending_changes, no change_log. */
   igPosts: Map<string, IgPostRow>;
   igPostPhotos: IgPostPhotoRow[];
+  /** The single ig_profile row (WP-15), always present like the migration seed. Not tracked either. */
+  igProfile: IgProfileRow;
   /** photo_id -> bytes and expiry of an upload reservation. */
   reservations: Map<string, { bytes: number; expiresAtMs: number }>;
   /** Bucket content: key -> size and write time. Only sizes are kept. */

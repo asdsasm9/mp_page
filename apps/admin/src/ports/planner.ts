@@ -8,7 +8,7 @@
  * one photo; `posted` only through markPosted. Failures: CatalogError (STALE, NOT_FOUND, INVALID), ApiError
  * (UNAUTHENTICATED, NOT_ADMIN), NetworkError. Planner edits are never site changes: no pending_changes, no change_log.
  */
-import type { IgPost } from '@mp/shared';
+import type { IgPost, IgProfileRow } from '@mp/shared';
 import type { UpdateOptions } from './catalog';
 
 export interface IgPostInput {
@@ -29,7 +29,25 @@ export interface IgPostPatch {
   status?: 'draft' | 'planned';
 }
 
+/** Typed values of the profile preview (WP-15); every field optional, only given ones change. Limits as in the table. */
+export interface IgProfilePatch {
+  username?: string;
+  display_name?: string;
+  bio?: string;
+  link?: string;
+  followers_count?: number;
+  following_count?: number;
+  avatar_photo_id?: string | null;
+}
+
 export interface PlannerPort {
+  /** The single profile row (table ig_profile, seeded by the migration). */
+  getProfile(): Promise<IgProfileRow>;
+  /**
+   * PATCH of the one row. STALE when `options.expectedUpdatedAt` no longer matches; INVALID for a value the table
+   * refuses or an avatar photo that does not exist. Not a site change: no pending_changes, no change_log.
+   */
+  updateProfile(patch: IgProfilePatch, options?: UpdateOptions): Promise<IgProfileRow>;
   /** Profile order: planned and draft by sort ascending, then posted by posted_at descending. Photos in carousel order. */
   listPosts(): Promise<IgPost[]>;
   /** New post at the top (sort = lowest sort - 10), then its photos; when that fails the new post is removed again. */

@@ -4,7 +4,14 @@
  * Updates carry `updated_at=eq.<value read earlier>` like the catalog adapter. The database cannot enforce "planned
  * and posted need a photo" (the RPC replaces the set), so this adapter checks it before the request.
  */
-import { IgPostRowSchema, IgPostPhotoRowSchema, orderPosts, type IgPost } from '@mp/shared';
+import {
+  IgPostRowSchema,
+  IgPostPhotoRowSchema,
+  IgProfileRowSchema,
+  orderPosts,
+  type IgPost,
+  type IgProfileRow,
+} from '@mp/shared';
 import { z } from 'zod';
 import { ApiError, CatalogError, type PlannerPort } from '../../ports';
 import type { Rest } from './http';
@@ -58,7 +65,34 @@ export function createRealPlanner(rest: Rest): PlannerPort {
     await rest.rpc('ig_set_post_photos', { p_post_id: id, p_photo_ids: [...photoIds] });
   }
 
+  function parseProfile(raw: unknown): IgProfileRow {
+    const parsed = IgProfileRowSchema.safeParse(raw);
+    if (!parsed.success) throw new ApiError('INTERNAL');
+    return parsed.data;
+  }
+
   return {
+    async getProfile() {
+      const rows = await rest.select<unknown>('ig_profile', { select: '*', limit: '1' });
+      if (rows[0] === undefined) throw new CatalogError('NOT_FOUND');
+      return parseProfile(rows[0]);
+    },
+    async updateProfile(patch, options) {
+      const expected = options?.expectedUpdatedAt;
+      const query: Record<string, string> = { id: 'eq.true' };
+      if (expected !== undefined) query.updated_at = `eq.${expected}`;
+      let rows: unknown[];
+      try {
+        rows = await rest.patch<unknown>('ig_profile', query, patch);
+      } catch (error) {
+        // restError maps 23503 on a write to NOT_FOUND; here the only foreign key is avatar_photo_id: a missing photo.
+        if (error instanceof CatalogError && error.code === 'NOT_FOUND') throw new CatalogError('INVALID');
+        throw error;
+      }
+      if (rows[0] !== undefined) return parseProfile(rows[0]);
+      // The row always exists (no insert, no delete), so no match means the precondition failed.
+      throw new CatalogError(expected !== undefined ? 'STALE' : 'NOT_FOUND');
+    },
     async listPosts() {
       const rows = await rest.select<unknown>('ig_posts', { select: WITH_PHOTOS, order: 'sort.asc,id.asc' });
       return orderPosts(rows.map(parsePost));

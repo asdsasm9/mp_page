@@ -39,6 +39,7 @@ All tables are in `public` with row level security on. Every migration starts ea
 | `site_settings` | Single row (boolean key `id`, always true; migration `20261023110000_hero_photo.sql`, T-285): `hero_photo_id` (nullable, on delete set null), the photo shown in the hero of the home page. Null means automatic: the public site shows the bundled `main.jpg`. The photo must exist (`check_hero_photo`, error `HERO_PHOTO_NOT_FOUND`); it may be in an unpublished album, the snapshot builder then leaves the choice out. RLS: admins select and update. Grants: anon none; authenticated select and update(`hero_photo_id`) only, no insert or delete. A column on `site_state` was rejected: that table has no authenticated write and holds publish bookkeeping. |
 | `ig_posts` | Instagram planner post (migration `20261116100000_ig_planner.sql`, WP-14, T-343, D-26): `caption` and `hashtags` (text, default empty, each at most 2200 characters: `ig_posts_caption_length`, `ig_posts_hashtags_length`), `planned_on` (nullable date), `status` in draft/planned/posted (`ig_posts_status`), `posted_at` (set exactly when status is posted: `ig_posts_posted_matches_status`), `sort`, timestamps. Planning only: no Instagram or Meta call. RLS: admins full access (`ig_posts_admin_all`); anon none. Not tracked as a site change: no `bump_pending` or `log_change` trigger, never in `change_log` or the snapshot; only `set_updated_at`. |
 | `ig_post_photos` | The photos of a post (primary key `post_id, photo_id`): `post_id` references `ig_posts` and `photo_id` references `photos`, both on delete cascade, so deleting or replacing a photo removes it from every post (remaining `sort` values keep gaps) and `delete_photos` still works; a post left without photos stays and the app shows it as a draft. `sort` 1..10 (`ig_post_photos_sort_range`) and unique per post (`ig_post_photos_post_sort_key`, deferrable), which caps a post at 10 photos; the photo with `sort` 1 is the grid tile. At least one photo is enforced only by `ig_set_post_photos`. RLS: `ig_post_photos_admin_all`; no tracking triggers. |
+| `ig_profile` | Instagram profile preview data, one row (boolean key `id`, always true: `ig_profile_single_row`; migration `20261117090000_ig_profile.sql`, WP-15, T-357, D-27). Typed by hand, never fetched from Instagram. `username` (at most 30 characters, letters, digits, dot, underscore: `ig_profile_username_length`, `ig_profile_username_chars`), `display_name` (64: `ig_profile_name_length`), `bio` (150, line breaks allowed: `ig_profile_bio_length`), `link` (200, empty or `http(s)://`: `ig_profile_link_length`, `ig_profile_link_scheme`), `followers_count` and `following_count` (integers 0..999999999: `ig_profile_followers_range`, `ig_profile_following_range`), `avatar_photo_id` (nullable, references `photos`, on delete set null, so deleting the photo, also through `delete_photos`, clears the avatar), `updated_at` (optimistic-lock stamp). Seeded with display name Mullny Photos and username mullnyphotos (placeholder). RLS: admins select and update (`ig_profile_admin_select`, `ig_profile_admin_update`). Grants: anon none; authenticated select and update(`username`, `display_name`, `bio`, `link`, `followers_count`, `following_count`, `avatar_photo_id`) only, no insert, no delete, no update of `id` or `updated_at`. Not tracked as a site change: no `bump_pending` or `log_change` trigger, never in `change_log` or the snapshot; only `set_updated_at`. The post count on the profile is derived, not stored. |
 | `change_log` | The unpublished changes (migration `20261022160000_change_log.sql`, T-251, D-18 option A): one row per catalog row (`table_name` categories/albums/photos/site_settings, `row_id`, unique together) that differs from the last published site. `kind` is added, edited, deleted or reordered; `label` is the name at change time (category name, album title, photo alt else caption else empty); `category_id/category_name/album_id/album_title` are the grouping context at change time (no foreign keys). Admins can select; nobody can write through the API. Written by the `log_change` trigger, cleared by `record_publish`. See "Change log" below. |
 
 ### Text field length limits (T-255)
@@ -111,6 +112,8 @@ Generated from the catalog (`has_table_privilege`, `has_column_privilege`). `tab
 | ig_post_photos | authenticated | table | table | table | table |
 | ig_posts | anon | none | none | none | none |
 | ig_posts | authenticated | table | table | table | table |
+| ig_profile | anon | none | none | none | none |
+| ig_profile | authenticated | table | none | columns:avatar_photo_id,bio,display_name,followers_count,following_count,link,username | none |
 | keepalive | anon | none | none | none | none |
 | keepalive | authenticated | none | none | none | none |
 | photos | anon | none | none | none | none |
@@ -185,8 +188,9 @@ the hero photo does not exist.
 
 ## Triggers
 
-- `set_updated_at` before update on categories, albums, photos and ig_posts. `ig_posts` and `ig_post_photos` have no
-  `bump_pending` or `log_change` trigger by design (planner edits are not site changes).
+- `set_updated_at` before update on categories, albums, photos, ig_posts and ig_profile. `ig_posts`, `ig_post_photos`
+  and `ig_profile` have no `bump_pending` or `log_change` trigger by design (planner and preview edits are not site
+  changes).
 - `bump_pending` after insert, update or delete, per row, on categories, albums, photos, url_history.
 - `log_change` after insert, update or delete, per row, on categories, albums, photos and site_settings (see "Change log").
 - `check_hero_photo` (`site_settings_check_hero`, before insert or update of `hero_photo_id`) and `bump_pending`

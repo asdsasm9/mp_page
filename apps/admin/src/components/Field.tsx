@@ -17,7 +17,11 @@ export interface FieldProps {
   onElement?: (element: HTMLInputElement | HTMLTextAreaElement | null) => void;
   autofocus?: boolean;
   autoCapitalize?: string;
+  /** Keyboard hint on phones (numbers, a link). */
+  inputMode?: 'numeric' | 'url';
   type?: 'text' | 'date';
+  /** Size the control to its content instead of the full column (a date). */
+  compact?: boolean;
   onBlur?: () => void;
   /** Enter in a single-line field (not in a textarea). */
   onEnter?: () => void;
@@ -37,7 +41,9 @@ export function Field({
   onElement,
   autofocus,
   autoCapitalize,
+  inputMode,
   type = 'text',
+  compact,
   onBlur,
   onEnter,
 }: FieldProps) {
@@ -66,7 +72,7 @@ export function Field({
     }
   };
   return (
-    <div className="field">
+    <div className={compact ? 'field field-compact' : 'field'}>
       <label htmlFor={id}>
         {label}
         {required ? <span className="required"> {cs.categories.required}</span> : null}
@@ -79,6 +85,7 @@ export function Field({
           ref={setElement}
           type={type}
           autoCapitalize={autoCapitalize}
+          inputMode={inputMode}
           spellCheck={false}
           onKeyDown={onKeyDown}
           onChange={(event) => onChange(event.target.value)}

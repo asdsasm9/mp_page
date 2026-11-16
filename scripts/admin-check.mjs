@@ -722,20 +722,159 @@ async function runProfile(browser, profile) {
         const bad = fit.filter((f) => f.over > 0);
         if (fit.length !== 5 || bad.length) throw new Error(`bottom nav: ${fit.length} items, text cut off in ${JSON.stringify(bad)}`);
       }
+      // The typed profile (WP-15): name, bio with a line break, link text, counts and an avatar photo.
+      await world(
+        page,
+        '(w) => w.ports.planner.updateProfile({ username: "mullny.photos", display_name: "Mullny Photos", bio: "Svatební a portrétní fotograf\\nBrno a okolí", link: "https://example.test/mullny", followers_count: 12345, following_count: 87, avatar_photo_id: w.snapshot().photos[0].id })',
+      );
       await clickBy(ctx, 'a', /^Instagram$/);
-      await page.waitForFunction(() => location.pathname === '/instagram' && document.querySelectorAll('.ig-tile').length >= 9, { timeout: 10000 });
+      await page.waitForFunction(() => location.pathname === '/instagram' && document.querySelectorAll('.ig-tile').length >= 9 && document.querySelector('.ig-username'), { timeout: 10000 });
       await sleep(300);
+      // T-361/T-362/T-363: the default view is a pure preview (no handle, chip, "Další na řadě", outline); profile header with
+      // round avatar, h2 username, counts with words; filter "Vše" chosen; "Řadit příspěvky" off.
       const g = await page.evaluate(() => {
         const tiles = [...document.querySelectorAll('.ig-tile')];
         const cols = new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().left))).size;
         const t0 = tiles[0].getBoundingClientRect();
-        const handle = document.querySelector('.ig-tile .photo-handle').getBoundingClientRect();
-        return { cols, ratio: t0.height / t0.width, handleW: handle.width, handleH: handle.height };
+        const t1 = tiles[1].getBoundingClientRect();
+        const gap = Math.round(t1.left - t0.right);
+        const avatar = document.querySelector('.ig-avatar').getBoundingClientRect();
+        const avatarRadius = getComputedStyle(document.querySelector('.ig-avatar')).borderTopLeftRadius;
+        const toggle = document.querySelector('.ig-sort-toggle');
+        return {
+          cols,
+          gap,
+          ratio: t0.height / t0.width,
+          handles: document.querySelectorAll('.photo-handle').length,
+          chips: document.querySelectorAll('.ig-chip, .ig-badge, .ig-legend').length,
+          outlined: tiles.filter((t) => getComputedStyle(t).outlineStyle !== 'none').length,
+          avatarW: avatar.width,
+          avatarH: avatar.height,
+          avatarRadius,
+          avatarImg: document.querySelector('img.ig-avatar')?.getAttribute('srcset') ?? '',
+          h2: document.querySelector('.ig-frame h2.ig-username')?.textContent,
+          counts: [...document.querySelectorAll('.ig-counts li')].map((li) => li.textContent.replace(/\s+/g, ' ').trim()),
+          bio: getComputedStyle(document.querySelector('.ig-bio')).whiteSpace,
+          linkIsAnchor: Boolean(document.querySelector('.ig-profile-link')?.closest('a')) || Boolean(document.querySelector('.ig-profile a')),
+          vishidden: document.querySelectorAll('.ig-actions .ig-fake-button[aria-hidden="true"], .ig-tabs[aria-hidden="true"]').length,
+          editButtons: [...document.querySelectorAll('.ig-actions button')].map((b) => b.textContent.trim()),
+          checked: document.querySelector('input[name="ig-filter"]:checked')?.value,
+          pressed: toggle.getAttribute('aria-pressed'),
+        };
       });
       if (g.cols !== 3) throw new Error(`grid has ${g.cols} columns, expected 3`);
+      if (g.gap < 1 || g.gap > 4) throw new Error(`tile gap ${g.gap}px, expected a thin 1 to 4 px`);
       if (Math.abs(g.ratio - 4 / 3) > 0.02) throw new Error(`tile ratio ${g.ratio.toFixed(3)}, expected 1.333`);
-      if (g.handleW < 43.5 || g.handleH < 43.5) throw new Error(`handle ${g.handleW}x${g.handleH}, expected at least 44`);
+      if (g.handles !== 0 || g.chips !== 0 || g.outlined !== 0) throw new Error(`default view must be a pure preview: ${JSON.stringify(g)}`);
+      if (Math.abs(g.avatarW - g.avatarH) > 0.5 || g.avatarW < 60 || !/^\d+(\.\d+)?px$/.test(g.avatarRadius) || parseFloat(g.avatarRadius) < g.avatarW / 2) throw new Error(`avatar is not a round circle: ${JSON.stringify(g)}`);
+      if (!/\/480\.webp 480w/.test(g.avatarImg)) throw new Error(`avatar has no 480 px srcset: ${g.avatarImg}`);
+      if (g.h2 !== 'mullny.photos') throw new Error(`profile username h2 is "${g.h2}"`);
+      if (g.counts.length !== 3 || !/^9 příspěvků$/.test(g.counts[0]) || !/^12,3\s?tis\. sledujících$/.test(g.counts[1]) || !/^87 sleduje$/.test(g.counts[2])) throw new Error(`counts ${JSON.stringify(g.counts)}`);
+      if (g.bio !== 'pre-line') throw new Error(`bio white-space is ${g.bio}`);
+      if (g.linkIsAnchor) throw new Error('the profile link must be plain text, not an anchor');
+      if (g.vishidden !== 3) throw new Error(`the decorative archive and share shapes and the tab row must be aria-hidden (${g.vishidden} of 3)`);
+      if (g.editButtons.join('|') !== 'Upravit profil') throw new Error(`the profile header must have exactly one working button "Upravit profil": ${JSON.stringify(g.editButtons)}`);
+      if (g.checked !== 'all' || g.pressed !== 'false') throw new Error(`filter ${g.checked}, toggle pressed ${g.pressed}`);
+      // T-365: from 64rem (1024 px) the frame is one phone-width column (26rem = 416 px) centred in the page with a border, the
+      // controls (filter, "Řadit příspěvky", "Nový příspěvek") share its width and left edge; below that everything is full width.
+      const f = await page.evaluate(() => {
+        const frame = document.querySelector('.ig-frame');
+        const controls = document.querySelector('.ig-controls');
+        const parent = frame.parentElement.getBoundingClientRect();
+        const fr = frame.getBoundingClientRect();
+        const cr = controls.getBoundingClientRect();
+        const newPost = document.querySelector('.ig-controls a.ig-new')?.getBoundingClientRect();
+        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+        const tile = document.querySelector('.ig-tile').getBoundingClientRect();
+        return {
+          frameW: fr.width,
+          frameCentre: fr.left + fr.width / 2,
+          pageCentre: parent.left + parent.width / 2,
+          parentW: parent.width,
+          controlsLeft: cr.left,
+          controlsW: cr.width,
+          frameLeft: fr.left,
+          border: parseFloat(getComputedStyle(frame).borderTopWidth),
+          radius: getComputedStyle(frame).borderTopLeftRadius,
+          newPostRight: newPost ? newPost.right : null,
+          frameRight: fr.right,
+          rem,
+          tileW: tile.width,
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+        };
+      });
+      if (f.overflow > 0) throw new Error(`the Instagram page overflows horizontally by ${f.overflow} px`);
+      if (ctx.profile.width >= 1024) {
+        if (Math.abs(f.frameW - 26 * f.rem) > 1) throw new Error(`frame is ${f.frameW}px wide at ${ctx.profile.width}px, expected 26rem (${26 * f.rem}px)`);
+        if (Math.abs(f.frameCentre - f.pageCentre) > 1.5) throw new Error(`frame is not centred: its centre ${f.frameCentre}, the page centre ${f.pageCentre}`);
+        if (f.border < 1 || f.radius === '0px') throw new Error(`frame has no border or radius: ${JSON.stringify(f)}`);
+        if (Math.abs(f.controlsLeft - f.frameLeft) > 1 || Math.abs(f.controlsW - f.frameW) > 1) throw new Error(`controls are not aligned with the frame: ${JSON.stringify(f)}`);
+        if (f.newPostRight === null || f.newPostRight > f.frameRight + 1) throw new Error('"Nový příspěvek" is not inside the frame width above it');
+        if (f.tileW > 150) throw new Error(`grid tile is ${f.tileW}px wide in the frame, expected about 138`);
+      } else {
+        if (Math.abs(f.frameW - f.parentW) > 1 || f.border !== 0) throw new Error(`below 1024 px the frame must be full width and borderless: ${JSON.stringify(f)}`);
+      }
       await checkpoint(ctx, 'instagram grid', { shot: true });
+
+      // T-364: "Upravit profil" opens the dialog; an invalid link is refused with the Czech message, then the save shows
+      // the new values in the header, and focus is back on the button.
+      await clickBy(ctx, 'button.ig-edit', /^Upravit profil$/);
+      await fieldByLabel(page, /^Uživatelské jméno/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal h2')?.textContent === 'Upravit profil', { timeout: 5000 });
+      await imagesLoaded(page);
+      await checkpoint(ctx, 'instagram profile dialog', { shot: true });
+      await typeInto(ctx, await fieldByLabel(page, /^Odkaz/), 'bez-schematu');
+      await clickBy(ctx, 'button', /^Uložit$/);
+      await waitText(page, /Odkaz musí začínat „http:\/\/“ nebo „https:\/\/“/);
+      await checkpoint(ctx, 'instagram profile dialog error', { shot: ctx.profile.phone });
+      await typeInto(ctx, await fieldByLabel(page, /^Odkaz/), 'https://example.test/mullny');
+      await typeInto(ctx, await fieldByLabel(page, /^Sledující/), '2500');
+      await clickBy(ctx, 'button', /^Uložit$/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal') === null && /2 500 sledujících/.test(document.querySelector('.ig-counts')?.textContent.replace(/\s+/g, ' ') ?? ''), { timeout: 10000 });
+      const back = await page.evaluate(() => document.activeElement?.textContent?.trim());
+      if (back !== 'Upravit profil') throw new Error(`focus after the profile dialog is on "${back}", expected the "Upravit profil" button`);
+      const stored = await world(page, '(w) => w.ports.planner.getProfile().then((p) => p.followers_count)');
+      if (stored !== 2500) throw new Error(`the profile followers are ${stored}, expected 2500`);
+
+      // Filter: Zveřejněné shows 4 posted tiles, counts follow, the URL keeps the choice, sorting is disabled with its note.
+      await page.evaluate(() => document.querySelector('input[name="ig-filter"][value="posted"]').closest('label').scrollIntoView({ block: 'center' }));
+      const filterLabel = async (value) => page.evaluateHandle((v) => document.querySelector(`input[name="ig-filter"][value="${v}"]`).closest('label'), value);
+      await press(ctx, (await filterLabel('posted')).asElement());
+      await page.waitForFunction(() => document.querySelectorAll('.ig-tile').length === 4 && location.search === '?zobrazit=zverejnene', { timeout: 5000 });
+      const posted = await page.evaluate(() => ({
+        counts: document.querySelector('.ig-counts li').textContent.replace(/\s+/g, ' ').trim(),
+        live: [...document.querySelectorAll('[role="status"]')].map((e) => e.textContent).filter((t) => /^Zobrazeno/.test(t)),
+        disabled: document.querySelector('.ig-sort-toggle').disabled,
+        note: Boolean(document.querySelector('.ig-sort-note')),
+        handles: document.querySelectorAll('.photo-handle').length,
+      }));
+      if (posted.counts !== '4 příspěvků' || posted.live[0] !== 'Zobrazeno 4 příspěvků' || !posted.disabled || !posted.note || posted.handles !== 0) throw new Error(`filter Zveřejněné: ${JSON.stringify(posted)}`);
+      await checkpoint(ctx, 'instagram filter posted', { shot: ctx.profile.phone });
+      await press(ctx, (await filterLabel('planned')).asElement());
+      await page.waitForFunction(() => document.querySelectorAll('.ig-tile').length === 5 && location.search === '?zobrazit=naplanovane', { timeout: 5000 });
+      await press(ctx, (await filterLabel('all')).asElement());
+      await page.waitForFunction(() => document.querySelectorAll('.ig-tile').length === 9 && location.search === '', { timeout: 5000 });
+
+      // "Řadit příspěvky" on: 44 px handles, status chips and exactly one "Další na řadě"; off again: all gone.
+      await clickBy(ctx, 'button.ig-sort-toggle', /Řadit příspěvky/);
+      await page.waitForFunction(() => document.querySelectorAll('.photo-handle').length === 5, { timeout: 5000 });
+      const s = await page.evaluate(() => {
+        const handle = document.querySelector('.ig-tile .photo-handle').getBoundingClientRect();
+        return {
+          handleW: handle.width,
+          handleH: handle.height,
+          chips: document.querySelectorAll('.ig-chip').length,
+          next: document.querySelectorAll('.ig-chip-next').length,
+          pressed: document.querySelector('.ig-sort-toggle').getAttribute('aria-pressed'),
+          carouselText: [...document.querySelectorAll('.ig-carousel')].map((c) => c.textContent.trim()).join('|'),
+        };
+      });
+      if (s.handleW < 43.5 || s.handleH < 43.5) throw new Error(`handle ${s.handleW}x${s.handleH}, expected at least 44`);
+      if (s.chips !== 6 || s.next !== 1 || s.pressed !== 'true') throw new Error(`sort mode: ${JSON.stringify(s)}`);
+      if (!s.carouselText.split('|').every((t) => /^Karusel, \d+ fot/.test(t))) throw new Error(`carousel mark text: ${s.carouselText}`);
+      await checkpoint(ctx, 'instagram sorting', { shot: true });
+      await clickBy(ctx, 'button.ig-sort-toggle', /Řadit příspěvky/);
+      await page.waitForFunction(() => document.querySelectorAll('.photo-handle, .ig-chip').length === 0, { timeout: 5000 });
     });
 
     // ---- Instagram post editor (WP-14, T-345): open from the grid, mark-posted dialog, live counters, picker, 44 px targets
@@ -749,10 +888,53 @@ async function runProfile(browser, profile) {
       // T-346: the share panel of a saved post with photos (copy and download everywhere; the share button only where files can be shared).
       await waitText(page, /Zkopírovat popisek/);
       await waitText(page, /Stáhnout fotky/);
+      // T-349: two columns from 64 rem (photos left, text fields right), one column below; no section heading above the
+      // photos; the planned date is compact; no horizontal overflow.
+      const layout = await page.evaluate(() => {
+        const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect();
+        const photos = rect('.post-photos');
+        const fields = rect('.post-fields');
+        const date = document.querySelector('.post-editor input[type=date]')?.getBoundingClientRect();
+        const form = rect('.post-form');
+        return {
+          ok: Boolean(photos && fields && date && form),
+          sideBySide: Boolean(photos && fields) && fields.left >= photos.right - 1 && Math.abs(fields.top - photos.top) < 2,
+          stacked: Boolean(photos && fields) && fields.top >= photos.bottom - 1,
+          dateWidth: date?.width ?? 0,
+          formWidth: form?.width ?? 0,
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+          photosHeading: [...document.querySelectorAll('.post-editor h2')].some((h) => /Fotky příspěvku/.test(h.textContent ?? '')),
+        };
+      });
+      if (!layout.ok) throw new Error('editor layout: .post-photos, .post-fields, date or form missing');
+      if (layout.photosHeading) throw new Error('editor still has the "Fotky příspěvku" heading');
+      if (layout.overflow > 0) throw new Error(`editor overflows horizontally by ${layout.overflow} px`);
+      if (ctx.profile.width >= 1024 && !layout.sideBySide) throw new Error(`editor should be two columns at ${ctx.profile.width} px: ${JSON.stringify(layout)}`);
+      if (ctx.profile.width < 1024 && !layout.stacked) throw new Error(`editor should be one column at ${ctx.profile.width} px: ${JSON.stringify(layout)}`);
+      if (layout.dateWidth > layout.formWidth * 0.6 && ctx.profile.width >= 1024) throw new Error(`planned date field is too wide: ${JSON.stringify(layout)}`);
       await checkpoint(ctx, 'instagram editor', { shot: true });
 
-      // The mark-posted dialog: date field with today's date and the hint for old posts.
-      await clickBy(ctx, 'button', /^Označit jako zveřejněné$/);
+      // T-352/T-353: the actions are an icon row in the sticky top bar, the status is one segmented control, and the
+      // old separate "Označit jako zveřejněné" section is gone. Every bar button and option is at least 44 px.
+      const bar = await page.evaluate(() => {
+        const el = document.querySelector('.post-bar');
+        const names = [...(el?.querySelectorAll('button') ?? [])].map((b) => (b.getAttribute('aria-label') || b.textContent || '').trim());
+        const sizes = [...(el?.querySelectorAll('button') ?? []), ...document.querySelectorAll('.segmented-option')].map((e) => e.getBoundingClientRect()).filter((r) => r.width < 43.5 || r.height < 43.5);
+        return {
+          sticky: el ? getComputedStyle(el).position : null,
+          names,
+          small: sizes.length,
+          options: [...document.querySelectorAll('.segmented-option')].map((l) => (l.textContent ?? '').trim()),
+          oldSection: Boolean(document.querySelector('.post-posted')),
+        };
+      });
+      if (bar.sticky !== 'sticky') throw new Error(`editor top bar is not sticky: ${JSON.stringify(bar)}`);
+      for (const name of ['Zkopírovat popisek', 'Stáhnout fotky', 'Smazat příspěvek']) if (!bar.names.includes(name)) throw new Error(`top bar misses "${name}": ${JSON.stringify(bar)}`);
+      if (bar.small > 0) throw new Error(`top bar or status options under 44 px: ${JSON.stringify(bar)}`);
+      if (bar.options.join('|') !== 'Koncept|Naplánováno|Zveřejněno' || bar.oldSection) throw new Error(`status control is wrong: ${JSON.stringify(bar)}`);
+
+      // Choosing Zveřejněno opens the date dialog: date field with today's date and the hint for old posts.
+      await clickBy(ctx, 'label', /^Zveřejněno$/);
       await page.waitForFunction(() => document.querySelector('dialog:modal input[type=date]')?.value?.length === 10, { timeout: 10000 });
       await waitText(page, /starší příspěvky, které už na Instagramu jsou/);
       await checkpoint(ctx, 'instagram mark posted dialog', { shot: true });

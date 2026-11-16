@@ -7,16 +7,19 @@ import { AppProviders } from '../AppProviders';
 import { AuthLayout, ShellLayout } from '../components/Layouts';
 import { LoginPage } from '../auth/LoginPage';
 import { RequireAuth } from '../auth/RequireAuth';
-import { NetworkError } from '../ports';
+import { CatalogError, NetworkError } from '../ports';
 import {
   useCreateIgPost,
   useDeleteIgPost,
   useIgPosts,
+  useIgProfile,
   useMarkIgPostPosted,
   useReorderIgPosts,
   useSetIgPostPhotos,
   useUnmarkIgPostPosted,
   useUpdateIgPost,
+  useUpdateIgProfile,
+  plannerKeys,
 } from './planner';
 
 afterEach(cleanup);
@@ -30,6 +33,8 @@ function Screen({ photoIds }: { photoIds: string[] }) {
   const mark = useMarkIgPostPosted();
   const unmark = useUnmarkIgPostPosted();
   const del = useDeleteIgPost();
+  const profile = useIgProfile();
+  const updateProfile = useUpdateIgProfile();
   const first = posts.data?.[0];
   const second = posts.data?.[1];
   return (
@@ -38,6 +43,16 @@ function Screen({ photoIds }: { photoIds: string[] }) {
       <p data-testid="list">
         {posts.data?.map((p) => `${p.caption}:${p.status}:${p.photos.length}`).join('|') ?? 'loading'}
       </p>
+      <p data-testid="profile">{profile.isError ? 'error' : profile.data ? `${profile.data.bio}:${profile.data.followers_count}` : 'loading'}</p>
+      <p data-testid="profile-error">
+        {updateProfile.error instanceof NetworkError
+          ? 'network'
+          : updateProfile.error instanceof CatalogError
+            ? updateProfile.error.code
+            : ''}
+      </p>
+      <button type="button" onClick={() => profile.data && updateProfile.mutate({ patch: { bio: 'Nový popis', followers_count: 7 }, options: { expectedUpdatedAt: profile.data.updated_at } })}>profile-save</button>
+      <button type="button" onClick={() => updateProfile.mutate({ patch: { bio: 'Pozdě' }, options: { expectedUpdatedAt: '2000-01-01T00:00:00.000Z' } })}>profile-stale</button>
       <p data-testid="error">{create.error instanceof NetworkError ? 'network' : ''}</p>
       <button type="button" onClick={() => create.mutate({ caption: 'Prvni', photoIds: [photoIds[0]!], status: 'planned' })}>create</button>
       <button type="button" onClick={() => create.mutate({ caption: 'Druhy', photoIds: [photoIds[1]!] })}>create2</button>
@@ -102,6 +117,45 @@ describe('planner hooks', () => {
 
     // Planner writes are never site changes.
     expect(world.snapshot().site.pending_changes).toBe(0);
+  });
+
+  it('profile: loads under its own key, a save refreshes it, and a failure there does not touch the posts', async () => {
+    const user = userEvent.setup();
+    const world = setup();
+    expect(plannerKeys.profile()).toEqual(['planner', 'profile']);
+    expect(plannerKeys.profile().slice(0, 1)).toEqual(plannerKeys.all);
+    await waitFor(() => expect(screen.getByTestId('profile').textContent).toBe(':0'));
+    await waitFor(() => expect(list()).toBe(''));
+
+    await user.click(screen.getByText('profile-save'));
+    await waitFor(() => expect(screen.getByTestId('profile').textContent).toBe('Nový popis:7'));
+    expect((await world.ports.planner.getProfile()).bio).toBe('Nový popis');
+
+    // A write with an old precondition is refused (STALE) and leaves the profile alone.
+    await user.click(screen.getByText('profile-stale'));
+    await waitFor(() => expect(screen.getByTestId('profile-error').textContent).toBe('STALE'));
+    expect(screen.getByTestId('profile').textContent).toBe('Nový popis:7');
+    expect((await world.ports.planner.getProfile()).bio).toBe('Nový popis');
+
+    // A post write invalidates the whole planner key, the profile included.
+    world.failNext('planner.getProfile', 'network');
+    await user.click(screen.getByText('create'));
+    await waitFor(() => expect(list()).toBe('Prvni:planned:1'));
+    await waitFor(() => expect(screen.getByTestId('profile').textContent).toBe('error'));
+
+    // The profile mutation is a site-change-free write too.
+    expect(world.snapshot().site.pending_changes).toBe(0);
+  });
+
+  it('profile: a failed save surfaces its error and changes nothing', async () => {
+    const user = userEvent.setup();
+    const world = setup();
+    await waitFor(() => expect(screen.getByTestId('profile').textContent).toBe(':0'));
+    world.failNext('planner.updateProfile', 'network');
+    await user.click(screen.getByText('profile-save'));
+    await waitFor(() => expect(screen.getByTestId('profile-error').textContent).toBe('network'));
+    expect(screen.getByTestId('profile').textContent).toBe(':0');
+    expect((await world.ports.planner.getProfile()).followers_count).toBe(0);
   });
 
   it('a failed mutation surfaces its error and leaves the list alone', async () => {

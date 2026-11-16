@@ -2291,12 +2291,12 @@
   }
 }
 
-/* Instagram planning grid (WP-14): three columns of 3:4 tiles, dashed outline + text badge for unpublished posts. */
+/* Instagram preview (WP-14, WP-15): three columns of 3:4 tiles with a thin gap and no tile borders; chips and handles only in sort mode. */
 @layer components {
   .ig-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-1);
+    gap: var(--ig-grid-gap);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -2309,11 +2309,6 @@
     background: var(--color-placeholder);
     user-select: none;
     -webkit-touch-callout: none;
-  }
-
-  .ig-tile:not([data-status='posted']) {
-    outline: var(--bar-thickness) dashed var(--color-text);
-    outline-offset: calc(-1 * var(--bar-thickness));
   }
 
   .ig-tile.is-dragging {
@@ -2353,19 +2348,12 @@
     inset-block-start: var(--space-1);
     inset-inline-end: var(--space-1);
     display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-1) var(--space-2);
-    font-family: var(--font-ui);
-    font-size: var(--text-caption);
-    font-weight: var(--weight-ui-strong);
-    color: var(--color-text);
-    background: var(--color-surface-raised);
-    border: var(--border-width) solid var(--color-border-strong);
-    border-radius: var(--radius-full);
+    color: var(--color-on-overlay);
+    filter: drop-shadow(0 0 var(--space-1) var(--color-overlay));
+    pointer-events: none;
   }
 
-  .ig-badges {
+  .ig-chips {
     position: absolute;
     inset-block-end: var(--space-1);
     inset-inline: var(--space-1);
@@ -2376,10 +2364,9 @@
     pointer-events: none;
   }
 
-  .ig-badge {
+  .ig-chip {
     max-inline-size: 100%;
-    overflow-wrap: anywhere;
-    padding: var(--space-1) var(--space-2);
+    padding: var(--space-1);
     font-family: var(--font-ui);
     font-size: var(--text-caption);
     font-weight: var(--weight-ui-strong);
@@ -2390,41 +2377,280 @@
     border-radius: var(--radius-full);
   }
 
-  .ig-badge-next {
+  .ig-chip-next {
     color: var(--color-on-overlay);
     background: var(--color-text);
     border-color: var(--color-text);
   }
 
-  .ig-legend {
+  /* Filter, sort toggle and note above the profile frame; the frame is a phone-width column from 64rem (T-365). */
+  .ig-controls {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2) var(--space-4);
+  }
+
+  .ig-filter {
+    min-inline-size: 0;
+    margin: 0;
     padding: 0;
-    list-style: none;
-    font-size: var(--text-caption);
+    border: 0;
   }
 
-  .ig-legend li {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
+  .ig-filter .segmented-option {
+    padding-inline: var(--space-2);
   }
 
-  .ig-legend-note {
+  .ig-filter-count {
+    margin-inline-start: var(--space-2);
+    font-variant-numeric: tabular-nums;
+    color: inherit;
+  }
+
+  .ig-filter-check {
+    margin-inline-end: var(--space-1);
+  }
+
+  .ig-sort-toggle[aria-pressed='true'] {
+    color: var(--color-on-overlay);
+    background: var(--color-text);
+  }
+
+  .ig-sort-toggle[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+
+  .ig-sort-note {
+    margin: 0;
+  }
+
+  .ig-new {
+    margin-inline-start: auto;
+  }
+
+  .ig-frame {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+  }
+
+  /*
+   * Desktop frame (T-365): from 64rem the profile (header, tab row, grid) is one phone-width column in the middle of the
+   * page, drawn with a token border and radius, and the controls above it share its width and left edge. Below 64rem
+   * both are full width, as before.
+   */
+  @media (min-width: 64rem) {
+    .ig-frame,
+    .ig-controls {
+      inline-size: 100%;
+      max-inline-size: var(--ig-frame-max);
+      margin-inline: auto;
+      box-sizing: border-box;
+    }
+
+    .ig-frame {
+      gap: 0;
+      overflow: clip;
+      background: var(--color-surface-raised);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--radius-sm);
+    }
+
+    .ig-frame .ig-profile {
+      padding: var(--space-4) var(--space-4) 0;
+    }
+
+    .ig-frame .ig-tabs {
+      margin-inline: calc(-1 * var(--space-4));
+    }
+  }
+
+  .ig-filter-empty {
+    margin: 0;
+    padding: var(--space-6) var(--space-4);
+    text-align: center;
     color: var(--color-text-muted);
   }
 
-  .ig-swatch {
-    inline-size: var(--space-4);
-    block-size: var(--space-5);
-    background: var(--color-placeholder);
-    border: var(--bar-thickness) solid var(--color-border-strong);
+  /* Profile header: username, avatar with the three counts, name, bio, link, decorative buttons and tabs. */
+  .ig-profile {
+    display: grid;
+    gap: var(--space-2);
+    font-family: var(--font-ui);
+    font-size: var(--text-small);
+    line-height: var(--leading-ui);
   }
 
-  .ig-swatch-open {
-    border: var(--bar-thickness) dashed var(--color-text);
+  .ig-profile > * {
+    margin: 0;
+  }
+
+  .ig-profile-pending {
+    min-block-size: calc(var(--ig-avatar-size) + var(--space-8));
+  }
+
+  .ig-username {
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    font-weight: var(--weight-ui-strong);
+    letter-spacing: normal;
+    text-transform: none;
+    overflow-wrap: anywhere;
+  }
+
+  .ig-profile-top {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+  }
+
+  .ig-avatar {
+    flex: none;
+    inline-size: var(--ig-avatar-size);
+    block-size: var(--ig-avatar-size);
+    object-fit: cover;
+    object-position: center;
+    border-radius: var(--radius-full);
+    background: var(--color-placeholder);
+  }
+
+  .ig-avatar-initials {
+    display: grid;
+    place-items: center;
+    font-size: var(--text-h3);
+    font-weight: var(--weight-ui-strong);
+    color: var(--color-text);
+  }
+
+  .ig-counts {
+    flex: 1;
+    display: flex;
+    justify-content: space-around;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+  }
+
+  .ig-counts li {
+    display: grid;
+    min-inline-size: 0;
+    font-size: var(--text-caption);
+  }
+
+  .ig-counts strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-ui-strong);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ig-name {
+    font-weight: var(--weight-ui-strong);
+    overflow-wrap: anywhere;
+  }
+
+  .ig-bio {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+
+  .ig-profile-link {
+    color: var(--color-accent-text);
+    overflow-wrap: anywhere;
+  }
+
+  .ig-actions {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .ig-fake-button {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--target-min);
+    padding-inline: var(--space-3);
+    font-weight: var(--weight-ui-strong);
+    background: var(--color-surface);
+    border-radius: var(--radius-none);
+  }
+
+  .ig-fake-icon {
+    flex: none;
+  }
+
+  /* The one working button of the row: the same size as the decorative ones, with the stroke of every secondary button. */
+  .ig-edit {
+    flex: 1;
+    font-weight: var(--weight-ui-strong);
+  }
+
+  /* "Upravit profil" dialog (T-364): circle preview with its buttons, the two counts side by side. */
+  .ig-avatar-field {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+
+  .ig-avatar-field legend {
+    grid-column: 1 / -1;
+    padding: 0;
+    font-weight: var(--weight-ui-strong);
+  }
+
+  .ig-avatar-field .field-hint {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .ig-avatar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .ig-count-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+
+  /* An input has a minimum width of its own; without this the second count pokes out of the dialog. */
+  .ig-count-fields .field {
+    grid-template-columns: minmax(0, 1fr);
+    min-inline-size: 0;
+  }
+
+  .ig-count-fields input {
+    min-inline-size: 0;
+  }
+
+  .ig-tabs {
+    display: flex;
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  .ig-tab {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--target-min);
+    color: var(--color-text-muted);
+    border-block-end: var(--bar-thickness) solid transparent;
+  }
+
+  .ig-tab-active {
+    color: var(--color-text);
+    border-block-end-color: var(--color-text);
   }
 
   .ig-steps {
@@ -2434,18 +2660,195 @@
 
   /* Post editor (WP-14): sections stacked, photo strip rows with a 3:4 thumbnail, the picker's order number. */
   .post-editor > * + * {
-    margin-block-start: var(--space-4);
+    margin-block-start: var(--space-3);
+  }
+
+  /*
+   * T-352: share, copy, download and delete sit in an icon row that sticks under the app header, so they stay in
+   * reach while the caption is edited. The offset is the header's height (one row from 80rem, wrapped below).
+   */
+  .post-bar {
+    position: sticky;
+    inset-block-start: var(--header-height-wrapped);
+    z-index: var(--z-header);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    padding-block: var(--space-2);
+    background: var(--color-bg);
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  @media (min-width: 80rem) {
+    .post-bar {
+      inset-block-start: var(--header-height);
+    }
+  }
+
+  /* Focused fields must land below the app header and this bar (WCAG 2.4.11). */
+  html:has(.post-bar) {
+    scroll-padding-block-start: calc(var(--header-height-wrapped) + var(--target-min) + var(--space-4));
+  }
+
+  @media (min-width: 80rem) {
+    html:has(.post-bar) {
+      scroll-padding-block-start: calc(var(--header-height) + var(--target-min) + var(--space-4));
+    }
+  }
+
+  .post-bar-slot {
+    display: contents;
+  }
+
+  .button-action {
+    gap: var(--space-2);
+    padding-inline: 0;
+    inline-size: var(--target-min);
+  }
+
+  /* Wide screens show the text beside the icon; the name is the same text on every width. */
+  @media (min-width: 48rem) {
+    .button-action {
+      inline-size: auto;
+      padding-inline: var(--space-3);
+    }
+
+    .button-action .action-label {
+      position: static;
+      inline-size: auto;
+      block-size: auto;
+      overflow: visible;
+      clip-path: none;
+    }
+  }
+
+  .button-action-danger {
+    margin-inline-start: auto;
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+  }
+
+  .button-action-danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  }
+
+  .button-action-danger:disabled {
+    color: var(--color-text-muted);
+    border-color: var(--color-border-strong);
+  }
+
+  .post-photos-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  /* Status as one segmented control (T-353): three radios share a single outline, the chosen one is filled. */
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-3) var(--space-5);
+  }
+
+  .post-status {
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .post-status legend {
+    padding: 0;
+    margin-block-end: var(--space-1);
+    font-size: var(--text-small);
+  }
+
+  .segmented {
+    display: inline-flex;
+    flex-wrap: wrap;
+    border: var(--border-width) solid var(--color-accent-strong);
+  }
+
+  .segmented-option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--target-min);
+    min-inline-size: var(--target-min);
+    padding-inline: var(--space-3);
+    font-size: var(--text-small);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .segmented-option + .segmented-option {
+    border-inline-start: var(--border-width) solid var(--color-accent-strong);
+  }
+
+  .segmented-option:hover:not(:has(input:disabled, input:checked)) {
+    background: color-mix(in srgb, var(--color-accent-strong) 12%, transparent);
+  }
+
+  .segmented-option:has(input:checked) {
+    color: var(--color-on-overlay);
+    background: var(--color-text);
+  }
+
+  .segmented-option:has(input:focus-visible) {
+    outline: var(--focus-width) solid var(--color-focus);
+    outline-offset: var(--focus-offset);
+  }
+
+  /* Disabled: muted text on the neutral surface, never faded. */
+  .segmented-option:has(input:disabled) {
+    cursor: not-allowed;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+  }
+
+  .segmented-option:has(input:disabled:checked) {
+    color: var(--color-on-overlay);
+    background: var(--color-text-muted);
+  }
+
+  /* Two columns from 64rem (photos left, caption to status right); one column below, photos first. */
+  .post-form,
+  .post-fields {
+    display: grid;
+    gap: var(--space-3);
+    align-content: start;
+  }
+
+  .post-form > *,
+  .post-fields > * {
+    min-inline-size: 0;
+  }
+
+  @media (min-width: 64rem) {
+    .post-form {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      gap: var(--space-6);
+      align-items: start;
+    }
+  }
+
+  .field-compact input {
+    justify-self: start;
+    inline-size: auto;
   }
 
   .post-photos,
-  .post-posted,
   .post-share {
     display: grid;
-    gap: var(--space-3);
+    gap: var(--space-2);
   }
 
   .post-photos > *,
-  .post-posted > *,
   .post-share > * {
     margin: 0;
   }
@@ -2453,14 +2856,7 @@
   .post-share-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
-  }
-
-  .post-status {
-    margin: 0;
-    padding: var(--space-2) var(--space-3);
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-none);
+    gap: var(--space-2);
   }
 
   .post-strip-item {

@@ -108,39 +108,19 @@ rejects it, use the dashboard form with the same origins, methods and headers.
 ]
 ```
 
-### 6.1 Second rule: GET and HEAD for the admin's Instagram sharing (WP-14, T-346)
+### 6.1 GET and HEAD for the admin's Instagram sharing (WP-14, T-346): no new rule needed
 
 The Instagram planner fetches the 1600 px JPEG of each photo with `fetch` (`mode: 'cors'`, `credentials: 'omit'`) to hand
 the files to the phone's share sheet. A cross-origin `fetch` needs the image host to answer with
-`Access-Control-Allow-Origin`, so the bucket also needs a GET/HEAD rule for the exact admin origins. No wildcard
-(`*`) and no other origin. The admin's CSP `connect-src` already names the image origin (`VITE_IMG_BASE_URL`); nothing else
-changes there.
+`Access-Control-Allow-Origin` for the exact admin origin (no wildcard `*`, no other origin). The existing R2 CORS policy
+already allows GET, HEAD and PUT for `https://admin.mullnyphotos.cz` with `AllowedHeaders` `*` and `ExposeHeaders` `ETag`,
+so **no new rule is needed** and the policy stays as it is. The admin's CSP `connect-src` already names the image origin
+(`VITE_IMG_BASE_URL`); nothing else changes there.
 
-**HUMAN (T-348)** The dashboard replaces the whole policy when you save it, so paste BOTH rules (the PUT rule above and
-this one) as one array, not only the new rule:
-
-```json
-[
-  {
-    "AllowedOrigins": ["https://admin.mullnyphotos.cz", "http://localhost:5173"],
-    "AllowedMethods": ["PUT"],
-    "AllowedHeaders": ["content-type", "content-length", "cache-control"],
-    "ExposeHeaders": [],
-    "MaxAgeSeconds": 3600
-  },
-  {
-    "AllowedOrigins": ["https://admin.mullnyphotos.cz", "http://localhost:5173"],
-    "AllowedMethods": ["GET", "HEAD"],
-    "AllowedHeaders": [],
-    "ExposeHeaders": ["content-type", "content-length"],
-    "MaxAgeSeconds": 3600
-  }
-]
-```
-
-If the photos are read through a Cloudflare custom domain in front of the bucket (the image origin in
-`VITE_IMG_BASE_URL`), the CORS policy of the bucket is what that domain answers with; check the response of
-`curl -I -H "Origin: https://admin.mullnyphotos.cz" <image url>` shows `access-control-allow-origin`.
+The only step is to check it (T-348 step c): the response of
+`curl -I -H "Origin: https://admin.mullnyphotos.cz" <image url>` must show `access-control-allow-origin` equal to the
+admin origin. The photos are read through a Cloudflare custom domain in front of the bucket (the image origin in
+`VITE_IMG_BASE_URL`), and the CORS policy of the bucket is what that domain answers with.
 
 **Contingency, only if that check fails (TO VERIFY live):** an image first fetched without an `Origin` header may sit in the
 Cloudflare cache without the CORS header, and the cached copy is served to the admin. Fix, in this order of preference:

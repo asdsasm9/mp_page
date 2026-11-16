@@ -165,6 +165,9 @@ export const DB_COLUMNS = {
     'id', 'caption', 'hashtags', 'planned_on', 'status', 'posted_at', 'sort', 'created_at', 'updated_at',
   ],
   ig_post_photos: ['post_id', 'photo_id', 'sort'],
+  ig_profile: [
+    'id', 'username', 'display_name', 'bio', 'link', 'followers_count', 'following_count', 'avatar_photo_id', 'updated_at',
+  ],
   change_log: [
     'id', 'at', 'table_name', 'row_id', 'kind', 'label',
     'category_id', 'category_name', 'album_id', 'album_title',

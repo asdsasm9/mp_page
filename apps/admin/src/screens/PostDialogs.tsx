@@ -1,4 +1,4 @@
-/** Dialogs of the Instagram post editor (WP-14): "Označit jako zveřejněné" (date, default today) and the delete confirmation. */
+/** Dialogs of the Instagram post editor (WP-14): the posted date (default today), the unmark confirm and the delete confirmation. */
 import { useId, useState } from 'react';
 import { DialogActions, DialogButton } from '../components/DialogActions';
 import { Field } from '../components/Field';
@@ -75,6 +75,31 @@ export function MarkPostedDialog({ onClose, onConfirm }: MarkProps) {
           </DialogButton>
         </DialogActions>
       </div>
+    </Modal>
+  );
+}
+
+interface UnmarkProps {
+  /** The status the person chose: Koncept saves the post as a draft after it is taken out of the posted block. */
+  target: 'draft' | 'planned';
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+}
+
+/** Short confirm before a posted post goes back to the plan (plan 3.6: last in the planned block, date cleared). */
+export function UnmarkPostedDialog({ target, onClose, onConfirm }: UnmarkProps) {
+  const canMutate = useCanMutate();
+  const t = cs.instagram.unmarkDialog;
+  const { saving, failure, confirm } = useConfirmAction(onConfirm);
+  return (
+    <Modal title={t.title} onClose={onClose} busy={saving}>
+      <p>{target === 'draft' ? t.bodyDraft : t.bodyPlanned}</p>
+      {failure === null ? null : <Notice>{errorMessage(failure)}</Notice>}
+      <DialogActions busy={saving} onClose={onClose} cancelAutofocus>
+        <DialogButton kind="primary" busy={saving} announceBusy disabled={!canMutate} onClick={() => void confirm()}>
+          {saving ? t.saving : t.confirm}
+        </DialogButton>
+      </DialogActions>
     </Modal>
   );
 }

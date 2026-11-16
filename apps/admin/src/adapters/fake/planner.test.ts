@@ -168,4 +168,101 @@ describe('fake planner', () => {
     expect(posts.some((p) => p.status === 'posted' && p.photos.some((l) => l.sort === 3))).toBe(true);
     expect(new Set(posts.map((p) => p.id)).size).toBe(9);
   });
+
+  describe('profile', () => {
+    it('is seeded with the one default row and returns copies', async () => {
+      const { planner } = setup();
+      const profile = await planner.getProfile();
+      expect(profile).toMatchObject({ id: true, username: 'mullnyphotos', display_name: 'Mullny Photos', bio: '', link: '', followers_count: 0, following_count: 0, avatar_photo_id: null });
+      profile.bio = 'changed outside';
+      expect((await planner.getProfile()).bio).toBe('');
+    });
+
+    it('updates only the given fields and moves updated_at forward; id cannot be changed', async () => {
+      const { planner, photoIds } = setup();
+      const before = await planner.getProfile();
+      const after = await planner.updateProfile({ bio: 'Řádek 1\nŘádek 2', followers_count: 1200, avatar_photo_id: photoIds[0]! });
+      expect(after).toMatchObject({ id: true, username: 'mullnyphotos', bio: 'Řádek 1\nŘádek 2', followers_count: 1200, avatar_photo_id: photoIds[0] });
+      expect(after.updated_at > before.updated_at).toBe(true);
+      expect(await planner.getProfile()).toEqual(after);
+      expect(await code(planner.updateProfile({ id: false } as never))).toBe('INVALID');
+      expect(await code(planner.updateProfile({ updated_at: before.updated_at } as never))).toBe('INVALID');
+    });
+
+    it('enforces the SQL limits at the boundary and one past it, in code points', async () => {
+      const { planner } = setup();
+      const ok = (patch: Parameters<typeof planner.updateProfile>[0]) => code(planner.updateProfile(patch));
+      expect(await ok({ username: 'a'.repeat(30) })).toBe('OK');
+      expect(await ok({ username: 'a'.repeat(31) })).toBe('INVALID');
+      expect(await ok({ username: 'bad name' })).toBe('INVALID');
+      expect(await ok({ username: 'čau' })).toBe('INVALID');
+      expect(await ok({ username: 'a.b_c9' })).toBe('OK');
+      expect(await ok({ display_name: '😀'.repeat(64) })).toBe('OK');
+      expect(await ok({ display_name: 'a'.repeat(65) })).toBe('INVALID');
+      expect(await ok({ bio: '😀'.repeat(150) })).toBe('OK');
+      expect(await ok({ bio: 'a'.repeat(151) })).toBe('INVALID');
+      expect(await ok({ link: 'https://example.test/' + 'a'.repeat(179) })).toBe('OK');
+      expect(await ok({ link: 'https://example.test/' + 'a'.repeat(180) })).toBe('INVALID');
+      expect(await ok({ link: 'ftp://example.test' })).toBe('INVALID');
+      expect(await ok({ link: 'example.test' })).toBe('INVALID');
+      expect(await ok({ link: 'HTTP://example.test' })).toBe('OK');
+      expect(await ok({ link: '' })).toBe('OK');
+      expect(await ok({ followers_count: 999999999, following_count: 0 })).toBe('OK');
+      expect(await ok({ followers_count: 1000000000 })).toBe('INVALID');
+      expect(await ok({ following_count: -1 })).toBe('INVALID');
+      expect(await ok({ following_count: 1.5 })).toBe('INVALID');
+    });
+
+    it('a refused update changes nothing', async () => {
+      const { planner } = setup();
+      const before = await planner.getProfile();
+      expect(await code(planner.updateProfile({ bio: 'x', followers_count: -5 }))).toBe('INVALID');
+      expect(await planner.getProfile()).toEqual(before);
+    });
+
+    it('refuses an avatar photo that does not exist and accepts removing it', async () => {
+      const { planner, photoIds } = setup();
+      expect(await code(planner.updateProfile({ avatar_photo_id: 'dddddddd-0000-4000-8000-00000000ffff' }))).toBe('INVALID');
+      await planner.updateProfile({ avatar_photo_id: photoIds[1]! });
+      expect((await planner.updateProfile({ avatar_photo_id: null })).avatar_photo_id).toBeNull();
+    });
+
+    it('deleting the avatar photo clears only the avatar', async () => {
+      const { world, planner, photoIds } = setup();
+      await planner.updateProfile({ avatar_photo_id: photoIds[2]!, bio: 'zůstane' });
+      await world.ports.api.deletePhotos({ ids: [photoIds[3]!] });
+      expect((await planner.getProfile()).avatar_photo_id).toBe(photoIds[2]);
+      await world.ports.api.deletePhotos({ ids: [photoIds[2]!] });
+      expect(await planner.getProfile()).toMatchObject({ avatar_photo_id: null, bio: 'zůstane' });
+    });
+
+    it('STALE when updated_at differs; matching precondition works; the single row stays single', async () => {
+      const { planner } = setup();
+      const first = await planner.getProfile();
+      const second = await planner.updateProfile({ bio: 'a' }, { expectedUpdatedAt: first.updated_at });
+      expect(await code(planner.updateProfile({ bio: 'b' }, { expectedUpdatedAt: first.updated_at }))).toBe('STALE');
+      expect((await planner.getProfile()).bio).toBe('a');
+      expect(await code(planner.updateProfile({ bio: 'c' }, { expectedUpdatedAt: second.updated_at }))).toBe('OK');
+    });
+
+    it('is not tracked, needs an admin session and supports failure injection', async () => {
+      const { world, planner } = setup();
+      const before = world.snapshot();
+      await planner.updateProfile({ bio: 'x' });
+      const after = world.snapshot();
+      expect(after.site).toEqual(before.site);
+      expect(after.changeLog).toEqual(before.changeLog);
+
+      const out = setup({ signedIn: false });
+      expect(await code(out.planner.getProfile())).toBe('UNAUTHENTICATED');
+      expect(await code(out.planner.updateProfile({ bio: 'x' }))).toBe('UNAUTHENTICATED');
+      world.failNext('planner.getProfile', 'network');
+      expect(await code(planner.getProfile())).toBe(NetworkError.name);
+      world.failNext('planner.updateProfile', new ApiError('NOT_ADMIN'));
+      expect(await code(planner.updateProfile({ bio: 'y' }))).toBe('NOT_ADMIN');
+      expect((await planner.getProfile()).bio).toBe('x');
+      world.dropNetwork();
+      expect(await code(planner.getProfile())).toBe(NetworkError.name);
+    });
+  });
 });

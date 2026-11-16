@@ -5,10 +5,38 @@
  */
 import type { ReactNode } from 'react';
 
-export type IconName = 'edit' | 'hide' | 'show' | 'publish' | 'move' | 'trash';
+export type IconName = 'edit' | 'hide' | 'show' | 'publish' | 'move' | 'trash' | 'share' | 'copy' | 'download' | 'refresh';
 
 /** 24 x 24 paths, drawn as strokes in currentColor (the stylesheet sets size and stroke width). */
 const PATHS: Record<IconName, ReactNode> = {
+  share: (
+    <>
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.6 13.5 6.8 4" />
+      <path d="m15.4 6.5-6.8 4" />
+    </>
+  ),
+  copy: (
+    <>
+      <rect x="9" y="9" width="12" height="12" rx="1" />
+      <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+    </>
+  ),
+  download: (
+    <>
+      <path d="M12 4v12" />
+      <path d="m7 11 5 5 5-5" />
+      <path d="M4 16v4h16v-4" />
+    </>
+  ),
+  refresh: (
+    <>
+      <path d="M21 12a9 9 0 1 1-3-6.7" />
+      <path d="M21 4v5h-5" />
+    </>
+  ),
   edit: (
     <>
       <path d="M12 20h9" />
@@ -71,6 +99,26 @@ interface Props {
   disabled?: boolean;
   /** Destructive action: demoted to a quiet danger-coloured icon, the confirm dialog still follows. */
   danger?: boolean;
+}
+
+interface ActionProps {
+  icon: IconName;
+  /** Czech label: the accessible name always, visible text from 48 rem up, the tooltip everywhere. */
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: 'primary' | 'danger';
+}
+
+/** Icon plus label for the editor's top bar (T-352): 44 px square on a phone, icon and text on wide screens. */
+export function ActionButton({ icon, label, onClick, disabled, variant }: ActionProps) {
+  const kind = variant === 'primary' ? ' button-primary' : variant === 'danger' ? ' button-action-danger' : '';
+  return (
+    <button type="button" className={`button button-action${kind}`} title={label} disabled={disabled} onClick={onClick}>
+      <Icon name={icon} />
+      <span className="action-label visually-hidden">{label}</span>
+    </button>
+  );
 }
 
 export function IconButton({ icon, label, onClick, disabled, danger }: Props) {

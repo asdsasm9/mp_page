@@ -331,7 +331,7 @@ describe('ig tables: not tracked as site changes', () => {
     files.push(join(root, 'packages', 'shared', 'src', 'snapshot.ts'));
     expect(files.length).toBeGreaterThan(1);
     for (const f of files) {
-      expect(readFileSync(f, 'utf8'), f).not.toMatch(/ig_posts|ig_post_photos|ig_set_post_photos/);
+      expect(readFileSync(f, 'utf8'), f).not.toMatch(/ig_posts|ig_post_photos|ig_set_post_photos|ig_profile/);
     }
   });
 });

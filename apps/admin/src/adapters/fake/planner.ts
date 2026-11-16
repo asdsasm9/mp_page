@@ -8,10 +8,12 @@ import {
   IG_CAPTION_MAX,
   IG_HASHTAGS_MAX,
   IG_PHOTOS_MAX,
+  IgProfileRowSchema,
   captionLength,
   orderPosts,
   type IgPost,
   type IgPostRow,
+  type IgProfileRow,
 } from '@mp/shared';
 import { CatalogError, type PlannerPort } from '../../ports';
 import { copy, type Core } from './core';
@@ -73,6 +75,27 @@ export function createFakePlanner(core: Core): PlannerPort {
   }
 
   return {
+    async getProfile() {
+      guard('planner.getProfile');
+      return copy(state.igProfile);
+    },
+    async updateProfile(patch, options = {}) {
+      guard('planner.updateProfile');
+      const row = state.igProfile;
+      if (options.expectedUpdatedAt !== undefined && row.updated_at !== options.expectedUpdatedAt) {
+        throw new CatalogError('STALE');
+      }
+      // Column grant: only the typed columns can change (id and updated_at never); unknown keys are refused.
+      const allowed = ['username', 'display_name', 'bio', 'link', 'followers_count', 'following_count', 'avatar_photo_id'];
+      if (Object.keys(patch).some((k) => !allowed.includes(k))) throw new CatalogError('INVALID');
+      const merged = { ...row, ...patch };
+      // The table checks, via the same schema the real adapter parses with.
+      if (!IgProfileRowSchema.safeParse(merged).success) throw new CatalogError('INVALID');
+      if (merged.avatar_photo_id !== null && !state.photos.has(merged.avatar_photo_id)) throw new CatalogError('INVALID');
+      const next: IgProfileRow = { ...merged, updated_at: core.stamp(row.updated_at) };
+      state.igProfile = next;
+      return copy(next);
+    },
     async listPosts() {
       guard('planner.listPosts');
       return copy(orderPosts([...state.igPosts.values()].map(toPost)));

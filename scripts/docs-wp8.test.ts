@@ -1,4 +1,4 @@
-/** docs/NAVOD.md (Czech how-to): every quoted label is a real admin text, no jargon, error table, 10 checkboxes. */
+/** docs/NAVOD.md (Czech how-to): every quoted label is a real admin text, no jargon, error table, 12 checkboxes. */
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -69,10 +69,10 @@ describe('docs/NAVOD.md', () => {
     for (const re of banned) expect(doc, String(re)).not.toMatch(re);
   });
 
-  it('has the seven required sections in order', () => {
+  it('has the eight required sections in order (section 8 is the Instagram planner, WP-14)', () => {
     const headings = lines.filter((l) => /^## \d\. /.test(l)).map((l) => l.slice(3, 4));
-    expect(headings).toEqual(['1', '2', '3', '4', '5', '6', '7']);
-    const titles = ['Co potřebuješ', 'Po focení krok za krokem', 'Úpravy', 'Úložiště', 'Telefon', 'Když něco nejde', 'Soukromí klientů'];
+    expect(headings).toEqual(['1', '2', '3', '4', '5', '6', '7', '8']);
+    const titles = ['Co potřebuješ', 'Po focení krok za krokem', 'Úpravy', 'Úložiště', 'Telefon', 'Když něco nejde', 'Soukromí klientů', 'Instagram'];
     for (const t of titles) expect(lines.some((l) => l.startsWith('## ') && l.includes(t)), t).toBe(true);
   });
 
@@ -122,9 +122,9 @@ describe('docs/NAVOD.md', () => {
     expect(doc).not.toMatch(/smazáno všude/i);
   });
 
-  it('ends with exactly 10 checkbox lines', () => {
+  it('ends with exactly 12 checkbox lines (10 site steps, 2 Instagram steps)', () => {
     const boxes = lines.filter((l) => /^- \[ \] /.test(l));
-    expect(boxes).toHaveLength(10);
+    expect(boxes).toHaveLength(12);
     expect(lines.filter((l) => /^- \[[xX]\]/.test(l))).toHaveLength(0);
     const firstBox = lines.findIndex((l) => /^- \[ \] /.test(l));
     expect(lines.slice(firstBox).filter((l) => l.startsWith('## '))).toHaveLength(0);

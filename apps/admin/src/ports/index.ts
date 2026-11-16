@@ -1,6 +1,7 @@
 import type { ApiPort } from './api';
 import type { AuthPort } from './auth';
 import type { CatalogPort } from './catalog';
+import type { PlannerPort } from './planner';
 import type { PublishStatusPort } from './publish-status';
 import type { Clock, Ids } from './runtime';
 import type { UploadPort } from './upload';
@@ -9,6 +10,7 @@ export * from './api';
 export * from './auth';
 export * from './catalog';
 export * from './errors';
+export * from './planner';
 export * from './publish-status';
 export * from './runtime';
 export * from './upload';
@@ -17,6 +19,7 @@ export * from './upload';
 export interface Ports {
   auth: AuthPort;
   catalog: CatalogPort;
+  planner: PlannerPort;
   api: ApiPort;
   upload: UploadPort;
   publishStatus: PublishStatusPort;

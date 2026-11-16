@@ -31,6 +31,9 @@ facts and human steps: [VERIFY.md](VERIFY.md). Page texts (Home, About, Contact)
 | `/alba/:id/foto/:photoId` | Photo detail (alt text, caption) |
 | `/zverejnit` | Publish the site |
 | `/ulozeni` | Storage and reconcile |
+| `/instagram` | Instagram planning grid (WP-14): three-column grid of planned, draft and posted posts, drag to reorder; a tile opens the editor |
+| `/instagram/novy` | New Instagram post (WP-14, T-345): pick 1 to 10 photos (album first, selection kept across albums), caption n / 2200 and hashtags n / 30 with live counters, optional planned date, status draft or planned, explicit "Uložit" |
+| `/instagram/:id` | Edit a post: same form, "Označit jako zveřejněné" (date, default today; also for old posts already on Instagram), "Vrátit zpět na naplánované", delete with confirmation. A post without photos is a draft with a notice; planning or marking it is refused. A saved post with photos has a "Zveřejnění v Instagramu" panel (T-346): "Sdílet do Instagramu" only where the browser can share image files (the 1600 JPEGs are fetched when the page opens, as `foto-1.jpg` ..., so the tap shares at once; "Připravit fotky" retries a failed fetch), "Zkopírovat popisek" (caption, blank line, hashtags; a read-only selected text area when the clipboard refuses) and "Stáhnout fotky" (blob download, also on desktop). The share fetch needs the image origin in `connect-src` and an R2 GET/HEAD CORS rule (docs/DEPLOY-API.md section 6.1); the browser calls sit behind the `ShareDeps` seam (`share/shareDeps.ts`, `ShareDepsProvider`). Saving text and photos is two calls (post fields, then the photo set); a failed second call keeps the draft on screen for a retry. After a "changed elsewhere" conflict, "Načíst znovu" drops the draft and shows the fresh post |
 | `/nahravani` | Upload page (the queue also shows as a panel; no header link since T-246, phones keep the bottom-nav entry) |
 | `/uvodni-stranka` | "Úvodní stránka" (T-286): choose the home hero photo (picker, "Zrušit výběr", desktop and phone crops, "Nízké rozlišení pro velkou fotku" under `HERO_MIN_MASTER_WIDTH` = 2400 px master width). Header and phone bottom nav link to it |
 | `*` | 404 |
@@ -160,6 +163,42 @@ Auth (EU region) stores them in its `auth.users` and `auth.identities` tables; t
 too. Nothing else is requested, and Google never passes the Google password. The public site and its visitors are not
 involved. People outside the two addresses leave data only in the short fallback window of V-4, if it is needed.
 
+## Instagram planner (WP-14)
+
+A planning grid for Instagram posts. Nothing here talks to Instagram or Meta: the photographer plans in the admin and
+posts by hand from her phone.
+
+- **Ordering.** The grid reads like the Instagram profile (row-major, three columns, 3:4 tiles, centre crop). Planned and
+  draft posts come first, by `sort` ascending; posted posts follow, by `posted_at` newest first. A new post gets
+  `sort = min(sort) - 10`, so it lands at the top. Dragging (or the keyboard reorder, like the other lists) reorders only
+  the planned and draft block and saves one PATCH per changed row. Marking a post as posted keeps its `sort`, sets
+  `posted_at` (date asked, default today, stored at noon local time) and moves it into the posted block; "Vrátit zpět na
+  naplánované" clears `posted_at`, sets `status = 'planned'` and `sort = max(planned sort) + 10`.
+- **"Další na řadě".** The next post to publish is the last tile of the planned block, the one next to the posted
+  posts, because the profile shows the newest post top left and the grid is filled from the top. The grid marks that tile
+  "Další na řadě". Dashed outline plus a text badge ("Koncept", "Naplánováno") separate unpublished tiles from posted ones;
+  colour is never the only signal.
+- **Not site changes, not published.** `ig_posts` and `ig_post_photos` have no `bump_pending` or `log_change` trigger. Planner writes
+  never raise "Nezveřejněné změny", never appear in "Zobrazit změny" and are never part of the published snapshot or the
+  publish service. The two tables are admin-only behind RLS (`is_admin()`), with no anon access. Captions can name
+  clients, so they stay in Supabase and are not logged. Deleting a post never deletes a photo.
+- **Photos of unpublished albums.** A post may use photos from albums that are not published. Those photo files are
+  already reachable by their unguessable (UUID) image URLs, as described in NAVOD.md section 7; the planner adds no new
+  exposure, and the share step only fetches those same URLs. Do not treat an unpublished album as private.
+- **Photo deleted or replaced.** The photo drops out of every post (cascade); the remaining photos keep their order. A
+  planned post left without photos becomes a draft with the notice "Příspěvek nemá žádné fotky"; a posted one stays
+  posted and shows "Fotka byla smazána". There is no automatic swap for a replaced photo.
+- **Two-call save.** Saving a post is two calls: first the post fields (`ig_posts`), then the photo set through the RPC
+  `ig_set_post_photos` (atomic replace of 1 to 10 photos). When creating, a failed photo call makes the adapter delete the
+  new post; when editing, the draft stays on screen for a retry. Every update checks `updated_at`; a conflict shows
+  "Načíst znovu".
+- **Share flow (phone).** Open a saved post: the 1600 px JPEGs are fetched when the page opens (`foto-1.jpg`, `foto-2.jpg`,
+  ... in carousel order), so the tap on "Sdílet do Instagramu" can call `navigator.share({ files })` at once and keep the
+  user activation. The button appears only where `navigator.canShare` accepts files. Instagram ignores shared text, so
+  "Zkopírovat popisek" copies caption, blank line and hashtags first; she pastes it in Instagram. "Stáhnout fotky" is the
+  fallback (also on desktop). Needs the image origin in the admin `connect-src` and the R2 GET/HEAD CORS rule
+  (docs/DEPLOY-API.md section 6.1). Real-phone checks: docs/VERIFY.md rows 62 to 67.
+
 ## Using it: short guide for the photographer (Czech)
 
 Podrobný návod krok za krokem je v [NAVOD.md](NAVOD.md).
@@ -181,6 +220,8 @@ ho máš. Na sdíleném počítači se odhlas i z Googlu.
   Tlačítko „Zobrazit změny“ otevře seznam těch úprav (kategorie, album, fotka, název a co se stalo: přidáno, upraveno, smazáno, změněno pořadí).
 - **Úložiště**: ukazuje, kolik místa zbývá. Při varování zbývá málo, při plném úložišti se nahrávání zastaví. Tlačítko
   „Zkontrolovat úložiště“ najde zbytky po přerušeném nahrávání a po potvrzení je smaže.
+- **Instagram**: plán mřížky příspěvků (část 8 v NAVOD.md). Příspěvky se neukládají jako změny webu a nezveřejňují se;
+  „Zveřejnit web“ s nimi nesouvisí.
 - Texty stránek (Domů, O mně, Kontakt) se tady nemění; ty upravuje správce webu.
 - Něco nejde? Poznamenej si, co jsi dělala a co se zobrazilo, a napiš správci webu.
 
@@ -628,7 +669,7 @@ so it changes with the env and never contains a wildcard or `unsafe-*`:
 | `script-src`, `style-src` | `'self'` |
 | `img-src` | `'self' blob: data:` + origin of `VITE_IMG_BASE_URL` |
 | `font-src` | `'self'` (self-hosted woff2 only; no wildcard, no `data:`, no third-party host; WP-13, D-24) |
-| `connect-src` | origins of `VITE_SUPABASE_URL`, `VITE_API_BASE_URL`, `VITE_PUBLIC_SITE_URL`, `VITE_R2_UPLOAD_ORIGIN` (`'none'` when the env is empty) |
+| `connect-src` | origins of `VITE_SUPABASE_URL`, `VITE_API_BASE_URL`, `VITE_PUBLIC_SITE_URL`, `VITE_R2_UPLOAD_ORIGIN`, `VITE_IMG_BASE_URL` (the Instagram share step fetches the 1600 JPEGs; `'none'` when the env is empty) |
 | `base-uri`, `object-src`, `frame-ancestors` | `'none'` |
 | `form-action` | `'self'` |
 

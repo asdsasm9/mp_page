@@ -20,6 +20,14 @@
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
       "authenticated": { "select": "table", "insert": "none", "update": "none", "delete": "none" }
     },
+    "ig_post_photos": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "table", "update": "table", "delete": "table" }
+    },
+    "ig_posts": {
+      "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
+      "authenticated": { "select": "table", "insert": "table", "update": "table", "delete": "table" }
+    },
     "keepalive": {
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
       "authenticated": { "select": "none", "insert": "none", "update": "none", "delete": "none" }
@@ -66,6 +74,7 @@
     "clear_category_cover_on_photo_change": { "anon": false, "authenticated": false },
     "clear_cover_on_photo_change": { "anon": false, "authenticated": false },
     "delete_photos": { "anon": false, "authenticated": true },
+    "ig_set_post_photos": { "anon": false, "authenticated": true },
     "is_admin": { "anon": false, "authenticated": true },
     "keepalive": { "anon": true, "authenticated": true },
     "log_change": { "anon": false, "authenticated": false },

@@ -100,7 +100,7 @@ function mock(kind) {
       if (url.pathname === '/_publish.json') return json(200, { snapshotGeneratedAt: NOW, builtAt: NOW, counts: { categories: 1, albums: 0, photos: 0 } });
       return json(404, {});
     }
-    if (kind === 'img') return res.writeHead(200, { ...cors, 'content-type': 'image/webp', 'cross-origin-resource-policy': 'cross-origin' }).end(placeholder);
+    if (kind === 'img') return res.writeHead(200, { ...cors, 'content-type': url.pathname.endsWith('.jpg') ? 'image/jpeg' : 'image/webp', 'cross-origin-resource-policy': 'cross-origin' }).end(placeholder);
     return res.writeHead(200, cors).end(); // r2: accepts the PUT
   });
 }
@@ -259,12 +259,33 @@ try {
       const attempt = (fn) => fn().then(() => true, () => false);
       const xhrPut = (url) => new Promise((ok, fail) => { const x = new XMLHttpRequest(); x.open('PUT', url); x.onload = () => ok(); x.onerror = () => fail(); x.send(new Blob(['x'])); });
       const img = (url) => new Promise((ok, fail) => { const i = new Image(); i.onload = ok; i.onerror = fail; i.src = url; });
+      // T-346: the share step fetches the 1600 JPEG from the image origin (cors, no credentials) and keeps it as a File;
+      // "Stáhnout fotky" saves it through a blob URL and <a download>.
+      const jpegFile = async () => {
+        const r = await fetch(`${o.img}/photos/11111111-1111-4111-8111-111111111111/1600.jpg`, { credentials: 'omit', mode: 'cors' });
+        if (!r.ok || !(r.headers.get('content-type') ?? '').startsWith('image/jpeg')) throw new Error('not a jpeg');
+        return new File([await r.blob()], 'foto-1.jpg', { type: 'image/jpeg' });
+      };
+      const blobDownload = async () => {
+        const file = await jpegFile();
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        await new Promise((r) => setTimeout(r, 300));
+        URL.revokeObjectURL(url);
+      };
       const allowed = [
         { name: 'fetch Supabase origin', ok: await attempt(() => fetch(`${o.supabase}/rest/v1/categories`)) },
         { name: 'fetch Worker API origin', ok: await attempt(() => fetch(`${o.api}/storage`)) },
         { name: 'fetch public site origin', ok: await attempt(() => fetch(`${o.site}/_publish.json`)) },
         { name: 'XHR PUT to R2 upload origin', ok: await attempt(() => xhrPut(`${o.r2}/photos/x`)) },
         { name: 'image from the image host', ok: await attempt(() => img(`${o.img}/p.webp`)) },
+        { name: 'fetch 1600 JPEG from the image origin as a File (share step)', ok: await attempt(jpegFile) },
+        { name: 'blob download through <a download>', ok: await attempt(blobDownload) },
       ];
       await attempt(() => fetch('http://127.0.0.1:9/foreign'));
       await attempt(() => img('http://127.0.0.1:9/foreign.png'));
@@ -287,6 +308,7 @@ try {
     ],
   };
   failures.push(...judgeCsp(appViolations, result));
+  if (seen.some((v) => /^blob:/.test(v.blocked))) failures.push('the blob download of the share fallback was blocked by the CSP');
   console.log(`CSP: ${appViolations.length} violations while the app ran; probes allowed ${result.allowed.filter((p) => p.ok).length}/${result.allowed.length}, blocked ${result.blocked.filter((p) => p.seen).length}/${result.blocked.length}`);
   console.log(`CSP header: ${documentHeaders['content-security-policy']}`);
 } catch (e) {

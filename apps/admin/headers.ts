@@ -5,7 +5,7 @@
  */
 
 /** Env names whose origin the browser has to reach (connect-src), see src/env.ts. */
-export const CONNECT_ENV = ['VITE_SUPABASE_URL', 'VITE_API_BASE_URL', 'VITE_PUBLIC_SITE_URL', 'VITE_R2_UPLOAD_ORIGIN'] as const;
+export const CONNECT_ENV = ['VITE_SUPABASE_URL', 'VITE_API_BASE_URL', 'VITE_PUBLIC_SITE_URL', 'VITE_R2_UPLOAD_ORIGIN', 'VITE_IMG_BASE_URL'] as const;
 /** Env names whose origin serves photos (img-src). */
 export const IMG_ENV = ['VITE_IMG_BASE_URL'] as const;
 

@@ -161,6 +161,10 @@ export const DB_COLUMNS = {
   upload_reservations: ['photo_id', 'requested_by', 'bytes', 'created_at', 'expires_at'],
   keepalive: ['id', 'last_ping', 'pings'],
   site_settings: ['id', 'hero_photo_id'],
+  ig_posts: [
+    'id', 'caption', 'hashtags', 'planned_on', 'status', 'posted_at', 'sort', 'created_at', 'updated_at',
+  ],
+  ig_post_photos: ['post_id', 'photo_id', 'sort'],
   change_log: [
     'id', 'at', 'table_name', 'row_id', 'kind', 'label',
     'category_id', 'category_name', 'album_id', 'album_title',

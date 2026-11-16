@@ -222,14 +222,16 @@
 
     .bottom-nav .nav-list {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 0;
     }
 
+    /* Five items (WP-14): smaller label and tighter padding so "Nahrávání" fits a 64 px column at 320 px. */
     .bottom-nav .nav-link {
       inline-size: 100%;
       min-block-size: var(--bottom-nav-height);
-      padding-inline: var(--space-2);
+      padding-inline: var(--space-1);
+      font-size: var(--text-caption);
       border-radius: 0;
     }
 
@@ -265,6 +267,14 @@
 
   .desktop-nav .nav-list {
     gap: var(--space-1);
+  }
+
+  /* WP-14: with the Instagram link the nav no longer fits beside the brand once "Nezveřejněné změny" shows, so the
+     top bar wrapped late and shifted the page (admin-check CLS 0.27 at 768 px). Below 80 rem the nav always takes its own row. */
+  @media (min-width: 40rem) and (max-width: 79.99rem) {
+    .shell-header .desktop-nav {
+      flex-basis: 100%;
+    }
   }
 
   /* admin-check: the collapsed upload queue is fixed at the bottom right and covered the last lines of the page
@@ -688,6 +698,10 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
+  }
+
+  .page-header a.button {
+    text-decoration: none;
   }
 
   .empty-state {
@@ -2274,5 +2288,214 @@
 
   .hero-preview-phone img {
     aspect-ratio: 9 / 16;
+  }
+}
+
+/* Instagram planning grid (WP-14): three columns of 3:4 tiles, dashed outline + text badge for unpublished posts. */
+@layer components {
+  .ig-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ig-tile {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background: var(--color-placeholder);
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .ig-tile:not([data-status='posted']) {
+    outline: var(--bar-thickness) dashed var(--color-text);
+    outline-offset: calc(-1 * var(--bar-thickness));
+  }
+
+  .ig-tile.is-dragging {
+    z-index: var(--z-header);
+    box-shadow: var(--shadow-md);
+  }
+
+  .ig-link {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .ig-img {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .ig-empty {
+    display: grid;
+    place-items: center;
+    inline-size: 100%;
+    block-size: 100%;
+    padding: var(--space-2);
+    font-size: var(--text-caption);
+    text-align: center;
+    color: var(--color-text);
+  }
+
+  .ig-carousel {
+    position: absolute;
+    inset-block-start: var(--space-1);
+    inset-inline-end: var(--space-1);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-ui-strong);
+    color: var(--color-text);
+    background: var(--color-surface-raised);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-full);
+  }
+
+  .ig-badges {
+    position: absolute;
+    inset-block-end: var(--space-1);
+    inset-inline: var(--space-1);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+    pointer-events: none;
+  }
+
+  .ig-badge {
+    max-inline-size: 100%;
+    overflow-wrap: anywhere;
+    padding: var(--space-1) var(--space-2);
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-ui-strong);
+    line-height: var(--leading-heading);
+    color: var(--color-text);
+    background: var(--color-surface-raised);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-full);
+  }
+
+  .ig-badge-next {
+    color: var(--color-on-overlay);
+    background: var(--color-text);
+    border-color: var(--color-text);
+  }
+
+  .ig-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-caption);
+  }
+
+  .ig-legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .ig-legend-note {
+    color: var(--color-text-muted);
+  }
+
+  .ig-swatch {
+    inline-size: var(--space-4);
+    block-size: var(--space-5);
+    background: var(--color-placeholder);
+    border: var(--bar-thickness) solid var(--color-border-strong);
+  }
+
+  .ig-swatch-open {
+    border: var(--bar-thickness) dashed var(--color-text);
+  }
+
+  .ig-steps {
+    margin: 0;
+    padding-inline-start: var(--space-5);
+  }
+
+  /* Post editor (WP-14): sections stacked, photo strip rows with a 3:4 thumbnail, the picker's order number. */
+  .post-editor > * + * {
+    margin-block-start: var(--space-4);
+  }
+
+  .post-photos,
+  .post-posted,
+  .post-share {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .post-photos > *,
+  .post-posted > *,
+  .post-share > * {
+    margin: 0;
+  }
+
+  .post-share-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .post-status {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-none);
+  }
+
+  .post-strip-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .post-strip-img {
+    flex: none;
+    inline-size: var(--space-8);
+    block-size: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    background: var(--color-placeholder);
+  }
+
+  .post-strip-number {
+    font-family: var(--font-ui);
+    font-weight: var(--weight-ui-strong);
+  }
+
+  .ig-pick-order {
+    font-family: var(--font-ui);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-ui-strong);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cover-tile:has(input:disabled) {
+    cursor: not-allowed;
+    border-style: dashed;
+  }
+
+  .cover-tile:has(input:disabled) img {
+    filter: grayscale(1);
   }
 }

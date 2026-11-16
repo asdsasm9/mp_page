@@ -70,6 +70,11 @@ export function ShellLayout() {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/instagram" className={linkClass}>
+                {cs.nav.instagram}
+              </NavLink>
+            </li>
+            <li>
               <PublishLink label={cs.nav.publishSite} className={linkClass} />
             </li>
           </ul>
@@ -101,6 +106,11 @@ export function ShellLayout() {
           <li>
             <NavLink to="/uvodni-stranka" className={linkClass}>
               {cs.nav.homePageShort}
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/instagram" className={linkClass}>
+              {cs.nav.instagram}
             </NavLink>
           </li>
           <li>

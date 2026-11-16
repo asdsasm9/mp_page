@@ -315,6 +315,10 @@ async function runProfile(browser, profile) {
     if (r.status() >= 400) messages.push({ type: 'error', text: `HTTP ${r.status()} ${r.url()}` });
   });
   await page.evaluateOnNewDocument(() => {
+    // T-346: this fake build has no image origin in its CSP (connect-src 'none'), so the share step must not auto-fetch
+    // the JPEGs here. File sharing is reported as unavailable (the desktop case); the fetch and blob download under the
+    // real CSP are covered by admin-prod-check, the share paths by SharePanel.test.tsx.
+    Navigator.prototype.canShare = () => false;
     window.__ls = [];
     window.__lcp = 0;
     try {
@@ -710,6 +714,90 @@ async function runProfile(browser, profile) {
       await checkpoint(ctx, 'upload page', { shot: false });
     });
 
+    // ---- Instagram planning grid (WP-14): nav item (phone: the fifth bottom-nav item must fit its column), 3 columns, 44 px handles
+    await step('instagram grid', async () => {
+      await spaGo(page, '/');
+      if (ctx.profile.phone) {
+        const fit = await page.evaluate(() => [...document.querySelectorAll('.bottom-nav .nav-link')].map((a) => ({ t: a.textContent.trim(), over: a.scrollWidth - a.clientWidth })));
+        const bad = fit.filter((f) => f.over > 0);
+        if (fit.length !== 5 || bad.length) throw new Error(`bottom nav: ${fit.length} items, text cut off in ${JSON.stringify(bad)}`);
+      }
+      await clickBy(ctx, 'a', /^Instagram$/);
+      await page.waitForFunction(() => location.pathname === '/instagram' && document.querySelectorAll('.ig-tile').length >= 9, { timeout: 10000 });
+      await sleep(300);
+      const g = await page.evaluate(() => {
+        const tiles = [...document.querySelectorAll('.ig-tile')];
+        const cols = new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().left))).size;
+        const t0 = tiles[0].getBoundingClientRect();
+        const handle = document.querySelector('.ig-tile .photo-handle').getBoundingClientRect();
+        return { cols, ratio: t0.height / t0.width, handleW: handle.width, handleH: handle.height };
+      });
+      if (g.cols !== 3) throw new Error(`grid has ${g.cols} columns, expected 3`);
+      if (Math.abs(g.ratio - 4 / 3) > 0.02) throw new Error(`tile ratio ${g.ratio.toFixed(3)}, expected 1.333`);
+      if (g.handleW < 43.5 || g.handleH < 43.5) throw new Error(`handle ${g.handleW}x${g.handleH}, expected at least 44`);
+      await checkpoint(ctx, 'instagram grid', { shot: true });
+    });
+
+    // ---- Instagram post editor (WP-14, T-345): open from the grid, mark-posted dialog, live counters, picker, 44 px targets
+    await step('instagram editor', async () => {
+      await clickBy(ctx, 'a.ig-link', /Svatba na zámku/);
+      await page.waitForFunction(() => /^\/instagram\/(?!novy)[0-9a-f-]+$/.test(location.pathname) && document.querySelectorAll('.post-editor textarea').length === 2, { timeout: 10000 });
+      await waitText(page, /\d+ \/ 2200 znaků/);
+      await waitText(page, /\d+ \/ 30 hashtagů/);
+      await page.waitForFunction(() => document.querySelectorAll('.post-strip-item').length === 3, { timeout: 10000 });
+      await sleep(300);
+      // T-346: the share panel of a saved post with photos (copy and download everywhere; the share button only where files can be shared).
+      await waitText(page, /Zkopírovat popisek/);
+      await waitText(page, /Stáhnout fotky/);
+      await checkpoint(ctx, 'instagram editor', { shot: true });
+
+      // The mark-posted dialog: date field with today's date and the hint for old posts.
+      await clickBy(ctx, 'button', /^Označit jako zveřejněné$/);
+      await page.waitForFunction(() => document.querySelector('dialog:modal input[type=date]')?.value?.length === 10, { timeout: 10000 });
+      await waitText(page, /starší příspěvky, které už na Instagramu jsou/);
+      await checkpoint(ctx, 'instagram mark posted dialog', { shot: true });
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.querySelector('dialog:modal'), { timeout: 10000 });
+
+      // Counters follow the typing.
+      const caption = await fieldByLabel(page, /^Popisek$/);
+      await typeInto(ctx, caption, 'Test 😀');
+      await waitText(page, /6 \/ 2200 znaků/);
+      const tags = await fieldByLabel(page, /^Hashtagy$/);
+      await typeInto(ctx, tags, '#jedna #dva #tri');
+      await waitText(page, /3 \/ 30 hashtagů/);
+
+      // The picker: album first, then photos with order numbers.
+      await clickBy(ctx, 'button', /^Změnit výběr fotek$/);
+      await page.waitForFunction(() => document.querySelectorAll('dialog:modal .cover-tile input[type=checkbox]').length > 0, { timeout: 10000 });
+      await imagesLoaded(page);
+      await page.evaluate(() => {
+        const free = [...document.querySelectorAll('dialog:modal .cover-tile')].find((l) => !l.querySelector('input').checked && !l.querySelector('input').disabled);
+        free?.click();
+      });
+      await waitText(page, /Vybráno 4 z 10/);
+      await page.waitForFunction(() => document.querySelectorAll('dialog:modal .ig-pick-order').length >= 1, { timeout: 10000 });
+      await sleep(300);
+      await checkpoint(ctx, 'instagram photo picker', { shot: true });
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => !document.querySelector('dialog:modal'), { timeout: 10000 });
+
+      // Every button and field of the editor is at least 44 px high.
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll('.post-editor button, .post-editor textarea, .post-editor input:not([type=radio]):not(.visually-hidden)')]
+          .filter((e) => e.getClientRects().length > 0)
+          .map((e) => ({ t: (e.getAttribute('aria-label') || e.textContent || e.tagName).trim().slice(0, 24), w: e.getBoundingClientRect().width, h: e.getBoundingClientRect().height }))
+          .filter((e) => e.h < 43.5 || e.w < 43.5),
+      );
+      if (small.length) throw new Error(`editor targets under 44 px: ${JSON.stringify(small)}`);
+
+      // A new post: empty, no photos yet.
+      await spaGo(page, '/instagram/novy');
+      await page.waitForFunction(() => document.querySelectorAll('.post-editor textarea').length === 2 && document.querySelectorAll('.post-strip-item').length === 0, { timeout: 10000 });
+      await waitText(page, /0 \/ 2200 znaků/);
+      await checkpoint(ctx, 'instagram new post', { shot: true });
+    });
+
     // ---- photo quality verdicts (T-260): the seeded album with low, good, missing-720 and portrait examples
     let qualityIds = null;
     await step('quality verdicts', async () => {
@@ -816,7 +904,7 @@ async function runProfile(browser, profile) {
     if (profile.phone) {
       await step('320 px sweep', async () => {
         await page.setViewport({ width: 320, height: 700, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
-        for (const [name, path] of [['categories', '/'], ['category', urls.category], ['album', urls.album], ['photo', urls.photo], ['publish', '/zverejnit'], ['storage', '/ulozeni'], ['upload', '/nahravani']]) {
+        for (const [name, path] of [['categories', '/'], ['category', urls.category], ['album', urls.album], ['photo', urls.photo], ['publish', '/zverejnit'], ['storage', '/ulozeni'], ['upload', '/nahravani'], ['instagram', '/instagram']]) {
           await spaGo(page, path);
           await sleep(500);
           await checkpoint(ctx, `${name} at 320`, { shot: name === 'album', targets: false, width: 320 });

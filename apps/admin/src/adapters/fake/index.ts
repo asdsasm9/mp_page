@@ -17,7 +17,7 @@ export { withQualityExamples, exampleVariants } from './qualityExamples';
 
 /** A world seeded from the fixture, on the real clock. Exposed on globalThis so browser checks can inject failures. */
 export function createFakePorts(): Ports {
-  const world: FakeWorld = createFakeWorld({ clock: systemClock, ids: systemIds, seed: withQualityExamples(fixtureSnapshot()) });
+  const world: FakeWorld = createFakeWorld({ clock: systemClock, ids: systemIds, seed: withQualityExamples(fixtureSnapshot()), plannerSeed: true });
   (globalThis as Record<string, unknown>)[FAKE_WORLD_MARKER] = world;
   return world.ports;
 }

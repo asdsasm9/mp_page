@@ -2,6 +2,7 @@ export const SHARED_VERSION = 1;
 
 export * from './db';
 export * from './limits';
+export * from './ig';
 export * from './errors';
 export * from './api';
 export * from './slug';

@@ -7,7 +7,8 @@ import { ToastProvider } from './components/Toast';
 import { createHealthStore, HealthProvider } from './data/health';
 import { createQueryClient } from './data/queryClient';
 import type { Ports } from './ports';
-import { ImageBaseProvider, PortsProvider, SiteUrlProvider } from './ports-context';
+import { ImageBaseProvider, PortsProvider, ShareDepsProvider, SiteUrlProvider } from './ports-context';
+import { realShareDeps, type ShareDeps } from './share/shareDeps';
 import type { Encoder } from './upload/types';
 import { UploadProvider } from './upload/UploadProvider';
 
@@ -21,16 +22,19 @@ interface Props {
   siteUrl?: string;
   /** Tests inject a stub encoder; the app encodes with the canvas encoder. */
   encoder?: Encoder;
+  /** Tests inject fake browser share calls (fetch, share, canShare, clipboard, download); the app uses the real ones. */
+  shareDeps?: ShareDeps;
   children: ReactNode;
 }
 
 /** Ports, connectivity state, the query client and the session, with the expiry modal above the app. Router goes outside. */
-export function AppProviders({ ports, retry, imgBaseUrl = '', siteUrl = '', encoder, children }: Props) {
+export function AppProviders({ ports, retry, imgBaseUrl = '', siteUrl = '', encoder, shareDeps = realShareDeps, children }: Props) {
   const [health] = useState(createHealthStore);
   const [queryClient] = useState(() => createQueryClient(health, retry === undefined ? {} : { retry }));
   return (
     <PortsProvider ports={ports}>
       <ImageBaseProvider base={imgBaseUrl}>
+        <ShareDepsProvider deps={shareDeps}>
         <SiteUrlProvider url={siteUrl}>
           <HealthProvider store={health}>
             <QueryClientProvider client={queryClient}>
@@ -44,6 +48,7 @@ export function AppProviders({ ports, retry, imgBaseUrl = '', siteUrl = '', enco
             </QueryClientProvider>
           </HealthProvider>
         </SiteUrlProvider>
+        </ShareDepsProvider>
       </ImageBaseProvider>
     </PortsProvider>
   );

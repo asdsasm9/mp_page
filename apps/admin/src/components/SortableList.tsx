@@ -58,6 +58,8 @@ interface Props<T extends SortableItem> {
   renderActions?: (item: T) => ReactNode;
   /** Names the row type in the "changed elsewhere" notice. */
   staleEntity?: 'album' | 'category' | 'photo';
+  /** Toast after a successful move; default "Pořadí uloženo" (a list that is saved later says so differently). */
+  movedMessage?: string;
 }
 
 interface RowContext {
@@ -133,6 +135,7 @@ export function SortableList<T extends SortableItem>({
   renderItem,
   renderActions,
   staleEntity = 'album',
+  movedMessage,
 }: Props<T>) {
   const toast = useToast();
   const canMutate = useCanMutate();
@@ -185,7 +188,7 @@ export function SortableList<T extends SortableItem>({
     try {
       await onReorder(updates);
       if (mounted.current) setOverlay(null);
-      toast.show(cs.reorder.saved);
+      toast.show(movedMessage ?? cs.reorder.saved);
     } catch (error) {
       if (mounted.current) {
         setOverlay(null);

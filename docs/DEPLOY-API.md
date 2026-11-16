@@ -108,6 +108,45 @@ rejects it, use the dashboard form with the same origins, methods and headers.
 ]
 ```
 
+### 6.1 Second rule: GET and HEAD for the admin's Instagram sharing (WP-14, T-346)
+
+The Instagram planner fetches the 1600 px JPEG of each photo with `fetch` (`mode: 'cors'`, `credentials: 'omit'`) to hand
+the files to the phone's share sheet. A cross-origin `fetch` needs the image host to answer with
+`Access-Control-Allow-Origin`, so the bucket also needs a GET/HEAD rule for the exact admin origins. No wildcard
+(`*`) and no other origin. The admin's CSP `connect-src` already names the image origin (`VITE_IMG_BASE_URL`); nothing else
+changes there.
+
+**HUMAN (T-348)** The dashboard replaces the whole policy when you save it, so paste BOTH rules (the PUT rule above and
+this one) as one array, not only the new rule:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://admin.mullnyphotos.cz", "http://localhost:5173"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["content-type", "content-length", "cache-control"],
+    "ExposeHeaders": [],
+    "MaxAgeSeconds": 3600
+  },
+  {
+    "AllowedOrigins": ["https://admin.mullnyphotos.cz", "http://localhost:5173"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": [],
+    "ExposeHeaders": ["content-type", "content-length"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+If the photos are read through a Cloudflare custom domain in front of the bucket (the image origin in
+`VITE_IMG_BASE_URL`), the CORS policy of the bucket is what that domain answers with; check the response of
+`curl -I -H "Origin: https://admin.mullnyphotos.cz" <image url>` shows `access-control-allow-origin`.
+
+**Contingency, only if that check fails (TO VERIFY live):** an image first fetched without an `Origin` header may sit in the
+Cloudflare cache without the CORS header, and the cached copy is served to the admin. Fix, in this order of preference:
+a Cloudflare Transform Rule that sets `Access-Control-Allow-Origin` to the admin origin on the image host, or a query
+suffix on the share fetch (for example `?cors=1`) so it uses its own cache key. Do not use `*`.
+
 ## 7. Recommended: rate-limit rule
 
 **HUMAN** Put the Worker on its own host (e.g. `api.mullnyphotos.cz`) and add a Cloudflare WAF rate-limiting rule on that

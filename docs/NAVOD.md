@@ -171,7 +171,13 @@ Ve správě je v nabídce „Instagram“. Je to jen plánovač: s Instagramem s
 5. Zvol „Stav“: „Koncept“ (ještě to rozpracovávám) nebo „Naplánováno“. Datum je nepovinné.
 6. Klikni na „Uložit“. Nic se neukládá samo.
 
-**Seřadit mřížku.** Mřížka vypadá jako tvůj profil na Instagramu, nahoře vlevo je nejnovější příspěvek. Čárkované dlaždice s nápisem „Koncept“ nebo „Naplánováno“ ještě nejsou na Instagramu, pevné dlaždice v části „Zveřejněné“ už ano. Naplánované příspěvky přetahuj za úchyt, nebo z klávesnice úchyt zvedni mezerníkem a posuň šipkami. Nový příspěvek se přidá úplně nahoru. Jako další zveřejni ten, který má nápis „Další na řadě“: je to poslední naplánovaná dlaždice, hned vedle zveřejněných.
+**Náhled profilu.** Stránka „Instagram“ vypadá jako tvůj profil na Instagramu: nahoře je profilová fotka, uživatelské jméno, počty, jméno a popis, pod tím mřížka příspěvků. Nahoře vlevo je nejnovější příspěvek. Je to jen náhled, na Instagram se z něj nic neodesílá. Odkaz v profilu je jen napsaný text, neklikne se na něj.
+
+**Upravit profil.** Klikni na „Upravit profil“ a vyplň „Profilová fotka“ („Vybrat fotku“ otevře album a v něm vybereš jednu fotku, „Odebrat fotku“ ji vrátí na iniciály), „Uživatelské jméno“, „Jméno“, „Popis“ (nejvíc 150 znaků), „Odkaz“, „Sledující“ a „Sleduje“. Klikni na „Uložit“. Počty „Sledující“ a „Sleduje“ si opíšeš ručně z Instagramu, správa je sama nezjistí a při změně na Instagramu je musíš opsat znovu. Počet příspěvků zadávat nemusíš: správa ho spočítá z příspěvků v plánovači. Profil se, stejně jako příspěvky, neukládá jako změna webu, takže „Zveřejnit web“ s ním nesouvisí.
+
+**Zobrazit: Vše, Zveřejněné, Naplánované.** Nad profilem vyber v části „Zobrazit“, co mřížka ukáže: „Vše“, jen „Zveřejněné“ (už jsou na Instagramu), nebo jen „Naplánované“ (ještě nejsou). U každé volby je počet příspěvků. Volba zůstane v adrese stránky, takže se po obnovení nezmění.
+
+**Seřadit mřížku.** Klikni na „Řadit příspěvky“. Teprve potom se u dlaždic ukáží úchyty a nápisy „Koncept“ nebo „Naplánováno“. Naplánované příspěvky přetahuj za úchyt, nebo z klávesnice úchyt zvedni mezerníkem a posuň šipkami. Dalším kliknutím na „Řadit příspěvky“ se vrátíš k čistému náhledu. U „Zveřejněné“ řazení nejde, zveřejněné jsou podle data. Nový příspěvek se přidá úplně nahoru. Jako další zveřejni ten, který má nápis „Další na řadě“: je to poslední naplánovaná dlaždice, hned vedle zveřejněných.
 
 **Sdílet z telefonu do Instagramu**
 

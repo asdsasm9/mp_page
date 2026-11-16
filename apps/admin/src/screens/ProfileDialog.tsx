@@ -207,7 +207,7 @@ function ProfileForm({ base, onClose, onReload }: FormProps) {
             hint={
               <span role="status" aria-live="polite">
                 {fill(t.bioCount, { n: bioLength })}
-                {IG_BIO_MAX < bioLength ?<strong className="field-error"> {t.bioTooLong}</strong> : null}
+                {IG_BIO_MAX < bioLength ? <strong className="field-error"> {t.bioTooLong}</strong> : null}
               </span>
             }
           />

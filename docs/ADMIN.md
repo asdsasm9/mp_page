@@ -203,11 +203,16 @@ posts by hand from her phone.
   test (`no-instagram-host.test.ts`) keeps "instagram.com" out of `apps/admin/src` except i18n help text and out of every href.
 - **Filter and sort mode.** `ProfileFilter` is a native radio group "Zobrazit" (Vše, Zveřejněné, Naplánované, each with
   its count), kept in the URL as `?zobrazit=vse|zverejnene|naplanovane` (unknown = Vše) with a polite live region
-  "Zobrazeno n příspěvků" and a text when a filter is empty. The default view is a pure preview: no dashed outline, badge,
-  handle or legend, a tile opens the post. The toggle button "Řadit příspěvky" (`aria-pressed`, default off) shows the 44 px
+  "Zobrazeno n příspěvků" and a text when a filter is empty. The default view is a pure preview: tiles carry no outline, badge
+  or handle, and a tile opens the post. The toggle button "Řadit příspěvky" (`aria-pressed`, default off) shows the 44 px
   handles, the chips and "Další na řadě" and enables drag and keyboard reordering exactly as before; it is disabled under
   Zveřejněné with the note "Zveřejněné se neřadí, jsou podle data.". A carousel is a plain icon top right, its photo
   count stays in the accessible name. `scripts/admin-check.mjs` covers the header, the filter and both toggle states.
+- **Profile data rules.** The profile is one row of `ig_profile` (migration `20261117090000_ig_profile.sql`, admin-only
+  behind RLS). Followers and following are typed by hand in the dialog (the admin never reads Instagram); the post count is
+  not stored, it is derived from the posts shown. The link is stored and shown as text only, never as an `href`.
+  `ig_profile` has no `bump_pending` or `log_change` trigger, so saving the profile never raises "Nezveřejněné změny", never
+  appears in "Zobrazit změny" and is not part of the published snapshot.
 - **Not site changes, not published.** `ig_posts` and `ig_post_photos` have no `bump_pending` or `log_change` trigger. Planner writes
   never raise "Nezveřejněné změny", never appear in "Zobrazit změny" and are never part of the published snapshot or the
   publish service. The two tables are admin-only behind RLS (`is_admin()`), with no anon access. Captions can name

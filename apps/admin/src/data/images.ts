@@ -28,7 +28,7 @@ export function coverWidth(boxWidth: number, boxHeight: number): number {
 export const IG_FRAME_TILE_WIDTH = 138;
 export const IG_FRAME_TILE_HEIGHT = 184;
 
-type Place ={ tiers: readonly WebpTier[]; sizes: string };
+type Place = { tiers: readonly WebpTier[]; sizes: string };
 
 /**
  * Where each place shows photos: the tiers offered to the browser (the first one is the `src` fallback) and the `sizes`
@@ -48,7 +48,7 @@ export const PHOTO_IMG = {
    */
   grid: {
     tiers: [480, 720, 960],
-    sizes: `(min-width: 64rem) ${coverWidth(IG_FRAME_TILE_WIDTH, IG_FRAME_TILE_HEIGHT)}px,(min-width: 40rem) ${coverWidth(230, 307)}px, ${coverWidth(110, 147)}px`,
+    sizes: `(min-width: 64rem) ${coverWidth(IG_FRAME_TILE_WIDTH, IG_FRAME_TILE_HEIGHT)}px, (min-width: 40rem) ${coverWidth(230, 307)}px, ${coverWidth(110, 147)}px`,
   },
 } as const satisfies Record<string, Place>;
 

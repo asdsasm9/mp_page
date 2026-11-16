@@ -12,6 +12,7 @@ import { createFakeApi } from './api';
 import { FAKE_ADMIN, FAKE_OUTSIDER, createFakeAuth, notifyAuthChange } from './auth';
 import { createFakeCatalog } from './catalog';
 import { createManualClock, createSeqIds } from './clock';
+import { createFakePlanner, seedPlanner } from './planner';
 import { createCore, type FakeOp, type FakeUser, type GoogleNext, type State } from './core';
 import { seedFromSnapshot } from './seed';
 import { createFakePublishStatus, createFakeUpload } from './storage';
@@ -22,6 +23,8 @@ export interface FakeWorldOptions {
   ids?: Ids;
   /** Catalog to start with; default is an empty catalog. */
   seed?: Snapshot;
+  /** Also fill the Instagram planner with example posts (needs a seed with photos). Default: empty planner. */
+  plannerSeed?: boolean;
   limits?: Partial<Limits>;
   users?: FakeUser[];
   /** Start with the administrator signed in. */
@@ -87,6 +90,8 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
     categories: new Map(),
     albums: new Map(),
     photos: new Map(),
+    igPosts: new Map(),
+    igPostPhotos: [],
     reservations: new Map(),
     objects: new Map(),
     grants: new Map(),
@@ -108,6 +113,7 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
   };
   const core = createCore(clock, ids, state);
   if (options.seed) seedFromSnapshot(core, options.seed);
+  if (options.plannerSeed) seedPlanner(core);
   if (options.signedIn) {
     const admin = state.users.find((u) => u.isAdmin);
     if (admin) state.session = { user: admin, token: `fake-token-${++state.tokenCounter}`, expired: false };
@@ -116,6 +122,7 @@ export function createFakeWorld(options: FakeWorldOptions = {}): FakeWorld {
   const ports: Ports = {
     auth: createFakeAuth(core),
     catalog: createFakeCatalog(core),
+    planner: createFakePlanner(core),
     api: createFakeApi(core),
     upload: createFakeUpload(core),
     publishStatus: createFakePublishStatus(core),

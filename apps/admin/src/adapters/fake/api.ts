@@ -301,6 +301,8 @@ export function createFakeApi(core: Core): ApiPort {
         clearCoversOfPhoto(core, id);
         const gone = state.photos.get(id)!;
         state.photos.delete(id);
+        // ig_post_photos.photo_id is "on delete cascade": the photo leaves every Instagram post.
+        state.igPostPhotos = state.igPostPhotos.filter((l) => l.photo_id !== id);
         core.bump();
         logChange(core, 'photos', { op: 'delete', before: gone });
         deleted++;

@@ -10,6 +10,7 @@ import { createRealApi } from './api';
 import { createRealAuth, type SupabaseAuthLike } from './auth';
 import { createRealCatalog } from './catalog';
 import { createRest, type FetchFn } from './http';
+import { createRealPlanner } from './planner';
 import { createXhrUpload } from './upload';
 
 export interface RealPortsDeps {
@@ -47,6 +48,7 @@ export function createRealPorts(env: AdminEnv, deps: RealPortsDeps = {}): Ports 
       ...(redirectTo === undefined ? {} : { redirectTo }),
     }),
     catalog: createRealCatalog(rest),
+    planner: createRealPlanner(rest),
     api: createRealApi({ baseUrl: env.apiBaseUrl, getToken, ...fetchDep }),
     upload: createXhrUpload(),
     publishStatus: createRealPublishStatus({ siteUrl: env.publicSiteUrl, ...fetchDep }),

@@ -3,6 +3,8 @@ import type {
   AlbumRow,
   CategoryRow,
   ChangeLogRow,
+  IgPostPhotoRow,
+  IgPostRow,
   Limits,
   PhotoRow,
   PublishLogRow,
@@ -17,6 +19,7 @@ import {
   type CatalogPort,
   type Clock,
   type Ids,
+  type PlannerPort,
   type PublishStatus,
 } from '../../ports';
 
@@ -26,6 +29,7 @@ export type FakeOp =
   | 'auth.getSession'
   | 'auth.isAdmin'
   | `catalog.${Extract<keyof CatalogPort, string>}`
+  | `planner.${Extract<keyof PlannerPort, string>}`
   | `api.${Extract<keyof ApiPort, string>}`
   | 'upload.put'
   | 'publishStatus.read';
@@ -70,6 +74,9 @@ export interface State {
   categories: Map<string, CategoryRow>;
   albums: Map<string, AlbumRow>;
   photos: Map<string, PhotoRow>;
+  /** Instagram planner tables (WP-14). Not tracked: no pending_changes, no change_log. */
+  igPosts: Map<string, IgPostRow>;
+  igPostPhotos: IgPostPhotoRow[];
   /** photo_id -> bytes and expiry of an upload reservation. */
   reservations: Map<string, { bytes: number; expiresAtMs: number }>;
   /** Bucket content: key -> size and write time. Only sizes are kept. */

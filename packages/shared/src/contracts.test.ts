@@ -40,9 +40,9 @@ describe('ApiErrorCode', () => {
 });
 
 describe('DB_COLUMNS', () => {
-  it('covers the 14 tables', () => {
+  it('covers the 15 tables', () => {
     expect(Object.keys(DB_COLUMNS).sort()).toEqual(
-      ['admin_emails', 'albums', 'app_config', 'categories', 'change_log', 'ig_post_photos', 'ig_posts', 'keepalive', 'photos', 'publish_log', 'site_settings', 'site_state', 'upload_reservations', 'url_history'].sort(),
+      ['admin_emails', 'albums', 'app_config', 'categories', 'change_log', 'ig_post_photos', 'ig_posts', 'ig_profile', 'keepalive', 'photos', 'publish_log', 'site_settings', 'site_state', 'upload_reservations', 'url_history'].sort(),
     );
   });
   it('photos columns are the PhotoRow keys', () => {

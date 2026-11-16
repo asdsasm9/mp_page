@@ -48,6 +48,81 @@ export const IgPostSchema = IgPostRowSchema.extend({
 });
 export type IgPost = z.infer<typeof IgPostSchema>;
 
+/*
+ * Instagram profile preview (WP-15): one typed row (table ig_profile, migration 20261117090000_ig_profile.sql). The
+ * limits equal the SQL checks; all values are typed by hand, nothing is fetched from Instagram.
+ */
+export const IG_USERNAME_MAX = 30;
+export const IG_NAME_MAX = 64;
+export const IG_BIO_MAX = 150;
+export const IG_LINK_MAX = 200;
+export const IG_COUNT_MAX = 999999999;
+
+const igText = (max: number, code: string) => z.string().refine((s) => captionLength(s) <= max, code);
+const igCount = z.number().int().min(0).max(IG_COUNT_MAX);
+
+export const IgProfileRowSchema = z.object({
+  id: z.literal(true),
+  username: igText(IG_USERNAME_MAX, 'USERNAME_TOO_LONG').refine((s) => /^[A-Za-z0-9._]*$/.test(s), 'USERNAME_INVALID'),
+  display_name: igText(IG_NAME_MAX, 'NAME_TOO_LONG'),
+  bio: igText(IG_BIO_MAX, 'BIO_TOO_LONG'),
+  link: igText(IG_LINK_MAX, 'LINK_TOO_LONG').refine((s) => s === '' || /^https?:\/\//i.test(s), 'LINK_INVALID'),
+  followers_count: igCount,
+  following_count: igCount,
+  avatar_photo_id: uuid.nullable(),
+  updated_at: isoDateTime,
+});
+export type IgProfileRow = z.infer<typeof IgProfileRowSchema>;
+
+/** What the preview shows when the profile cannot be loaded; equals the seed row of the migration. */
+export const defaultIgProfile: Omit<IgProfileRow, 'updated_at'> = {
+  id: true,
+  username: 'mullnyphotos',
+  display_name: 'Mullny Photos',
+  bio: '',
+  link: '',
+  followers_count: 0,
+  following_count: 0,
+  avatar_photo_id: null,
+};
+
+/** Avatar fallback: first letters of up to two words of the display name, else of the username, else "?". */
+export function profileInitials(profile: { display_name: string; username: string }): string {
+  const letter = (word: string) => Array.from(word).find((c) => /[\p{L}\p{N}]/u.test(c));
+  const fromName = profile.display_name
+    .split(/\s+/)
+    .map(letter)
+    .filter((c): c is string => c !== undefined)
+    .slice(0, 2);
+  if (fromName.length > 0) return fromName.join('').toUpperCase();
+  return (letter(profile.username) ?? '?').toUpperCase();
+}
+
+/**
+ * Count the way the Czech Instagram profile shows it: up to 9 999 in full (non-breaking space as thousands separator),
+ * then one truncated decimal with "tis." / "mil." / "mld.". Hand-written: Intl cs compact rounds (1 234 becomes
+ * "1,2 tis." and 999 999 becomes "1 mil.") and differs between ICU versions.
+ */
+export function formatProfileCount(n: number): string {
+  const v = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+  if (v < 10000) return v >= 1000 ? `${Math.floor(v / 1000)} ${String(v % 1000).padStart(3, '0')}` : String(v);
+  const [unit, label] = v < 1e6 ? [1e3, 'tis.'] : v < 1e9 ? [1e6, 'mil.'] : [1e9, 'mld.'];
+  const tenths = Math.floor(v / (unit / 10));
+  const whole = Math.floor(tenths / 10);
+  const dec = tenths % 10;
+  return `${dec === 0 ? whole : `${whole},${dec}`} ${label}`;
+}
+
+export const IG_FILTERS = ['all', 'posted', 'planned'] as const;
+export type IgFilter = (typeof IG_FILTERS)[number];
+
+/** Preview filter: all, only posted, or everything not yet posted (planned and drafts). Order is kept. */
+export function filterPosts<T extends { status: IgStatus }>(posts: readonly T[], filter: IgFilter): T[] {
+  if (filter === 'posted') return posts.filter((p) => p.status === 'posted');
+  if (filter === 'planned') return posts.filter((p) => p.status !== 'posted');
+  return [...posts];
+}
+
 /** A planned post whose photos were all deleted is shown (and treated) as a draft. */
 export function effectiveStatus(post: { status: IgStatus; photos: readonly unknown[] }): IgStatus {
   return post.status === 'planned' && post.photos.length === 0 ? 'draft' : post.status;

@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
+  IG_BIO_MAX,
   IG_CAPTION_MAX,
+  IG_COUNT_MAX,
+  IG_FILTERS,
+  IG_LINK_MAX,
+  IG_NAME_MAX,
+  IG_USERNAME_MAX,
   IgPostPhotoRowSchema,
+  IgProfileRowSchema,
+  defaultIgProfile,
+  filterPosts,
+  formatProfileCount,
+  profileInitials,
   IgPostRowSchema,
   IgPostSchema,
   captionLength,
@@ -79,6 +90,124 @@ describe('schemas', () => {
     expect(IgPostPhotoRowSchema.safeParse({ post_id: ID, photo_id: ID2, sort: 0 }).success).toBe(false);
     expect(IgPostPhotoRowSchema.safeParse({ post_id: ID, photo_id: ID2, sort: 11 }).success).toBe(false);
     expect(IgPostPhotoRowSchema.safeParse({ post_id: ID, photo_id: 'nope', sort: 1 }).success).toBe(false);
+  });
+});
+
+const profile = {
+  id: true,
+  username: 'mullny.photos_1',
+  display_name: 'Mullny Photos',
+  bio: 'Řádek 1\nŘádek 2',
+  link: 'https://example.test/x',
+  followers_count: 1234,
+  following_count: 0,
+  avatar_photo_id: ID2,
+  updated_at: AT,
+};
+
+describe('IgProfileRowSchema', () => {
+  it('exposes the limits of the SQL checks', () => {
+    expect([IG_USERNAME_MAX, IG_NAME_MAX, IG_BIO_MAX, IG_LINK_MAX, IG_COUNT_MAX]).toEqual([30, 64, 150, 200, 999999999]);
+  });
+  it('accepts a row, an empty profile and a null avatar', () => {
+    expect(IgProfileRowSchema.parse(profile)).toEqual(profile);
+    const empty = { ...profile, username: '', display_name: '', bio: '', link: '', avatar_photo_id: null };
+    expect(IgProfileRowSchema.safeParse(empty).success).toBe(true);
+  });
+  const bad = (patch: Record<string, unknown>) => IgProfileRowSchema.safeParse({ ...profile, ...patch }).success;
+  it('username: 30 pass, 31 and bad characters fail', () => {
+    expect(bad({ username: 'a'.repeat(30) })).toBe(true);
+    expect(bad({ username: 'a'.repeat(31) })).toBe(false);
+    for (const u of ['a b', 'čau', 'a-b', 'a@b', 'a\n']) expect(bad({ username: u }), u).toBe(false);
+  });
+  it('name 64, bio 150 and link 200 code points', () => {
+    expect(bad({ display_name: '😀'.repeat(64) })).toBe(true);
+    expect(bad({ display_name: 'a'.repeat(65) })).toBe(false);
+    expect(bad({ bio: '😀'.repeat(150) })).toBe(true);
+    expect(bad({ bio: 'a'.repeat(151) })).toBe(false);
+    expect(bad({ link: `https://${'a'.repeat(192)}` })).toBe(true);
+    expect(bad({ link: `https://${'a'.repeat(193)}` })).toBe(false);
+  });
+  it('link is empty or http(s)', () => {
+    expect(bad({ link: 'HTTP://x.cz' })).toBe(true);
+    for (const l of ['ftp://x.cz', 'x.cz', 'javascript:alert(1)', ' https://x.cz']) expect(bad({ link: l }), l).toBe(false);
+  });
+  it('counts are integers 0..999999999', () => {
+    expect(bad({ followers_count: 999999999, following_count: 0 })).toBe(true);
+    for (const c of [-1, 1000000000, 1.5, Number.NaN, '5']) {
+      expect(bad({ followers_count: c }), String(c)).toBe(false);
+      expect(bad({ following_count: c }), String(c)).toBe(false);
+    }
+  });
+  it('rejects a bad id, avatar id, timestamp and a row id other than true', () => {
+    expect(bad({ id: false })).toBe(false);
+    expect(bad({ avatar_photo_id: 'nope' })).toBe(false);
+    expect(bad({ updated_at: 'yesterday' })).toBe(false);
+  });
+});
+
+describe('defaultIgProfile', () => {
+  it('is valid and has the seed values', () => {
+    expect(IgProfileRowSchema.safeParse({ ...defaultIgProfile, updated_at: AT }).success).toBe(true);
+    expect(defaultIgProfile).toMatchObject({ display_name: 'Mullny Photos', username: 'mullnyphotos', avatar_photo_id: null });
+  });
+});
+
+describe('profileInitials', () => {
+  it('uses up to two words of the display name', () => {
+    expect(profileInitials({ display_name: 'Mullny Photos', username: 'x' })).toBe('MP');
+    expect(profileInitials({ display_name: 'adam  jan  novák', username: 'x' })).toBe('AJ');
+    expect(profileInitials({ display_name: 'Čapek', username: 'x' })).toBe('Č');
+    expect(profileInitials({ display_name: '😀 Foto', username: 'x' })).toBe('F');
+  });
+  it('falls back to the username, then to a question mark', () => {
+    expect(profileInitials({ display_name: '  ', username: '_mullny' })).toBe('M');
+    expect(profileInitials({ display_name: '', username: '' })).toBe('?');
+    expect(profileInitials({ display_name: '- -', username: '._' })).toBe('?');
+  });
+});
+
+describe('formatProfileCount', () => {
+  it('shows up to 9 999 in full with a non-breaking space', () => {
+    expect(formatProfileCount(0)).toBe('0');
+    expect(formatProfileCount(999)).toBe('999');
+    expect(formatProfileCount(1000)).toBe('1 000');
+    expect(formatProfileCount(1234)).toBe('1 234');
+    expect(formatProfileCount(9999)).toBe('9 999');
+  });
+  it('abbreviates from 10 000 with one truncated decimal and Czech units', () => {
+    expect(formatProfileCount(10000)).toBe('10 tis.');
+    expect(formatProfileCount(12345)).toBe('12,3 tis.');
+    expect(formatProfileCount(999999)).toBe('999,9 tis.');
+    expect(formatProfileCount(1000000)).toBe('1 mil.');
+    expect(formatProfileCount(1250000)).toBe('1,2 mil.');
+    expect(formatProfileCount(IG_COUNT_MAX)).toBe('999,9 mil.');
+    expect(formatProfileCount(1000000000)).toBe('1 mld.');
+  });
+  it('treats bad input as zero', () => {
+    expect(formatProfileCount(-5)).toBe('0');
+    expect(formatProfileCount(Number.NaN)).toBe('0');
+    expect(formatProfileCount(12.9)).toBe('12');
+  });
+});
+
+describe('filterPosts and IG_FILTERS', () => {
+  const posts = [
+    { id: 'a', status: 'planned' as const },
+    { id: 'b', status: 'draft' as const },
+    { id: 'c', status: 'posted' as const },
+  ];
+  it('lists the three filters, all first (the default)', () => {
+    expect([...IG_FILTERS]).toEqual(['all', 'posted', 'planned']);
+  });
+  it('all keeps everything, posted only posted, planned includes drafts, order kept', () => {
+    expect(filterPosts(posts, 'all').map((p) => p.id)).toEqual(['a', 'b', 'c']);
+    expect(filterPosts(posts, 'posted').map((p) => p.id)).toEqual(['c']);
+    expect(filterPosts(posts, 'planned').map((p) => p.id)).toEqual(['a', 'b']);
+    expect(filterPosts([], 'posted')).toEqual([]);
+  });
+  it('returns a copy for all', () => {
+    expect(filterPosts(posts, 'all')).not.toBe(posts);
   });
 });
 

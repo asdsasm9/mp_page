@@ -4,7 +4,7 @@
  */
 import { cleanup, configure, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { formatProfileCount } from '@mp/shared';
+import { formatProfileCount, igAvatarKey } from '@mp/shared';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeWorld, fixtureSnapshot, type FakeWorld } from '../adapters/fake';
@@ -22,6 +22,7 @@ afterEach(() => {
 });
 
 const IMG_BASE = 'https://img.example.test';
+const AVATAR_KEY = igAvatarKey('dddddddd-0000-4000-8000-0000000000c1');
 
 function mount(world: FakeWorld, url = '/instagram') {
   return render(
@@ -240,7 +241,6 @@ describe('Instagram grid screen', () => {
 });
 
 describe('Instagram profile header', () => {
-  const photoId = (world: FakeWorld) => (world.snapshot().photos as { id: string }[])[0]!.id;
 
   it('shows the default profile as a region with the username as h2, initials and counts with visible words', async () => {
     mount(seeded());
@@ -269,7 +269,7 @@ describe('Instagram profile header', () => {
       link: 'https://example.test/odkaz',
       followers_count: 12345,
       following_count: 87,
-      avatar_photo_id: photoId(world),
+      avatar_key: AVATAR_KEY,
     });
     mount(world);
     await grid();
@@ -286,8 +286,9 @@ describe('Instagram profile header', () => {
     expect(frame.querySelector('.ig-profile a, .ig-profile [href]')).toBeNull();
     const img = frame.querySelector<HTMLImageElement>('.ig-avatar')!;
     expect(img.getAttribute('alt')).toBe('');
-    expect(img.getAttribute('src')).toMatch(/^https:\/\/img\.example\.test\/photos\/[0-9a-f-]+\/480\.webp$/);
-    expect(img.getAttribute('srcset')).toMatch(/\/480\.webp 480w, .*\/720\.webp 720w$/);
+    expect(img.getAttribute('src')).toBe(`${IMG_BASE}/${AVATAR_KEY}`);
+    expect(img.getAttribute('srcset')).toBeNull();
+    expect([img.getAttribute('width'), img.getAttribute('height')]).toEqual(['480', '480']);
     expect(frame.querySelector('.ig-avatar-initials')).toBeNull();
   });
 

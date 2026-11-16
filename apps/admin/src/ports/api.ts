@@ -15,6 +15,7 @@ import type {
   ReserveRequest,
   ReserveResponse,
   StorageResponse,
+  UploadTarget,
 } from '@mp/shared';
 
 export interface ApiPort {
@@ -25,4 +26,11 @@ export interface ApiPort {
   deletePhotos(request: DeleteRequest): Promise<DeleteResponse>;
   reconcile(request: ReconcileRequest): Promise<ReconcileResponse>;
   publish(): Promise<PublishResponse>;
+  /**
+   * Instagram avatar (WP-16): the Worker picks the key `ig/avatar/<uuid>.webp` and presigns one PUT for
+   * `bytes` (1..IG_AVATAR_MAX_BYTES). Errors: FILE_TOO_LARGE (413), STORAGE_FULL (409), INVALID_REQUEST.
+   */
+  reserveIgAvatar(bytes: number): Promise<{ key: string; upload: UploadTarget }>;
+  /** Deletes superseded or oversized avatar objects (never the saved one, never young ones). Idempotent. */
+  cleanupIgAvatars(): Promise<{ deleted: number }>;
 }

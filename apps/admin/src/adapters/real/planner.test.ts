@@ -1,3 +1,4 @@
+import { igAvatarKey } from '@mp/shared';
 import { describe, expect, it } from 'vitest';
 import { ApiError, CatalogError, NetworkError } from '../../ports';
 import { createRest, type FetchFn } from './http';
@@ -173,7 +174,7 @@ describe('real planner', () => {
   });
 
   describe('profile (ig_profile)', () => {
-    const PHOTO = 'dddddddd-0000-4000-8000-0000000000c1';
+    const KEY = igAvatarKey('dddddddd-0000-4000-8000-0000000000c1');
     const profile = (over: Record<string, unknown> = {}) => ({
       id: true,
       username: 'mullnyphotos',
@@ -182,7 +183,7 @@ describe('real planner', () => {
       link: '',
       followers_count: 0,
       following_count: 0,
-      avatar_photo_id: null,
+      avatar_key: null,
       updated_at: AT,
       ...over,
     });
@@ -198,6 +199,11 @@ describe('real planner', () => {
       expect(result).toEqual(profile());
     });
 
+    it('getProfile parses a stored avatar_key and refuses a malformed one', async () => {
+      expect((await planner(stubFetch({ json: [profile({ avatar_key: KEY })] }).fetch).getProfile()).avatar_key).toBe(KEY);
+      await expect(planner(stubFetch({ json: [profile({ avatar_key: 'photos/x/480.webp' })] }).fetch).getProfile()).rejects.toMatchObject({ code: 'INTERNAL' });
+    });
+
     it('getProfile: a body that does not match is INTERNAL, an empty table is NOT_FOUND, errors map', async () => {
       await expect(planner(stubFetch({ json: [profile({ followers_count: -1 })] }).fetch).getProfile()).rejects.toMatchObject({ code: 'INTERNAL' });
       await expect(planner(stubFetch({ json: [profile({ id: false })] }).fetch).getProfile()).rejects.toMatchObject({ code: 'INTERNAL' });
@@ -209,11 +215,11 @@ describe('real planner', () => {
 
     it('updateProfile PATCHes id=eq.true with the updated_at precondition and only the patch as body', async () => {
       const { fetch, calls } = stubFetch({ json: [profile({ bio: 'Nový', updated_at: '2026-11-16T11:00:00.000000+00:00' })] });
-      const result = await planner(fetch).updateProfile({ bio: 'Nový', avatar_photo_id: PHOTO }, { expectedUpdatedAt: AT });
+      const result = await planner(fetch).updateProfile({ bio: 'Nový', avatar_key: KEY }, { expectedUpdatedAt: AT });
       expect(calls).toHaveLength(1);
       expect(calls[0]!.method).toBe('PATCH');
       expect(path(calls[0]!.url)).toBe(`/rest/v1/ig_profile?id=eq.true&updated_at=eq.${AT}`);
-      expect(calls[0]!.body).toEqual({ bio: 'Nový', avatar_photo_id: PHOTO });
+      expect(calls[0]!.body).toEqual({ bio: 'Nový', avatar_key: KEY });
       expect(calls[0]!.headers.prefer).toBe('return=representation');
       expect(Object.keys(calls[0]!.headers).sort()).toEqual(['accept', 'apikey', 'authorization', 'content-type', 'prefer']);
       expect(calls[0]!.headers.authorization).toBe('Bearer token-for-tests');
@@ -231,8 +237,8 @@ describe('real planner', () => {
       await expect(planner(stubFetch({ json: [profile({ username: 'bad name' })] }).fetch).updateProfile({ bio: 'x' })).rejects.toMatchObject({ code: 'INTERNAL' });
     });
 
-    it('updateProfile maps errors: 23503 (missing avatar photo) and check violations to INVALID, 42501 and 401', async () => {
-      const fail = (status: number, json: unknown) => planner(stubFetch({ status, json }).fetch).updateProfile({ avatar_photo_id: PHOTO }, { expectedUpdatedAt: AT });
+    it('updateProfile maps errors: 23503 and check violations to INVALID, 42501 and 401', async () => {
+      const fail = (status: number, json: unknown) => planner(stubFetch({ status, json }).fetch).updateProfile({ avatar_key: KEY }, { expectedUpdatedAt: AT });
       await expect(fail(409, { code: '23503', message: 'violates foreign key' })).rejects.toMatchObject({ name: CatalogError.name, code: 'INVALID' });
       await expect(fail(400, { code: '23514', message: 'check violation' })).rejects.toMatchObject({ code: 'INVALID' });
       await expect(fail(403, { code: '42501', message: 'denied' })).rejects.toMatchObject({ name: ApiError.name, code: 'NOT_ADMIN' });

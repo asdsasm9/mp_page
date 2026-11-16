@@ -27,6 +27,8 @@ const TABLE: Array<[method: string, path: string]> = [
   ['POST', '/photos/delete'],
   ['POST', '/storage/reconcile'],
   ['POST', '/publish'],
+  ['POST', '/ig/avatar/reserve'],
+  ['POST', '/ig/avatar/cleanup'],
 ];
 
 const send = (method: string, path: string, token: string | null, env: Record<string, unknown> = world.env) => {

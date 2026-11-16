@@ -15,7 +15,7 @@
     "pinnedExactly": ["astro"]
   },
   "api": {
-    "routes": ["/health", "/storage", "/uploads/reserve", "/uploads/commit", "/photos/delete", "/storage/reconcile", "/publish"],
+    "routes": ["/health", "/storage", "/uploads/reserve", "/uploads/commit", "/photos/delete", "/storage/reconcile", "/publish", "/ig/avatar/reserve", "/ig/avatar/cleanup"],
     "bindings": ["PHOTOS"],
     "cronCount": 1,
     "secrets": ["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "PAGES_DEPLOY_HOOK_URL"],

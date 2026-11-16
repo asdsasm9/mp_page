@@ -7,7 +7,8 @@ import { ToastProvider } from './components/Toast';
 import { createHealthStore, HealthProvider } from './data/health';
 import { createQueryClient } from './data/queryClient';
 import type { Ports } from './ports';
-import { ImageBaseProvider, PortsProvider, ShareDepsProvider, SiteUrlProvider } from './ports-context';
+import { cropAvatarFile, type CropAvatar } from './encode/cropSquare';
+import { AvatarCropProvider, ImageBaseProvider, PortsProvider, ShareDepsProvider, SiteUrlProvider } from './ports-context';
 import { realShareDeps, type ShareDeps } from './share/shareDeps';
 import type { Encoder } from './upload/types';
 import { UploadProvider } from './upload/UploadProvider';
@@ -24,17 +25,29 @@ interface Props {
   encoder?: Encoder;
   /** Tests inject fake browser share calls (fetch, share, canShare, clipboard, download); the app uses the real ones. */
   shareDeps?: ShareDeps;
+  /** Tests inject a stub avatar cropper (jsdom has no canvas); the app crops with the canvas. */
+  cropAvatar?: CropAvatar;
   children: ReactNode;
 }
 
 /** Ports, connectivity state, the query client and the session, with the expiry modal above the app. Router goes outside. */
-export function AppProviders({ ports, retry, imgBaseUrl = '', siteUrl = '', encoder, shareDeps = realShareDeps, children }: Props) {
+export function AppProviders({
+  ports,
+  retry,
+  imgBaseUrl = '',
+  siteUrl = '',
+  encoder,
+  shareDeps = realShareDeps,
+  cropAvatar = cropAvatarFile,
+  children,
+}: Props) {
   const [health] = useState(createHealthStore);
   const [queryClient] = useState(() => createQueryClient(health, retry === undefined ? {} : { retry }));
   return (
     <PortsProvider ports={ports}>
       <ImageBaseProvider base={imgBaseUrl}>
         <ShareDepsProvider deps={shareDeps}>
+        <AvatarCropProvider crop={cropAvatar}>
         <SiteUrlProvider url={siteUrl}>
           <HealthProvider store={health}>
             <QueryClientProvider client={queryClient}>
@@ -48,6 +61,7 @@ export function AppProviders({ ports, retry, imgBaseUrl = '', siteUrl = '', enco
             </QueryClientProvider>
           </HealthProvider>
         </SiteUrlProvider>
+        </AvatarCropProvider>
         </ShareDepsProvider>
       </ImageBaseProvider>
     </PortsProvider>

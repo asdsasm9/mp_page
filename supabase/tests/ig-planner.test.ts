@@ -326,7 +326,8 @@ describe('ig tables: not tracked as site changes', () => {
     const root = join(here, '..', '..');
     const files = readdirSync(join(root, 'apps', 'api', 'src'), { recursive: true })
       .map((f) => String(f))
-      .filter((f) => /\.(ts|tsx)$/.test(f))
+      // WP-16: the avatar cleanup route reads the saved avatar_key (read only, caller JWT) to know which file to keep.
+      .filter((f) => /\.(ts|tsx)$/.test(f) && f !== join('routes', 'ig-avatar.ts'))
       .map((f) => join(root, 'apps', 'api', 'src', f));
     files.push(join(root, 'packages', 'shared', 'src', 'snapshot.ts'));
     expect(files.length).toBeGreaterThan(1);

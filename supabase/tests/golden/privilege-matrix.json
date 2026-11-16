@@ -30,7 +30,7 @@
     },
     "ig_profile": {
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },
-      "authenticated": { "select": "table", "insert": "none", "update": "columns:avatar_photo_id,bio,display_name,followers_count,following_count,link,username", "delete": "none" }
+      "authenticated": { "select": "table", "insert": "none", "update": "columns:avatar_key,bio,display_name,followers_count,following_count,link,username", "delete": "none" }
     },
     "keepalive": {
       "anon": { "select": "none", "insert": "none", "update": "none", "delete": "none" },

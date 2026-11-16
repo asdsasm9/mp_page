@@ -92,7 +92,7 @@ describe('arch-api-surface', () => {
   it('the golden api section lists the planned surface', () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), '..');
     const g = JSON.parse(loadFiles(root, [ARCH_GOLDEN])[0].text);
-    expect([...g.api.routes].sort()).toEqual(['/health', '/photos/delete', '/publish', '/storage', '/storage/reconcile', '/uploads/commit', '/uploads/reserve']);
+    expect([...g.api.routes].sort()).toEqual(['/health', '/ig/avatar/cleanup', '/ig/avatar/reserve', '/photos/delete', '/publish', '/storage', '/storage/reconcile', '/uploads/commit', '/uploads/reserve']);
     expect([...g.api.bindings].sort()).toEqual(['PHOTOS']);
     expect(g.api.cronCount).toBe(1);
     expect([...g.api.secrets].sort()).toEqual(['PAGES_DEPLOY_HOOK_URL', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY']);

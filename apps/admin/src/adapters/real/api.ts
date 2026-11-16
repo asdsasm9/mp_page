@@ -7,6 +7,8 @@ import {
   CommitResponseSchema,
   DeleteResponseSchema,
   ErrorBodySchema,
+  IgAvatarCleanupResponseSchema,
+  IgAvatarReserveResponseSchema,
   PublishResponseSchema,
   ReconcileResponseSchema,
   ReserveResponseSchema,
@@ -100,5 +102,7 @@ export function createRealApi(config: RealApiConfig): ApiPort {
     deletePhotos: (body) => request('POST', '/photos/delete', DeleteResponseSchema, body),
     reconcile: (body) => request('POST', '/storage/reconcile', ReconcileResponseSchema, body),
     publish: () => request('POST', '/publish', PublishResponseSchema, {}),
+    reserveIgAvatar: (bytes) => request('POST', '/ig/avatar/reserve', IgAvatarReserveResponseSchema, { bytes }),
+    cleanupIgAvatars: () => request('POST', '/ig/avatar/cleanup', IgAvatarCleanupResponseSchema, {}),
   };
 }

@@ -101,7 +101,7 @@ const profile = {
   link: 'https://example.test/x',
   followers_count: 1234,
   following_count: 0,
-  avatar_photo_id: ID2,
+  avatar_key: `ig/avatar/${ID2}.webp`,
   updated_at: AT,
 };
 
@@ -111,7 +111,7 @@ describe('IgProfileRowSchema', () => {
   });
   it('accepts a row, an empty profile and a null avatar', () => {
     expect(IgProfileRowSchema.parse(profile)).toEqual(profile);
-    const empty = { ...profile, username: '', display_name: '', bio: '', link: '', avatar_photo_id: null };
+    const empty = { ...profile, username: '', display_name: '', bio: '', link: '', avatar_key: null };
     expect(IgProfileRowSchema.safeParse(empty).success).toBe(true);
   });
   const bad = (patch: Record<string, unknown>) => IgProfileRowSchema.safeParse({ ...profile, ...patch }).success;
@@ -141,7 +141,10 @@ describe('IgProfileRowSchema', () => {
   });
   it('rejects a bad id, avatar id, timestamp and a row id other than true', () => {
     expect(bad({ id: false })).toBe(false);
-    expect(bad({ avatar_photo_id: 'nope' })).toBe(false);
+    expect(bad({ avatar_key: 'nope' })).toBe(false);
+    expect(bad({ avatar_key: ID2 })).toBe(false);
+    expect(bad({ avatar_key: `photos/${ID2}/480.webp` })).toBe(false);
+    expect(bad({ avatar_key: 'ig/avatar/../x.webp' })).toBe(false);
     expect(bad({ updated_at: 'yesterday' })).toBe(false);
   });
 });
@@ -149,7 +152,7 @@ describe('IgProfileRowSchema', () => {
 describe('defaultIgProfile', () => {
   it('is valid and has the seed values', () => {
     expect(IgProfileRowSchema.safeParse({ ...defaultIgProfile, updated_at: AT }).success).toBe(true);
-    expect(defaultIgProfile).toMatchObject({ display_name: 'Mullny Photos', username: 'mullnyphotos', avatar_photo_id: null });
+    expect(defaultIgProfile).toMatchObject({ display_name: 'Mullny Photos', username: 'mullnyphotos', avatar_key: null });
   });
 });
 

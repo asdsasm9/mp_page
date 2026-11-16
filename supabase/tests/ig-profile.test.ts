@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { isValidIgAvatarKey } from '../../packages/shared/src/keys';
 import { asRole, createMigratedDb, seedAdmin } from './helpers/db';
 import { lintPublicSchema } from './helpers/privileges';
 
@@ -12,7 +13,7 @@ const CAT = 'aaaaaaaa-0000-4000-8000-000000000001';
 const ALB = 'bbbbbbbb-0000-4000-8000-000000000001';
 const PHOTO = 'cccccccc-0000-4000-8000-000000000001';
 const PHOTO2 = 'cccccccc-0000-4000-8000-000000000002';
-const MISSING = 'cccccccc-0000-4000-8000-0000000000ff';
+const AVATAR = 'ig/avatar/dddddddd-0000-4000-8000-000000000001.webp';
 
 let db: PGlite;
 const asAdmin = <T>(fn: (d: PGlite) => Promise<T>) => asRole(db, 'authenticated', fn, ADMIN);
@@ -38,7 +39,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await db.exec(`
     update public.ig_profile set username = 'mullnyphotos', display_name = 'Mullny Photos', bio = '', link = '',
-      followers_count = 0, following_count = 0, avatar_photo_id = null;
+      followers_count = 0, following_count = 0, avatar_key = null;
     delete from public.ig_posts;
     delete from public.photos;
     update public.albums set cover_photo_id = null;
@@ -66,9 +67,23 @@ describe('ig_profile: seed and constraints', () => {
         link: '',
         followers_count: 0,
         following_count: 0,
-        avatar_photo_id: null,
+        avatar_key: null,
       }),
     ]);
+  });
+
+  it('has avatar_key and no avatar_photo_id (column, foreign key and index are gone)', async () => {
+    const cols = (
+      await db.query<{ column_name: string }>(
+        `select column_name from information_schema.columns where table_schema = 'public' and table_name = 'ig_profile'`,
+      )
+    ).rows.map((r) => r.column_name);
+    expect(cols).toContain('avatar_key');
+    expect(cols).not.toContain('avatar_photo_id');
+    const idx = await db.query(`select 1 from pg_indexes where tablename = 'ig_profile' and indexname = 'ig_profile_avatar_photo_id_idx'`);
+    expect(idx.rows).toEqual([]);
+    const fk = await db.query(`select 1 from pg_constraint where conrelid = 'public.ig_profile'::regclass and contype = 'f'`);
+    expect(fk.rows).toEqual([]);
   });
 
   it('a second row is refused (id must be true and unique)', async () => {
@@ -116,10 +131,53 @@ describe('ig_profile: seed and constraints', () => {
     await expect(db.exec(set('following_count = 1000000000'))).rejects.toThrow(/ig_profile_following_range/);
   });
 
-  it('the avatar must be an existing photo', async () => {
-    await db.exec(set(`avatar_photo_id = '${PHOTO}'`));
-    await expect(db.exec(set(`avatar_photo_id = '${MISSING}'`))).rejects.toMatchObject({ code: '23503' });
-    expect((await profile())[0]!.avatar_photo_id).toBe(PHOTO);
+  it('avatar_key: null and a valid ig/avatar key pass; path tricks, photo keys, wrong extension, uppercase fail', async () => {
+    await db.exec(set(`avatar_key = '${AVATAR}'`));
+    expect((await profile())[0]!.avatar_key).toBe(AVATAR);
+    await db.exec(set(`avatar_key = null`));
+    const id = 'dddddddd-0000-4000-8000-000000000001';
+    const bad = [
+      '../x',
+      `photos/${PHOTO}/480.webp`,
+      `ig/avatar/${id}.jpg`,
+      `ig/avatar/${id.toUpperCase()}.webp`,
+      `ig/avatar/../${id}.webp`,
+      `/ig/avatar/${id}.webp`,
+      `ig/avatar/${id}.webp.bak`,
+      `ig/avatar/${id}.webp` + String.fromCharCode(10),
+      '',
+    ];
+    for (const k of bad) {
+      await expect(db.exec(set(`avatar_key = '${k}'`)), k).rejects.toThrow(/ig_profile_avatar_key_format/);
+    }
+    expect((await profile())[0]!.avatar_key).toBeNull();
+  });
+
+  it('the SQL check and isValidIgAvatarKey in packages/shared agree (parity)', async () => {
+    const id = 'dddddddd-0000-4000-8000-000000000001';
+    const keys = [
+      AVATAR,
+      '../x',
+      `photos/${PHOTO}/480.webp`,
+      `ig/avatar/${id}.jpg`,
+      `ig/avatar/${id}.WEBP`,
+      `ig/avatar/${id.toUpperCase()}.webp`,
+      `ig/avatar/${id}`,
+      `ig/avatar//${id}.webp`,
+      `ig/avatars/${id}.webp`,
+      `x/ig/avatar/${id}.webp`,
+      `ig/avatar/${id}.webp` + String.fromCharCode(10),
+      'ig/avatar/x.webp',
+    ];
+    for (const k of keys) {
+      let sqlOk = true;
+      try {
+        await db.exec(set(`avatar_key = '${k}'`));
+      } catch {
+        sqlOk = false;
+      }
+      expect(sqlOk, k).toBe(isValidIgAvatarKey(k));
+    }
   });
 
   it('updated_at moves on update', async () => {
@@ -131,19 +189,12 @@ describe('ig_profile: seed and constraints', () => {
   });
 });
 
-describe('ig_profile: avatar and photo deletion', () => {
-  it('deleting the photo clears the avatar and keeps the rest', async () => {
-    await db.exec(set(`avatar_photo_id = '${PHOTO}', bio = 'keep'`));
+describe('ig_profile: avatar is independent of photos', () => {
+  it('deleting photos (also delete_photos) leaves the avatar key alone', async () => {
+    await db.exec(set(`avatar_key = '${AVATAR}', bio = 'keep'`));
     await db.exec(`delete from public.photos where id = '${PHOTO}'`);
-    expect(await profile()).toEqual([expect.objectContaining({ avatar_photo_id: null, bio: 'keep' })]);
-  });
-
-  it('delete_photos (the admin API) clears it too, another photo keeps it', async () => {
-    await db.exec(set(`avatar_photo_id = '${PHOTO2}'`));
-    await asAdmin((d) => d.query(`select public.delete_photos(array['${PHOTO}']::uuid[])`));
-    expect((await profile())[0]!.avatar_photo_id).toBe(PHOTO2);
     await asAdmin((d) => d.query(`select public.delete_photos(array['${PHOTO2}']::uuid[])`));
-    expect((await profile())[0]!.avatar_photo_id).toBeNull();
+    expect(await profile()).toEqual([expect.objectContaining({ avatar_key: AVATAR, bio: 'keep' })]);
   });
 });
 
@@ -169,7 +220,7 @@ describe('ig_profile: privileges', () => {
     await asAdmin((d) =>
       d.query(
         set(
-          `username = 'adam', display_name = 'Adam', bio = 'Hi', link = 'https://x.cz', followers_count = 5, following_count = 6, avatar_photo_id = '${PHOTO}'`,
+          `username = 'adam', display_name = 'Adam', bio = 'Hi', link = 'https://x.cz', followers_count = 5, following_count = 6, avatar_key = '${AVATAR}'`,
         ),
       ),
     );
@@ -182,7 +233,7 @@ describe('ig_profile: privileges', () => {
         link: 'https://x.cz',
         followers_count: 5,
         following_count: 6,
-        avatar_photo_id: PHOTO,
+        avatar_key: AVATAR,
       }),
     ]);
   });
@@ -197,7 +248,7 @@ describe('ig_profile: privileges', () => {
 
   it('the admin cannot push a bad value through the API (checks still apply)', async () => {
     await expect(asAdmin((d) => d.query(set(`username = 'bad name'`)))).rejects.toThrow(/ig_profile_username_chars/);
-    await expect(asAdmin((d) => d.query(set(`avatar_photo_id = '${MISSING}'`)))).rejects.toMatchObject({ code: '23503' });
+    await expect(asAdmin((d) => d.query(set(`avatar_key = '../x'`)))).rejects.toThrow(/ig_profile_avatar_key_format/);
   });
 
   it('has the two policies and nothing else', async () => {
@@ -222,23 +273,17 @@ describe('ig_profile: not tracked as a site change', () => {
 
   it('change_log and pending_changes stay unchanged by profile updates', async () => {
     const before = { p: await pending(), l: await count('change_log') };
-    await asAdmin((d) => d.query(set(`bio = 'y', followers_count = 7, avatar_photo_id = '${PHOTO}'`)));
-    await asAdmin((d) => d.query(set(`avatar_photo_id = null`)));
+    await asAdmin((d) => d.query(set(`bio = 'y', followers_count = 7, avatar_key = '${AVATAR}'`)));
+    await asAdmin((d) => d.query(set(`avatar_key = null`)));
     expect({ p: await pending(), l: await count('change_log') }).toEqual(before);
-  });
-
-  it('deleting the avatar photo adds only a photos line to the change log', async () => {
-    await db.exec(set(`avatar_photo_id = '${PHOTO}'`));
-    await db.exec(`delete from public.photos where id = '${PHOTO}'`);
-    const tables = (await db.query<{ table_name: string }>('select table_name from public.change_log')).rows.map((r) => r.table_name);
-    expect(tables.every((t) => t === 'photos')).toBe(true);
   });
 
   it('no file of the Worker source or the snapshot builder mentions ig_profile', () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
     const files = readdirSync(join(root, 'apps', 'api', 'src'), { recursive: true })
       .map((f) => String(f))
-      .filter((f) => /\.(ts|tsx)$/.test(f))
+      // WP-16: the avatar cleanup route reads the saved avatar_key (read only, caller JWT) to know which file to keep.
+      .filter((f) => /\.(ts|tsx)$/.test(f) && f !== join('routes', 'ig-avatar.ts'))
       .map((f) => join(root, 'apps', 'api', 'src', f));
     files.push(join(root, 'packages', 'shared', 'src', 'snapshot.ts'));
     expect(files.length).toBeGreaterThan(1);
@@ -247,8 +292,10 @@ describe('ig_profile: not tracked as a site change', () => {
 
   it('the migration code (comments aside) touches no tracking function and defines no function', () => {
     const here = dirname(fileURLToPath(import.meta.url));
-    const code = readFileSync(join(here, '..', 'migrations', '20261117090000_ig_profile.sql'), 'utf8').replace(/^--.*$/gm, '');
-    expect(code).not.toMatch(/bump_pending|log_change|record_publish|change_log/);
-    expect(code).not.toMatch(/create (or replace )?function/);
+    for (const f of ['20261117090000_ig_profile.sql', '20261118090000_ig_profile_avatar_key.sql']) {
+      const code = readFileSync(join(here, '..', 'migrations', f), 'utf8').replace(/^--.*$/gm, '');
+      expect(code, f).not.toMatch(/bump_pending|log_change|record_publish|change_log/);
+      expect(code, f).not.toMatch(/create (or replace )?function/);
+    }
   });
 });

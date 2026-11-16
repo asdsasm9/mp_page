@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   SNAPSHOT_KEY,
   allKeys,
+  igAvatarKey,
+  igAvatarPrefix,
   isSafeKey,
+  isValidIgAvatarKey,
   isValidPhotoId,
   jpegKey,
   masterKey,
@@ -80,6 +83,43 @@ describe('isSafeKey', () => {
     expect(isSafeKey(masterKey(ID))).toBe(true);
     expect(isSafeKey('a'.repeat(512))).toBe(true);
     expect(isSafeKey(SNAPSHOT_KEY)).toBe(true);
+  });
+});
+
+describe('ig avatar key', () => {
+  it('builds and accepts a valid key', () => {
+    expect(igAvatarPrefix).toBe('ig/avatar/');
+    expect(igAvatarKey(ID)).toBe(`ig/avatar/${ID}.webp`);
+    expect(isValidIgAvatarKey(igAvatarKey(ID))).toBe(true);
+    expect(isSafeKey(igAvatarKey(ID))).toBe(true);
+  });
+  it('refuses a bad uuid when building', () => {
+    expect(() => igAvatarKey('nope')).toThrow();
+    expect(() => igAvatarKey(ID.toUpperCase())).toThrow();
+  });
+  it('rejects path tricks, wrong extension, uppercase uuid and other prefixes', () => {
+    const bad = [
+      '../x',
+      'ig/avatar/../x.webp',
+      `ig/avatar/../${ID}.webp`,
+      `ig/avatar/${ID}/../${ID}.webp`,
+      `/ig/avatar/${ID}.webp`,
+      `ig/avatar//${ID}.webp`,
+      `ig/avatar/${ID}.png`,
+      `ig/avatar/${ID}.webp.bak`,
+      `ig/avatar/${ID}`,
+      `ig/avatar/${ID.toUpperCase()}.webp`,
+      `ig/avatars/${ID}.webp`,
+      `photos/${ID}/480.webp`,
+      `ig/${ID}.webp`,
+      `x/ig/avatar/${ID}.webp`,
+      `ig/avatar/${ID}.webp\n`,
+      'ig/avatar/x.webp',
+      'ig/avatar/',
+      '',
+    ];
+    for (const k of bad) expect(isValidIgAvatarKey(k), k).toBe(false);
+    expect(isValidIgAvatarKey(undefined as unknown as string)).toBe(false);
   });
 });
 

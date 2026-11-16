@@ -85,7 +85,7 @@ export function createRealPlanner(rest: Rest): PlannerPort {
       try {
         rows = await rest.patch<unknown>('ig_profile', query, patch);
       } catch (error) {
-        // restError maps 23503 on a write to NOT_FOUND; here the only foreign key is avatar_photo_id: a missing photo.
+        // restError maps 23503 on a write to NOT_FOUND; there is no foreign key left on ig_profile (avatar_key is a plain checked text), so this is only a safety net.
         if (error instanceof CatalogError && error.code === 'NOT_FOUND') throw new CatalogError('INVALID');
         throw error;
       }

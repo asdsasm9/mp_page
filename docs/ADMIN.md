@@ -180,7 +180,7 @@ posts by hand from her phone.
   is on, the grid marks that tile "Další na řadě" and every open tile carries a text chip ("Koncept", "Naplánováno");
   colour is never the only signal.
 - **Profile preview (WP-15, T-361 to T-363).** The page is a preview of the Instagram profile (region "Náhled profilu"):
-  `ProfileHeader` (round centre-cropped avatar from the 480/720 WebP tiers or initials, username as h2, counts as a list
+  `ProfileHeader` (round avatar from the uploaded 480 px WebP `ig/avatar/<uuid>.webp` (`avatarImgProps`) or initials (also when the image fails), username as h2, counts as a list
   with the words příspěvků, sledujících, sleduje through `formatProfileCount`, name, bio with line breaks as React text,
   link as plain text, decorative buttons and tab row that are `aria-hidden`), then the grid with a thin gap
   (`--ig-grid-gap`) and no tile borders. The post count is derived from the posts shown. The profile loads on its own
@@ -188,8 +188,11 @@ posts by hand from her phone.
   vzhled." appear and the grid never waits.
 - **Edit profile dialog (T-364, `screens/ProfileDialog.tsx`).** "Upravit profil" is the one working button of the header
   (disabled while offline and while the profile failed to load; the archive and share shapes stay decorative). The dialog
-  has Profilová fotka (circle preview, "Vybrat fotku" opens the album-then-photo `PostPhotoPicker` with `max={1}`: native
-  radios, a new pick replaces the old one, optional `title`/`hint`; "Odebrat fotku" clears), Uživatelské jméno, Jméno, Popis
+  has Profilová fotka (WP-16: "Nahrát fotku" opens a hidden file input for JPEG/PNG/WebP up to 25 MB; `encode/cropSquare.ts`
+  centre-crops it to a 480 px WebP, a round preview shows it and it is uploaded on its own right away (`reserveIgAvatar`,
+  then `UploadPort.put` with a progress bar); "Uložit" waits for the upload, an error shows in a `role="alert"` and picking
+  again retries; "Odebrat fotku" clears; after a save `cleanupIgAvatars` removes superseded files, best effort),
+  Uživatelské jméno, Jméno, Popis
   (counter n / 150, line breaks allowed), Odkaz (plain text, never a link), Sledující, Sleduje. Explicit "Uložit"; the
   values are checked with the shared `IgProfileRowSchema` (same limits as the table) and shown as Czech messages next to the
   field, focus goes to the first invalid field. The save sends the `updated_at` the form was based on: after a conflict the

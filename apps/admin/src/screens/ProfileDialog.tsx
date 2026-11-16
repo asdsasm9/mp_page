@@ -1,7 +1,8 @@
 /**
  * "Upravit profil" dialog of the Instagram preview (WP-15 step 9, T-364): the typed values of the profile (username,
- * name, bio with line breaks and a counter, link, followers, following) and the avatar photo, chosen with the album-then-photo
- * picker of the post editor in single-choice mode (circle preview, "Odebrat fotku" clears). Explicit "Uložit", no
+ * name, bio with line breaks and a counter, link, followers, following) and the avatar photo: "Nahrát fotku" picks a file,
+ * which is centre-cropped to a 480 px WebP in the browser, shown as a round preview and uploaded on its own right away
+ * (WP-16; "Uložit" waits for it, "Odebrat fotku" clears). Explicit "Uložit", no
  * autosave; the values are checked with the shared IgProfileRowSchema (the same limits as the table) and shown as Czech
  * messages next to the field. The save carries the updated_at the form was based on: when another device changed the
  * profile meanwhile the existing stale notice appears, and "Načíst znovu" loads the row again and starts the form
@@ -25,10 +26,17 @@ import { cs } from '../i18n/cs';
 import { fill } from '../i18n/format';
 import { errorMessage } from '../i18n/messages';
 import type { IgProfilePatch } from '../ports';
-import { useImageBase } from '../ports-context';
-import { PostPhotoPicker } from './PostPhotoPicker';
+import { useAvatarCrop, useImageBase, usePorts } from '../ports-context';
+import { AVATAR_INPUT_MAX_BYTES, AvatarCropError } from '../encode/cropSquare';
 
 const t = cs.instagram.profile.dialog;
+
+type AvatarUpload =
+  | { kind: 'idle' }
+  | { kind: 'preparing' }
+  | { kind: 'uploading'; percent: number }
+  | { kind: 'error'; message: string }
+  | { kind: 'done' };
 
 type FieldKey = 'username' | 'name' | 'bio' | 'link' | 'followers' | 'following';
 type Problems = Partial<Record<FieldKey, string>>;
@@ -73,6 +81,8 @@ interface FormProps {
 
 function ProfileForm({ base, onClose, onReload }: FormProps) {
   const imgBase = useImageBase();
+  const { api, upload: uploadPort } = usePorts();
+  const crop = useAvatarCrop();
   const toast = useToast();
   const canMutate = useCanMutate();
   const update = useUpdateIgProfile();
@@ -86,18 +96,96 @@ function ProfileForm({ base, onClose, onReload }: FormProps) {
   const [link, setLink] = useState(base.link);
   const [followers, setFollowers] = useState(String(base.followers_count));
   const [following, setFollowing] = useState(String(base.following_count));
-  const [avatar, setAvatar] = useState<string | null>(base.avatar_photo_id);
-  const [picking, setPicking] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(base.avatar_key);
+  const [upload, setUpload] = useState<AvatarUpload>({ kind: 'idle' });
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [problems, setProblems] = useState<Problems>({});
   const patchRef = useRef<IgProfilePatch | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const runRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
+  const previewRef = useRef<string | null>(null);
+  const avatarErrorId = useId();
+  const busyUpload = upload.kind === 'preparing' || upload.kind === 'uploading';
 
   const { saving, failure, confirm } = useConfirmAction(async () => {
     const patch = patchRef.current;
     if (!patch) return;
     await update.mutateAsync({ patch, options: expectUpdatedAt(base) });
     toast.show(t.saved);
+    // Superseded avatar files are removed best effort; a failure here never touches the saved profile.
+    void (async () => {
+      try {
+        await api.cleanupIgAvatars();
+      } catch {
+        /* the next save tries again */
+      }
+    })();
     onClose();
   });
+
+  function setPreview(blob: Blob | null) {
+    if (previewRef.current !== null) URL.revokeObjectURL(previewRef.current);
+    previewRef.current = blob === null ? null : URL.createObjectURL(blob);
+    setPreviewSrc(previewRef.current);
+  }
+
+  // Leaving the dialog cancels a running upload and frees the preview.
+  useEffect(
+    () => () => {
+      runRef.current += 1;
+      abortRef.current?.abort();
+      if (previewRef.current !== null) URL.revokeObjectURL(previewRef.current);
+      previewRef.current = null;
+    },
+    [],
+  );
+
+  /** A new pick replaces whatever ran before (its late results are ignored). */
+  async function pickFile(file: File) {
+    runRef.current += 1;
+    const run = runRef.current;
+    const stale = () => runRef.current !== run;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    if (file.size > AVATAR_INPUT_MAX_BYTES) {
+      setPreview(null);
+      setUpload({ kind: 'error', message: t.inputTooLarge });
+      return;
+    }
+    setUpload({ kind: 'preparing' });
+    try {
+      const blob = await crop(file);
+      if (stale()) return;
+      setPreview(blob);
+      const reserved = await api.reserveIgAvatar(blob.size);
+      if (stale()) return;
+      setUpload({ kind: 'uploading', percent: 0 });
+      await uploadPort.put(reserved.upload, blob, {
+        signal: controller.signal,
+        onProgress: (loaded, total) => {
+          if (!stale()) setUpload({ kind: 'uploading', percent: total > 0 ? Math.round((loaded / total) * 100) : 0 });
+        },
+      });
+      if (stale()) return;
+      setAvatar(reserved.key);
+      setUpload({ kind: 'done' });
+    } catch (error) {
+      if (stale()) return;
+      setPreview(null);
+      setUpload({ kind: 'error', message: error instanceof AvatarCropError ? error.userMessage : errorMessage(error) });
+    }
+  }
+
+  function removeAvatar() {
+    runRef.current += 1;
+    abortRef.current?.abort();
+    setPreview(null);
+    setUpload({ kind: 'idle' });
+    setAvatar(null);
+    chooseRef.current?.focus();
+  }
 
   // After a failed check the first invalid field gets focus (the message is linked to it with aria-describedby).
   useEffect(() => {
@@ -115,7 +203,7 @@ function ProfileForm({ base, onClose, onReload }: FormProps) {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (saving || !canMutate) return;
+    if (saving || !canMutate || busyUpload) return;
     const values = {
       username: username.trim(),
       display_name: name.trim(),
@@ -123,7 +211,7 @@ function ProfileForm({ base, onClose, onReload }: FormProps) {
       link: link.trim(),
       followers_count: parseCount(followers),
       following_count: parseCount(following),
-      avatar_photo_id: avatar,
+      avatar_key: avatar,
     };
     const checked = IgProfileRowSchema.safeParse({ ...base, ...values });
     if (!checked.success) {
@@ -141,7 +229,7 @@ function ProfileForm({ base, onClose, onReload }: FormProps) {
   }
 
   const bioLength = captionLength(bio);
-  const typed = { display_name: name.trim(), username: username.trim(), avatar_photo_id: avatar };
+  const typed = { display_name: name.trim(), username: username.trim(), avatar_key: avatar };
 
   return (
     <>
@@ -155,24 +243,50 @@ function ProfileForm({ base, onClose, onReload }: FormProps) {
           )}
           <fieldset className="ig-avatar-field" aria-labelledby={avatarLegendId}>
             <legend id={avatarLegendId}>{t.photo}</legend>
-            <ProfileAvatar profile={typed} imgBase={imgBase} />
+            <ProfileAvatar profile={typed} imgBase={imgBase} previewSrc={previewSrc} />
             <div className="ig-avatar-actions">
-              <button ref={chooseRef} type="button" className="button" disabled={!canMutate} onClick={() => setPicking(true)}>
-                {t.choosePhoto}
-              </button>
               <button
+                ref={chooseRef}
                 type="button"
                 className="button"
-                disabled={avatar === null || !canMutate}
-                onClick={() => {
-                  setAvatar(null);
-                  chooseRef.current?.focus();
-                }}
+                disabled={!canMutate}
+                aria-describedby={upload.kind === 'error' ? avatarErrorId : undefined}
+                onClick={() => fileRef.current?.click()}
               >
+                {t.choosePhoto}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                hidden
+                tabIndex={-1}
+                accept="image/jpeg,image/png,image/webp"
+                data-testid="avatar-file"
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = ''; // the same file can be picked again after an error
+                  if (file) void pickFile(file);
+                }}
+              />
+              <button type="button" className="button" disabled={avatar === null || !canMutate} onClick={removeAvatar}>
                 {t.removePhoto}
               </button>
             </div>
-            {avatar === null ? <p className="field-hint">{t.noPhoto}</p> : null}
+            <p className="field-hint">{t.photoHint}</p>
+            {avatar === null && upload.kind !== 'error' ? <p className="field-hint">{t.noPhoto}</p> : null}
+            <div className="ig-avatar-status">
+              <p role="status" className="field-hint">
+                {upload.kind === 'preparing' ? t.preparing : upload.kind === 'uploading' ? t.uploading : upload.kind === 'done' ? t.uploaded : ''}
+              </p>
+              {upload.kind === 'uploading' ? (
+                <progress className="storage-meter" max={100} value={upload.percent} aria-label={t.uploading} />
+              ) : null}
+              {upload.kind === 'error' ? (
+                <p role="alert" id={avatarErrorId} className="field-error">
+                  {upload.message}
+                </p>
+              ) : null}
+            </div>
           </fieldset>
           <Field
             label={t.username}
@@ -245,25 +359,12 @@ function ProfileForm({ base, onClose, onReload }: FormProps) {
             />
           </div>
           <DialogActions busy={saving} onClose={onClose}>
-            <DialogButton kind="primary" type="submit" busy={saving} announceBusy disabled={!canMutate}>
+            <DialogButton kind="primary" type="submit" busy={saving} announceBusy disabled={!canMutate || busyUpload}>
               {saving ? t.saving : t.save}
             </DialogButton>
           </DialogActions>
         </form>
       </Modal>
-      {picking ? (
-        <PostPhotoPicker
-          selected={avatar === null ? [] : [avatar]}
-          max={1}
-          title={t.photoPickerTitle}
-          hint={t.photoPickerHint}
-          onClose={() => setPicking(false)}
-          onConfirm={(ids) => {
-            setAvatar(ids[0] ?? null);
-            setPicking(false);
-          }}
-        />
-      ) : null}
     </>
   );
 }

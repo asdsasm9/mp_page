@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
+import { igAvatarKey } from '@mp/shared';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminEnv } from '../../env';
@@ -299,6 +300,57 @@ describe('real api', () => {
     await expect(
       createRealApi({ baseUrl: WORKER, getToken: async () => TOKEN, fetch }).getStorage(),
     ).rejects.toBeInstanceOf(NetworkError);
+  });
+
+  describe('Instagram avatar (WP-16)', () => {
+    const KEY = igAvatarKey('dddddddd-0000-4000-8000-0000000000c1');
+    const upload = {
+      kind: 'webp',
+      key: KEY,
+      method: 'PUT',
+      url: 'https://r2.example.test/signed',
+      headers: { 'content-type': 'image/webp', 'content-length': '1234' },
+      expiresAt: '2026-11-16T12:00:00.000Z',
+    };
+    const apiWith = (fetch: FetchFn, getToken: () => Promise<string | null> = async () => TOKEN) =>
+      createRealApi({ baseUrl: WORKER, getToken, fetch });
+
+    it('reserveIgAvatar POSTs {bytes} to /ig/avatar/reserve with the Bearer token and parses {key, upload}', async () => {
+      const { fetch, calls } = stubFetch({ json: { key: KEY, upload } });
+      const result = await apiWith(fetch).reserveIgAvatar(1234);
+      expect(result).toEqual({ key: KEY, upload });
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ method: 'POST', url: `${WORKER}/ig/avatar/reserve`, body: { bytes: 1234 } });
+      expect(calls[0]!.headers.authorization).toBe(`Bearer ${TOKEN}`);
+      expect(calls[0]!.headers['content-type']).toBe('application/json');
+    });
+
+    it('reserveIgAvatar maps 413 FILE_TOO_LARGE, 409 STORAGE_FULL, 400, 401, 5xx and a bad body', async () => {
+      const fail = (status: number, json: unknown) => apiWith(stubFetch({ status, json }).fetch).reserveIgAvatar(10);
+      await expect(fail(413, { error: 'FILE_TOO_LARGE' })).rejects.toMatchObject({ name: ApiError.name, code: 'FILE_TOO_LARGE', status: 413 });
+      await expect(fail(409, { error: 'STORAGE_FULL' })).rejects.toMatchObject({ code: 'STORAGE_FULL', status: 409 });
+      await expect(fail(400, { error: 'INVALID_REQUEST' })).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+      await expect(fail(401, {})).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+      await expect(fail(502, 'oops')).rejects.toMatchObject({ code: 'UPSTREAM_ERROR', status: 502 });
+      await expect(apiWith(stubFetch({ json: { key: '../x', upload } }).fetch).reserveIgAvatar(10)).rejects.toMatchObject({ code: 'INTERNAL' });
+      await expect(apiWith(stubFetch(new TypeError('Failed to fetch')).fetch).reserveIgAvatar(10)).rejects.toBeInstanceOf(NetworkError);
+    });
+
+    it('cleanupIgAvatars POSTs an empty object to /ig/avatar/cleanup and parses {deleted}', async () => {
+      const { fetch, calls } = stubFetch({ json: { deleted: 3 } });
+      expect(await apiWith(fetch).cleanupIgAvatars()).toEqual({ deleted: 3 });
+      expect(calls[0]).toMatchObject({ method: 'POST', url: `${WORKER}/ig/avatar/cleanup`, body: {} });
+      await expect(apiWith(stubFetch({ json: { deleted: -1 } }).fetch).cleanupIgAvatars()).rejects.toMatchObject({ code: 'INTERNAL' });
+      await expect(apiWith(stubFetch({ status: 500, json: { error: 'UPSTREAM_ERROR' } }).fetch).cleanupIgAvatars()).rejects.toMatchObject({ code: 'UPSTREAM_ERROR' });
+    });
+
+    it('sends nothing without a session', async () => {
+      const { fetch, calls } = stubFetch({ json: { deleted: 0 } });
+      const api = apiWith(fetch, async () => null);
+      await expect(api.reserveIgAvatar(10)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+      await expect(api.cleanupIgAvatars()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+      expect(calls).toHaveLength(0);
+    });
   });
 });
 

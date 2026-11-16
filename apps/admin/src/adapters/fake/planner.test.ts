@@ -3,6 +3,8 @@ import { effectiveStatus } from '@mp/shared';
 import { ApiError, CatalogError, NetworkError } from '../../ports';
 import { createFakeWorld, fixtureSnapshot } from './index';
 
+const AVATAR_A = 'ig/avatar/dddddddd-0000-4000-8000-0000000000c1.webp';
+
 function setup(options: { plannerSeed?: boolean; signedIn?: boolean } = {}) {
   const world = createFakeWorld({ signedIn: options.signedIn ?? true, seed: fixtureSnapshot(), plannerSeed: options.plannerSeed ?? false });
   const photoIds = (world.snapshot().photos as { id: string }[]).map((p) => p.id);
@@ -173,16 +175,16 @@ describe('fake planner', () => {
     it('is seeded with the one default row and returns copies', async () => {
       const { planner } = setup();
       const profile = await planner.getProfile();
-      expect(profile).toMatchObject({ id: true, username: 'mullnyphotos', display_name: 'Mullny Photos', bio: '', link: '', followers_count: 0, following_count: 0, avatar_photo_id: null });
+      expect(profile).toMatchObject({ id: true, username: 'mullnyphotos', display_name: 'Mullny Photos', bio: '', link: '', followers_count: 0, following_count: 0, avatar_key: null });
       profile.bio = 'changed outside';
       expect((await planner.getProfile()).bio).toBe('');
     });
 
     it('updates only the given fields and moves updated_at forward; id cannot be changed', async () => {
-      const { planner, photoIds } = setup();
+      const { planner } = setup();
       const before = await planner.getProfile();
-      const after = await planner.updateProfile({ bio: 'Řádek 1\nŘádek 2', followers_count: 1200, avatar_photo_id: photoIds[0]! });
-      expect(after).toMatchObject({ id: true, username: 'mullnyphotos', bio: 'Řádek 1\nŘádek 2', followers_count: 1200, avatar_photo_id: photoIds[0] });
+      const after = await planner.updateProfile({ bio: 'Řádek 1\nŘádek 2', followers_count: 1200, avatar_key: AVATAR_A });
+      expect(after).toMatchObject({ id: true, username: 'mullnyphotos', bio: 'Řádek 1\nŘádek 2', followers_count: 1200, avatar_key: AVATAR_A });
       expect(after.updated_at > before.updated_at).toBe(true);
       expect(await planner.getProfile()).toEqual(after);
       expect(await code(planner.updateProfile({ id: false } as never))).toBe('INVALID');
@@ -220,20 +222,20 @@ describe('fake planner', () => {
       expect(await planner.getProfile()).toEqual(before);
     });
 
-    it('refuses an avatar photo that does not exist and accepts removing it', async () => {
-      const { planner, photoIds } = setup();
-      expect(await code(planner.updateProfile({ avatar_photo_id: 'dddddddd-0000-4000-8000-00000000ffff' }))).toBe('INVALID');
-      await planner.updateProfile({ avatar_photo_id: photoIds[1]! });
-      expect((await planner.updateProfile({ avatar_photo_id: null })).avatar_photo_id).toBeNull();
+    it('refuses a malformed avatar key and accepts a valid one and removing it', async () => {
+      const { planner } = setup();
+      for (const bad of ['../x', 'photos/dddddddd-0000-4000-8000-00000000ffff/480.webp', AVATAR_A.toUpperCase(), AVATAR_A.replace('.webp', '.png'), '']) {
+        expect(await code(planner.updateProfile({ avatar_key: bad }))).toBe('INVALID');
+      }
+      await planner.updateProfile({ avatar_key: AVATAR_A });
+      expect((await planner.updateProfile({ avatar_key: null })).avatar_key).toBeNull();
     });
 
-    it('deleting the avatar photo clears only the avatar', async () => {
+    it('deleting photos never touches the avatar key', async () => {
       const { world, planner, photoIds } = setup();
-      await planner.updateProfile({ avatar_photo_id: photoIds[2]!, bio: 'zůstane' });
-      await world.ports.api.deletePhotos({ ids: [photoIds[3]!] });
-      expect((await planner.getProfile()).avatar_photo_id).toBe(photoIds[2]);
+      await planner.updateProfile({ avatar_key: AVATAR_A, bio: 'zůstane' });
       await world.ports.api.deletePhotos({ ids: [photoIds[2]!] });
-      expect(await planner.getProfile()).toMatchObject({ avatar_photo_id: null, bio: 'zůstane' });
+      expect(await planner.getProfile()).toMatchObject({ avatar_key: AVATAR_A, bio: 'zůstane' });
     });
 
     it('STALE when updated_at differs; matching precondition works; the single row stays single', async () => {

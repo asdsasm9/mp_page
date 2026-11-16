@@ -140,6 +140,22 @@ describe('POST /storage/reconcile', () => {
     expect(again.body.deleted).toBe(0);
   });
 
+  it('ignores ig/avatar/ objects: not an orphan, not unknown, not counted, not deleted by apply', async () => {
+    await putPhoto(1);
+    await insertRow(1);
+    const avatar = 'ig/avatar/dddddddd-0000-4000-8000-000000000001.webp';
+    stamp = new Date(NOW.getTime() - 10 * HOURS);
+    await storage.put(avatar, new Uint8Array(500), { contentType: 'image/webp' });
+    stamp = NOW;
+    const res = await reconcile({ apply: true });
+    expect(res.status).toBe(200);
+    expect(res.body.orphans).toEqual([]);
+    expect(res.body.unknownKeys).toEqual([]);
+    expect(res.body.deleted).toBe(0);
+    expect(res.body.r2).toEqual({ objects: KEYS_PER, bytes: PHOTO_BYTES });
+    expect(storage.keys()).toContain(avatar);
+  });
+
   it('an orphan whose reservation has expired is deleted', async () => {
     await putPhoto(12, 5 * HOURS);
     await world.db.exec(

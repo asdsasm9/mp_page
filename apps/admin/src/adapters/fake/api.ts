@@ -8,6 +8,14 @@ import {
   CommitResponseSchema,
   DeleteRequestSchema,
   DeleteResponseSchema,
+  IG_AVATAR_MAX_BYTES,
+  IG_AVATAR_MAX_LIVE,
+  IgAvatarReserveRequestSchema,
+  IgAvatarReserveResponseSchema,
+  IgAvatarCleanupResponseSchema,
+  ORPHAN_MIN_AGE_MS,
+  igAvatarKey,
+  igAvatarPrefix,
   PUBLISH_MIN_GAP_MS,
   PHOTO_CACHE_CONTROL,
   CONTENT_TYPE_BY_KIND,
@@ -117,6 +125,23 @@ export function createFakeApi(core: Core): ApiPort {
       uploads.push(target);
     }
     return uploads;
+  }
+
+  const avatarObjects = () => [...state.objects.entries()].filter(([key]) => key.startsWith(igAvatarPrefix));
+
+  /** The Worker's cleanup: not the saved key, and either oversized or older than ORPHAN_MIN_AGE_MS. */
+  function runAvatarCleanup(): number {
+    const current = state.igProfile.avatar_key;
+    const cutoff = clock.now() - ORPHAN_MIN_AGE_MS;
+    let n = 0;
+    for (const [key, obj] of avatarObjects()) {
+      if (key === current) continue;
+      if (obj.bytes > IG_AVATAR_MAX_BYTES || obj.uploadedAtMs <= cutoff) {
+        state.objects.delete(key);
+        n++;
+      }
+    }
+    return n;
   }
 
   /** request_publish: rate limit, log row, timestamp. */
@@ -303,8 +328,6 @@ export function createFakeApi(core: Core): ApiPort {
         state.photos.delete(id);
         // ig_post_photos.photo_id is "on delete cascade": the photo leaves every Instagram post.
         state.igPostPhotos = state.igPostPhotos.filter((l) => l.photo_id !== id);
-        // ig_profile.avatar_photo_id is "on delete set null": only the avatar is cleared, the profile stays.
-        if (state.igProfile.avatar_photo_id === id) state.igProfile.avatar_photo_id = null;
         core.bump();
         logChange(core, 'photos', { op: 'delete', before: gone });
         deleted++;
@@ -375,6 +398,32 @@ export function createFakeApi(core: Core): ApiPort {
         deleted: apply ? doomed.length : 0,
         ...(hasMore && lastId !== undefined ? { cursor: lastId } : {}),
       });
+    },
+
+    async reserveIgAvatar(bytes) {
+      guard('api.reserveIgAvatar');
+      const parsed = parseRequest(IgAvatarReserveRequestSchema, { bytes });
+      if (parsed.bytes > IG_AVATAR_MAX_BYTES) throw new ApiError('FILE_TOO_LARGE');
+      if (avatarObjects().length >= IG_AVATAR_MAX_LIVE) {
+        runAvatarCleanup();
+        if (avatarObjects().length >= IG_AVATAR_MAX_LIVE) throw new ApiError('STORAGE_FULL');
+      }
+      const key = igAvatarKey(core.ids.uuid());
+      const expiresAtMs = clock.now() + PRESIGN_EXPIRY_MS;
+      const url = `https://fake-r2.invalid/${key}?sig=${state.grants.size + 1}`;
+      const headers = {
+        'content-type': 'image/webp',
+        'content-length': String(parsed.bytes),
+        'cache-control': PHOTO_CACHE_CONTROL,
+      };
+      state.grants.set(url, { key, headers, contentLength: parsed.bytes, expiresAtMs });
+      const upload: UploadTarget = { kind: 'webp', key, method: 'PUT', url, headers, expiresAt: new Date(expiresAtMs).toISOString() };
+      return respond(IgAvatarReserveResponseSchema, { key, upload });
+    },
+
+    async cleanupIgAvatars() {
+      guard('api.cleanupIgAvatars');
+      return respond(IgAvatarCleanupResponseSchema, { deleted: runAvatarCleanup() });
     },
 
     async publish() {

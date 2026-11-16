@@ -36,6 +36,19 @@ export function ogKey(id: string): string {
   return `${photoPrefix(id)}og.jpg`;
 }
 
+/** Instagram profile avatar objects (WP-16), outside photos/. Same pattern as the SQL check ig_profile_avatar_key_format. */
+export const igAvatarPrefix = 'ig/avatar/';
+const IG_AVATAR_KEY_RE = /^ig\/avatar\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/;
+
+export function igAvatarKey(uuid: string): string {
+  assertId(uuid);
+  return `${igAvatarPrefix}${uuid}.webp`;
+}
+
+export function isValidIgAvatarKey(key: string): boolean {
+  return typeof key === 'string' && IG_AVATAR_KEY_RE.test(key);
+}
+
 export type ParsedKey =
   | { kind: 'master'; id: string }
   | { kind: 'webp'; id: string; tier: WebpTier }

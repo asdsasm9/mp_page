@@ -5,7 +5,12 @@ import {
   ReconcileResponseSchema,
   ReserveResponseSchema,
   StorageResponseSchema,
+  IG_AVATAR_MAX_BYTES,
+  IG_AVATAR_MAX_LIVE,
   allKeys,
+  igAvatarKey,
+  igAvatarPrefix,
+  isValidIgAvatarKey,
   planUploadFiles,
   variantPlan,
   type PhotoVariants,
@@ -625,6 +630,105 @@ describe('presigned PUT', () => {
       'cache-control': 'public, max-age=31536000, immutable',
       'content-length': '1000',
     });
+  });
+});
+
+describe('Instagram avatar (WP-16)', () => {
+  const blob = (n: number) => new Blob([new Uint8Array(n)]);
+  const HOUR = 60 * 60_000;
+
+  async function reserveAndPut(s: Awaited<ReturnType<typeof setup>>, bytes: number) {
+    const res = await s.ports.api.reserveIgAvatar(bytes);
+    await s.ports.upload.put(res.upload, blob(bytes));
+    return res;
+  }
+  const avatarKeys = (s: Awaited<ReturnType<typeof setup>>) =>
+    s.world.snapshot().objects.map((o) => o.key).filter((k) => k.startsWith(igAvatarPrefix));
+
+  it('reserve returns a Worker-chosen uuid key and one presigned PUT that stores the WebP with progress', async () => {
+    const s = await setup();
+    const { key, upload } = await s.ports.api.reserveIgAvatar(5000);
+    expect(isValidIgAvatarKey(key)).toBe(true);
+    expect(upload).toMatchObject({ kind: 'webp', key, method: 'PUT' });
+    expect(upload.headers).toMatchObject({ 'content-type': 'image/webp', 'content-length': '5000', 'cache-control': 'public, max-age=31536000, immutable' });
+    const progress: number[] = [];
+    await s.ports.upload.put(upload, blob(5000), { onProgress: (loaded) => progress.push(loaded) });
+    expect(progress[0]).toBe(0);
+    expect(progress[progress.length - 1]).toBe(5000);
+    expect(s.world.snapshot().objects).toEqual([{ key, bytes: 5000 }]);
+    await expect(s.ports.upload.put(upload, blob(4999))).rejects.toMatchObject({ status: 403 });
+    const other = await s.ports.api.reserveIgAvatar(10);
+    expect(other.key).not.toBe(key);
+  });
+
+  it('refuses zero, a fraction and a missing size as INVALID_REQUEST and more than IG_AVATAR_MAX_BYTES as FILE_TOO_LARGE', async () => {
+    const s = await setup();
+    await expect(s.ports.api.reserveIgAvatar(IG_AVATAR_MAX_BYTES + 1)).rejects.toMatchObject({ code: 'FILE_TOO_LARGE' });
+    await expect(s.ports.api.reserveIgAvatar(0)).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+    await expect(s.ports.api.reserveIgAvatar(1.5)).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+    await expect(s.ports.api.reserveIgAvatar(undefined as never)).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+    expect((await s.ports.api.reserveIgAvatar(IG_AVATAR_MAX_BYTES)).key).toBeTruthy();
+  });
+
+  it('needs an admin session', async () => {
+    const s = await setup();
+    s.world.expireSession();
+    await expect(s.ports.api.reserveIgAvatar(10)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+    await expect(s.ports.api.cleanupIgAvatars()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+  });
+
+  it('the live cap: young objects are never cleaned, so the 11th reserve is STORAGE_FULL; old ones are cleaned first', async () => {
+    const s = await setup();
+    for (let i = 0; i < IG_AVATAR_MAX_LIVE; i++) await reserveAndPut(s, 100);
+    expect(avatarKeys(s)).toHaveLength(IG_AVATAR_MAX_LIVE);
+    await expect(s.ports.api.reserveIgAvatar(100)).rejects.toMatchObject({ code: 'STORAGE_FULL' });
+    expect(avatarKeys(s)).toHaveLength(IG_AVATAR_MAX_LIVE);
+    await s.clock.advance(2 * HOUR + 1);
+    const fresh = await s.ports.api.reserveIgAvatar(100);
+    expect(fresh.key).toBeTruthy();
+    expect(avatarKeys(s)).toHaveLength(0);
+  });
+
+  it('cleanup keeps the saved avatar and young objects, deletes old and idempotently; photos are untouched', async () => {
+    const s = await setup();
+    const saved = await reserveAndPut(s, 100);
+    await s.ports.planner.updateProfile({ avatar_key: saved.key });
+    const old = await reserveAndPut(s, 100);
+    await s.clock.advance(2 * HOUR + 1);
+    const young = await reserveAndPut(s, 100);
+    const photo = await s.ports.api.reserve({ album_id: s.album.id, items: [item(1)] });
+    await s.ports.upload.put(photo.items[0]!.uploads![0]!, blob(1000));
+    const photosBefore = s.world.snapshot().objects.filter((o) => o.key.startsWith('photos/')).length;
+
+    expect(await s.ports.api.cleanupIgAvatars()).toEqual({ deleted: 1 });
+    expect(avatarKeys(s).sort()).toEqual([saved.key, young.key].sort());
+    expect(avatarKeys(s)).not.toContain(old.key);
+    expect(await s.ports.api.cleanupIgAvatars()).toEqual({ deleted: 0 });
+    expect(s.world.snapshot().objects.filter((o) => o.key.startsWith('photos/'))).toHaveLength(photosBefore);
+
+    await s.clock.advance(2 * HOUR + 1);
+    expect(await s.ports.api.cleanupIgAvatars()).toEqual({ deleted: 1 });
+    expect(avatarKeys(s)).toEqual([saved.key]);
+  });
+
+  it('cleanup deletes an oversized non-current object even when young, never the current one', async () => {
+    const s = await setup();
+    const current = await reserveAndPut(s, 100);
+    const huge = igAvatarKey('dddddddd-0000-4000-8000-0000000000f1');
+    s.world.putObject(huge, IG_AVATAR_MAX_BYTES + 1);
+    await s.ports.planner.updateProfile({ avatar_key: current.key });
+    expect(await s.ports.api.cleanupIgAvatars()).toEqual({ deleted: 1 });
+    expect(avatarKeys(s)).toEqual([current.key]);
+    s.world.putObject(current.key, IG_AVATAR_MAX_BYTES + 1);
+    expect(await s.ports.api.cleanupIgAvatars()).toEqual({ deleted: 0 });
+  });
+
+  it('reconcile does not see avatar objects', async () => {
+    const s = await setup();
+    await reserveAndPut(s, 100);
+    const report = await s.ports.api.reconcile({});
+    expect(report.r2.objects).toBe(0);
+    expect(report.unknownKeys).toEqual([]);
   });
 });
 

@@ -151,6 +151,14 @@ reaches the public snapshot after (1) migration `20261023110000_hero_photo.sql` 
 redeployed (`npx wrangler deploy`). Until then publishing still works and the snapshot has `heroPhotoId: null` (only a missing table, HTTP 404, counts as "no hero"; any other `site_settings` read failure, such as a 5xx or a network error, fails the publish with `UPSTREAM_ERROR` so a chosen hero is never silently dropped). No new
 route, binding or secret.
 
+**HUMAN** Instagram profile picture (WP-16, T-374): the Worker has two new routes, `POST /ig/avatar/reserve` and
+`POST /ig/avatar/cleanup`, so it must be redeployed (`npx wrangler deploy`) before the admin that uses them. Order:
+(1) deploy the Worker (additive, the old admin keeps working), (2) apply migration
+`supabase/migrations/20261118090000_ig_profile_avatar_key.sql` (adds `ig_profile.avatar_key`, drops `avatar_photo_id`;
+the profile photo chosen earlier is lost and initials show until a new one is uploaded), (3) deploy the admin. No new
+binding or secret; the existing R2 CORS PUT rule (section 6) and the image host already serve `ig/avatar/`.
+Check: `docs/VERIFY.md` row 72.
+
 ## 9. First live smoke test
 
 **HUMAN** Use a throwaway test photo; take the access token from a signed-in admin session (never share it).

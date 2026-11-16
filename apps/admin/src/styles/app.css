@@ -2437,6 +2437,32 @@
     margin-block-start: var(--space-4);
   }
 
+  /* Two columns from 64rem (photos left, caption to status right); one column below, photos first. */
+  .post-form,
+  .post-fields {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+  }
+
+  .post-form > *,
+  .post-fields > * {
+    min-inline-size: 0;
+  }
+
+  @media (min-width: 64rem) {
+    .post-form {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      gap: var(--space-6);
+      align-items: start;
+    }
+  }
+
+  .field-compact input {
+    justify-self: start;
+    inline-size: auto;
+  }
+
   .post-photos,
   .post-posted,
   .post-share {

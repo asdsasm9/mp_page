@@ -749,6 +749,30 @@ async function runProfile(browser, profile) {
       // T-346: the share panel of a saved post with photos (copy and download everywhere; the share button only where files can be shared).
       await waitText(page, /Zkopírovat popisek/);
       await waitText(page, /Stáhnout fotky/);
+      // T-349: two columns from 64 rem (photos left, text fields right), one column below; no section heading above the
+      // photos; the planned date is compact; no horizontal overflow.
+      const layout = await page.evaluate(() => {
+        const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect();
+        const photos = rect('.post-photos');
+        const fields = rect('.post-fields');
+        const date = document.querySelector('.post-editor input[type=date]')?.getBoundingClientRect();
+        const form = rect('.post-form');
+        return {
+          ok: Boolean(photos && fields && date && form),
+          sideBySide: Boolean(photos && fields) && fields.left >= photos.right - 1 && Math.abs(fields.top - photos.top) < 2,
+          stacked: Boolean(photos && fields) && fields.top >= photos.bottom - 1,
+          dateWidth: date?.width ?? 0,
+          formWidth: form?.width ?? 0,
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+          photosHeading: [...document.querySelectorAll('.post-editor h2')].some((h) => /Fotky příspěvku/.test(h.textContent ?? '')),
+        };
+      });
+      if (!layout.ok) throw new Error('editor layout: .post-photos, .post-fields, date or form missing');
+      if (layout.photosHeading) throw new Error('editor still has the "Fotky příspěvku" heading');
+      if (layout.overflow > 0) throw new Error(`editor overflows horizontally by ${layout.overflow} px`);
+      if (ctx.profile.width >= 1024 && !layout.sideBySide) throw new Error(`editor should be two columns at ${ctx.profile.width} px: ${JSON.stringify(layout)}`);
+      if (ctx.profile.width < 1024 && !layout.stacked) throw new Error(`editor should be one column at ${ctx.profile.width} px: ${JSON.stringify(layout)}`);
+      if (layout.dateWidth > layout.formWidth * 0.6 && ctx.profile.width >= 1024) throw new Error(`planned date field is too wide: ${JSON.stringify(layout)}`);
       await checkpoint(ctx, 'instagram editor', { shot: true });
 
       // The mark-posted dialog: date field with today's date and the hint for old posts.

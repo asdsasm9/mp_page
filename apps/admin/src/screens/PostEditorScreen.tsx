@@ -201,9 +201,8 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
         <Notice>{errorMessage(failure)}</Notice>
       )}
 
-      <form className="form" noValidate onSubmit={(event) => void save(event)}>
-        <section className="post-photos" aria-labelledby="post-photos-heading">
-          <h2 id="post-photos-heading">{t.photosHeading}</h2>
+      <form className="form post-form" noValidate onSubmit={(event) => void save(event)}>
+        <div className="post-photos">
           <p className="page-note" role="status" aria-live="polite">
             {fill(t.selectedCount, { n: draft.photoIds.length, max: IG_PHOTOS_MAX })}
           </p>
@@ -224,8 +223,9 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
               />
             </>
           ) : null}
-        </section>
+        </div>
 
+        <div className="post-fields">
         <Field
           label={t.captionLabel}
           value={draft.caption}
@@ -258,6 +258,7 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
             <Field
               label={t.plannedOn}
               type="date"
+              compact
               value={draft.plannedOn}
               onChange={(value) => set('plannedOn', value)}
             />
@@ -296,6 +297,7 @@ function PostEditor({ post, title, onReload }: { post: IgPost | null; title: str
           >
             {saving ? t.saving : t.save}
           </button>
+        </div>
         </div>
       </form>
 

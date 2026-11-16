@@ -171,6 +171,27 @@ describe('post editor: new post', () => {
   });
 });
 
+describe('post editor: layout (T-349)', () => {
+  it('has no heading above the photos, two column groups, and a compact date field', async () => {
+    const world = seeded();
+    const post = await byCaption(world, 'Svatba na zámku');
+    const { container } = mount(world, `/instagram/${post.id}`);
+    await heading(t.editTitle);
+    await waitFor(() => expect(field(t.captionLabel).value).toBe('Svatba na zámku'));
+    expect(screen.queryByRole('heading', { name: 'Fotky příspěvku' })).toBeNull();
+    const form = container.querySelector('form.post-form')!;
+    const columns = [...form.children].map((child) => child.className);
+    expect(columns).toEqual(['post-photos', 'post-fields']);
+    expect(container.querySelector('.post-photos')!.contains(screen.getByRole('button', { name: t.changePhotos }))).toBe(true);
+    const fields = container.querySelector('.post-fields')!;
+    expect(fields.contains(field(t.captionLabel))).toBe(true);
+    expect(fields.contains(field(t.hashtagsLabel))).toBe(true);
+    expect(fields.contains(field(t.plannedOn))).toBe(true);
+    expect(fields.contains(screen.getByRole('button', { name: t.save }))).toBe(true);
+    expect(field(t.plannedOn).closest('.field')!.classList.contains('field-compact')).toBe(true);
+  });
+});
+
 describe('post editor: existing post', () => {
   it('shows the saved values and saves changes of text, date, status and photo order', async () => {
     mockRowRects();

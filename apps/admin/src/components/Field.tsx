@@ -18,6 +18,8 @@ export interface FieldProps {
   autofocus?: boolean;
   autoCapitalize?: string;
   type?: 'text' | 'date';
+  /** Size the control to its content instead of the full column (a date). */
+  compact?: boolean;
   onBlur?: () => void;
   /** Enter in a single-line field (not in a textarea). */
   onEnter?: () => void;
@@ -38,6 +40,7 @@ export function Field({
   autofocus,
   autoCapitalize,
   type = 'text',
+  compact,
   onBlur,
   onEnter,
 }: FieldProps) {
@@ -66,7 +69,7 @@ export function Field({
     }
   };
   return (
-    <div className="field">
+    <div className={compact ? 'field field-compact' : 'field'}>
       <label htmlFor={id}>
         {label}
         {required ? <span className="required"> {cs.categories.required}</span> : null}

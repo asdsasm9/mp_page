@@ -643,7 +643,6 @@ export const cs = {
       loadFailed: 'Příspěvek se nepodařilo načíst.',
       notFound: 'Tento příspěvek jsme nenašli.',
       backToPlan: 'Zpět na plán',
-      photosHeading: 'Fotky příspěvku',
       choosePhotos: glossary.choosePhotos,
       changePhotos: 'Změnit výběr fotek',
       selectedCount: 'Vybráno {n} z {max}',

@@ -1,6 +1,6 @@
 /**
- * One tile of the Instagram planning grid (WP-14): the first photo of the post as the 480 px WebP (URL from the shared
- * key helper), cropped from the centre to 3:4. Planned and draft posts have a dashed outline and a text badge (colour
+ * One tile of the Instagram planning grid (WP-14): the first photo of the post as a WebP (srcset of 480, 720 and 960 px,
+ * URLs from the shared key helper), cropped from the centre to 3:4. Planned and draft posts have a dashed outline and a text badge (colour
  * and line style are never the only signal); posted posts are solid. A carousel carries an icon and the photo count;
  * the link's accessible name is built from the visible text plus the hidden post name. Posts without photos show an
  * empty tile with a notice instead of an image. Open posts can be dragged by the 44 px handle; posted ones cannot.
@@ -9,12 +9,12 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { effectiveStatus, type IgPost } from '@mp/shared';
 import { Link } from 'react-router-dom';
-import { photoWebpUrl } from '../data/images';
+import { fallbackTo480OnError, photoImgProps } from '../data/images';
 import { cs } from '../i18n/cs';
 import { fill, formatCount, formatPragueDateTime } from '../i18n/format';
 
 const EXCERPT_MAX = 60;
-/** The tile image is 480 px wide at 3:4 (grid-native 1080 x 1440). */
+/** Intrinsic ratio hint of the tile image (3:4); the file is chosen by srcset (480, 720 or 960 px, see data/images.ts). */
 const IMG_WIDTH = 480;
 const IMG_HEIGHT = 640;
 
@@ -51,7 +51,7 @@ function firstPhotoId(post: IgPost): string | null {
 function TileLink({ post, position, imgBase, isNext }: PostTileProps) {
   const status = effectiveStatus(post);
   const photoId = firstPhotoId(post);
-  const src = photoId ? photoWebpUrl(imgBase, photoId, 480) : null;
+  const img = photoId ? photoImgProps(imgBase, photoId, 'grid') : null;
   const count = post.photos.length;
   const caption = excerpt(post.caption);
   const name = caption ? `${postName(position)}: ${caption}` : postName(position);
@@ -59,8 +59,17 @@ function TileLink({ post, position, imgBase, isNext }: PostTileProps) {
 
   return (
     <Link className="ig-link" to={`/instagram/${post.id}`}>
-      {src ? (
-        <img className="ig-img" src={src} width={IMG_WIDTH} height={IMG_HEIGHT} alt="" loading="lazy" decoding="async" />
+      {img ? (
+        <img
+          className="ig-img"
+          {...img}
+          width={IMG_WIDTH}
+          height={IMG_HEIGHT}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={fallbackTo480OnError}
+        />
       ) : (
         <span className="ig-empty">{emptyText}</span>
       )}

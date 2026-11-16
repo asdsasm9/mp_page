@@ -47,11 +47,13 @@ describe('Instagram grid screen', () => {
     captions.forEach((caption, i) => expect(names[i]).toContain(caption));
   });
 
-  it('uses the 480 px WebP of the first photo', async () => {
+  it('uses the first photo: 480 px WebP as src, 480, 720 and 960 px in srcset for sharp tiles on a wide screen', async () => {
     mount(seeded());
     const list = await grid();
     const img = tiles(list)[0]!.querySelector('img')!;
     expect(img.getAttribute('src')).toMatch(/^https:\/\/img\.example\.test\/photos\/[0-9a-f-]+\/480\.webp$/);
+    expect(img.getAttribute('srcset')).toMatch(/\/480\.webp 480w, .*\/720\.webp 720w, .*\/960\.webp 960w$/);
+    expect(img.getAttribute('sizes')).toMatch(/^\(min-width: 64rem\) 720px,/);
     expect(img.getAttribute('alt')).toBe('');
   });
 

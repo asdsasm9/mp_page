@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { applySortUpdates, type SortUpdate } from '../data/order';
 import { useCanMutate } from '../data/health';
-import { photoWebpUrl } from '../data/images';
+import { fallbackTo480OnError, photoImgProps } from '../data/images';
 import { cs } from '../i18n/cs';
 import { fill } from '../i18n/format';
 import { SortableList } from './SortableList';
@@ -63,12 +63,21 @@ export function PostPhotoStrip({ photoIds, imgBase, onChange, onLastRemoved }: P
       onReorder={reorder}
       movedMessage={cs.instagram.editor.orderChanged}
       renderItem={(item) => {
-        const src = photoWebpUrl(imgBase, item.id, 480);
+        const img = photoImgProps(imgBase, item.id, 'strip');
         const n = numberOf(item.id);
         return (
           <div className="post-strip-item">
-            {src ? (
-              <img className="post-strip-img" src={src} width={480} height={640} alt="" loading="lazy" decoding="async" />
+            {img ? (
+              <img
+                className="post-strip-img"
+                {...img}
+                width={72}
+                height={96}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                onError={fallbackTo480OnError}
+              />
             ) : (
               <span className="post-strip-img" />
             )}

@@ -681,7 +681,7 @@ export const cs = {
     picker: {
       title: 'Vybrat fotky příspěvku',
       hint: 'Vyberte album a v něm fotky. Čísla ukazují pořadí v příspěvku, výběr zůstane i po přepnutí alba.',
-      albumLegend: 'Album',
+      albumLabel: 'Album',
       photoLegend: 'Fotky',
       unpublished: 'nezveřejněné',
       photosLoading: 'Načítám fotky alba…',

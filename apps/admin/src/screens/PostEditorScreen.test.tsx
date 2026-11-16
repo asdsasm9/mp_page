@@ -104,25 +104,31 @@ describe('post editor: new post', () => {
     await heading(cs.instagram.newPost);
     const user = userEvent.setup();
     const dialog = await openPicker(user);
-    const albums = within(dialog).getAllByRole('radio');
+    // The albums are one native select labelled "Album", grouped by category.
+    const select = within(dialog).getByRole('combobox', { name: cs.instagram.picker.albumLabel }) as HTMLSelectElement;
+    expect(select.tagName).toBe('SELECT');
+    expect(within(dialog).queryAllByRole('radio')).toHaveLength(0);
+    expect(select.querySelectorAll('optgroup').length).toBeGreaterThan(1);
+    const albums = [...select.querySelectorAll('option')].map((o) => o.value);
     expect(albums.length).toBeGreaterThan(1);
-    await user.click(albums[0]!);
+    const pick = (album: string) => user.selectOptions(select, album);
+    await pick(albums[0]!);
     expect(await tick(user, dialog, 2)).toBe(2);
     expect(within(dialog).getAllByText('1', { selector: '.ig-pick-order' })).toHaveLength(1);
     expect(within(dialog).getByText('2', { selector: '.ig-pick-order' })).toBeTruthy();
     expect(within(dialog).getByText('Vybráno 2 z 10')).toBeTruthy();
     // Another album, then back: the first two are still chosen and the numbers continue.
-    await user.click(albums[1]!);
+    await pick(albums[1]!);
     await waitFor(() => expect(within(dialog).queryAllByText(/^\d+$/, { selector: '.ig-pick-order' })).toHaveLength(0));
     await tick(user, dialog, 3);
     expect(within(dialog).getByText('Vybráno 5 z 10')).toBeTruthy();
     expect(within(dialog).getByText('3', { selector: '.ig-pick-order' })).toBeTruthy();
-    await user.click(albums[0]!);
+    await pick(albums[0]!);
     await waitFor(() => expect(within(dialog).getByText('2', { selector: '.ig-pick-order' })).toBeTruthy());
     // Fill up to the maximum, wherever the photos are.
     for (const album of albums) {
       if (within(dialog).queryByText(/Vybráno 10 z 10/)) break;
-      await user.click(album);
+      await pick(album);
       await tick(user, dialog, 10);
     }
     expect(within(dialog).getByText(/Vybráno 10 z 10/)).toBeTruthy();
@@ -138,10 +144,20 @@ describe('post editor: new post', () => {
     const user = userEvent.setup();
     const dialog = await openPicker(user);
     await tick(user, dialog, 3);
+    // Picker tiles ask for the 720 and 960 px WebP, never the 480 (T-351).
+    const pickerImg = dialog.querySelector<HTMLImageElement>('.cover-tile img')!;
+    expect(pickerImg.getAttribute('src')).toMatch(/\/720\.webp$/);
+    expect(pickerImg.getAttribute('srcset')).toMatch(/\/720\.webp 720w, .*\/960\.webp 960w$/);
+    expect(pickerImg.getAttribute('srcset')).not.toContain('480');
+    expect(pickerImg.getAttribute('sizes')).toBeTruthy();
     await user.click(within(dialog).getByRole('button', { name: cs.instagram.picker.confirm }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     const strip = screen.getByRole('list', { name: t.stripLabel });
     expect(within(strip).getAllByRole('listitem')).toHaveLength(3);
+    const stripImg = strip.querySelector<HTMLImageElement>('img.post-strip-img')!;
+    expect(stripImg.getAttribute('src')).toMatch(/\/720\.webp$/);
+    expect(stripImg.getAttribute('srcset')).toMatch(/\/720\.webp 720w, .*\/960\.webp 960w$/);
+    expect(stripImg.getAttribute('srcset')).not.toContain('480');
     expect(screen.getByText('Vybráno 3 z 10')).toBeTruthy();
     await user.type(field(t.captionLabel), 'Nový popisek');
     fireEvent.change(field(t.plannedOn), { target: { value: '2026-12-24' } });

@@ -144,6 +144,20 @@ deleted, cursor? }`.
 - One call lists at most 20 pages of 1000 objects. When more remain the response has an opaque `cursor`; the client
   repeats the call with it until there is none, and the sum of the calls equals one full run.
 
+## POST /ig/avatar/reserve
+
+Request `{ bytes }` (integer, 1 to 204,800; nothing else, a client key is a 400). Over the limit: 413 `FILE_TOO_LARGE`.
+The Worker generates the uuid, so the key is always `ig/avatar/<uuid>.webp`, and returns `{ key, upload }` (one presigned
+PUT, `content-type: image/webp`, exact `content-length`, immutable `cache-control`). At most 10 objects live under
+`ig/avatar/`; at the cap the Worker runs the cleanup below first and answers 409 `STORAGE_FULL` if it is still full.
+Avatar bytes are outside the photo quota. The profile save writes `ig_profile.avatar_key`; there is no commit route.
+
+## POST /ig/avatar/cleanup
+
+Body empty or `{}`. Reads `ig_profile.avatar_key` with the caller's token, then deletes every object under `ig/avatar/`
+that is not that key and is older than 2 hours, plus any non-current object over 204,800 bytes. Idempotent.
+Response `{ deleted }`. Reconcile never lists `ig/avatar/`.
+
 ## POST /publish
 
 No body. In order: `request_publish` (admin check, one per 60 s, creates the publish-log row); read all catalog tables

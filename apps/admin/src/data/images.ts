@@ -1,5 +1,5 @@
 /** URLs of photo files on the public image host. Keys come from the shared helpers (derived from the photo id only). */
-import { isValidPhotoId, webpKey, type WebpTier } from '@mp/shared';
+import { isValidIgAvatarKey, isValidPhotoId, webpKey, type WebpTier } from '@mp/shared';
 
 /** The WebP of a photo at the given width tier, or null for an id that is not a valid photo id. */
 export function photoWebpUrl(imgBase: string, photoId: string, tier: WebpTier = 480): string | null {
@@ -10,6 +10,11 @@ export function photoWebpUrl(imgBase: string, photoId: string, tier: WebpTier = 
 export function photoWebpSrcSet(imgBase: string, photoId: string, tiers: readonly WebpTier[]): string | null {
   if (!isValidPhotoId(photoId)) return null;
   return tiers.map((tier) => `${imgBase}/${webpKey(photoId, tier)} ${tier}w`).join(', ');
+}
+
+/** Props of the Instagram avatar `<img>` (WP-16): the single 480 px square WebP at `ig/avatar/<uuid>.webp`, or null for an invalid key. */
+export function avatarImgProps(imgBase: string, key: string): { src: string; width: 480; height: 480 } | null {
+  return isValidIgAvatarKey(key) ? { src: `${imgBase}/${key}`, width: 480, height: 480 } : null;
 }
 
 /**
@@ -40,8 +45,6 @@ export const PHOTO_IMG = {
   strip: { tiers: [720, 960], sizes: `${coverWidth(72, 96) * 2}px` },
   /** Picker tile: square, two columns in a phone dialog (about 150 px) and three on a wide one (about 165 px). */
   picker: { tiers: [720, 960], sizes: `(min-width: 40rem) ${coverWidth(165, 165) * 2}px, ${coverWidth(150, 150) * 2}px` },
-  /** Profile avatar (WP-15): a round 5 rem (80 px) centre crop; the 480 file is the fallback and the sharp 2x/3x source. */
-  avatar: { tiers: [480, 720], sizes: `${coverWidth(88, 88) * 3}px` },
   /**
    * Instagram grid tile: 3:4, one third of the profile frame. From 64rem the frame is --ig-frame-max (26rem = 416 px),
    * so a tile is about 138 x 184 px (T-365); below that it is one third of the page (about 110 x 147 px on a phone).

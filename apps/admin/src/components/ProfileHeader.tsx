@@ -12,7 +12,7 @@ import { cs } from '../i18n/cs';
 import { EditProfileDialog } from '../screens/ProfileDialog';
 import { ProfileAvatar } from './ProfileAvatar';
 
-type Shown = Pick<IgProfileRow, 'username' | 'display_name' | 'bio' | 'link' | 'followers_count' | 'following_count' | 'avatar_photo_id'>;
+type Shown = Pick<IgProfileRow, 'username' | 'display_name' | 'bio' | 'link' | 'followers_count' | 'following_count' | 'avatar_key'>;
 
 interface Props {
   /** The loaded profile; `null` when the profile could not be loaded (defaults are shown instead). */

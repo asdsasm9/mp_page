@@ -41,5 +41,10 @@ export const ORPHAN_MIN_AGE_MS = 2 * 60 * 60 * 1000;
 /** Minimum gap between two publishes (Worker publish route and the admin fake). */
 export const PUBLISH_MIN_GAP_MS = 60_000;
 
+/** Instagram avatar upload (WP-16): one square WebP, bounded separately from the photo quota. */
+export const IG_AVATAR_PX = 480;
+export const IG_AVATAR_MAX_BYTES = 204_800;
+export const IG_AVATAR_MAX_LIVE = 10;
+
 /** Absolute provider ceiling the hard limit must never exceed (R2 free 10 GB). */
 export const PROVIDER_MAX_BYTES = 10_000_000_000;

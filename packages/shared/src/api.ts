@@ -9,7 +9,7 @@
 import { z } from 'zod';
 import { validateAlt } from './alt';
 import { API_ERROR_CODES, type ApiErrorCode } from './errors';
-import { allKeys, jpegKey, isValidPhotoId, masterKey, ogKey, webpKey, type WebpTier } from './keys';
+import { allKeys, jpegKey, isValidIgAvatarKey, isValidPhotoId, masterKey, ogKey, webpKey, type WebpTier } from './keys';
 import { MASTER_MAX_EDGE, PhotoVariantsSchema, WebpTierSchema, variantPlan, type PhotoVariants } from './variants';
 
 // ---------------------------------------------------------------- error codes
@@ -355,3 +355,20 @@ export const PublishResponseSchema = z
   })
   .strict();
 export type PublishResponse = z.infer<typeof PublishResponseSchema>;
+
+// ---------------------------------------------------------------- POST /ig/avatar/reserve, POST /ig/avatar/cleanup (WP-16)
+
+/** Size above IG_AVATAR_MAX_BYTES is refused by the route with 413 FILE_TOO_LARGE, not by the schema. */
+export const IgAvatarReserveRequestSchema = z.object({ bytes: posInt }).strict();
+export type IgAvatarReserveRequest = z.infer<typeof IgAvatarReserveRequestSchema>;
+
+export const IgAvatarReserveResponseSchema = z
+  .object({ key: z.string().refine(isValidIgAvatarKey, 'INVALID_KEY'), upload: UploadTargetSchema })
+  .strict();
+export type IgAvatarReserveResponse = z.infer<typeof IgAvatarReserveResponseSchema>;
+
+/** No body is expected; an empty object is tolerated. */
+export const IgAvatarCleanupRequestSchema = z.object({}).strict();
+
+export const IgAvatarCleanupResponseSchema = z.object({ deleted: nonNegInt }).strict();
+export type IgAvatarCleanupResponse = z.infer<typeof IgAvatarCleanupResponseSchema>;

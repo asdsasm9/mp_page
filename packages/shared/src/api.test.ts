@@ -5,6 +5,12 @@ import {
   DeleteRequestSchema,
   ERROR_STATUS,
   ErrorBodySchema,
+  IG_AVATAR_MAX_BYTES,
+  IG_AVATAR_MAX_LIVE,
+  IG_AVATAR_PX,
+  IgAvatarCleanupResponseSchema,
+  IgAvatarReserveRequestSchema,
+  IgAvatarReserveResponseSchema,
   ReserveRequestSchema,
   WORKER_ERROR_CODES,
   apiCodeFromZodError,
@@ -222,5 +228,45 @@ describe('error codes and statuses', () => {
     expect(ErrorBodySchema.safeParse({ error: 'PUBLISH_TOO_SOON', retryAfter: 30 }).success).toBe(true);
     expect(ErrorBodySchema.safeParse({ error: 'NOPE' }).success).toBe(false);
     expect(ErrorBodySchema.safeParse({ error: 'NOT_ADMIN', stack: 'x' }).success).toBe(false);
+  });
+});
+
+describe('ig avatar routes', () => {
+  it('exposes the limits', () => {
+    expect([IG_AVATAR_PX, IG_AVATAR_MAX_BYTES, IG_AVATAR_MAX_LIVE]).toEqual([480, 204800, 10]);
+  });
+
+  it('reserve request takes a positive integer bytes and nothing else', () => {
+    expect(IgAvatarReserveRequestSchema.safeParse({ bytes: 1 }).success).toBe(true);
+    expect(IgAvatarReserveRequestSchema.safeParse({ bytes: IG_AVATAR_MAX_BYTES + 1 }).success).toBe(true);
+    for (const b of [0, -1, 1.5, '5', null, undefined]) {
+      expect(IgAvatarReserveRequestSchema.safeParse({ bytes: b }).success, String(b)).toBe(false);
+    }
+    expect(IgAvatarReserveRequestSchema.safeParse({}).success).toBe(false);
+    expect(IgAvatarReserveRequestSchema.safeParse({ bytes: 5, key: 'x' }).success).toBe(false);
+  });
+
+  const key = `ig/avatar/${ID}.webp`;
+  const upload = {
+    kind: 'webp',
+    key,
+    method: 'PUT',
+    url: 'https://r2.test/put',
+    headers: { 'content-type': 'image/webp' },
+    expiresAt: '2026-11-16T10:00:00.000Z',
+  };
+
+  it('reserve response needs a valid avatar key and an upload target', () => {
+    expect(IgAvatarReserveResponseSchema.safeParse({ key, upload }).success).toBe(true);
+    expect(IgAvatarReserveResponseSchema.safeParse({ key: `photos/${ID}/480.webp`, upload }).success).toBe(false);
+    expect(IgAvatarReserveResponseSchema.safeParse({ key: 'ig/avatar/../x.webp', upload }).success).toBe(false);
+    expect(IgAvatarReserveResponseSchema.safeParse({ key }).success).toBe(false);
+  });
+
+  it('cleanup response is a non-negative integer count', () => {
+    expect(IgAvatarCleanupResponseSchema.safeParse({ deleted: 0 }).success).toBe(true);
+    expect(IgAvatarCleanupResponseSchema.safeParse({ deleted: 3 }).success).toBe(true);
+    expect(IgAvatarCleanupResponseSchema.safeParse({ deleted: -1 }).success).toBe(false);
+    expect(IgAvatarCleanupResponseSchema.safeParse({}).success).toBe(false);
   });
 });

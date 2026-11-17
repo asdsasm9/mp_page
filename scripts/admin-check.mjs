@@ -82,7 +82,16 @@ async function makeFixtures() {
   return files;
 }
 const fixtureFiles = await makeFixtures();
-const placeholderWebp = await sharp({ create: { width: 480, height: 320, channels: 3, background: '#8aa4b8' } }).webp().toBuffer();
+// WP-16: a small landscape PNG for the avatar upload (the browser crops it to a 480 px square WebP).
+const avatarFixture = join(work, 'fixtures', 'avatar.png');
+writeFileSync(
+  avatarFixture,
+  await sharp({ create: { width: 640, height: 400, channels: 3, background: '#3d6f8a' } })
+    .composite([{ input: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400"><circle cx="320" cy="170" r="110" fill="#f2e6c8"/></svg>') }])
+    .png()
+    .toBuffer(),
+);
+const placeholderWebp =await sharp({ create: { width: 480, height: 320, channels: 3, background: '#8aa4b8' } }).webp().toBuffer();
 const placeholderJpeg = await sharp({ create: { width: 1600, height: 1067, channels: 3, background: '#8aa4b8' } }).jpeg().toBuffer();
 
 // ---------------------------------------------------------------------------------------------- server
@@ -725,7 +734,7 @@ async function runProfile(browser, profile) {
       // The typed profile (WP-15): name, bio with a line break, link text, counts and an avatar photo.
       await world(
         page,
-        '(w) => w.ports.planner.updateProfile({ username: "mullny.photos", display_name: "Mullny Photos", bio: "Svatební a portrétní fotograf\\nBrno a okolí", link: "https://example.test/mullny", followers_count: 12345, following_count: 87, avatar_photo_id: w.snapshot().photos[0].id })',
+        '(w) => w.ports.planner.updateProfile({ username: "mullny.photos", display_name: "Mullny Photos", bio: "Svatební a portrétní fotograf\\nBrno a okolí", link: "https://example.test/mullny", followers_count: 12345, following_count: 87, avatar_key: ["ig", "avatar", "dddddddd-0000-4000-8000-0000000000c1.webp"].join("/") })',
       );
       await clickBy(ctx, 'a', /^Instagram$/);
       await page.waitForFunction(() => location.pathname === '/instagram' && document.querySelectorAll('.ig-tile').length >= 9 && document.querySelector('.ig-username'), { timeout: 10000 });
@@ -751,7 +760,7 @@ async function runProfile(browser, profile) {
           avatarW: avatar.width,
           avatarH: avatar.height,
           avatarRadius,
-          avatarImg: document.querySelector('img.ig-avatar')?.getAttribute('srcset') ?? '',
+          avatarImg: document.querySelector('img.ig-avatar')?.getAttribute('src') ?? '',
           h2: document.querySelector('.ig-frame h2.ig-username')?.textContent,
           counts: [...document.querySelectorAll('.ig-counts li')].map((li) => li.textContent.replace(/\s+/g, ' ').trim()),
           bio: getComputedStyle(document.querySelector('.ig-bio')).whiteSpace,
@@ -767,7 +776,7 @@ async function runProfile(browser, profile) {
       if (Math.abs(g.ratio - 4 / 3) > 0.02) throw new Error(`tile ratio ${g.ratio.toFixed(3)}, expected 1.333`);
       if (g.handles !== 0 || g.chips !== 0 || g.outlined !== 0) throw new Error(`default view must be a pure preview: ${JSON.stringify(g)}`);
       if (Math.abs(g.avatarW - g.avatarH) > 0.5 || g.avatarW < 60 || !/^\d+(\.\d+)?px$/.test(g.avatarRadius) || parseFloat(g.avatarRadius) < g.avatarW / 2) throw new Error(`avatar is not a round circle: ${JSON.stringify(g)}`);
-      if (!/\/480\.webp 480w/.test(g.avatarImg)) throw new Error(`avatar has no 480 px srcset: ${g.avatarImg}`);
+      if (!/\/ig\/avatar\/[0-9a-f-]{36}\.webp$/.test(g.avatarImg)) throw new Error(`avatar is not the uploaded 480 px file: ${g.avatarImg}`);
       if (g.h2 !== 'mullny.photos') throw new Error(`profile username h2 is "${g.h2}"`);
       if (g.counts.length !== 3 || !/^9 příspěvků$/.test(g.counts[0]) || !/^12,3\s?tis\. sledujících$/.test(g.counts[1]) || !/^87 sleduje$/.test(g.counts[2])) throw new Error(`counts ${JSON.stringify(g.counts)}`);
       if (g.bio !== 'pre-line') throw new Error(`bio white-space is ${g.bio}`);
@@ -829,12 +838,34 @@ async function runProfile(browser, profile) {
       await checkpoint(ctx, 'instagram profile dialog error', { shot: ctx.profile.phone });
       await typeInto(ctx, await fieldByLabel(page, /^Odkaz/), 'https://example.test/mullny');
       await typeInto(ctx, await fieldByLabel(page, /^Sledující/), '2500');
+      // WP-16: "Nahrát fotku" opens a hidden file input; the browser crops the PNG to a 480 px WebP and uploads it on its own.
+      const uploadButton = await find(page, 'button', /^Nahrát fotku$/);
+      const fileInput = await page.$('dialog:modal input[type=file]');
+      if (!fileInput) throw new Error('the profile dialog has no file input');
+      const accept = await fileInput.evaluate((el) => ({ accept: el.accept, hidden: el.hidden }));
+      if (accept.accept !== 'image/jpeg,image/png,image/webp' || !accept.hidden) throw new Error(`avatar file input: ${JSON.stringify(accept)}`);
+      if (!uploadButton) throw new Error('no "Nahrát fotku" button');
+      await fileInput.uploadFile(avatarFixture);
+      await waitText(page, /Fotka je nahraná/);
+      const preview = await page.evaluate(() => {
+        const img = document.querySelector('dialog:modal img.ig-avatar');
+        const r = img?.getBoundingClientRect();
+        return { src: img?.getAttribute('src') ?? '', w: r?.width ?? 0, h: r?.height ?? 0, radius: img ? getComputedStyle(img).borderTopLeftRadius : '' };
+      });
+      if (!/^blob:/.test(preview.src) || Math.abs(preview.w - preview.h) > 0.5 || parseFloat(preview.radius) < preview.w / 2) throw new Error(`avatar preview is not a round picture of the picked file: ${JSON.stringify(preview)}`);
+      const objects = await world(page, '(w) => w.snapshot().objects.filter((o) => o.key.startsWith("ig/avatar/")).map((o) => o.bytes)');
+      if (objects.length !== 1 || objects[0] < 1 || objects[0] > 204800) throw new Error(`the avatar upload left ${JSON.stringify(objects)} in ig/avatar/ (expected one WebP of at most 200 KB)`);
+      await checkpoint(ctx, 'instagram profile dialog avatar uploaded', { shot: true });
       await clickBy(ctx, 'button', /^Uložit$/);
       await page.waitForFunction(() => document.querySelector('dialog:modal') === null && /2 500 sledujících/.test(document.querySelector('.ig-counts')?.textContent.replace(/\s+/g, ' ') ?? ''), { timeout: 10000 });
       const back = await page.evaluate(() => document.activeElement?.textContent?.trim());
       if (back !== 'Upravit profil') throw new Error(`focus after the profile dialog is on "${back}", expected the "Upravit profil" button`);
       const stored = await world(page, '(w) => w.ports.planner.getProfile().then((p) => p.followers_count)');
       if (stored !== 2500) throw new Error(`the profile followers are ${stored}, expected 2500`);
+      const savedKey = await world(page, '(w) => w.ports.planner.getProfile().then((p) => p.avatar_key)');
+      if (!/^ig\/avatar\/[0-9a-f-]{36}\.webp$/.test(savedKey) || savedKey.endsWith('0000000000c1.webp')) throw new Error(`the saved avatar_key is ${savedKey}, expected the newly uploaded one`);
+      const headerSrc = await page.evaluate(() => document.querySelector('.ig-profile img.ig-avatar')?.getAttribute('src') ?? '');
+      if (!headerSrc.endsWith(`/${savedKey}`)) throw new Error(`the header avatar is ${headerSrc}, expected .../${savedKey}`);
 
       // Filter: Zveřejněné shows 4 posted tiles, counts follow, the URL keeps the choice, sorting is disabled with its note.
       await page.evaluate(() => document.querySelector('input[name="ig-filter"][value="posted"]').closest('label').scrollIntoView({ block: 'center' }));

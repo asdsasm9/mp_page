@@ -37,7 +37,8 @@ export interface IgProfilePatch {
   link?: string;
   followers_count?: number;
   following_count?: number;
-  avatar_photo_id?: string | null;
+  /** R2 key `ig/avatar/<uuid>.webp` from reserveIgAvatar, or null to remove the picture. */
+  avatar_key?: string | null;
 }
 
 export interface PlannerPort {
@@ -45,7 +46,7 @@ export interface PlannerPort {
   getProfile(): Promise<IgProfileRow>;
   /**
    * PATCH of the one row. STALE when `options.expectedUpdatedAt` no longer matches; INVALID for a value the table
-   * refuses or an avatar photo that does not exist. Not a site change: no pending_changes, no change_log.
+   * refuses or an avatar key of the wrong format. Not a site change: no pending_changes, no change_log.
    */
   updateProfile(patch: IgProfilePatch, options?: UpdateOptions): Promise<IgProfileRow>;
   /** Profile order: planned and draft by sort ascending, then posted by posted_at descending. Photos in carousel order. */

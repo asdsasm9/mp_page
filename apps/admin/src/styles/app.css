@@ -2617,6 +2617,21 @@
     gap: var(--space-2);
   }
 
+  /* Upload state under the avatar buttons: status text, the progress bar and the error, across the whole row. */
+  .ig-avatar-status {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: var(--space-2);
+  }
+
+  .ig-avatar-status p {
+    margin: 0;
+  }
+
+  .ig-avatar-status p:empty {
+    display: none;
+  }
+
   .ig-count-fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -3,7 +3,7 @@
  * SQL checks in 20261116100000_ig_planner.sql. Length is counted in Unicode code points (Postgres char_length).
  */
 import { z } from 'zod';
-import { isValidPhotoId } from './keys';
+import { isValidIgAvatarKey, isValidPhotoId } from './keys';
 
 export const IG_CAPTION_MAX = 2200;
 export const IG_HASHTAGS_MAX = 2200;
@@ -69,7 +69,7 @@ export const IgProfileRowSchema = z.object({
   link: igText(IG_LINK_MAX, 'LINK_TOO_LONG').refine((s) => s === '' || /^https?:\/\//i.test(s), 'LINK_INVALID'),
   followers_count: igCount,
   following_count: igCount,
-  avatar_photo_id: uuid.nullable(),
+  avatar_key: z.string().refine(isValidIgAvatarKey, 'INVALID_AVATAR_KEY').nullable(),
   updated_at: isoDateTime,
 });
 export type IgProfileRow = z.infer<typeof IgProfileRowSchema>;
@@ -83,7 +83,7 @@ export const defaultIgProfile: Omit<IgProfileRow, 'updated_at'> = {
   link: '',
   followers_count: 0,
   following_count: 0,
-  avatar_photo_id: null,
+  avatar_key: null,
 };
 
 /** Avatar fallback: first letters of up to two words of the display name, else of the username, else "?". */

@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
+import { cropAvatarFile, type CropAvatar } from './encode/cropSquare';
 import type { Ports } from './ports';
 import { realShareDeps, type ShareDeps } from './share/shareDeps';
 
@@ -36,7 +37,18 @@ export function useShareDeps(): ShareDeps {
   return useContext(ShareDepsContext);
 }
 
-const ImageBaseContext = createContext('');
+const AvatarCropContext = createContext<CropAvatar>(cropAvatarFile);
+
+/** Crops a picked file to the 480 px square WebP of the Instagram avatar; tests inject a stub (jsdom has no canvas). */
+export function AvatarCropProvider({ crop, children }: { crop: CropAvatar; children: ReactNode }) {
+  return <AvatarCropContext.Provider value={crop}>{children}</AvatarCropContext.Provider>;
+}
+
+export function useAvatarCrop(): CropAvatar {
+  return useContext(AvatarCropContext);
+}
+
+const ImageBaseContext =createContext('');
 
 /** Origin of the public image host (VITE_IMG_BASE_URL, no trailing slash); empty text gives relative URLs. */
 export function ImageBaseProvider({ base, children }: { base: string; children: ReactNode }) {
